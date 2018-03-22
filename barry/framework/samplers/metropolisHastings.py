@@ -62,7 +62,6 @@ class MetropolisHastings(object):
         self.accept_ratio = accept_ratio
         self._do_save = temp_dir is not None and save_interval is not None
 
-
         self.position_file = None
         self.burn_file = None
         self.chain_file = None
@@ -107,6 +106,8 @@ class MetropolisHastings(object):
         if chain is not None:
             self.logger.debug("Found chain of size %d" % chain.shape[0])
         position = self._ensure_position(position)
+        if self.save_dims is None:
+            self.save_dims = len(position) - self.space
 
         if chain is None or burnin is None or burnin.shape[0] < self.num_burn:
             position, covariance, burnin = self._do_burnin(position, burnin, covariance)

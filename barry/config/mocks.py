@@ -32,5 +32,4 @@ if __name__ == "__main__":
         labels = model.get_labels()
         c = ChainConsumer()
         c.add_chain(chain, weights=weight, parameters=labels)
-        print(labels)
-        c.plotter.plot(display=True)
+        c.plotter.plot(filename=pfn + "_contour.png")

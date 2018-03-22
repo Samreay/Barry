@@ -27,6 +27,9 @@ class Model(ABC):
     def get_labels(self):
         return [x.label for x in self.params]
 
+    def get_extents(self):
+        return [(x.min, x.max) for x in self.params]
+
     def get_prior(self, *params):
         """ The prior, implemented as a flat prior by default"""
         for val, param in zip(params, self.params):

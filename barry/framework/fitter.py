@@ -9,6 +9,7 @@ import numpy as np
 
 from barry.framework.doJob import write_jobscript_slurm
 from barry.framework.samplers.metropolisHastings import MetropolisHastings
+from barry.framework.samplers.viewer import Viewer
 
 
 class Fitter(object):
@@ -83,9 +84,14 @@ class Fitter(object):
         if full:
             w, n = 2000, self.max_steps
         else:
-            w, n = 1000, 2000
+            w, n = 2000, 5000
 
-        sampler = MetropolisHastings(num_burn=w, num_steps=n, temp_dir=self.temp_dir, plot_covariance=False)
+        callback = None
+        if debug:
+            viewer = Viewer(model.get_extents(), parameters=model.get_labels())
+            callback = viewer.callback
+
+        sampler = MetropolisHastings(num_burn=w, num_steps=n, temp_dir=self.temp_dir, callback=callback)
 
         self.logger.info("Running fitting job, saving to %s" % self.temp_dir)
 
