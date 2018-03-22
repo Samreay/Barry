@@ -3,8 +3,12 @@ import os
 import shutil
 import socket
 import sys
+import platform
+
+import numpy as np
 
 from barry.framework.doJob import write_jobscript_slurm
+from barry.framework.samplers.metropolisHastings import MetropolisHastings
 
 
 class Fitter(object):
@@ -16,7 +20,7 @@ class Fitter(object):
         self.num_walkers = 10
         self.num_cpu = None
         self.temp_dir = temp_dir
-        self.max_steps = 3000
+        self.max_steps = 4000
         self.set_num_cpu()
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
@@ -71,22 +75,28 @@ class Fitter(object):
         model = self.models[model_index]
         data = self.simulations[simulation_index].get_data()
 
-        out_file = self.temp_dir + "/chain_%d_%d_%d_%d.pkl" % (model_index, simulation_index, cosmo_index, walker_index)
+        model.set_data(data)
 
+        uid = "chain_%d_%d_%d_%d" % (model_index, simulation_index, cosmo_index, walker_index)
+
+        debug = not full
         if full:
-            w, n = 1000, self.max_steps
+            w, n = 2000, self.max_steps
         else:
-            w, n = 500, 1000
+            w, n = 1000, 2000
 
-        self.logger.info("Running fitting job, saving to %s" % out_file)
+        sampler = MetropolisHastings(num_burn=w, num_steps=n, temp_dir=self.temp_dir, plot_covariance=False)
 
+        self.logger.info("Running fitting job, saving to %s" % self.temp_dir)
+
+        sampler.fit(model.get_posterior, model.get_start, uid=uid)
         # Perform the fitting here
         # Save results out
 
         self.logger.info("Finished sampling")
 
     def is_laptop(self):
-        return "science" in socket.gethostname()
+        return "centos" not in platform.platform()
 
     def fit(self, file):
 
@@ -116,3 +126,41 @@ class Fitter(object):
                 mi, si, ci, wi = self.get_indexes_from_index(index)
                 self.logger.info("Running model %d, sim %d, cosmology %d, walker number %d" % (mi, si, ci, wi))
                 self.run_fit(mi, si, ci, wi)
+
+    def load_file(self, file):
+        data = np.load(file)
+        return data
+
+    def load(self, split_models=True, split_sims=True, split_cosmo=False):
+        files = sorted([f for f in os.listdir(self.temp_dir) if f.endswith("_chain.npy")])
+        filenames = [self.temp_dir + "/" + f for f in files]
+        model_indexes = [int(f.split("_")[1]) for f in files]
+        sim_indexes = [int(f.split("_")[2]) for f in files]
+        cosmo_indexes = [int(f.split("_")[3]) for f in files]
+        chains = [self.load_file(f) for f in filenames]
+
+        results = []
+        prev_model, prev_sim, prev_cosmo = 0, 0, 0
+        stacked = None
+        for c, mi, si, ci in zip(chains, model_indexes, sim_indexes, cosmo_indexes):
+            if (prev_cosmo != ci and split_cosmo) or (prev_model != mi and split_models) or (prev_sim != si and split_sims):
+                if stacked is not None:
+                    results.append(stacked)
+                stacked = None
+                prev_model = mi
+                prev_sim = si
+                prev_cosmo = ci
+            if stacked is None:
+                stacked = c
+            else:
+                stacked = np.vstack((stacked, c))
+
+        results.append(stacked)
+
+        finals = []
+        for result in results:
+            posterior = result[:, MetropolisHastings.IND_P]
+            weight = result[:, MetropolisHastings.IND_W]
+            chain = result[:, MetropolisHastings.space:]
+            finals.append((posterior, weight, chain))
+        return finals
