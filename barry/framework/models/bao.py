@@ -1,5 +1,6 @@
-from barry.model import Model
 import numpy as np
+
+from barry.framework.model import Model
 
 
 class BAOModel(Model):
