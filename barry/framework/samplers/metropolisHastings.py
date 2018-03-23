@@ -39,8 +39,8 @@ class MetropolisHastings(object):
         How many starting positions to trial, if the ``start`` value given
         is a function.
     """
-    def __init__(self, num_burn=2000, num_steps=5000,
-                 sigma_adjust=100, covariance_adjust=500, temp_dir=None,
+    def __init__(self, num_burn=3000, num_steps=10000,
+                 sigma_adjust=100, covariance_adjust=1000, temp_dir=None,
                  save_interval=300, accept_ratio=0.234, callback=None,
                  plot_covariance=False, num_start=20):
         self.temp_dir = temp_dir
@@ -146,6 +146,7 @@ class MetropolisHastings(object):
             # If covariance adjust, adjust
             if step % self.covariance_adjust == 0 and step > 0 and step > num_dim * 10:
                 covariance = self._adjust_covariance(burnin, step)
+                burnin[step - 1, self.IND_S] = 1.0
 
             # Get next step
             burnin[step, :], weight = self._get_next_step(burnin[step - 1, :],
@@ -228,10 +229,14 @@ class MetropolisHastings(object):
         actual_ratio = 1 / np.average(subsection[:, self.IND_W])
 
         sigma_ratio = burnin[index - 1, self.IND_S]
-        if actual_ratio < self.accept_ratio:
-            sigma_ratio *= 0.9  # TODO: Improve for high dimensionality
-        else:
-            sigma_ratio /= 0.9
+        ratio = self.accept_ratio / actual_ratio
+        dims = burnin.shape[1] - self.space
+        adjust_amount = np.power(ratio, 1.0 / dims)
+        sigma_ratio /= adjust_amount
+        # if actual_ratio < self.accept_ratio:
+        #     sigma_ratio *= 0.9
+        # else:
+        #     sigma_ratio /= 0.9
         self.logger.debug("Adjusting sigma: Want %0.2f, got %0.2f. "
                           "Updating ratio to %0.3f" % (self.accept_ratio, actual_ratio, sigma_ratio))
         return sigma_ratio
@@ -271,7 +276,7 @@ class MetropolisHastings(object):
             else:
                 attempts += 1
                 counter += 1
-                if counter > 50 and burnin:
+                if counter > 100 and burnin:
                     position[self.IND_S] *= 0.9
                     counter = 0
 
@@ -295,10 +300,10 @@ class MetropolisHastings(object):
             np.save(self.position_file, position)
         if burnin is not None and self.burn_file is not None:
             self.logger.info("Serialising results to file. Burnin has %d steps" % burnin.shape[0])
-            np.save(self.burn_file, burnin)
+            np.save(self.burn_file, burnin.astype(np.float32))
         if chain is not None and self.chain_file is not None:
             self.logger.info("Serialising results to file. Chain has %d steps" % chain.shape[0])
-            np.save(self.chain_file, chain)
+            np.save(self.chain_file, chain.astype(np.float32))
         if covariance is not None and self.covariance_file is not None:
             np.save(self.covariance_file, covariance)
 
@@ -325,4 +330,7 @@ class MetropolisHastings(object):
         ax[1].set_axis_off()
         self.logger.info("Saving covariance plot")
         fig.savefig(self.covariance_plot, bbox_inches="tight", dpi=300)
+        plt.close(fig)
+        import gc
+        gc.collect(2)
 

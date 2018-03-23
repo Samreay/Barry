@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.stats import norm
+
 from barry.framework.model import Model
 
 
@@ -10,8 +12,7 @@ class BAOModel(Model):
         self.add_param(r"$\alpha$", 0.8, 1.2)
 
     def get_likelihood(self, omega_m, alpha):
-        from scipy.stats import norm
-        return norm.logpdf(omega_m, 0.3, 0.1) + norm.logpdf(alpha, 1.0, 0.02)
+        return np.sum(norm.logpdf(self.data, loc=omega_m, scale=alpha))
 
 if __name__ == "__main__":
     bao = BAOModel()

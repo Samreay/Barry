@@ -21,7 +21,7 @@ class Fitter(object):
         self.num_walkers = 10
         self.num_cpu = None
         self.temp_dir = temp_dir
-        self.max_steps = 4000
+        self.max_steps = 10000
         self.set_num_cpu()
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
@@ -82,16 +82,16 @@ class Fitter(object):
 
         debug = not full
         if full:
-            w, n = 2000, self.max_steps
+            w, n = 3000, self.max_steps
         else:
-            w, n = 2000, 5000
+            w, n = 3000, 7000
 
         callback = None
         if debug:
             viewer = Viewer(model.get_extents(), parameters=model.get_labels())
             callback = viewer.callback
 
-        sampler = MetropolisHastings(num_burn=w, num_steps=n, temp_dir=self.temp_dir, callback=callback)
+        sampler = MetropolisHastings(num_burn=w, num_steps=n, temp_dir=self.temp_dir, callback=callback, plot_covariance=debug)
 
         self.logger.info("Running fitting job, saving to %s" % self.temp_dir)
 
