@@ -6,19 +6,20 @@ import os
 
 class CambGenerator(object):
     def __init__(self):
-        self.data_dir = os.path.dirname(inspect.stack()[0][1]) + os.sep + "data/"
-        self.filename = self.data_dir + "cosmo.npy"
+        self.resolution = 21
+        self.redshift = 0.11
 
-        self.redshift = 0.1
+        self.data_dir = os.path.dirname(inspect.stack()[0][1]) + os.sep + "data/"
+        self.filename = self.data_dir + "cosmo_%d_%d.npy" % (self.redshift * 100, self.resolution)
 
         self.k_min = 1e-4
         self.k_max = 2
-        self.k_num = 200
+        self.k_num = 400
         self.ks = np.logspace(np.log(self.k_min), np.log(self.k_max), self.k_num, base=np.e)
 
-        self.resolution = 10
         self.omch2s = np.linspace(0.1, 0.2, self.resolution)
         self.h0s = np.linspace(60, 80, self.resolution)
+        assert 70.0 in self.h0s
 
         self.data = None
 
@@ -28,7 +29,7 @@ class CambGenerator(object):
         else:
             self.data = np.load(self.filename)
 
-    def get_data(self, omch2, h0):
+    def get_data(self, omch2, h0=70):
         if self.data is None:
             self.load_data()
         return self._interpolate(omch2, h0)
@@ -41,19 +42,24 @@ class CambGenerator(object):
         pars.InitPower.set_params(ns=0.965)
         redshifts = [self.redshift]
         pars.set_matter_power(redshifts=redshifts, kmax=self.k_max)
-        pars.NonLinear = camb.model.NonLinear_both
 
-        data = np.zeros((self.resolution, self.resolution, self.k_num))
+        data = np.zeros((self.resolution, self.resolution, 2, self.k_num))
         for i, omch2 in enumerate(self.omch2s):
             for j, h0 in enumerate(self.h0s):
                 print("Generating %d:%d" % (i, j))
                 pars.set_cosmology(H0=h0, omch2=omch2)
+
+                pars.NonLinear = camb.model.NonLinear_none
+                results = camb.get_results(pars)
+                kh, _, pk_lin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
+
+                pars.NonLinear = camb.model.NonLinear_both
                 results = camb.get_results(pars)
                 results.calc_power_spectra(pars)
-                kh, z, pk = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
-                data[i, j, :] = pk
+                kh, z, pk_nl = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
+                data[i, j, 0, :] = pk_lin
+                data[i, j, 1, :] = pk_nl
 
-        data = data.astype(np.float32)
         np.save(self.filename, data)
         return data
 
