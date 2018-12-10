@@ -17,7 +17,7 @@ class Fitter(object):
         self.logger = logging.getLogger(__name__)
         self.models = []
         self.simulations = []
-        self.num_cosmologies = 30
+        self.num_realisations = 30
         self.num_walkers = 10
         self.num_cpu = None
         self.temp_dir = temp_dir
@@ -37,13 +37,13 @@ class Fitter(object):
         self.simulations = simulations
         return self
 
-    def set_num_cosmologies(self, num_cosmologies):
-        self.num_cosmologies = num_cosmologies
+    def set_num_realisations(self, num_realisations):
+        self.num_realisations = num_realisations
         return self
 
     def set_num_cpu(self, num_cpu=None):
         if num_cpu is None:
-            self.num_cpu = self.num_cosmologies * self.num_walkers
+            self.num_cpu = self.num_realisations * self.num_walkers
         else:
             self.num_cpu = num_cpu
 
@@ -52,12 +52,12 @@ class Fitter(object):
         return self
 
     def get_num_jobs(self):
-        num_jobs = len(self.models) * len(self.simulations) * self.num_cosmologies * self.num_walkers
+        num_jobs = len(self.models) * len(self.simulations) * self.num_realisations * self.num_walkers
         return num_jobs
 
     def get_indexes_from_index(self, index):
         num_simulations = len(self.simulations)
-        num_cosmo = self.num_cosmologies
+        num_cosmo = self.num_realisations
         num_walkers = self.num_walkers
 
         num_per_model_sim = num_cosmo * num_walkers
@@ -110,7 +110,7 @@ class Fitter(object):
         num_models = len(self.models)
         num_simulations = len(self.simulations)
         self.logger.info("With %d models, %d simulations, %d cosmologies and %d walkers, have %d jobs" %
-                         (num_models, num_simulations, self.num_cosmologies, self.num_walkers, num_jobs))
+                         (num_models, num_simulations, self.num_realisations, self.num_walkers, num_jobs))
 
         if self.is_laptop():
             self.logger.info("Running locally on the 0th index.")
