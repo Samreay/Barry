@@ -1,13 +1,13 @@
 from barry.config.base import setup
 from barry.framework.fitter import Fitter
-from barry.framework.models.bao import BAOModel
-from barry.framework.datasets.mock import Mock
+from barry.framework.models.test import TestModel
+from barry.framework.datasets.test import TestDataset
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
-    model = BAOModel()
-    data = Mock()
+    model = TestModel()
+    data = TestDataset()
 
     fitter = Fitter(dir_name)
     fitter.set_models(model)

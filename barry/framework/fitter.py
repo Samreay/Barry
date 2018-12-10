@@ -16,7 +16,7 @@ class Fitter(object):
     def __init__(self, temp_dir):
         self.logger = logging.getLogger(__name__)
         self.models = []
-        self.simulations = []
+        self.data = []
         self.num_realisations = 30
         self.num_walkers = 10
         self.num_cpu = None
@@ -33,8 +33,8 @@ class Fitter(object):
     def set_max_steps(self, max_steps):
         self.max_steps = max_steps
 
-    def set_simulations(self, *simulations):
-        self.simulations = simulations
+    def set_data(self, *data):
+        self.data = data
         return self
 
     def set_num_realisations(self, num_realisations):
@@ -52,11 +52,11 @@ class Fitter(object):
         return self
 
     def get_num_jobs(self):
-        num_jobs = len(self.models) * len(self.simulations) * self.num_realisations * self.num_walkers
+        num_jobs = len(self.models) * len(self.data) * self.num_realisations * self.num_walkers
         return num_jobs
 
     def get_indexes_from_index(self, index):
-        num_simulations = len(self.simulations)
+        num_simulations = len(self.data)
         num_cosmo = self.num_realisations
         num_walkers = self.num_walkers
 
@@ -72,13 +72,13 @@ class Fitter(object):
 
         return model_index, sim_index, cosmo_index, walker_index
 
-    def run_fit(self, model_index, simulation_index, cosmo_index, walker_index, full=True):
+    def run_fit(self, model_index, data_index, realisation_index, walker_index, full=True):
         model = self.models[model_index]
-        data = self.simulations[simulation_index].get_data()
+        data = self.data[data_index].get_data()
 
         model.set_data(data)
 
-        uid = "chain_%d_%d_%d_%d" % (model_index, simulation_index, cosmo_index, walker_index)
+        uid = f"chain_{model_index}_{data_index}_{realisation_index}_{walker_index}"
 
         debug = not full
         if full:
@@ -108,7 +108,7 @@ class Fitter(object):
 
         num_jobs = self.get_num_jobs()
         num_models = len(self.models)
-        num_simulations = len(self.simulations)
+        num_simulations = len(self.data)
         self.logger.info("With %d models, %d simulations, %d cosmologies and %d walkers, have %d jobs" %
                          (num_models, num_simulations, self.num_realisations, self.num_walkers, num_jobs))
 

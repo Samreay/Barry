@@ -2,7 +2,7 @@ from abc import ABC
 import logging
 
 
-class Simulation(ABC):
+class Dataset(ABC):
     def __init__(self, name):
         self.name = name
         self.logger = logging.getLogger(__name__)
