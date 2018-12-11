@@ -9,7 +9,6 @@ import numpy as np
 
 from barry.framework.doJob import write_jobscript_slurm
 from barry.framework.samplers.metropolisHastings import MetropolisHastings
-from barry.framework.samplers.viewer import Viewer
 
 
 class Fitter(object):
@@ -79,6 +78,7 @@ class Fitter(object):
 
         callback = None
         if show_viewer:
+            from barry.framework.samplers.viewer import Viewer
             viewer = Viewer(model.get_extents(), parameters=model.get_labels())
             callback = viewer.callback
 
