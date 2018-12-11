@@ -27,7 +27,7 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_cpu=24,
 #SBATCH -t 04:00:00
 #SBATCH -o {output_dir}/{name}.o%j
 
-IDIR=%s
+IDIR={directory}
 conda deactivate
 conda activate {conda_env}
 echo $PATH
