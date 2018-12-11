@@ -135,23 +135,25 @@ class Fitter(object):
         data = np.load(file)
         return data
 
-    def load(self, split_models=True, split_sims=True):
+    def load(self, split_models=True, split_sims=True, split_walkers=False):
         files = sorted([f for f in os.listdir(self.temp_dir) if f.endswith("_chain.npy")])
         filenames = [self.temp_dir + "/" + f for f in files]
         model_indexes = [int(f.split("_")[1]) for f in files]
         sim_indexes = [int(f.split("_")[2]) for f in files]
+        walker_indexes = [int(f.split("_")[3]) for f in files]
         chains = [self.load_file(f) for f in filenames]
 
         results = []
-        prev_model, prev_sim, prev_cosmo = 0, 0, 0
+        prev_model, prev_sim, prev_walkers = 0, 0, 0
         stacked = None
-        for c, mi, si in zip(chains, model_indexes, sim_indexes):
-            if (prev_model != mi and split_models) or (prev_sim != si and split_sims):
+        for c, mi, si, wi in zip(chains, model_indexes, sim_indexes, walker_indexes):
+            if (prev_walkers != wi and split_walkers) or (prev_model != mi and split_models) or (prev_sim != si and split_sims):
                 if stacked is not None:
                     results.append(stacked)
                 stacked = None
                 prev_model = mi
                 prev_sim = si
+                prev_walkers = wi
             if stacked is None:
                 stacked = c
             else:

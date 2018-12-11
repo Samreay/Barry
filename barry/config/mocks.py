@@ -21,10 +21,20 @@ if __name__ == "__main__":
 
     if fitter.is_laptop():
         from chainconsumer import ChainConsumer
-        res, = fitter.load()
+        res,  = fitter.load()
 
         posterior, weight, chain = res
         labels = model.get_labels()
         c = ChainConsumer()
         c.add_chain(chain, weights=weight, parameters=labels)
-        c.plotter.plot(filename=pfn + "_contour.png")
+        # c.plotter.plot(filename=pfn + "_contour.png")
+
+        split_walkers = True
+        if split_walkers:
+            res2 = fitter.load(split_walkers=True)
+            c = ChainConsumer()
+            for i, (posterior, weight, chain) in enumerate(res2):
+                c.add_chain(chain, weights=weight, parameters=labels, name=f"Walker {i}")
+            c.plotter.plot(filename=pfn + "_walkers.png")
+
+

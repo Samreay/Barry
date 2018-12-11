@@ -13,13 +13,13 @@ class CorrelationPolynomial(Model):
         super().__init__("BAO Correlation Polynomial Fit")
 
         # Define parameters
-        self.add_param("om", r"$\Omega_m$", 0.1, 0.6)  # Cosmology
+        self.add_param("om", r"$\Omega_m$", 0.1, 0.5)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2)  # Stretch
-        self.add_param("b", r"$b$", 0.01, 12.0)  # Bias
-        self.add_param("sigma_nl", r"$\sigma_{NL}$", 2.0, 20.0)  # dampening
-        self.add_param("a1", r"$a_1$", -20, 20)  # Polynomial marginalisation 1
-        self.add_param("a2", r"$a_2$", -1, 1)  # Polynomial marginalisation 2
-        self.add_param("a3", r"$a_3$", -0.1, 0.1)  # Polynomial marginalisation 3
+        self.add_param("b", r"$b$", 0.01, 10.0)  # Bias
+        self.add_param("sigma_nl", r"$\sigma_{NL}$", 1.0, 20.0)  # dampening
+        self.add_param("a1", r"$a_1$", -100, 100)  # Polynomial marginalisation 1
+        self.add_param("a2", r"$a_2$", -2, 2)  # Polynomial marginalisation 2
+        self.add_param("a3", r"$a_3$", -0.2, 0.2)  # Polynomial marginalisation 3
 
         # Set up data structures for model fitting
         self.h0 = 70.0
