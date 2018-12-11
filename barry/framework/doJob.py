@@ -6,7 +6,6 @@ import logging
 def write_jobscript_slurm(filename, name=None, num_tasks=24, num_cpu=24,
                           delete=False, partition="smp", conda_env="sam35"):
 
-    logging.info(filename, name, num_tasks, num_cpu, partition, conda_env)
     directory = os.path.dirname(os.path.abspath(filename))
     executable = os.path.basename(filename)
     if name is None:
