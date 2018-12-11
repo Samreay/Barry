@@ -13,14 +13,15 @@ from barry.framework.samplers.viewer import Viewer
 
 
 class Fitter(object):
-    def __init__(self, temp_dir):
+    def __init__(self, temp_dir, max_steps=15000, burnin=5000):
         self.logger = logging.getLogger(__name__)
         self.models = []
         self.data = []
         self.num_walkers = 10
         self.num_cpu = None
         self.temp_dir = temp_dir
-        self.max_steps = 15000
+        self.max_steps = max_steps
+        self.burnin = burnin
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
 
@@ -72,9 +73,9 @@ class Fitter(object):
 
         debug = not full
         if full:
-            w, n = 5000, self.max_steps
+            w, n = self.burnin, self.max_steps
         else:
-            w, n = 5000, 9000
+            w, n = self.burnin, self.burnin
 
         callback = None
         if show_viewer:

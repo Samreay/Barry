@@ -11,10 +11,10 @@ if __name__ == "__main__":
     model = CorrelationPolynomial()
     data = MockAverageCorrelations()
 
-    fitter = Fitter(dir_name)
+    fitter = Fitter(dir_name, max_steps=20000, burnin=10000)
     fitter.set_models(model)
     fitter.set_data(data)
-    fitter.set_num_walkers(1)
+    fitter.set_num_walkers(30)
     fitter.fit(file, viewer=False)
 
     if fitter.is_laptop():
