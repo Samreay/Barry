@@ -1,5 +1,4 @@
 import numpy as np
-import camb
 import inspect
 import os
 import logging
@@ -51,6 +50,7 @@ class CambGenerator(object):
     def _generate_data(self):
         self.logger.info("Generating CAMB data")
         os.makedirs(self.data_dir, exist_ok=True)
+        import camb
 
         pars = camb.CAMBparams()
         pars.set_dark_energy()
