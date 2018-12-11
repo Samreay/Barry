@@ -1,4 +1,6 @@
 import logging
+import sys
+sys.path.append("../..")
 from barry.config.base import setup
 from barry.framework.fitter import Fitter
 from barry.framework.datasets.mock_correlation import MockAverageCorrelations
