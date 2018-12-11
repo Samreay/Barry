@@ -40,6 +40,11 @@ class Fitter(object):
             self.num_cpu = len(self.models) * len(self.data) * self.num_walkers
         self.num_cpu = num_cpu
 
+    def get_num_cpu(self):
+        if self.num_cpu is None:
+            self.set_num_cpu()
+        return self.num_cpu
+
     def set_num_walkers(self, num_walkers):
         self.num_walkers = num_walkers
         return self
@@ -116,7 +121,7 @@ class Fitter(object):
                     self.logger.info("Deleting %s" % self.temp_dir)
                     shutil.rmtree(self.temp_dir)
                 filename = write_jobscript_slurm(file, name=os.path.basename(file),
-                                                 num_tasks=self.get_num_jobs(), num_cpu=self.num_cpu,
+                                                 num_tasks=self.get_num_jobs(), num_cpu=self.get_num_cpu(),
                                                  delete=True, partition=partition)
                 self.logger.info("Running batch job at %s" % filename)
                 os.system("sbatch %s" % filename)
