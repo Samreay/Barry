@@ -12,7 +12,6 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name)
     fitter.set_models(model)
     fitter.set_data(data)
-    fitter.set_num_realisations(1)
     fitter.set_num_walkers(2)
     fitter.fit(file)
 

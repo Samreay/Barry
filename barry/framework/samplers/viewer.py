@@ -1,3 +1,4 @@
+import logging
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import MaxNLocator
@@ -5,7 +6,8 @@ import numpy as np
 
 
 class Viewer(object):
-    def __init__(self, extents, parameters=None, truth=None, batch=20):
+    def __init__(self, extents, parameters=None, truth=None, batch=100):
+        self.logger = logging.getLogger(__name__)
         self.initialised = False
         self.parameters = parameters
         self.extents = extents
@@ -21,6 +23,7 @@ class Viewer(object):
         self.index = 0
 
     def initialise(self, position):
+        self.logger.info("Initialising viewer")
         plt.ion()
 
         if self.parameters is not None:
@@ -63,32 +66,31 @@ class Viewer(object):
                         ax.yaxis.set_major_locator(MaxNLocator(5, prune="lower"))
                     ax.set_ylim(self.extents[p1])
                     ax.set_xlim(self.extents[p2])
-                    ax.hold(True)
                     if self.truth is not None:
                         ax.axhline(self.truth[p1], dashes=(3, 3), ls="--", color="k")
                         ax.axvline(self.truth[p2], dashes=(3, 3), ls="--", color="k")
 
-        self.backgrounds = [[self.figure.canvas.copy_from_bbox(self.axes[i, j].bbox)
-                           for j in range(n) if i >= j] for i in range(n)]
-        self.points = [[self.axes[i, j].plot(position[i], position[j + 1], '.', alpha=0.3)[0]
+        self.points = [[self.axes[i, j].plot(position[i], position[j + 1], '.', alpha=0.7)[0]
                         for j in range(n) if i >= j] for i in range(n)]
         self.figure.show(False)
         self.figure.canvas.draw()
-        plt.pause(0.1)
+        plt.pause(0.01)
+        self.backgrounds = [[self.figure.canvas.copy_from_bbox(self.axes[i, j].bbox)
+                           for j in range(n) if i >= j] for i in range(n)]
         self.initialised = True
 
     def update(self):
+        self.logger.info("Updating viewer")
         data = np.vstack(tuple(self.batched))
-        for i in range(self.dim - 1):
-            for j in range(self.dim - 1):
+        n = self.dim - 1
+        for i in range(n):
+            for j in range(n):
                 if i < j:
                     continue
-                self.figure.canvas.restore_region(self.backgrounds[i][j])
-                self.points[i][j].set_data(data[:, i], data[:, j + 1])
-                self.points[i][j].set_color(self.colours[self.index])
-                self.axes[i][j].draw_artist(self.points[i][j])
-                self.figure.canvas.blit(self.axes[i][j].bbox)
+                self.axes[i][j].plot(data[:, i], data[:, j + 1], '.', alpha=0.7, color=self.colours[self.index])
         self.index = (self.index + 1) % len(self.colours)
+        self.figure.canvas.draw()
+        plt.pause(0.01)
         self.batched = []
 
     def callback(self, log_posterior, position, weight=1):

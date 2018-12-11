@@ -5,7 +5,7 @@ from numpy.random import uniform
 import numpy as np
 
 
-Param = namedtuple('Param', ['label', 'min', 'max'])
+Param = namedtuple('Param', ['name', 'label', 'min', 'max'])
 
 
 class Model(ABC):
@@ -21,8 +21,8 @@ class Model(ABC):
     def set_data(self, data):
         self.data = data
 
-    def add_param(self, label, min, max):
-        self.params.append(Param(label, min, max, ))
+    def add_param(self, name, label, min, max):
+        self.params.append(Param(name, label, min, max, ))
 
     def get_labels(self):
         return [x.label for x in self.params]
