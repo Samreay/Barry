@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import logging
+import inspect
 
 from barry.framework.dataset import Dataset
 
@@ -32,14 +33,15 @@ class MockCorrelations(Dataset):
 class MockAverageCorrelations(Dataset):
     def __init__(self, min_dist=30, max_dist=200, step_size=2, recon=True):
         super().__init__("MockAverage")
-        self.data_location = "../../data/taipan_mocks/mock_average/"
+        current_file = os.path.dirname(inspect.stack()[0][1])
+        self.data_location = os.path.normpath(current_file + "/../../data/taipan_mocks/mock_average/")
         self.min_dist = min_dist
         self.max_dist = max_dist
         self.step_size = step_size
         self.recon = recon
 
         fs = ["ave", "cov"]
-        self.data_filenames = [os.path.abspath(self.data_location + f"Mock_taipan_year1_v1.xi_{step_size}_{f}_{min_dist}-{max_dist}{'_recon' if recon else ''}") for f in fs]
+        self.data_filenames = [os.path.abspath(self.data_location + f"/Mock_taipan_year1_v1.xi_{step_size}_{f}_{min_dist}-{max_dist}{'_recon' if recon else ''}") for f in fs]
         for f in self.data_filenames:
             assert os.path.exists(f), f"Cannot find {f}"
 

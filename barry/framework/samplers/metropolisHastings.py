@@ -42,7 +42,7 @@ class MetropolisHastings(object):
     def __init__(self, num_burn=3000, num_steps=10000,
                  sigma_adjust=100, covariance_adjust=1000, temp_dir=None,
                  save_interval=300, accept_ratio=0.234, callback=None,
-                 plot_covariance=False, num_start=20):
+                 plot_covariance=False, num_start=100):
         self.temp_dir = temp_dir
         if temp_dir is not None and not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
@@ -221,7 +221,7 @@ class MetropolisHastings(object):
                     if v > log_p:
                         log_p = v
                         final_pos = position
-            position = np.concatenate(([v, 1, 1], final_pos))
+            position = np.concatenate(([v, 0.1, 1], final_pos))
         return position
 
     def _adjust_sigma_ratio(self, burnin, index):
@@ -237,8 +237,8 @@ class MetropolisHastings(object):
         #     sigma_ratio *= 0.9
         # else:
         #     sigma_ratio /= 0.9
-        self.logger.debug("Adjusting sigma: Want %0.2f, got %0.2f. "
-                          "Updating ratio to %0.3f" % (self.accept_ratio, actual_ratio, sigma_ratio))
+        self.logger.debug("Adjusting sigma: Want %0.3f, got %0.3f. "
+                          "Updating ratio to %0.5f" % (self.accept_ratio, actual_ratio, sigma_ratio))
         return sigma_ratio
 
     def _adjust_covariance(self, burnin, index, return_cov=False):
@@ -315,16 +315,16 @@ class MetropolisHastings(object):
         covariance = self._adjust_covariance(burnin, burnin.shape[0], return_cov=True)
         fig, ax = plt.subplots(1, 2, figsize=(14, 7))
         h = ax[0].imshow(covariance, cmap='viridis', interpolation='none')
-        div1 = make_axes_locatable(ax[0])
-        cax1 = div1.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(h, cax=cax1)
+        #div1 = make_axes_locatable(ax[0])
+        #cax1 = div1.append_axes("right", size="5%", pad=0.05)
+        #plt.colorbar(h, cax=cax1)
 
         diag = np.diag(1 / np.sqrt(np.diag(covariance)))
         cor = np.dot(np.dot(diag, covariance), diag)
         h2 = ax[1].imshow(cor, cmap='viridis', interpolation='none')
-        div2 = make_axes_locatable(ax[1])
-        cax2 = div2.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(h2, cax=cax2)
+        #div2 = make_axes_locatable(ax[1])
+        #cax2 = div2.append_axes("right", size="5%", pad=0.05)
+        #plt.colorbar(h2, cax=cax2)
         fig.gca().set_frame_on(False)
         ax[0].set_axis_off()
         ax[1].set_axis_off()

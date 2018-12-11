@@ -45,4 +45,7 @@ class Model(ABC):
         return [uniform(x.min, x.max) for x in self.params]
 
     def get_posterior(self, *params):
-        return self.get_prior(*params) + self.get_likelihood(*params)
+        prior = self.get_prior(*params)
+        if not np.isfinite(prior):
+            return -np.inf
+        return prior + self.get_likelihood(*params)

@@ -1,19 +1,21 @@
+import logging
 from barry.config.base import setup
 from barry.framework.fitter import Fitter
-from barry.framework.models.bao import BAOModel
-from barry.framework.datasets.mock import Mock
+from barry.framework.datasets.mock_correlation import MockAverageCorrelations
+from barry.framework.models.bao_correlation_poly import CorrelationPolynomial
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     pfn, dir_name, file = setup(__file__)
 
-    model = BAOModel()
-    data = Mock()
+    model = CorrelationPolynomial()
+    data = MockAverageCorrelations()
 
     fitter = Fitter(dir_name)
     fitter.set_models(model)
     fitter.set_data(data)
-    fitter.set_num_walkers(2)
-    fitter.fit(file)
+    fitter.set_num_walkers(1)
+    fitter.fit(file, viewer=False)
 
     if fitter.is_laptop():
         from chainconsumer import ChainConsumer

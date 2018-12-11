@@ -20,7 +20,7 @@ class Fitter(object):
         self.num_walkers = 10
         self.num_cpu = None
         self.temp_dir = temp_dir
-        self.max_steps = 10000
+        self.max_steps = 15000
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
 
@@ -62,7 +62,7 @@ class Fitter(object):
 
         return model_index, sim_index, walker_index
 
-    def run_fit(self, model_index, data_index, walker_index, full=True):
+    def run_fit(self, model_index, data_index, walker_index, full=True, show_viewer=False):
         model = self.models[model_index]
         data = self.data[data_index].get_data()
 
@@ -72,12 +72,12 @@ class Fitter(object):
 
         debug = not full
         if full:
-            w, n = 3000, self.max_steps
+            w, n = 5000, self.max_steps
         else:
-            w, n = 3000, 7000
+            w, n = 5000, 9000
 
         callback = None
-        if debug:
+        if show_viewer:
             viewer = Viewer(model.get_extents(), parameters=model.get_labels())
             callback = viewer.callback
 
@@ -94,7 +94,7 @@ class Fitter(object):
     def is_laptop(self):
         return "centos" not in platform.platform()
 
-    def fit(self, file):
+    def fit(self, file, viewer=False):
         if self.num_cpu is None:
             self.set_num_cpu()
 
@@ -106,7 +106,7 @@ class Fitter(object):
 
         if self.is_laptop():
             self.logger.info("Running locally on the 0th index.")
-            self.run_fit(0, 0, 0, full=False)
+            self.run_fit(0, 0, 0, full=False, show_viewer=viewer)
         else:
             if len(sys.argv) == 1:
                 h = socket.gethostname()
