@@ -3,3 +3,4 @@ scipy
 camb
 matplotlib
 hankel
+chainconsumer
