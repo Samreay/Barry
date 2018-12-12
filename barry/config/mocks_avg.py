@@ -13,8 +13,8 @@ if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
     model = CorrelationPolynomial()
-    data = MockAverageCorrelations(reduce_cov_factor=np.sqrt(1000))
-    sampler = EnsembleSampler(num_steps=2000, num_burn=500, temp_dir=dir_name, save_interval=300)
+    data = MockAverageCorrelations()
+    sampler = EnsembleSampler(num_steps=1000, num_burn=500, temp_dir=dir_name, save_interval=300)
 
     fitter = Fitter(dir_name)
     fitter.set_models(model)
@@ -33,7 +33,7 @@ if __name__ == "__main__":
         c.add_chain(chain, weights=weight, parameters=labels)
         c.plotter.plot(filename=pfn + "_contour.png")
 
-        if False:  # Plot each walker to check consistency
+        if True:  # Plot each walker to check consistency
             res2 = fitter.load(split_walkers=True)
             c = ChainConsumer()
             for i, (posterior, weight, chain) in enumerate(res2):

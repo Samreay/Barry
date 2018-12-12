@@ -13,7 +13,7 @@ from barry.framework.samplers.metropolisHastings import MetropolisHastings
 
 class Fitter(object):
     def __init__(self, temp_dir):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("barry")
         self.models = []
         self.data = []
         self.num_walkers = 10

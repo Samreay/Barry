@@ -11,7 +11,7 @@ class CambGenerator(object):
         Precomputes CAMB for efficiency. Access ks via self.ks, and use get_data for an array
         of both the linear and non-linear power spectrum
         """
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("barry")
         self.om_resolution = om_resolution
         self.h0_resolution = h0_resolution
         self.h0 = h0

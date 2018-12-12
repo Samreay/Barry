@@ -7,7 +7,7 @@ import os
 class EmceeWrapper(object):
     def __init__(self, sampler):
         self.sampler = sampler
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("barry")
         self.chain = None
 
     def run_chain(self, num_steps, num_burn, num_walkers, num_dim, start=None, save_interval=300,

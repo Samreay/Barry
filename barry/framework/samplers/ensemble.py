@@ -36,7 +36,7 @@ class EnsembleSampler(GenericSampler):
             disables serialisation.
         """
 
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("barry")
         import emcee
         self.chain = None
         self.pool = None

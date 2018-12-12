@@ -11,7 +11,7 @@ Param = namedtuple('Param', ['name', 'label', 'min', 'max'])
 class Model(ABC):
     def __init__(self, name):
         self.name = name
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("barry")
         self.data = None
         self.params = []
 

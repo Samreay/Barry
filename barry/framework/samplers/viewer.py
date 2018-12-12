@@ -8,7 +8,7 @@ import numpy as np
 
 class Viewer(object):
     def __init__(self, extents, parameters=None, truth=None, batch=100, tbatch=10):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("barry")
         self.initialised = False
         self.parameters = parameters
         self.extents = extents

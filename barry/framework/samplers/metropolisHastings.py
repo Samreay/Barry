@@ -49,7 +49,7 @@ class MetropolisHastings(GenericSampler):
         self.temp_dir = temp_dir
         if temp_dir is not None and not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("barry")
         self.log_posterior = None
         self.start = None
         self.save_dims = None
