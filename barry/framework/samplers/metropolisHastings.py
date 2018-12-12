@@ -3,13 +3,10 @@ import numpy as np
 from time import time
 import logging
 
+from barry.framework.samplers.sampler import GenericSampler
 
-class MetropolisHastings(object):
-    space = 3  # log posterior, sigma, weight
-    IND_P = 0
-    IND_S = 1
-    IND_W = 2
 
+class MetropolisHastings(GenericSampler):
     """ Self tuning Metropolis Hastings Sampler
 
     Parameters
@@ -39,6 +36,12 @@ class MetropolisHastings(object):
         How many starting positions to trial, if the ``start`` value given
         is a function.
     """
+
+    space = 3  # log posterior, sigma, weight
+    IND_P = 0
+    IND_S = 1
+    IND_W = 2
+
     def __init__(self, num_burn=3000, num_steps=10000,
                  sigma_adjust=100, covariance_adjust=1000, temp_dir=None,
                  save_interval=300, accept_ratio=0.234, callback=None,
@@ -279,6 +282,13 @@ class MetropolisHastings(object):
                 if counter > 100 and burnin:
                     position[self.IND_S] *= 0.9
                     counter = 0
+
+    def load_file(self, filename):
+        result = np.load(filename)
+        posterior = result[:, MetropolisHastings.IND_P]
+        weight = result[:, MetropolisHastings.IND_W]
+        chain = result[:, MetropolisHastings.space:]
+        return {"posterior": posterior, "weights": weight, "chain": chain}
 
     def _load(self):
         position = None

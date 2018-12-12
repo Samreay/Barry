@@ -45,6 +45,8 @@ class Model(ABC):
         return [uniform(x.min, x.max) for x in self.params]
 
     def get_posterior(self, *params):
+        if len(params) == 1:
+            params = params[0]
         prior = self.get_prior(*params)
         if not np.isfinite(prior):
             return -np.inf

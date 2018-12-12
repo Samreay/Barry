@@ -4,3 +4,4 @@ camb
 matplotlib
 hankel
 chainconsumer
+emcee

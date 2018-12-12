@@ -1,6 +1,8 @@
 import logging
 import sys
 sys.path.append("../..")
+import numpy as np
+from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.config.base import setup
 from barry.framework.fitter import Fitter
 from barry.framework.datasets.mock_correlation import MockAverageCorrelations
@@ -11,12 +13,14 @@ if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
     model = CorrelationPolynomial()
-    data = MockAverageCorrelations(reduce_cov_factor=1000)
+    data = MockAverageCorrelations(reduce_cov_factor=np.sqrt(1000))
+    sampler = EnsembleSampler(num_steps=2000, num_burn=500, temp_dir=dir_name, save_interval=300)
 
-    fitter = Fitter(dir_name, max_steps=20000, burnin=10000)
+    fitter = Fitter(dir_name)
     fitter.set_models(model)
     fitter.set_data(data)
-    fitter.set_num_walkers(30)
+    fitter.set_sampler(sampler)
+    fitter.set_num_walkers(10)
     fitter.fit(file, viewer=False)
 
     if fitter.is_laptop():

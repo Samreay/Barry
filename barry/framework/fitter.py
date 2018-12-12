@@ -12,24 +12,20 @@ from barry.framework.samplers.metropolisHastings import MetropolisHastings
 
 
 class Fitter(object):
-    def __init__(self, temp_dir, max_steps=15000, burnin=5000):
+    def __init__(self, temp_dir):
         self.logger = logging.getLogger(__name__)
         self.models = []
         self.data = []
         self.num_walkers = 10
         self.num_cpu = None
         self.temp_dir = temp_dir
-        self.max_steps = max_steps
-        self.burnin = burnin
+        self.sampler = None
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
 
     def set_models(self, *models):
         self.models = models
         return self
-
-    def set_max_steps(self, max_steps):
-        self.max_steps = max_steps
 
     def set_data(self, *data):
         self.data = data
@@ -67,6 +63,23 @@ class Fitter(object):
 
         return model_index, sim_index, walker_index
 
+    def set_sampler(self, sampler):
+        self.sampler = sampler
+
+    def get_sampler(self, full=True, show_viewer=False, model_index=None):
+        if self.sampler is None:
+            callback = None
+            if show_viewer:
+                from barry.framework.samplers.viewer import Viewer
+                model = self.models[model_index]
+                viewer = Viewer(model.get_extents(), parameters=model.get_labels())
+                callback = viewer.callback
+
+            debug = not full
+            self.sampler = MetropolisHastings(num_burn=5000, num_steps=10000, temp_dir=self.temp_dir,
+                                              callback=callback, plot_covariance=debug)
+        return self.sampler
+
     def run_fit(self, model_index, data_index, walker_index, full=True, show_viewer=False):
         model = self.models[model_index]
         data = self.data[data_index].get_data()
@@ -75,19 +88,7 @@ class Fitter(object):
 
         uid = f"chain_{model_index}_{data_index}_{walker_index}"
 
-        debug = not full
-        if full:
-            w, n = self.burnin, self.max_steps
-        else:
-            w, n = self.burnin, self.burnin
-
-        callback = None
-        if show_viewer:
-            from barry.framework.samplers.viewer import Viewer
-            viewer = Viewer(model.get_extents(), parameters=model.get_labels())
-            callback = viewer.callback
-
-        sampler = MetropolisHastings(num_burn=w, num_steps=n, temp_dir=self.temp_dir, callback=callback, plot_covariance=debug)
+        sampler = self.get_sampler(full=full, show_viewer=show_viewer, model_index=model_index)
 
         self.logger.info("Running fitting job, saving to %s" % self.temp_dir)
 
@@ -132,11 +133,23 @@ class Fitter(object):
                 self.run_fit(mi, si, wi)
 
     def load_file(self, file):
-        data = np.load(file)
-        return data
+        d = self.get_sampler().load_file(file)
+        chain = d["chain"]
+        weights = d.get("weights")
+        if weights is None:
+            weights = np.ones((chain.shape[0], 1))
+        if len(weights.shape) == 1:
+            weights = np.atleast_2d(weights).T
+        posterior = d.get("posterior")
+        if posterior is None:
+            posterior = np.ones((chain.shape[0], 1))
+        if len(posterior.shape) == 1:
+            posterior = np.atleast_2d(posterior).T
+        result = np.hstack((posterior, weights, chain))
+        return result
 
     def load(self, split_models=True, split_sims=True, split_walkers=False):
-        files = sorted([f for f in os.listdir(self.temp_dir) if f.endswith("_chain.npy")])
+        files = sorted([f for f in os.listdir(self.temp_dir) if f.endswith("chain.npy")])
         filenames = [self.temp_dir + "/" + f for f in files]
         model_indexes = [int(f.split("_")[1]) for f in files]
         sim_indexes = [int(f.split("_")[2]) for f in files]
@@ -163,8 +176,8 @@ class Fitter(object):
 
         finals = []
         for result in results:
-            posterior = result[:, MetropolisHastings.IND_P]
-            weight = result[:, MetropolisHastings.IND_W]
-            chain = result[:, MetropolisHastings.space:]
+            posterior = result[:, 0]
+            weight = result[:, 1]
+            chain = result[:, 2:]
             finals.append((posterior, weight, chain))
         return finals
