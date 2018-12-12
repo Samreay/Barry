@@ -11,7 +11,7 @@ if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
     model = CorrelationPolynomial()
-    data = MockAverageCorrelations()
+    data = MockAverageCorrelations(reduce_cov_factor=1000)
 
     fitter = Fitter(dir_name, max_steps=20000, burnin=10000)
     fitter.set_models(model)
@@ -27,10 +27,9 @@ if __name__ == "__main__":
         labels = model.get_labels()
         c = ChainConsumer()
         c.add_chain(chain, weights=weight, parameters=labels)
-        # c.plotter.plot(filename=pfn + "_contour.png")
+        c.plotter.plot(filename=pfn + "_contour.png")
 
-        split_walkers = True
-        if split_walkers:
+        if False:  # Plot each walker to check consistency
             res2 = fitter.load(split_walkers=True)
             c = ChainConsumer()
             for i, (posterior, weight, chain) in enumerate(res2):

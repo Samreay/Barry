@@ -2,7 +2,7 @@ import logging
 import numpy as np
 
 from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.cosmology.pk2xi import pk2xiGauss
+from barry.framework.cosmology.pk2xi import PowerToCorrelationFT, PowerToCorrelationGauss
 from barry.framework.cosmology.power_spectrum_smoothing import smooth_hinton2017
 from barry.framework.model import Model
 
@@ -24,8 +24,10 @@ class CorrelationPolynomial(Model):
         # Set up data structures for model fitting
         self.h0 = 70.0
         self.camb = CambGenerator(h0=self.h0)
+        self.pk2xi = PowerToCorrelationGauss(self.camb.ks)
+        # self.pk2xi = PowerToCorrelationFT()
 
-        self.nice_data = None # Place to store things like invert cov matrix
+        self.nice_data = None  # Place to store things like invert cov matrix
 
     def get_nice_data(self):
         """ Nice data is a 3-tuple - distance, xi, inv_cov"""
@@ -52,7 +54,7 @@ class CorrelationPolynomial(Model):
 
         # Conver to correlation function and take alpha into account
         ss = distances / alpha
-        xi = pk2xiGauss(ks, pk_dewiggled, ss)
+        xi = self.pk2xi.pk2xi(ks, pk_dewiggled, ss)
 
         # Polynomial shape
         d = distances
@@ -80,22 +82,22 @@ if __name__ == "__main__":
     data = dataset.get_data()
     bao.set_data(data)
 
-    # print(bao.get_likelihood(0.5, 1.1, 1.0, 5.0, 0, 0, 0))
     import timeit
-    n = 100
+    n = 500
 
     def test():
         bao.get_likelihood(0.3, 1.0, 1.0, 5.0, 0, 0, 0)
-    #print("Takes on average, %.3f seconds" % (timeit.timeit(test, number=n) / n))
+    print("Takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
-    ss = data[0][:, 0]
-    xi = data[0][:, 1]
-    xi2 = bao.compute_correlation_function(ss, 0.3, 1, 1, 5, 0, 0, 0)
-    xi3 = bao.compute_correlation_function(ss, 0.3, 1, 1, 5, 0, 1, 0)
-    xi4 = bao.compute_correlation_function(ss, 0.3, 1, 1, 5, 0, -1, 0)
-    import matplotlib.pyplot as plt
-    plt.plot(ss, xi, '.', c='b')
-    plt.plot(ss, xi2, '.', c='r')
-    plt.plot(ss, xi3, '.', c='g')
-    plt.plot(ss, xi4, '.', c='y')
-    plt.show()
+    if False:
+        ss = data[0][:, 0]
+        xi = data[0][:, 1]
+        xi2 = bao.compute_correlation_function(ss, 0.3, 1, 1, 5, 0, 0, 0)
+        xi3 = bao.compute_correlation_function(ss, 0.3, 1, 1, 5, 0, 1, 0)
+        xi4 = bao.compute_correlation_function(ss, 0.3, 1, 1, 5, 0, -1, 0)
+        import matplotlib.pyplot as plt
+        plt.plot(ss, xi, '.', c='b')
+        plt.plot(ss, xi2, '.', c='r')
+        plt.plot(ss, xi3, '.', c='g')
+        plt.plot(ss, xi4, '.', c='y')
+        plt.show()
