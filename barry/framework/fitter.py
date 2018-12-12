@@ -33,7 +33,7 @@ class Fitter(object):
 
     def set_num_cpu(self, num_cpu=None):
         if num_cpu is None:
-            self.num_cpu = len(self.models) * len(self.data) * self.num_walkers
+            num_cpu = len(self.models) * len(self.data) * self.num_walkers
         self.num_cpu = num_cpu
 
     def get_num_cpu(self):
