@@ -87,7 +87,7 @@ class CorrelationPolynomial(Model):
         pk_dewiggled = pk_linear_weight * pk_lin + (1 - pk_linear_weight) * pk_smooth
 
         # Conver to correlation function and take alpha into account
-        xi = self.pk2xi.pk2xi(ks, pk_dewiggled, d / alpha)
+        xi = self.pk2xi.pk2xi(ks, pk_dewiggled, d * alpha)
 
         # Polynomial shape
         shape = a1 / (d ** 2) + a2 / d + a3
@@ -112,7 +112,7 @@ class CorrelationPolynomial(Model):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
-    bao = CorrelationPolynomial()
+    bao = CorrelationPolynomial(fit_omega_m=True)
 
     from barry.framework.datasets.mock_correlation import MockAverageCorrelations
     dataset = MockAverageCorrelations()
@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
     def test():
         bao.get_likelihood(0.3, 1.0, 1.0, 5.0, 0, 0, 0)
-    print("Takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
+    print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
     if False:
         ss = data[0][:, 0]

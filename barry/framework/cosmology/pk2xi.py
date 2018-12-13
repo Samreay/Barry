@@ -49,7 +49,7 @@ if __name__ == "__main__":
     from barry.framework.cosmology.camb_generator import CambGenerator
     camb = CambGenerator(h0=70.0)
     ks = camb.ks
-    pklin, pknl = camb.get_data(0.3*0.7*0.7, 70)
+    pklin, pknl = camb.get_data(0.3, 0.70)
 
     ss = np.linspace(30, 200, 85)
 
