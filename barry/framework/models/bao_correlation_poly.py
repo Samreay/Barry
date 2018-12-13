@@ -31,7 +31,7 @@ class CorrelationPolynomial(Model):
             self.omega_m = 0.3121
             self.pk_lin, self.pk_nl = self.camb.get_data(om=self.omega_m)
         self.pk2xi = PowerToCorrelationGauss(self.camb.ks)
-        # self.pk2xi = PowerToCorrelationFT()
+        # self.pk2xi = PowerToCorrelationFT()  # Slower than the Gauss method
 
         self.nice_data = None  # Place to store things like invert cov matrix
 
@@ -43,8 +43,34 @@ class CorrelationPolynomial(Model):
             self.nice_data = self.data[0][:, 0], self.data[0][:, 1], np.linalg.inv(self.data[1])
         return self.nice_data
 
-    def compute_correlation_function(self, distances, om, alpha, b, sigma_nl, a1, a2, a3):
-
+    def compute_correlation_function(self, d, om, alpha, b, sigma_nl, a1, a2, a3):
+        """ Computes the correlation function at distance d given the supplied params
+        
+        Parameters
+        ----------
+        d : array
+            Array of distances in the correlation function to compute
+        om : float
+            Omega_m
+        alpha : float
+            Scale applied to distances
+        b : float
+            Linear bias
+        sigma_nl : float
+            Dewiggling transition
+        a1 : float
+            Polynomial shape 1
+        a2 : float
+            Polynomial shape 2
+        a3 : float
+            Polynomial shape 3
+        
+        Returns
+        -------
+        array
+            The correlation function power at the requested distances.
+        
+        """
         # Get base linear power spectrum from camb
         ks = self.camb.ks
         if self.fit_omega_m:
@@ -61,11 +87,9 @@ class CorrelationPolynomial(Model):
         pk_dewiggled = pk_linear_weight * pk_lin + (1 - pk_linear_weight) * pk_smooth
 
         # Conver to correlation function and take alpha into account
-        ss = distances / alpha
-        xi = self.pk2xi.pk2xi(ks, pk_dewiggled, ss)
+        xi = self.pk2xi.pk2xi(ks, pk_dewiggled, d / alpha)
 
         # Polynomial shape
-        d = distances
         shape = a1 / (d ** 2) + a2 / d + a3
 
         # Add poly shape to xi model, include bias correction
