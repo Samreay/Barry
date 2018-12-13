@@ -59,7 +59,7 @@ class CambGenerator(object):
         pars.set_matter_power(redshifts=[self.redshift], kmax=self.k_max)
         self.logger.info("Configured CAMB power and dark energy")
 
-        data = np.zeros((self.om_resolution, self.h0_resolution, 2, self.k_num))
+        data = np.zeros((self.om_resolution, self.h0_resolution, self.k_num))
         for i, omch2 in enumerate(self.omch2s):
             for j, h0 in enumerate(self.h0s):
                 self.logger.debug("Generating %d:%d  %0.3f  %0.3f" % (i, j, omch2, h0))
@@ -67,14 +67,13 @@ class CambGenerator(object):
                                    neutrino_hierarchy='degenerate', num_massive_neutrinos=1)
                 pars.NonLinear = camb.model.NonLinear_none
                 results = camb.get_results(pars)
-                kh, _, pk_lin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
+                kh, z, pk_lin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
 
-                pars.NonLinear = camb.model.NonLinear_both
-                results = camb.get_results(pars)
-                results.calc_power_spectra(pars)
-                kh, z, pk_nl = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
-                data[i, j, 0, :] = pk_lin
-                data[i, j, 1, :] = pk_nl
+                # pars.NonLinear = camb.model.NonLinear_both
+                # results = camb.get_results(pars)
+                # results.calc_power_spectra(pars)
+                # kh, z, pk_nl = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
+                data[i, j, :] = pk_lin
         self.logger.info(f"Saving to {self.filename}")
         np.save(self.filename, data)
         return data

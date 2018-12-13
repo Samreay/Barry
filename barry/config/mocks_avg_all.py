@@ -11,11 +11,10 @@ from barry.framework.models.bao_correlation_poly import CorrelationPolynomial
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
-    models = [CorrelationPolynomial(fit_omega_m=False, name="NoOm PolyCor"),
-              CorrelationPolynomial(fit_omega_m=True, name="FitOm PolyCor")]
+    models = [CorrelationPolynomial(fit_omega_m=False, name="PolyCorrelation (NoOm)"),
+              CorrelationPolynomial(fit_omega_m=True, name="PolyCorrelation (FitOm)")]
 
-    datas = [MockAverageCorrelations(name="MockAvg"),
-             MockAverageCorrelations(reduce_cov_factor=np.sqrt(1000), name="MockAvgRedCov")]
+    datas = [MockAverageCorrelations(name="MockAvgRecon30-200", recon=True, min_dist=30, max_dist=200)]
 
     sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name, save_interval=300)
 

@@ -29,7 +29,7 @@ class CorrelationPolynomial(Model):
 
         if not self.fit_omega_m:
             self.omega_m = 0.3121
-            self.pk_lin, self.pk_nl = self.camb.get_data(om=self.omega_m)
+            self.pk_lin = self.camb.get_data(om=self.omega_m)
         self.pk2xi = PowerToCorrelationGauss(self.camb.ks)
         # self.pk2xi = PowerToCorrelationFT()  # Slower than the Gauss method
 
@@ -74,13 +74,12 @@ class CorrelationPolynomial(Model):
         # Get base linear power spectrum from camb
         ks = self.camb.ks
         if self.fit_omega_m:
-            pk_lin, pk_nl = self.camb.get_data(om=om, h0=self.h0)
+            pk_lin = self.camb.get_data(om=om, h0=self.h0)
         else:
-            pk_lin, pk_nl = self.pk_lin, self.pk_nl
-        # TODO: Figure out if I should be using the linear or non-linear model here
+            pk_lin = self.pk_lin
 
         # Get the smoothed power spectrum
-        pk_smooth = smooth_hinton2017(ks, pk_nl)
+        pk_smooth = smooth_hinton2017(ks, pk_lin)
 
         # Blend the two
         pk_linear_weight = np.exp(-0.5 * (ks * sigma_nl)**2)
