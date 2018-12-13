@@ -164,8 +164,8 @@ class Fitter(object):
             if (prev_walkers != wi and split_walkers) or (prev_model != mi and split_models) or (prev_sim != si and split_sims):
                 if stacked is not None:
                     results.append(stacked)
-                    results_models.append(self.models[mi])
-                    results_data.append(self.data[si])
+                    results_models.append(self.models[prev_model])
+                    results_data.append(self.data[prev_sim])
                 stacked = None
                 prev_model = mi
                 prev_sim = si
