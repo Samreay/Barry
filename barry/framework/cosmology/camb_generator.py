@@ -25,7 +25,7 @@ class CambGenerator(object):
         self.k_num = 2000
         self.ks = np.logspace(np.log(self.k_min), np.log(self.k_max), self.k_num, base=np.e)
 
-        self.omch2s = np.linspace(0.05, 0.4, self.om_resolution)
+        self.omch2s = np.linspace(0.05, 0.3, self.om_resolution)
         self.omega_b = 0.0491
         if h0_resolution == 1:
             self.h0s = [h0]
@@ -62,7 +62,7 @@ class CambGenerator(object):
         data = np.zeros((self.om_resolution, self.h0_resolution, 2, self.k_num))
         for i, omch2 in enumerate(self.omch2s):
             for j, h0 in enumerate(self.h0s):
-                self.logger.debug("Generating %d:%d" % (i, j))
+                self.logger.debug("Generating %d:%d  %0.3f  %0.3f" % (i, j, omch2, h0))
                 pars.set_cosmology(H0=h0 * 100, omch2=omch2, mnu=0.0, ombh2=self.omega_b*h0*h0, omk=0.0, tau=0.063,
                                    neutrino_hierarchy='degenerate', num_massive_neutrinos=1)
                 pars.NonLinear = camb.model.NonLinear_none
@@ -125,6 +125,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
     generator = CambGenerator()
+    generator = CambGenerator(om_resolution=50, h0_resolution=50)
 
     import timeit
     n = 10000
