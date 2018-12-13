@@ -157,12 +157,15 @@ class Fitter(object):
         chains = [self.load_file(f) for f in filenames]
 
         results = []
+        results_models, results_data = [], []
         prev_model, prev_sim, prev_walkers = 0, 0, 0
         stacked = None
         for c, mi, si, wi in zip(chains, model_indexes, sim_indexes, walker_indexes):
             if (prev_walkers != wi and split_walkers) or (prev_model != mi and split_models) or (prev_sim != si and split_sims):
                 if stacked is not None:
                     results.append(stacked)
+                    results_models.append(self.models[mi])
+                    results_data.append(self.data[si])
                 stacked = None
                 prev_model = mi
                 prev_sim = si
@@ -171,13 +174,14 @@ class Fitter(object):
                 stacked = c
             else:
                 stacked = np.vstack((stacked, c))
-
+        results_models.append(self.models[mi])
+        results_data.append(self.data[si])
         results.append(stacked)
 
         finals = []
-        for result in results:
+        for result, model, sim in zip(results, results_models, results_data):
             posterior = result[:, 0]
             weight = result[:, 1]
             chain = result[:, 2:]
-            finals.append((posterior, weight, chain))
+            finals.append((posterior, weight, chain, model, sim))
         return finals

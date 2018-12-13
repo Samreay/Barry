@@ -31,8 +31,8 @@ class MockCorrelations(Dataset):
 
 
 class MockAverageCorrelations(Dataset):
-    def __init__(self, min_dist=30, max_dist=200, step_size=2, recon=True, reduce_cov_factor=1):
-        super().__init__("MockAverage")
+    def __init__(self, min_dist=30, max_dist=200, step_size=2, recon=True, reduce_cov_factor=1, name="MockAverage"):
+        super().__init__(name)
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + "/../../data/taipan_mocks/mock_average/")
         self.min_dist = min_dist

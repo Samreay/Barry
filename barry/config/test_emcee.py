@@ -23,8 +23,7 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
         res, = fitter.load()
 
-        posterior, weight, chain = res
-        labels = model.get_labels()
+        posterior, weight, chain, model, data = res
         c = ChainConsumer()
-        c.add_chain(chain, weights=weight, parameters=labels)
+        c.add_chain(chain, weights=weight, parameters=model.get_labels())
         c.plotter.plot(filename=pfn + "_contour.png")

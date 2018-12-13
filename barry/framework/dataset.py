@@ -7,5 +7,8 @@ class Dataset(ABC):
         self.name = name
         self.logger = logging.getLogger("barry")
 
+    def get_name(self):
+        return self.name
+
     def get_data(self):
         raise NotImplementedError("Please implement get_data")

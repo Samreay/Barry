@@ -9,11 +9,13 @@ from barry.framework.model import Model
 
 class CorrelationPolynomial(Model):
 
-    def __init__(self):
-        super().__init__("BAO Correlation Polynomial Fit")
+    def __init__(self, fit_omega_m=False, name="BAO Correlation Polynomial Fit"):
+        super().__init__(name)
 
         # Define parameters
-        self.add_param("om", r"$\Omega_m$", 0.1, 0.5)  # Cosmology
+        self.fit_omega_m = fit_omega_m
+        if self.fit_omega_m:
+            self.add_param("om", r"$\Omega_m$", 0.1, 0.5)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2)  # Stretch
         self.add_param("b", r"$b$", 0.01, 10.0)  # Bias
         self.add_param("sigma_nl", r"$\sigma_{NL}$", 1.0, 20.0)  # dampening
@@ -22,8 +24,12 @@ class CorrelationPolynomial(Model):
         self.add_param("a3", r"$a_3$", -0.2, 0.2)  # Polynomial marginalisation 3
 
         # Set up data structures for model fitting
-        self.h0 = 70.0
+        self.h0 = 0.6751
         self.camb = CambGenerator(h0=self.h0)
+
+        if not self.fit_omega_m:
+            self.omega_m = 0.3121
+            self.pk_lin, self.pk_nl = self.camb.get_data(om=self.omega_m)
         self.pk2xi = PowerToCorrelationGauss(self.camb.ks)
         # self.pk2xi = PowerToCorrelationFT()
 
@@ -38,11 +44,13 @@ class CorrelationPolynomial(Model):
         return self.nice_data
 
     def compute_correlation_function(self, distances, om, alpha, b, sigma_nl, a1, a2, a3):
-        omch2 = om * (self.h0 / 100)**2
 
         # Get base linear power spectrum from camb
         ks = self.camb.ks
-        pk_lin, pk_nl = self.camb.get_data(omch2=omch2, h0=self.h0)
+        if self.fit_omega_m:
+            pk_lin, pk_nl = self.camb.get_data(om=om, h0=self.h0)
+        else:
+            pk_lin, pk_nl = self.pk_lin, self.pk_nl
         # TODO: Figure out if I should be using the linear or non-linear model here
 
         # Get the smoothed power spectrum
@@ -64,8 +72,13 @@ class CorrelationPolynomial(Model):
         model = xi * b + shape
         return model
 
-    def get_likelihood(self, om, alpha, b, sigma_nl, a1, a2, a3):
+    def get_likelihood(self, *params):
         dist, xi_data, icov = self.get_nice_data()
+        if self.fit_omega_m:
+            om, alpha, b, sigma_nl, a1, a2, a3 = params
+        else:
+            alpha, b, sigma_nl, a1, a2, a3 = params
+            om = 0.3121
         xi_model = self.compute_correlation_function(dist, om, alpha, b, sigma_nl, a1, a2, a3)
 
         diff = (xi_data - xi_model)
