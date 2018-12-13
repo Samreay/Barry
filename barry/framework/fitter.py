@@ -149,6 +149,7 @@ class Fitter(object):
         return result
 
     def load(self, split_models=True, split_sims=True, split_walkers=False):
+        self.logger.info("Loading chains")
         files = sorted([f for f in os.listdir(self.temp_dir) if f.endswith("chain.npy")])
         filenames = [self.temp_dir + "/" + f for f in files]
         model_indexes = [int(f.split("_")[1]) for f in files]
@@ -184,4 +185,5 @@ class Fitter(object):
             weight = result[:, 1]
             chain = result[:, 2:]
             finals.append((posterior, weight, chain, model, sim))
+        self.logger.info("Loaded chains")
         return finals

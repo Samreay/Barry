@@ -32,8 +32,10 @@ if __name__ == "__main__":
         c = ChainConsumer()
         for posterior, weight, chain, model, data in fitter.load():
             name = f"{model.get_name()} {data.get_name()}"
-            c.add_chain(chain, weights=weight, parameters=model.get_labels(), name=name)
-        c.plotter.plot(filename=pfn + "_contour.png")
+            linestyle = "--" if "FitOm" in name else "-"
+            c.add_chain(chain, weights=weight, parameters=model.get_labels(), name=name, linestyle=linestyle)
+        c.configure(shade=True)
+        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
 
 
 
