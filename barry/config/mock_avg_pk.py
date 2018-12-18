@@ -13,7 +13,8 @@ if __name__ == "__main__":
 
     models = [PowerPolynomial(fit_omega_m=False, name="PolyPk (NoOm)")]
 
-    datas = [MockAveragePowerSpectrum(name="MockAvgPkRecon02-30", recon=True, min_k=0.02, max_k=0.30)]
+    datas = [MockAveragePowerSpectrum(name="MockAvgPk 02-30 Recon", recon=True, min_k=0.02, max_k=0.30),
+             MockAveragePowerSpectrum(name="MockAvgPk 02-30", recon=False, min_k=0.02, max_k=0.30)]
 
     sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name, save_interval=30)
 
