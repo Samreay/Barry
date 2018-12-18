@@ -17,7 +17,7 @@ class PowerPolynomial(Model):
         if self.fit_omega_m:
             self.add_param("om", r"$\Omega_m$", 0.1, 0.5)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2)  # Stretch
-        self.add_param("b", r"$b$", 0.01, 10.0)  # Bias
+        self.add_param("b", r"$b$", 0.001, 10.0)  # Bias
         self.add_param("sigma_nl", r"$\sigma_{NL}$", 1.0, 20.0)  # dampening
         self.add_param("a1", r"$a_1$", -50000.0, 50000.0)  # Polynomial marginalisation 1
         self.add_param("a2", r"$a_2$", -50000.0, 50000.0)  # Polynomial marginalisation 2
