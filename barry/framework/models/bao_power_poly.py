@@ -98,7 +98,7 @@ class PowerPolynomial(Model):
         integral_constraint = self.data["w_pk"][2] * p0
 
         pk_convolved = np.atleast_2d(pk_generated) @ self.data["w_transform"]
-        pk_normalised = (pk_convolved - integral_constraint).T
+        pk_normalised = (pk_convolved - integral_constraint).flatten()
 
         # Get the subsection of our model which corresponds to the data k values
         pk_output = pk_normalised[self.data["w_mask"]]
@@ -134,6 +134,8 @@ if __name__ == "__main__":
     dataset = MockAveragePowerSpectrum()
     data = dataset.get_data()
     bao.set_data(data)
+
+    print(bao.get_likelihood(0.3, 1.0, 1.0, 5.0, 0, 0, 0, 0, 0))
 
     import timeit
     n = 500

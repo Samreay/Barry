@@ -3,7 +3,7 @@ import os
 
 
 def setup(filename):
-    logging.basicConfig(level=logging.INFO, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
+    logging.basicConfig(level=logging.INFO, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
     plot_dir = os.path.dirname(os.path.abspath(filename)) + "/plots/%s/" % os.path.basename(filename)[:-3]
     dir_name = plot_dir + "output/"

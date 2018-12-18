@@ -35,7 +35,7 @@ if __name__ == "__main__":
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), name=name, linestyle=linestyle)
         c.configure(shade=True)
         c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
-        with open(pfn + "params.txt", "w") as f:
+        with open(pfn + "_params.txt", "w") as f:
             f.write(c.analysis.get_latex_table(transpose=True))
 
 
