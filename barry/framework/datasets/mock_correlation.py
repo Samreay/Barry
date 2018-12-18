@@ -31,7 +31,7 @@ class MockCorrelations(Dataset):
 
 
 class MockAverageCorrelations(Dataset):
-    def __init__(self, min_dist=30, max_dist=200, step_size=2, recon=True, reduce_cov_factor=1, name="MockAverage"):
+    def __init__(self, min_dist=30, max_dist=200, step_size=2, recon=True, reduce_cov_factor=1, name="MockAverageXi"):
         super().__init__(name)
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + "/../../data/taipan_mocks/mock_average/")
@@ -54,9 +54,15 @@ class MockAverageCorrelations(Dataset):
         if reduce_cov_factor != 1:
             self.logger.info(f"Reducing covariance by factor of {reduce_cov_factor}")
             self.cov /= reduce_cov_factor
+        self.icov = np.linalg.inv(self.cov)
 
     def get_data(self):
-        return self.data, self.cov
+        return {
+            "dist": self.data[:, 0],
+            "xi": self.data[:, 1],
+            "cov": self.cov,
+            "icov": self.icov
+        }
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")

@@ -35,14 +35,6 @@ class CorrelationPolynomial(Model):
 
         self.nice_data = None  # Place to store things like invert cov matrix
 
-    def get_nice_data(self):
-        """ Nice data is a 3-tuple - distance, xi, inv_cov"""
-        assert self.data is not None, "data is none. Only invoke after setting data."
-
-        if self.nice_data is None:
-            self.nice_data = self.data[0][:, 0], self.data[0][:, 1], np.linalg.inv(self.data[1])
-        return self.nice_data
-
     def compute_correlation_function(self, d, om, alpha, b, sigma_nl, a1, a2, a3):
         """ Computes the correlation function at distance d given the supplied params
         
@@ -85,7 +77,7 @@ class CorrelationPolynomial(Model):
         pk_linear_weight = np.exp(-0.5 * (ks * sigma_nl)**2)
         pk_dewiggled = pk_linear_weight * pk_lin + (1 - pk_linear_weight) * pk_smooth
 
-        # Conver to correlation function and take alpha into account
+        # Convert to correlation function and take alpha into account
         xi = self.pk2xi.pk2xi(ks, pk_dewiggled, d * alpha)
 
         # Polynomial shape
@@ -96,16 +88,16 @@ class CorrelationPolynomial(Model):
         return model
 
     def get_likelihood(self, *params):
-        dist, xi_data, icov = self.get_nice_data()
+        d = self.data
         if self.fit_omega_m:
             om, alpha, b, sigma_nl, a1, a2, a3 = params
         else:
             alpha, b, sigma_nl, a1, a2, a3 = params
             om = 0.3121
-        xi_model = self.compute_correlation_function(dist, om, alpha, b, sigma_nl, a1, a2, a3)
+        xi_model = self.compute_correlation_function(d["dist"], om, alpha, b, sigma_nl, a1, a2, a3)
 
-        diff = (xi_data - xi_model)
-        chi2 = diff.T @ icov @ diff
+        diff = (d["xi"] - xi_model)
+        chi2 = diff.T @ d["icov"] @ diff
         return -0.5 * chi2
 
 

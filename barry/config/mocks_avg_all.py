@@ -1,7 +1,7 @@
 import logging
 import sys
 sys.path.append("../..")
-import numpy as np
+
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.config.base import setup
 from barry.framework.fitter import Fitter
