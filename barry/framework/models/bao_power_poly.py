@@ -93,19 +93,15 @@ class PowerPolynomial(Model):
         return pk_final
 
     def adjust_model_window_effects(self, pk_generated):
-        # TODO: Understand what this is doing
 
-        # what is the point of this? What is w_scale (second column of matrix)?
         p0 = np.sum(self.data["w_scale"] * pk_generated)
+        integral_constraint = self.data["w_pk"][2] * p0
 
-        normalised_win_pk = self.data["w_pk"][2] * p0  # Will be 20 long.
+        pk_convolved = np.atleast_2d(pk_generated) @ self.data["w_transform"]
+        pk_normalised = (pk_convolved - integral_constraint).T
 
-        pk_modified = np.atleast_2d(pk_generated) @ self.data["w_transform"]
-        pk_normalised = pk_modified - normalised_win_pk
-        # TODO: What are better variables names, Im legit making them up as Im not sure what the math is doing
-
-        # Interpolate to data ks. They should coincide with ks_output
-        pk_output = interp1d(self.data["ks_output"], pk_normalised)(self.data["ks"]).T
+        # Get the subsection of our model which corresponds to the data k values
+        pk_output = pk_normalised[self.data["w_mask"]]
         return pk_output
 
     def get_likelihood(self, *params):
@@ -143,11 +139,11 @@ if __name__ == "__main__":
         bao.get_likelihood(0.3, 1.0, 1.0, 5.0, 0, 0, 0, 0, 0)
     print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
-    if False:
+    if True:
         ks = data["ks"]
         pk = data["pk"]
         pk2 = bao.compute_power_spectrum(ks, 0.3, 1, 1, 5, 0, 0, 0, 0, 0)
         import matplotlib.pyplot as plt
-        plt.plot(ks, pk, '.', c='k')
+        plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
         plt.plot(ks, pk2, '.', c='r')
         plt.show()

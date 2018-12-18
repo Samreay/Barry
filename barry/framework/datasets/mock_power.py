@@ -51,6 +51,11 @@ class MockAveragePowerSpectrum(Dataset):
         # God I am sorry for doing this manually but the file format is... tricky
         with open(winfit_file, "r") as f:
             self.w_ks_output = np.array([float(x) for x in f.readlines()[2].split()[1:]])
+
+        # Create a mask used from moving from w_pk to the data k values.
+        # This is because we can truncate the data start and end values, but we
+        # need to generate the model over a wider range of k
+        self.w_mask = np.array([x in self.data[:, 1] for x in self.w_ks_output])
         self.logger.info(f"Winfit matrix has shape {self.w_transform.shape}")
 
     def _load_winpk_file(self, winpk_file):
@@ -61,10 +66,8 @@ class MockAveragePowerSpectrum(Dataset):
         pk = data[:, 2].reshape((-1, self.step_size))
         weight = data[:, 3].reshape((-1, self.step_size))
 
-        # Take the average of every group of step_size rows.
+        # Take the average of every group of step_size rows to rebin
         self.w_pk = np.average(pk, axis=1, weights=weight)
-
-        # Need to rebin this so that it matches the output
         self.logger.info(f"Loaded winpk with shape {self.w_pk.shape}")
 
     def get_data(self):
@@ -77,7 +80,8 @@ class MockAveragePowerSpectrum(Dataset):
             "ks_input": self.w_ks_input,
             "w_scale": self.w_k0_scale,
             "w_transform": self.w_transform,
-            "w_pk": self.w_pk
+            "w_pk": self.w_pk,
+            "w_mask": self.w_mask
         }
 
 
