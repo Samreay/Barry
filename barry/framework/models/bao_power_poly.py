@@ -102,6 +102,9 @@ class PowerPolynomial(Model):
 
         # Get the subsection of our model which corresponds to the data k values
         pk_output = pk_normalised[self.data["w_mask"]]
+
+        # Other option for selecting a data range that doesnt assume nodes is below
+        # pk_output = interp1d(self.data["ks_output"], pk_normalised)(self.data["ks"])
         return pk_output
 
     def get_likelihood(self, *params):
