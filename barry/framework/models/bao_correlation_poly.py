@@ -35,7 +35,7 @@ class CorrelationPolynomial(Model):
 
         self.nice_data = None  # Place to store things like invert cov matrix
 
-    def compute_correlation_function(self, d, om, alpha, b, sigma_nl, a1, a2, a3):
+    def compute_correlation_function(self, d, om, alpha, sigma_nl, b, a1, a2, a3):
         """ Computes the correlation function at distance d given the supplied params
         
         Parameters
@@ -46,10 +46,10 @@ class CorrelationPolynomial(Model):
             Omega_m
         alpha : float
             Scale applied to distances
-        b : float
-            Linear bias
         sigma_nl : float
             Dewiggling transition
+        b : float
+            Linear bias
         a1 : float
             Polynomial shape 1
         a2 : float
@@ -90,11 +90,11 @@ class CorrelationPolynomial(Model):
     def get_likelihood(self, *params):
         d = self.data
         if self.fit_omega_m:
-            om, alpha, b, sigma_nl, a1, a2, a3 = params
+            om, alpha, sigma_nl, b, a1, a2, a3 = params
         else:
-            alpha, b, sigma_nl, a1, a2, a3 = params
+            alpha, sigma_nl, b, a1, a2, a3 = params
             om = 0.3121
-        xi_model = self.compute_correlation_function(d["dist"], om, alpha, b, sigma_nl, a1, a2, a3)
+        xi_model = self.compute_correlation_function(d["dist"], om, alpha, sigma_nl, b, a1, a2, a3)
 
         diff = (d["xi"] - xi_model)
         chi2 = diff.T @ d["icov"] @ diff
@@ -114,15 +114,15 @@ if __name__ == "__main__":
     n = 500
 
     def test():
-        bao.get_likelihood(0.3, 1.0, 1.0, 5.0, 0, 0, 0)
+        bao.get_likelihood(0.3, 1.0, 5.0, 1.0, 0, 0, 0)
     print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
     if False:
         ss = data[0][:, 0]
         xi = data[0][:, 1]
-        xi2 = bao.compute_correlation_function(ss, 0.3, 1, 1, 5, 0, 0, 0)
-        xi3 = bao.compute_correlation_function(ss, 0.3, 1, 1, 5, 0, 1, 0)
-        xi4 = bao.compute_correlation_function(ss, 0.3, 1, 1, 5, 0, -1, 0)
+        xi2 = bao.compute_correlation_function(ss, 0.3, 1, 5, 1, 0, 0, 0)
+        xi3 = bao.compute_correlation_function(ss, 0.3, 1, 5, 1, 0, 1, 0)
+        xi4 = bao.compute_correlation_function(ss, 0.3, 1, 5, 1, 0, -1, 0)
         import matplotlib.pyplot as plt
         plt.plot(ss, xi, '.', c='b')
         plt.plot(ss, xi2, '.', c='r')

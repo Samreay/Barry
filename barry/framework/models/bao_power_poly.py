@@ -35,7 +35,7 @@ class PowerPolynomial(Model):
 
         self.nice_data = None  # Place to store things like invert cov matrix
 
-    def compute_power_spectrum(self, k, om, alpha, b, sigma_nl, a1, a2, a3, a4, a5):
+    def compute_power_spectrum(self, k, om, alpha, sigma_nl, b, a1, a2, a3, a4, a5):
         """ Computes the correlation function at distance d given the supplied params
         
         Parameters
@@ -46,10 +46,10 @@ class PowerPolynomial(Model):
             Omega_m
         alpha : float
             Scale applied to distances
-        b : float
-            Linear bias
         sigma_nl : float
             Dewiggling transition
+        b : float
+            Linear bias
         a1 : float
             Polynomial shape 1
         a2 : float
@@ -110,12 +110,12 @@ class PowerPolynomial(Model):
     def get_likelihood(self, *params):
         d = self.data
         if self.fit_omega_m:
-            om, alpha, b, sigma_nl, a1, a2, a3, a4, a5 = params
+            om, alpha, sigma_nl, b, a1, a2, a3, a4, a5 = params
         else:
-            alpha, b, sigma_nl, a1, a2, a3, a4, a5 = params
+            alpha, sigma_nl, b, a1, a2, a3, a4, a5 = params
             om = 0.3121
         # Get the generic pk model
-        pk_generated = self.compute_power_spectrum(d["ks_input"], om, alpha, b, sigma_nl, a1, a2, a3, a4, a5)
+        pk_generated = self.compute_power_spectrum(d["ks_input"], om, alpha, sigma_nl, b, a1, a2, a3, a4, a5)
 
         # Morph it into a model representative of our survey and its selection/window/binning effects
         pk_model = self.adjust_model_window_effects(pk_generated)
@@ -135,19 +135,19 @@ if __name__ == "__main__":
     data = dataset.get_data()
     bao.set_data(data)
 
-    print(bao.get_likelihood(0.3, 1.0, 1.0, 5.0, 0, 0, 0, 0, 0))
+    print(bao.get_likelihood(0.3, 1.0, 5.0, 1.0, 0, 0, 0, 0, 0))
 
     import timeit
     n = 500
 
     def test():
-        bao.get_likelihood(0.3, 1.0, 1.0, 5.0, 0, 0, 0, 0, 0)
+        bao.get_likelihood(0.3, 1.0, 5.0, 1.0, 0, 0, 0, 0, 0)
     print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
     if True:
         ks = data["ks"]
         pk = data["pk"]
-        pk2 = bao.compute_power_spectrum(ks, 0.3, 1, 1, 5, 0, 0, 0, 0, 0)
+        pk2 = bao.compute_power_spectrum(ks, 0.3, 1, 5, 1, 0, 0, 0, 0, 0)
         import matplotlib.pyplot as plt
         plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
         plt.plot(ks, pk2, '.', c='r')
