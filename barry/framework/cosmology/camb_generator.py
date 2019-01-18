@@ -5,6 +5,7 @@ import logging
 
 
 # TODO: Add options for mnu, h0 default, omega_b, etc
+# TODO: Calculate/Tabulate r_s alongside power spectra for different omega_m and hubble. We need this for eh98 smoothing of powerspectra
 class CambGenerator(object):
     def __init__(self, redshift=0.11, om_resolution=101, h0_resolution=1, h0=0.6751):
         """ 
@@ -27,6 +28,7 @@ class CambGenerator(object):
 
         self.omch2s = np.linspace(0.05, 0.3, self.om_resolution)
         self.omega_b = 0.0491
+        self.ns = 0.9653
         if h0_resolution == 1:
             self.h0s = [h0]
         else:

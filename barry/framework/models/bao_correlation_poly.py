@@ -1,16 +1,24 @@
 import logging
 import numpy as np
 
+import sys
+sys.path.append("../../..")
+
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.cosmology.pk2xi import PowerToCorrelationFT, PowerToCorrelationGauss
-from barry.framework.cosmology.power_spectrum_smoothing import smooth_hinton2017
+from barry.framework.cosmology.power_spectrum_smoothing import smooth_hinton2017, smooth_eh1998
 from barry.framework.model import Model
 
 
 class CorrelationPolynomial(Model):
 
-    def __init__(self, fit_omega_m=False, name="BAO Correlation Polynomial Fit"):
+    def __init__(self, fit_omega_m=False, smooth_type="hinton2017", name="BAO Correlation Polynomial Fit"):
         super().__init__(name)
+
+        self.smooth_type=smooth_type
+        if ((smooth_type != "hinton2017") and (smooth_type != "eh1998")):
+            print("smooth_type not recognised, must be either: 'hinton2017' (default) or 'eh1998'.")
+            exit(0)
 
         # Define parameters
         self.fit_omega_m = fit_omega_m
@@ -71,7 +79,13 @@ class CorrelationPolynomial(Model):
             pk_lin = self.pk_lin
 
         # Get the smoothed power spectrum
-        pk_smooth = smooth_hinton2017(ks, pk_lin)
+        if (self.smooth_type == "hinton2017"):
+            pk_smooth = smooth_hinton2017(ks, pk_lin)
+        elif (self.smooth_type == "eh1998"):
+            pk_smooth = smooth_eh1998(ks, pk_lin, om=om, h0=self.h0)
+        else:
+            print("self.smooth_type not recognised, must be either: 'hinton2017' (default) or 'eh1998'.")
+            exit(0)
 
         # Blend the two
         pk_linear_weight = np.exp(-0.5 * (ks * sigma_nl)**2)
@@ -117,14 +131,15 @@ if __name__ == "__main__":
         bao.get_likelihood(0.3, 1.0, 5.0, 1.0, 0, 0, 0)
     print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
-    if False:
-        ss = data[0][:, 0]
-        xi = data[0][:, 1]
+    if True:
+        ss = data["dist"]
+        xi = data["xi"]
         xi2 = bao.compute_correlation_function(ss, 0.3, 1, 5, 1, 0, 0, 0)
         xi3 = bao.compute_correlation_function(ss, 0.3, 1, 5, 1, 0, 1, 0)
-        xi4 = bao.compute_correlation_function(ss, 0.3, 1, 5, 1, 0, -1, 0)
+        bao.smooth_type="eh1998"
+        xi4 = bao.compute_correlation_function(ss, 0.3, 1, 5, 1, 0, 1, 0)
         import matplotlib.pyplot as plt
-        plt.plot(ss, xi, '.', c='b')
+        plt.errorbar(ss, xi, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
         plt.plot(ss, xi2, '.', c='r')
         plt.plot(ss, xi3, '.', c='g')
         plt.plot(ss, xi4, '.', c='y')
