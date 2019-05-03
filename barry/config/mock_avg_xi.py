@@ -1,4 +1,3 @@
-import logging
 import sys
 sys.path.append("../..")
 
@@ -7,6 +6,7 @@ from barry.config.base import setup
 from barry.framework.fitter import Fitter
 from barry.framework.datasets.mock_correlation import MockAverageCorrelations
 from barry.framework.models.bao_correlation_poly import CorrelationPolynomial
+
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)

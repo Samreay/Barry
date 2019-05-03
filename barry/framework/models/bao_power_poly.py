@@ -31,7 +31,7 @@ class PowerPolynomial(Model):
 
         if not self.fit_omega_m:
             self.omega_m = 0.3121
-            self.pk_lin = self.camb.get_data(om=self.omega_m)
+            self.r_s, self.pk_lin = self.camb.get_data(om=self.omega_m)
 
         self.nice_data = None  # Place to store things like invert cov matrix
 
@@ -70,7 +70,7 @@ class PowerPolynomial(Model):
         # Get base linear power spectrum from camb
         ks = self.camb.ks
         if self.fit_omega_m:
-            pk_lin = self.camb.get_data(om=om, h0=self.h0)
+            r_s, pk_lin = self.camb.get_data(om=om, h0=self.h0)
         else:
             pk_lin = self.pk_lin
 

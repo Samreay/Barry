@@ -21,8 +21,8 @@ class CambGenerator(object):
         self.filename = self.data_dir + f"cosmo_{int(self.redshift * 100)}_{self.om_resolution}_{self.h0_resolution}.npy"
 
         self.k_min = 1e-4
-        self.k_max = 100
-        self.k_num = 2000
+        self.k_max = 5
+        self.k_num = 5000
         self.ks = np.logspace(np.log(self.k_min), np.log(self.k_max), self.k_num, base=np.e)
 
         self.omch2s = np.linspace(0.05, 0.3, self.om_resolution)
@@ -33,6 +33,7 @@ class CambGenerator(object):
             self.h0s = np.linspace(0.6, 0.8, self.h0_resolution)
 
         self.data = None
+        self.logger.info(f"Creating CAMB data with {self.om_resolution} x {self.h0_resolution}")
 
     def load_data(self):
         if not os.path.exists(self.filename):
@@ -42,14 +43,15 @@ class CambGenerator(object):
             self.data = np.load(self.filename)
 
     def get_data(self, om=0.3121, h0=0.6751):
-        """ Returns the two arrays for the given cosmology. On for pk_lin and the other pk_nl"""
+        """ Returns the sound horizon the linear power spectrum"""
         if self.data is None:
             self.load_data()
         omch2 = (om - self.omega_b) * h0 * h0
-        return self._interpolate(omch2, h0)
+        data = self._interpolate(omch2, h0)
+        return data[0], data[1:]
 
     def _generate_data(self):
-        self.logger.info("Generating CAMB data")
+        self.logger.info(f"Generating CAMB data with {self.om_resolution} x {self.h0_resolution}")
         os.makedirs(self.data_dir, exist_ok=True)
         import camb
 
@@ -59,7 +61,7 @@ class CambGenerator(object):
         pars.set_matter_power(redshifts=[self.redshift], kmax=self.k_max)
         self.logger.info("Configured CAMB power and dark energy")
 
-        data = np.zeros((self.om_resolution, self.h0_resolution, self.k_num))
+        data = np.zeros((self.om_resolution, self.h0_resolution, 1 + self.k_num))
         for i, omch2 in enumerate(self.omch2s):
             for j, h0 in enumerate(self.h0s):
                 self.logger.debug("Generating %d:%d  %0.3f  %0.3f" % (i, j, omch2, h0))
@@ -67,13 +69,16 @@ class CambGenerator(object):
                                    neutrino_hierarchy='degenerate', num_massive_neutrinos=1)
                 pars.NonLinear = camb.model.NonLinear_none
                 results = camb.get_results(pars)
+                params = results.get_derived_params()
+                rdrag = params["rdrag"]
                 kh, z, pk_lin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
 
                 # pars.NonLinear = camb.model.NonLinear_both
                 # results = camb.get_results(pars)
                 # results.calc_power_spectra(pars)
                 # kh, z, pk_nl = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
-                data[i, j, :] = pk_lin
+                data[i, j, 0] = rdrag
+                data[i, j, 1:] = pk_lin
         self.logger.info(f"Saving to {self.filename}")
         np.save(self.filename, data)
         return data
@@ -123,17 +128,20 @@ def test_rand():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
-    generator = CambGenerator()
-    generator = CambGenerator(om_resolution=50, h0_resolution=50)
 
-    import timeit
-    n = 10000
-    print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
-    import matplotlib.pyplot as plt
-    plt.plot(generator.ks, generator.get_data(0.3)[0])
-    plt.plot(generator.ks, generator.get_data(0.3)[1])
-    plt.plot(generator.ks, generator.get_data(0.2)[0])
-    plt.plot(generator.ks, generator.get_data(0.2)[1])
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.show()
+    generator = CambGenerator(om_resolution=10, h0_resolution=1)
+    generator.get_data(0.3)
+    # generator = CambGenerator()
+    # generator = CambGenerator(om_resolution=50, h0_resolution=1)
+    # generator = CambGenerator(om_resolution=10, h0_resolution=10)
+    # generator = CambGenerator(om_resolution=50, h0_resolution=50)
+    #
+    # import timeit
+    # n = 10000
+    # print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
+    # import matplotlib.pyplot as plt
+    # plt.plot(generator.ks, generator.get_data(0.3)[1])
+    # plt.plot(generator.ks, generator.get_data(0.2)[1])
+    # plt.xscale("log")
+    # plt.yscale("log")
+    # plt.show()
