@@ -87,7 +87,6 @@ class PowerPolynomial(Model):
         shape = a1 * k + a2 + a3 / k + a4 / (k * k) + a5 / (k ** 3)
 
         # Combine everything. Weirdly. With lots of spline interpolation.
-        # TODO: Ask Cullan what paper this comes from so I can try and understand
         pk_final = (splev(k, splrep(ks, b * pk_smooth)) + shape) * splev(k / alpha, splrep(ks, pk_ratio_dewiggled))
 
         return pk_final
