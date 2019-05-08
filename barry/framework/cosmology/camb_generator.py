@@ -18,7 +18,7 @@ class CambGenerator(object):
         self.h0 = h0
         self.redshift = redshift
 
-        self.data_dir = os.path.dirname(inspect.stack()[0][1]) + os.sep + "data/"
+        self.data_dir = os.path.dirname(os.path.abspath(inspect.stack()[0][1])) + os.sep + "data/"
         self.filename = self.data_dir + f"cosmo_{int(self.redshift * 100)}_{self.om_resolution}_{self.h0_resolution}.npy"
 
         self.k_min = 1e-4
