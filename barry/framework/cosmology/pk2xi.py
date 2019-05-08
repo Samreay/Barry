@@ -47,17 +47,31 @@ class PowerToCorrelationFT(PowerToCorrelation):
 
 if __name__ == "__main__":
     from barry.framework.cosmology.camb_generator import CambGenerator
-    camb = CambGenerator(h0=70.0)
+    # camb = CambGenerator(h0=70.0)
+    camb = CambGenerator(om_resolution=10, h0_resolution=1)
     ks = camb.ks
-    pklin, pknl = camb.get_data(0.3, 0.70)
+    r_s, pklin = camb.get_data(0.3, 0.70)
 
     ss = np.linspace(30, 200, 85)
+
+    # This code tests the impact the lower k bound has on converting to correlation plot
+    thresh = 100
+    pk2xi_1 = PowerToCorrelationGauss(ks, interpolateDetail=10, a=1)
+    pk2xi_2 = PowerToCorrelationGauss(ks[ks < thresh], interpolateDetail=10, a=1)
+    import matplotlib.pyplot as plt
+    xi1 = pk2xi_1.pk2xi(ks, pklin, ss)
+    xi2 = pk2xi_2.pk2xi(ks[ks < thresh], pklin[ks < thresh], ss)
+    fig, ax = plt.subplots(nrows=2)
+    ax[0].plot(ss, xi1)
+    ax[0].plot(ss, xi2)
+    ax[1].plot(ss, 100 * (xi1 - xi2) / xi1)
+    plt.show()
 
     pk2xi_good = PowerToCorrelationGauss(ks, interpolateDetail=10, a=1)
     pk2xi_gauss = PowerToCorrelationGauss(ks, interpolateDetail=2, a=0.25)
     pk2xi_ft = PowerToCorrelationFT()
 
-    if True:
+    if False:
         import timeit
         n = 200
 
@@ -69,9 +83,9 @@ if __name__ == "__main__":
             pk2xi_ft.pk2xi(ks, pklin, ss)
         print("FT method: %.2f milliseconds" % (timeit.timeit(test2, number=n) * 1000 / n))
 
-    if True:
+    if False:
         import matplotlib.pyplot as plt
-        xi1 = pk2xi_gauss.pk2xi(ks, pklin, ss)
+        xi1 = pk2xi_gauss.pk2xi(ks[ks < 1], pklin, ss)
         xi2 = pk2xi_ft.pk2xi(ks, pklin, ss)
         xi_good = pk2xi_good.pk2xi(ks, pklin, ss)
 
