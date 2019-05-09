@@ -101,20 +101,18 @@ class BAOExtractor(Model):
         pk_convolved = np.atleast_2d(pk_generated) @ self.data["w_transform"]
         pk_normalised = (pk_convolved - integral_constraint).flatten()
         # Get the subsection of our model which corresponds to the data k values
-        pk_output = pk_normalised[self.data["w_mask"]]
-        # Other option for selecting a data range that doesnt assume nodes is below
-        # pk_output = interp1d(self.data["ks_output"], pk_normalised)(self.data["ks"])
-        return pk_output
+        return pk_normalised, self.data["w_mask"]
 
     def get_model(self, data, om, alpha, sigma_nl, b, a1, a2, a3, a4, a5):
         # Get the generic pk model
         pk_generated = self.compute_power_spectrum(data["ks_input"], om, alpha, sigma_nl, b, a1, a2, a3, a4, a5)
 
         # Morph it into a model representative of our survey and its selection/window/binning effects
-        pk_windowed = self.adjust_model_window_effects(pk_generated)
+        pk_windowed, mask = self.adjust_model_window_effects(pk_generated)
 
-        _, pk_model = extract_bao(data["pk"], pk_windowed, self.r_s_fiducial)
-        return pk_model
+        _, pk_model = extract_bao(data["ks_output"], pk_windowed, self.r_s_fiducial)
+        pk_final = pk_model[mask]
+        return pk_final
 
     def get_likelihood(self, *params):
 
@@ -140,19 +138,18 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
     bao = BAOExtractor(r_s, fit_omega_m=True)
 
-    from barry.framework.datasets.mock_bao_extractor import MockIndividualBAOExtractorPowerSpectrum
-    dataset = MockIndividualBAOExtractorPowerSpectrum(r_s)
+    from barry.framework.datasets.mock_bao_extractor import MockBAOExtractorPowerSpectrum
+    dataset = MockBAOExtractorPowerSpectrum(r_s, step_size=2)
     data = dataset.get_data()
     bao.set_data(data)
 
-    print(bao.get_likelihood(0.3, 1.0, 5.0, 1.0, 0, 0, 0, 0, 0))
+    # print(bao.get_likelihood(0.3, 1.0, 5.0, 1.0, 0, 0, 0, 0, 0))
 
-    import timeit
-    n = 5
-
-    def test():
-        bao.get_likelihood(0.3, 1.0, 5.0, 1.0, 0, 0, 0, 0, 0)
-    print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
+    # import timeit
+    # n = 5
+    # def test():
+    #     bao.get_likelihood(0.3, 1.0, 5.0, 1.0, 0, 0, 0, 0, 0)
+    # print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
     if True:
         ks = data["ks"]
@@ -160,6 +157,6 @@ if __name__ == "__main__":
         pk2 = bao.get_model(data, 0.3, 1, 5, 1, 0, 0, 0, 0, 0)
         import matplotlib.pyplot as plt
         plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k', label="Data")
-        plt.plot(ks, pk2, '.', c='r', label="Model")
+        plt.plot(ks, pk2, '-', c='r', label="Model")
         plt.legend()
         plt.show()

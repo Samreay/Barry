@@ -3,7 +3,7 @@ import sys
 sys.path.append("../..")
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.models.baoextractor_power_poly import BAOExtractor
-from barry.framework.datasets.mock_bao_extractor import MockIndividualBAOExtractorPowerSpectrum
+from barry.framework.datasets.mock_bao_extractor import MockBAOExtractorPowerSpectrum
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.config.base import setup
 from barry.framework.fitter import Fitter
@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     models = [BAOExtractor(r_s, name="BAO Extractor")]
 
-    datas = [MockIndividualBAOExtractorPowerSpectrum(r_s, name="BAOE mean", recon=True, min_k=0.02, max_k=0.30)]
+    datas = [MockBAOExtractorPowerSpectrum(r_s, name="BAOE mean", recon=True, min_k=0.02, max_k=0.30)]
 
     sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name, save_interval=30)
 

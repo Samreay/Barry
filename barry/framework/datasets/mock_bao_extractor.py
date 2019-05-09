@@ -8,7 +8,7 @@ from barry.framework.cosmology.bao_extractor import extract_bao
 from barry.framework.dataset import Dataset
 
 
-class MockIndividualBAOExtractorPowerSpectrum(Dataset):
+class MockBAOExtractorPowerSpectrum(Dataset):
     def __init__(self, r_s, delta=0.5, average=True, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True, reduce_cov_factor=1, name="BAOExtractor"):
         super().__init__(name)
         current_file = os.path.dirname(inspect.stack()[0][1])
@@ -63,19 +63,32 @@ class MockIndividualBAOExtractorPowerSpectrum(Dataset):
         return np.array(self.pks_all).mean(axis=0)
 
     def _rebin_data(self, dataframe):
-        k = dataframe["k"].values.reshape((-1, self.step_size))
-        pk = dataframe["pk"].values.reshape((-1, self.step_size))
-        weight = dataframe["nk"].values.reshape((-1, self.step_size))
 
-        # Take the average of every group of step_size rows to rebin
-        k_rebinned = np.average(k, axis=1)
-        pk_rebinned = np.average(pk, axis=1, weights=weight)
+        k = dataframe["k"].values
+        pk = dataframe["pk"].values
+        if self.step_size == 1:
+            k_rebinned = k
+            pk_rebinned = pk
+        else:
+            add = k.size % self.step_size
+            weight = dataframe["nk"].values
+            if add:
+                to_add = self.step_size - add
+                k = np.concatenate((k, [k[-1]] * to_add))
+                pk = np.concatenate((pk, [pk[-1]] * to_add))
+                weight = np.concatenate((weight, [0] * to_add))
+            k = k.reshape((-1, self.step_size))
+            pk = pk.reshape((-1, self.step_size))
+            weight = weight.reshape((-1, self.step_size))
+            # Take the average of every group of step_size rows to rebin
+            k_rebinned = np.average(k, axis=1)
+            pk_rebinned = np.average(pk, axis=1, weights=weight)
 
         mask = (k_rebinned >= self.min_k) & (k_rebinned <= self.max_k)
 
-        k_fin, p_fin = k_rebinned[mask], pk_rebinned[mask]
-        _, p_extracted = extract_bao(k_fin, p_fin, r_s=self.r_s, delta=self.delta)
-        return k_fin, p_extracted
+        _, p_extracted = extract_bao(k_rebinned, pk_rebinned, r_s=self.r_s, delta=self.delta)
+        k_fin = k_rebinned[mask]
+        return k_fin, p_extracted[mask]
 
     def _load_winfit(self, winfit_file):
         # TODO: Add documentation when I figure out how this works
@@ -100,11 +113,23 @@ class MockIndividualBAOExtractorPowerSpectrum(Dataset):
 
         # data files contain (index, k, pk, nk)
         data = np.genfromtxt(winpk_file)
-        pk = data[:, 2].reshape((-1, self.step_size))
-        weight = data[:, 3].reshape((-1, self.step_size))
 
-        # Take the average of every group of step_size rows to rebin
-        self.w_pk = np.average(pk, axis=1, weights=weight)
+        if self.step_size == 1:
+            self.w_pk = data[:, 2]
+        else:
+            pk = data[:, 2]
+            weight = data[:, 3]
+
+            add = pk.size % self.step_size
+            if add:
+                to_add = self.step_size - add
+                pk = np.concatenate((pk, [pk[-1]] * to_add))
+                weight = np.concatenate((weight, [0] * to_add))
+            pk = pk.reshape((-1, self.step_size))
+            weight = weight.reshape((-1, self.step_size))
+
+            # Take the average of every group of step_size rows to rebin
+            self.w_pk = np.average(pk, axis=1, weights=weight)
         self.logger.info(f"Loaded winpk with shape {self.w_pk.shape}")
 
     def get_data(self):
@@ -124,9 +149,15 @@ class MockIndividualBAOExtractorPowerSpectrum(Dataset):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
+    from barry.framework.cosmology.camb_generator import CambGenerator
 
     # Some basic checks for data we expect to be there
-    MockIndividualBAOExtractorPowerSpectrum(step_size=2)
+    c = CambGenerator()
+    r_s, _ = c.get_data()
+    dataset = MockBAOExtractorPowerSpectrum(r_s, step_size=2)
+    data = dataset.get_data()
+    print(data["ks"])
+
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30)
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30, step_size=1)
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30, step_size=2, recon=False)

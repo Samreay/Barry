@@ -129,8 +129,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     bao = PowerPolynomial(fit_omega_m=True)
 
-    from barry.framework.datasets.mock_power import MockAveragePowerSpectrum
-    dataset = MockAveragePowerSpectrum()
+    from barry.framework.datasets.mock_power import MockPowerSpectrum
+    dataset = MockPowerSpectrum(step_size=2)
     data = dataset.get_data()
     bao.set_data(data)
 

@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def extract_bao(ks, pk, r_s, delta=0.5):
+def extract_bao(ks, pk, r_s, delta=0.5, plot=False):
     """ Runs the BAO Extractor method and returns the extracted BAO signal.
 
     Warning that this is the estimator given in Eq5 Nishimichi et al 2018 (1708.00375)
@@ -33,7 +33,15 @@ def extract_bao(ks, pk, r_s, delta=0.5):
         mask = k_diff < k_range
         numerator = (1 - (pk[mask] / p)).sum()
         denominator = (1 - np.cos(r_s * (ks[mask] - k))).sum()
-        result.append(numerator / denominator)
+        res = numerator / denominator
+        result.append(res)
+
+    if plot:
+        import matplotlib.pyplot as plt
+        fig, axes = plt.subplots(nrows=2, figsize=(5, 7))
+        axes[0].plot(ks, pk, label="Input")
+        axes[1].plot(ks, result, label="Output")
+        plt.show()
 
     return k_range, np.array(result)
 
