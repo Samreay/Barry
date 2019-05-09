@@ -21,11 +21,11 @@ class BAOExtractor(Model):
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2)  # Stretch
         self.add_param("sigma_nl", r"$\Sigma_{nl}$", 1.0, 20.0)  # dampening
         self.add_param("b", r"$b$", 0.01, 10.0)  # Bias
-        self.add_param("a1", r"$a_1$", -50000.0, 50000.0)  # Polynomial marginalisation 1
-        self.add_param("a2", r"$a_2$", -50000.0, 50000.0)  # Polynomial marginalisation 2
-        self.add_param("a3", r"$a_3$", -50000.0, 50000.0)  # Polynomial marginalisation 3
-        self.add_param("a4", r"$a_4$", -1000.0, 1000.0)  # Polynomial marginalisation 4
-        self.add_param("a5", r"$a_5$", -10.0, 10.0)  # Polynomial marginalisation 5
+        # self.add_param("a1", r"$a_1$", -50000.0, 50000.0)  # Polynomial marginalisation 1
+        # self.add_param("a2", r"$a_2$", -50000.0, 50000.0)  # Polynomial marginalisation 2
+        # self.add_param("a3", r"$a_3$", -50000.0, 50000.0)  # Polynomial marginalisation 3
+        # self.add_param("a4", r"$a_4$", -1000.0, 1000.0)  # Polynomial marginalisation 4
+        # self.add_param("a5", r"$a_5$", -10.0, 10.0)  # Polynomial marginalisation 5
 
         # Set up data structures for model fitting
         self.h0 = 0.6751
@@ -37,7 +37,7 @@ class BAOExtractor(Model):
 
         self.nice_data = None  # Place to store things like invert cov matrix
 
-    def compute_power_spectrum(self, k, om, alpha, sigma_nl, b, a1, a2, a3, a4, a5):
+    def compute_power_spectrum(self, k, om, alpha, sigma_nl, b):
         """ Computes the correlation function at distance d given the supplied params
         
         Parameters
@@ -86,10 +86,10 @@ class BAOExtractor(Model):
         pk_ratio_dewiggled = 1.0 + (pk_ratio - 1) * np.exp(-0.5 * (ks * sigma_nl)**2)
 
         # Polynomial shape
-        shape = a1 * k + a2 + a3 / k + a4 / (k * k) + a5 / (k ** 3)
+        #shape = a1 * k + a2 + a3 / k + a4 / (k * k) + a5 / (k ** 3)
 
         # Combine everything. Weirdly. With lots of spline interpolation.
-        pk_final = (splev(k, splrep(ks, b * pk_smooth)) + shape) * splev(k / alpha, splrep(ks, pk_ratio_dewiggled))
+        pk_final = (splev(k, splrep(ks, b * pk_smooth))) * splev(k / alpha, splrep(ks, pk_ratio_dewiggled))
 
         return pk_final
 
@@ -103,9 +103,9 @@ class BAOExtractor(Model):
         # Get the subsection of our model which corresponds to the data k values
         return pk_normalised, self.data["w_mask"]
 
-    def get_model(self, data, om, alpha, sigma_nl, b, a1, a2, a3, a4, a5):
+    def get_model(self, data, om, alpha, sigma_nl, b):
         # Get the generic pk model
-        pk_generated = self.compute_power_spectrum(data["ks_input"], om, alpha, sigma_nl, b, a1, a2, a3, a4, a5)
+        pk_generated = self.compute_power_spectrum(data["ks_input"], om, alpha, sigma_nl, b)
 
         # Morph it into a model representative of our survey and its selection/window/binning effects
         pk_windowed, mask = self.adjust_model_window_effects(pk_generated)
@@ -118,12 +118,12 @@ class BAOExtractor(Model):
 
         d = self.data
         if self.fit_omega_m:
-            om, alpha, sigma_nl, b, a1, a2, a3, a4, a5 = params
+            om, alpha, sigma_nl, b = params
         else:
-            alpha, sigma_nl, b, a1, a2, a3, a4, a5 = params
+            alpha, sigma_nl, b = params
             om = 0.3121
 
-        pk_model = self.get_model(d, om, alpha, sigma_nl, b, a1, a2, a3, a4, a5)
+        pk_model = self.get_model(d, om, alpha, sigma_nl, b)
 
         # Compute the chi2
         diff = (d["pk"] - pk_model)
@@ -154,7 +154,7 @@ if __name__ == "__main__":
     if True:
         ks = data["ks"]
         pk = data["pk"]
-        pk2 = bao.get_model(data, 0.3, 1, 5, 1, 0, 0, 0, 0, 0)
+        pk2 = bao.get_model(data, 0.3, 1, 5, 1)
         import matplotlib.pyplot as plt
         plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k', label="Data")
         plt.plot(ks, pk2, '-', c='r', label="Model")

@@ -185,5 +185,7 @@ class Fitter(object):
             weight = result[:, 1]
             chain = result[:, 2:]
             finals.append((posterior, weight, chain, model, sim))
-        self.logger.info("Loaded chains")
+        self.logger.info(f"Loaded {len(finals)} chains")
+        if len(finals) == 1:
+            self.logger.info(f"Chain has shape {finals[0][2].shape}")
         return finals
