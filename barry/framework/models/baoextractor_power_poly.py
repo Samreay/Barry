@@ -10,7 +10,7 @@ from barry.framework.model import Model
 
 class BAOExtractor(Model):
 
-    def __init__(self, r_s, fit_omega_m=False, name="BAO Power Spectrum Polynomial Fit"):
+    def __init__(self, r_s, fit_omega_m=False, name="BAO Extractor Power Spectrum Polynomial Fit"):
         super().__init__(name)
 
         self.r_s_fiducial = r_s

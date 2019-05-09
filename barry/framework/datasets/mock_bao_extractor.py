@@ -9,7 +9,7 @@ from barry.framework.dataset import Dataset
 
 
 class MockIndividualBAOExtractorPowerSpectrum(Dataset):
-    def __init__(self, r_s, delta=0.5, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True, reduce_cov_factor=1, name="BAOExtractor"):
+    def __init__(self, r_s, delta=0.5, average=True, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True, reduce_cov_factor=1, name="BAOExtractor"):
         super().__init__(name)
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + "/../../data/taipan_mocks/mock_individual/")
@@ -20,6 +20,7 @@ class MockIndividualBAOExtractorPowerSpectrum(Dataset):
         self.realisation = realisation
         self.r_s = r_s
         self.delta = delta
+        self.average = average
 
         self.data_filename = os.path.abspath(self.data_location + "/taipan_mock_lpow.pkl")
 
@@ -29,8 +30,14 @@ class MockIndividualBAOExtractorPowerSpectrum(Dataset):
         with open(self.data_filename, "rb") as f:
             self.all_data = pickle.load(f)["post-recon" if recon else "pre-recon"]
 
-        self.full_data = self.all_data[realisation]
-        self.ks, self.data = self._rebin_data(self.full_data)
+        self.rebinned = [self._rebin_data(df) for df in self.all_data]
+        self.ks = self.rebinned[0][0]
+        self.pks_all = [x[1] for x in self.rebinned]
+
+        if self.average:
+            self.data = self._get_data_avg()
+        else:
+            self.data = self.pks_all[realisation]
 
         winfit_file = os.path.abspath(self.data_location + f"/../taipanmock_year1_mock_rand_cullan.winfit_{step_size}")
         self._load_winfit(winfit_file)
@@ -39,7 +46,7 @@ class MockIndividualBAOExtractorPowerSpectrum(Dataset):
         self._load_winpk_file(winpk_file)
 
         self.logger.debug(f"Computing cov")
-        self.cov = self._compute_cov(self.all_data)
+        self.cov = self._compute_cov()
 
         self.logger.info(f"Computed cov {self.cov.shape}")
         if reduce_cov_factor != 1:
@@ -47,10 +54,13 @@ class MockIndividualBAOExtractorPowerSpectrum(Dataset):
             self.cov /= reduce_cov_factor
         self.icov = np.linalg.inv(self.cov)
 
-    def _compute_cov(self, all_data):
-        pks = np.array([self._rebin_data(df)[1] for df in all_data])
+    def _compute_cov(self):
+        pks = np.array(self.pks_all)
         cov = np.cov(pks.T)
         return cov
+
+    def _get_data_avg(self):
+        return np.array(self.pks_all).mean(axis=0)
 
     def _rebin_data(self, dataframe):
         k = dataframe["k"].values.reshape((-1, self.step_size))
@@ -62,7 +72,6 @@ class MockIndividualBAOExtractorPowerSpectrum(Dataset):
         pk_rebinned = np.average(pk, axis=1, weights=weight)
 
         mask = (k_rebinned >= self.min_k) & (k_rebinned <= self.max_k)
-
 
         k_fin, p_fin = k_rebinned[mask], pk_rebinned[mask]
         _, p_extracted = extract_bao(k_fin, p_fin, r_s=self.r_s, delta=self.delta)
