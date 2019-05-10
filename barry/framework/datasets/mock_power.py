@@ -59,7 +59,7 @@ class MockPowerSpectrum(Dataset):
     def _get_data_avg(self):
         return np.array(self.pks_all).mean(axis=0)
 
-    def _rebin_data(self, dataframe):
+    def _agg_data(self, dataframe):
 
         k = dataframe["k"].values
         pk = dataframe["pk"].values
@@ -82,9 +82,11 @@ class MockPowerSpectrum(Dataset):
             pk_rebinned = np.average(pk, axis=1, weights=weight)
 
         mask = (k_rebinned >= self.min_k) & (k_rebinned <= self.max_k)
+        return k_rebinned, pk_rebinned, mask
 
-        k_fin, p_fin = k_rebinned[mask], pk_rebinned[mask]
-        return k_fin, p_fin
+    def _rebin_data(self, dataframe):
+        k_rebinned, pk_rebinned, mask = self._agg_data(dataframe)
+        return k_rebinned[mask], pk_rebinned[mask]
 
     def _load_winfit(self, winfit_file):
         # TODO: Add documentation when I figure out how this works
@@ -121,7 +123,6 @@ class MockPowerSpectrum(Dataset):
                 to_add = self.step_size - add
                 pk = np.concatenate((pk, [pk[-1]] * to_add))
                 weight = np.concatenate((weight, [0] * to_add))
-
             pk = pk.reshape((-1, self.step_size))
             weight = weight.reshape((-1, self.step_size))
 
@@ -151,10 +152,14 @@ if __name__ == "__main__":
     # Some basic checks for data we expect to be there
     c = CambGenerator()
     r_s, _ = c.get_data()
-    dataset = MockBAOExtractorPowerSpectrum(r_s, step_size=2)
+    dataset = MockPowerSpectrum(r_s, step_size=2)
     data = dataset.get_data()
     print(data["ks"])
 
+    import matplotlib.pyplot as plt
+    import numpy as np
+    plt.errorbar(data["ks"], data["pk"], yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
+    plt.show()
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30)
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30, step_size=1)
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30, step_size=2, recon=False)

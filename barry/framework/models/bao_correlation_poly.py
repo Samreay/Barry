@@ -15,9 +15,9 @@ class CorrelationPolynomial(Model):
     def __init__(self, fit_omega_m=False, smooth_type="hinton2017", name="BAO Correlation Polynomial Fit"):
         super().__init__(name)
 
-        self.smooth_type=smooth_type
-        if ((smooth_type != "hinton2017") and (smooth_type != "eh1998")):
-            print("smooth_type not recognised, must be either: 'hinton2017' (default) or 'eh1998'.")
+        self.smooth_type = smooth_type.lower()
+        if (self.smooth_type != "hinton2017") and (self.smooth_type != "eh1998"):
+            self.logger.error("smooth_type not recognised, must be either: 'hinton2017' (default) or 'eh1998'.")
             exit(0)
 
         # Define parameters
@@ -43,28 +43,16 @@ class CorrelationPolynomial(Model):
 
         self.nice_data = None  # Place to store things like invert cov matrix
 
-    def compute_correlation_function(self, d, om, alpha, sigma_nl, b, a1, a2, a3):
+    def compute_correlation_function(self, d, p):
         """ Computes the correlation function at distance d given the supplied params
         
         Parameters
         ----------
         d : array
             Array of distances in the correlation function to compute
-        om : float
-            Omega_m
-        alpha : float
-            Scale applied to distances
-        sigma_nl : float
-            Dewiggling transition
-        b : float
-            Linear bias
-        a1 : float
-            Polynomial shape 1
-        a2 : float
-            Polynomial shape 2
-        a3 : float
-            Polynomial shape 3
-        
+        params : dict
+            dictionary of parameter name to float value pairs
+
         Returns
         -------
         array
@@ -74,41 +62,35 @@ class CorrelationPolynomial(Model):
         # Get base linear power spectrum from camb
         ks = self.camb.ks
         if self.fit_omega_m:
-            r_s, pk_lin = self.camb.get_data(om=om, h0=self.h0)
+            r_s, pk_lin = self.camb.get_data(om=p["om"], h0=self.h0)
         else:
             pk_lin = self.pk_lin
 
         # Get the smoothed power spectrum
-        if (self.smooth_type == "hinton2017"):
+        if self.smooth_type == "hinton2017":
             pk_smooth = smooth_hinton2017(ks, pk_lin)
-        elif (self.smooth_type == "eh1998"):
-            pk_smooth = smooth_eh1998(ks, pk_lin, om=om, h0=self.h0)
         else:
-            print("self.smooth_type not recognised, must be either: 'hinton2017' (default) or 'eh1998'.")
-            exit(0)
+            pk_smooth = smooth_eh1998(ks, pk_lin, om=p["om"], h0=self.h0)
 
         # Blend the two
-        pk_linear_weight = np.exp(-0.5 * (ks * sigma_nl)**2)
+        pk_linear_weight = np.exp(-0.5 * (ks * p["sigma_nl"])**2)
         pk_dewiggled = pk_linear_weight * pk_lin + (1 - pk_linear_weight) * pk_smooth
 
         # Convert to correlation function and take alpha into account
-        xi = self.pk2xi.pk2xi(ks, pk_dewiggled, d * alpha)
+        xi = self.pk2xi.pk2xi(ks, pk_dewiggled, d * p["alpha"])
 
         # Polynomial shape
-        shape = a1 / (d ** 2) + a2 / d + a3
+        shape = p["a1"] / (d ** 2) + p["a2"] / d + p["a3"]
 
         # Add poly shape to xi model, include bias correction
-        model = xi * b + shape
+        model = xi * p["b"] + shape
         return model
 
-    def get_likelihood(self, *params):
+    def get_likelihood(self, params):
         d = self.data
-        if self.fit_omega_m:
-            om, alpha, sigma_nl, b, a1, a2, a3 = params
-        else:
-            alpha, sigma_nl, b, a1, a2, a3 = params
-            om = 0.3121
-        xi_model = self.compute_correlation_function(d["dist"], om, alpha, sigma_nl, b, a1, a2, a3)
+        if not self.fit_omega_m:
+            params["om"] = 0.3121
+        xi_model = self.compute_correlation_function(d["dist"], params)
 
         diff = (d["xi"] - xi_model)
         chi2 = diff.T @ d["icov"] @ diff
