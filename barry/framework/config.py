@@ -1,4 +1,4 @@
 def get_config():
     return {
-        "conda_env": "sam35"
+        "conda_env": "Barry"
     }

@@ -19,7 +19,9 @@ if __name__ == "__main__":
 
     if fitter.is_laptop():  # As I'm not sure if the cluster has matplotlib
         from chainconsumer import ChainConsumer
-        posterior, weight, chain, model, data = fitter.load()
+        res, = fitter.load()
+
+        posterior, weight, chain, model, data = res
         labels = model.get_labels()
         c = ChainConsumer()
         c.add_chain(chain, weights=weight, parameters=labels)

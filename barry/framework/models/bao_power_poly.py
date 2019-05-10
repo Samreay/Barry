@@ -2,15 +2,23 @@ import logging
 import numpy as np
 from scipy.interpolate import splev, splrep, interp1d
 
+import sys
+sys.path.append("../../..")
+
 from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.cosmology.power_spectrum_smoothing import smooth_hinton2017
+from barry.framework.cosmology.power_spectrum_smoothing import smooth_hinton2017, smooth_eh1998
 from barry.framework.model import Model
 
 
 class PowerPolynomial(Model):
 
-    def __init__(self, fit_omega_m=False, name="BAO Power Spectrum Polynomial Fit"):
+    def __init__(self, fit_omega_m=False, smooth_type="hinton2017", name="BAO Power Spectrum Polynomial Fit"):
         super().__init__(name)
+
+        self.smooth_type=smooth_type
+        if ((smooth_type != "hinton2017") and (smooth_type != "eh1998")):
+            print("smooth_type not recognised, must be either: 'hinton2017' (default) or 'eh1998'.")
+            exit(0)
 
         # Define parameters
         self.fit_omega_m = fit_omega_m
@@ -75,7 +83,13 @@ class PowerPolynomial(Model):
             pk_lin = self.pk_lin
 
         # Get the smoothed power spectrum
-        pk_smooth = smooth_hinton2017(ks, pk_lin)
+        if (self.smooth_type == "hinton2017"):
+            pk_smooth = smooth_hinton2017(ks, pk_lin)
+        elif (self.smooth_type == "eh1998"):
+            pk_smooth = smooth_eh1998(ks, pk_lin, om=om, h0=self.h0)
+        else:
+            print("self.smooth_type not recognised, must be either: 'hinton2017' (default) or 'eh1998'.")
+            exit(0)
 
         # Get the ratio
         pk_ratio = pk_lin / pk_smooth
@@ -147,7 +161,10 @@ if __name__ == "__main__":
         ks = data["ks"]
         pk = data["pk"]
         pk2 = bao.compute_power_spectrum(ks, 0.3, 1, 5, 1, 0, 0, 0, 0, 0)
+        bao.smooth_type="eh1998"
+        pk3 = bao.compute_power_spectrum(ks, 0.3, 1, 5, 1, 0, 0, 0, 0, 0)
         import matplotlib.pyplot as plt
         plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
         plt.plot(ks, pk2, '.', c='r')
+        plt.plot(ks, pk3, '+', c='b')
         plt.show()
