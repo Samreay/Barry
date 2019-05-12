@@ -49,7 +49,7 @@ class PTGenerator(object):
         smoothing_kernel = np.exp(-self.CambGenerator.ks**2*self.smoothing_scale**2/4.0)
 
         # Run CambGenerator.get_data once to ensure the data is loaded under CambGenerator.data
-        pk_lin = self.CambGenerator.get_data() 
+        _, _ = self.CambGenerator.get_data()
 
         # Generate a grid of values for R1 and R2
         r = np.outer(self.CambGenerator.ks,1.0/self.CambGenerator.ks)
@@ -73,7 +73,7 @@ class PTGenerator(object):
                 self.logger.debug("Generating %d:%d  %0.3f  %0.3f" % (i, j, omch2, h0))
 
                 # Get the Camb power spectrum and spline it
-                pk_lin = self.CambGenerator.data[i,j,0:]
+                pk_lin = self.CambGenerator.data[i,j,1:]
 
                 # Sigma^2
                 data[i, j, 0] = integrate.simps(pk_lin,self.CambGenerator.ks)/(3.0*np.pi**2)
@@ -146,15 +146,15 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
-    generator = CambGenerator()
-    generator = CambGenerator(om_resolution=50, h0_resolution=50)
-    PT_generator_10 = PTGenerator(generator)
-    PT_generator_15 = PTGenerator(generator, smoothing_scale=15.0)
 
     import timeit
     n = 10000
     print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
     import matplotlib.pyplot as plt
+
+    generator = CambGenerator(om_resolution=20, h0_resolution=1)
+    PT_generator_10 = PTGenerator(generator)
+    PT_generator_15 = PTGenerator(generator, smoothing_scale=15.0)
 
     plt.plot(PT_generator_10.CambGenerator.ks, PT_generator_10.get_data(0.3)[3])
     plt.plot(PT_generator_10.CambGenerator.ks, PT_generator_10.get_data(0.3)[4])
