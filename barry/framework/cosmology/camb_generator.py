@@ -131,19 +131,19 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
-    generator = CambGenerator(om_resolution=10, h0_resolution=1)
+    generator = CambGenerator(om_resolution=20, h0_resolution=1)
     generator.get_data(0.3)
     # generator = CambGenerator()
     # generator = CambGenerator(om_resolution=50, h0_resolution=1)
     # generator = CambGenerator(om_resolution=10, h0_resolution=10)
     # generator = CambGenerator(om_resolution=50, h0_resolution=50)
-    #
-    # import timeit
-    # n = 10000
-    # print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
-    # import matplotlib.pyplot as plt
-    # plt.plot(generator.ks, generator.get_data(0.3)[1])
-    # plt.plot(generator.ks, generator.get_data(0.2)[1])
-    # plt.xscale("log")
-    # plt.yscale("log")
-    # plt.show()
+
+    import timeit
+    n = 10000
+    print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
+    import matplotlib.pyplot as plt
+    plt.plot(generator.ks, generator.get_data(0.3)[1])
+    plt.plot(generator.ks, generator.get_data(0.2)[1])
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.show()
