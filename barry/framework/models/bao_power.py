@@ -1,7 +1,7 @@
 from scipy.interpolate import splev, splrep
 
 from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.cosmology.power_spectrum_smoothing import smooth_hinton2017, smooth_eh1998
+from barry.framework.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
 from barry.framework.model import Model
 import numpy as np
 
@@ -10,8 +10,7 @@ class PowerSpectrumFit(Model):
     def __init__(self, fit_omega_m=False, smooth_type="hinton2017", name="Base Power Spectrum Fit"):
         super().__init__(name)
         self.smooth_type = smooth_type.lower()
-        if (self.smooth_type != "hinton2017") and (self.smooth_type != "eh1998"):
-            self.logger.error("smooth_type not recognised, must be either: 'hinton2017' (default) or 'eh1998'.")
+        if not validate_smooth_method(smooth_type):
             exit(0)
         self.fit_omega_m = fit_omega_m
 
@@ -57,10 +56,7 @@ class PowerSpectrumFit(Model):
             pk_lin = self.pk_lin
 
         # Get the smoothed power spectrum
-        if self.smooth_type == "hinton2017":
-            pk_smooth = smooth_hinton2017(ks, pk_lin)
-        else:
-            pk_smooth = smooth_eh1998(ks, pk_lin, om=p["om"], h0=self.h0)
+        pk_smooth = smooth(ks, pk_lin, method=self.smooth_type, om=p["om"], h0=self.h0)
 
         # Get the ratio
         pk_ratio = pk_lin / pk_smooth

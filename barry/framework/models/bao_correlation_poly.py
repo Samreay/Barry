@@ -6,7 +6,7 @@ sys.path.append("../../..")
 
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.cosmology.pk2xi import PowerToCorrelationFT, PowerToCorrelationGauss
-from barry.framework.cosmology.power_spectrum_smoothing import smooth_hinton2017, smooth_eh1998
+from barry.framework.cosmology.power_spectrum_smoothing import validate_smooth_method, smooth
 from barry.framework.model import Model
 
 
@@ -16,8 +16,7 @@ class CorrelationPolynomial(Model):
         super().__init__(name)
 
         self.smooth_type = smooth_type.lower()
-        if (self.smooth_type != "hinton2017") and (self.smooth_type != "eh1998"):
-            self.logger.error("smooth_type not recognised, must be either: 'hinton2017' (default) or 'eh1998'.")
+        if not validate_smooth_method(smooth_type):
             exit(0)
 
         # Define parameters
@@ -67,10 +66,7 @@ class CorrelationPolynomial(Model):
             pk_lin = self.pk_lin
 
         # Get the smoothed power spectrum
-        if self.smooth_type == "hinton2017":
-            pk_smooth = smooth_hinton2017(ks, pk_lin)
-        else:
-            pk_smooth = smooth_eh1998(ks, pk_lin, om=p["om"], h0=self.h0)
+        pk_smooth = smooth(ks, pk_lin, method=self.smooth_type, om=p["om"], h0=self.h0)
 
         # Blend the two
         pk_linear_weight = np.exp(-0.5 * (ks * p["sigma_nl"])**2)
