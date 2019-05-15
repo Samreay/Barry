@@ -2,7 +2,7 @@ import os
 import logging
 import inspect
 import pickle
-
+import numpy as np
 from barry.framework.dataset import Dataset
 
 
