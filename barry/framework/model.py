@@ -44,7 +44,7 @@ class Model(ABC):
     def get_start(self):
         return [uniform(x.min, x.max) for x in self.params]
 
-    def get_posterior(self, *params):
+    def get_posterior(self, params):
         ps = OrderedDict([(p.name, v) for p, v in zip(self.params, params)])
         prior = self.get_prior(ps)
         if not np.isfinite(prior):
