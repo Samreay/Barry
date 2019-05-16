@@ -60,7 +60,7 @@ class PTGenerator(object):
         # Run CAMBGenerator.get_data once to ensure the data is loaded under CAMBGenerator.data
         _, _ = self.CAMBGenerator.get_data()
 
-        # Generate a grid of values for R1 and R2
+        # Generate a grid of values for R1, R2, Imn and Jmn
         r = np.outer(self.CAMBGenerator.ks,1.0/self.CAMBGenerator.ks)
         R1 = -(1.0 + r**2)/(24.0*r**2)*(3.0 - 14.0*r**2 + 3.0*r**4) + (r**2-1.0)**4/(16.0*r**3)*np.log(np.fabs((1.0+r)/(1.0-r)))
         R2 =  (1.0 - r**2)/(24.0*r**2)*(3.0 -  2.0*r**2 + 3.0*r**4) + (r**2-1.0)**3*(1.0+r**2)/(16.0*r**3)*np.log(np.fabs((1.0+r)/(1.0-r)))
@@ -178,10 +178,10 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     nvals = 100
-    sigmas = np.empty((nvals, 8))
+    sigmas = np.empty((nvals, 9))
     oms = np.linspace(0.2,0.4,nvals)
     for i, om in enumerate(oms):
-        sigmas[i] = PT_generator.get_data(om)[0:8]
+        sigmas[i] = PT_generator.get_data(om)[0:9]
 
     plt.plot(oms, sigmas[0:, 0], label=r"$\Sigma^{2}$")
     plt.plot(oms, sigmas[0:, 1], label=r"$\Sigma^{2}_{dd}$")
@@ -207,8 +207,8 @@ if __name__ == "__main__":
     plt.show()
 
     growth = 0.3**0.55
-    part1 = 1.0 + 3.0 / 7.0 * ((PT_generator.get_data(0.3)[8] * (1.0 - 4.0 / 9.0)) + PT_generator.get_data(0.3)[9])
-    part2 = growth + 3.0 / 7.0 * growth * PT_generator.get_data(0.3)[8] * (2.0 - 1.0 / (3.0)) + 6.0 / 7.0 * growth * PT_generator.get_data(0.3)[9]
+    part1 = 1.0 + 3.0 / 7.0 * ((PT_generator.get_data(0.3)[9] * (1.0 - 4.0 / 9.0)) + PT_generator.get_data(0.3)[10])
+    part2 = growth + 3.0 / 7.0 * growth * PT_generator.get_data(0.3)[9] * (2.0 - 1.0 / (3.0)) + 6.0 / 7.0 * growth * PT_generator.get_data(0.3)[10]
     damping = np.exp(-PT_generator.CAMBGenerator.ks**2*(1.0 + (2.0 + growth)*growth)*PT_generator.get_data(0.3)[0]/2.0)
 
     #plt.plot(PT_generator.CAMBGenerator.ks, generator.get_data(0.3)[1])
