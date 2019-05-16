@@ -5,7 +5,7 @@ from barry.framework.cosmology.power_spectrum_smoothing import smooth, validate_
 from barry.framework.model import Model
 import numpy as np
 
-
+# TODO: make h0 and omega_m more easily changable if we are not fitting them
 class PowerSpectrumFit(Model):
     def __init__(self, fit_omega_m=False, smooth_type="hinton2017", name="Base Power Spectrum Fit"):
         super().__init__(name)
@@ -28,10 +28,10 @@ class PowerSpectrumFit(Model):
         if self.fit_omega_m:
             self.add_param("om", r"$\Omega_m$", 0.1, 0.5)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2)  # Stretch
-        self.add_param("sigma_nl", r"$\Sigma_{nl}$", 1.0, 20.0)  # dampening
+        self.add_param("b", r"$b$", 0.8, 1.2)  # bias
 
     def compute_basic_power_spectrum(self, ks, p):
-        """ Computes the correlation function at distance d given the supplied params
+        """ Computes the smoothed, linear power spectrum and the wiggle ratio
 
         Parameters
         ----------
@@ -56,19 +56,33 @@ class PowerSpectrumFit(Model):
             pk_lin = self.pk_lin
 
         # Get the smoothed power spectrum
-        pk_smooth = smooth(ks, pk_lin, method=self.smooth_type, om=p["om"], h0=self.h0)
+        pk_smooth_lin = smooth(ks, pk_lin, method=self.smooth_type, om=p["om"], h0=self.h0)
 
         # Get the ratio
-        pk_ratio = pk_lin / pk_smooth
+        pk_ratio = (pk_lin / pk_smooth_lin - 1.0)
 
-        # Smooth the ratio based on sigma_nl
-        pk_ratio_dewiggled = 1.0 + (pk_ratio - 1) * np.exp(-0.5 * (ks * p["sigma_nl"]) ** 2)
-        return pk_smooth, pk_ratio_dewiggled
+        return pk_smooth_lin, pk_ratio
 
     def compute_power_spectrum(self, k, p):
+        """ Returns the wiggle ratio interpolated at some k/alpha values. Useful if we only want alpha to modify
+            the BAO feature and not the smooth component.
+
+        Parameters
+        ----------
+        k : np.ndarray
+            Array of wavenumbers to compute.
+        p : dict
+            dictionary of parameter names to their values
+
+        Returns
+        -------
+        array
+            pk_final - the ratio (pk_lin / pk_smooth - 1.0),  interpolated to k/alpha.
+
+        """
         ks = self.camb.ks
         pk_smooth, pk_ratio_dewiggled = self.compute_basic_power_spectrum(ks, p)
-        pk_final = (splev(k, splrep(ks, pk_smooth))) * splev(k / p["alpha"], splrep(ks, pk_ratio_dewiggled))
+        pk_final = splev(k / p["alpha"], splrep(ks, pk_ratio_dewiggled))
         return pk_final
 
     def adjust_model_window_effects(self, pk_generated):
