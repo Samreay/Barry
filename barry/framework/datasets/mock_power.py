@@ -1,9 +1,8 @@
 import os
-import numpy as np
 import logging
 import inspect
 import pickle
-
+import numpy as np
 from barry.framework.dataset import Dataset
 
 

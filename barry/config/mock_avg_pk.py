@@ -5,7 +5,7 @@ sys.path.append("../..")
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.config.base import setup
 from barry.framework.fitter import Fitter
-from barry.framework.datasets.mock_power import MockAveragePowerSpectrum
+from barry.framework.datasets.mock_power import MockPowerSpectrum
 from barry.framework.models.bao_power_poly import PowerPolynomial
 
 if __name__ == "__main__":
@@ -13,8 +13,8 @@ if __name__ == "__main__":
 
     models = [PowerPolynomial(fit_omega_m=False, name="PolyPk (NoOm)")]
 
-    datas = [MockAveragePowerSpectrum(name="MockAvgPk 02-30 Recon", recon=True, min_k=0.02, max_k=0.30),
-             MockAveragePowerSpectrum(name="MockAvgPk 02-30", recon=False, min_k=0.02, max_k=0.30)]
+    datas = [MockPowerSpectrum(name="MockAvgPk 02-30 Recon", recon=True, min_k=0.02, max_k=0.30),
+             MockPowerSpectrum(name="MockAvgPk 02-30", recon=False, min_k=0.02, max_k=0.30)]
 
     sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name, save_interval=30)
 
