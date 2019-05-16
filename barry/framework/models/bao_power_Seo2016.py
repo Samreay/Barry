@@ -1,10 +1,12 @@
 import logging
 import numpy as np
 from scipy.interpolate import splev, splrep
+from scipy.integrate import simps
 import sys
 sys.path.append("../../..")
 from barry.framework.models.bao_power import PowerSpectrumFit
 from barry.framework.cosmology.PT_generator import PTGenerator
+
 
 class PowerSeo2016(PowerSpectrumFit):
 
@@ -46,8 +48,6 @@ class PowerSeo2016(PowerSpectrumFit):
         
         """
 
-        from scipy import integrate
-
         # Get the basic power spectrum components
         ks = self.camb.ks
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(ks, p)
@@ -88,7 +88,7 @@ class PowerSeo2016(PowerSpectrumFit):
         pk_smooth = p["b"]**2*pk_smooth_lin*fog
 
         # Integrate over mu
-        pk1d = integrate.simps(pk_smooth*(1.0 + pk_ratio*propagator), mu, axis=0)
+        pk1d = simps(pk_smooth*(1.0 + pk_ratio*propagator), mu, axis=0)
 
         # Polynomial shape
         if self.recon:
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     n = 500
 
     def test():
-        model.get_likelihood(p)
+        model_post.get_likelihood(p)
 
     #print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
