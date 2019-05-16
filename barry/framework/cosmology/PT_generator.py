@@ -170,7 +170,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
     generator = CambGenerator()
-    PT_generator = PTGenerator(generator)
+    PT_generator = PTGenerator(generator, recon_smoothing_scale=21.21)
 
     import timeit
     n = 10000

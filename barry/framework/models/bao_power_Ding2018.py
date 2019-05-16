@@ -8,7 +8,7 @@ from barry.framework.cosmology.PT_generator import PTGenerator
 
 class PowerDing2018(PowerSpectrumFit):
 
-    def __init__(self, fit_omega_m=False, fit_growth=False, smooth_type="hinton2017", recon=False, recon_smoothing_scale=10.0, name="BAO Power Spectrum Polynomial Fit"):
+    def __init__(self, fit_omega_m=False, fit_growth=False, smooth_type="hinton2017", recon=False, recon_smoothing_scale=10.0, name="BAO Power Spectrum Ding 2018 Fit"):
         self.recon = recon
         self.recon_smoothing_scale = recon_smoothing_scale
         self.fit_growth = fit_growth

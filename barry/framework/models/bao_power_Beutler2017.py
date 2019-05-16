@@ -8,7 +8,7 @@ from barry.framework.models.bao_power import PowerSpectrumFit
 
 class PowerBeutler2017(PowerSpectrumFit):
 
-    def __init__(self, fit_omega_m=False, smooth_type="hinton2017", recon=False, name="BAO Power Spectrum Polynomial Fit"):
+    def __init__(self, fit_omega_m=False, smooth_type="hinton2017", recon=False, name="BAO Power Spectrum Beutler 2017 Fit"):
         super().__init__(fit_omega_m=fit_omega_m, smooth_type=smooth_type, name=name)
 
         self.recon = recon
