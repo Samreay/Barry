@@ -55,7 +55,7 @@ class PowerDing2018(PowerSpectrumFit):
         if self.fit_omega_m:
             _, _, _, sigma_nl, sigma_dd_nl, sigma_sd_nl, sigma_ss_nl, _, _, _, _ = self.PT.get_data(om=p["om"])
         else:
-            sigma_nl, sigma_dd_nl, sigma_sd_nl, sigma_ss_nl = self.sigma, self.sigma_dd_nl, self.sigma_sd_nl, self.sigma_ss_nl
+            sigma_nl, sigma_dd_nl, sigma_sd_nl, sigma_ss_nl = self.sigma_nl, self.sigma_dd_nl, self.sigma_sd_nl, self.sigma_ss_nl
 
         # Compute the growth rate depending on what we have left as free parameters
         if self.fit_growth:

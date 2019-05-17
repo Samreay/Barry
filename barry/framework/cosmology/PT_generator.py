@@ -62,6 +62,8 @@ class PTGenerator(object):
 
         # Generate a grid of values for R1, R2, Imn and Jmn
         r = np.outer(self.CAMBGenerator.ks,1.0/self.CAMBGenerator.ks)
+        x = 1.0 + np.tile(r**2,(self.CAMBGenerator.k_num)) - r**2
+
         R1 = -(1.0 + r**2)/(24.0*r**2)*(3.0 - 14.0*r**2 + 3.0*r**4) + (r**2-1.0)**4/(16.0*r**3)*np.log(np.fabs((1.0+r)/(1.0-r)))
         R2 =  (1.0 - r**2)/(24.0*r**2)*(3.0 -  2.0*r**2 + 3.0*r**4) + (r**2-1.0)**3*(1.0+r**2)/(16.0*r**3)*np.log(np.fabs((1.0+r)/(1.0-r)))
 
