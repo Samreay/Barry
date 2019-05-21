@@ -1,10 +1,12 @@
 import logging
 import numpy as np
 from scipy.interpolate import splev, splrep
+from scipy import integrate
 import sys
 sys.path.append("../../..")
 from barry.framework.models.bao_power import PowerSpectrumFit
 from barry.framework.cosmology.PT_generator import PTGenerator
+
 
 class PowerDing2018(PowerSpectrumFit):
 
@@ -46,9 +48,6 @@ class PowerDing2018(PowerSpectrumFit):
             pk_final - The power spectrum at the dilated k-values
         
         """
-
-        from scipy import integrate
-
         # Get the basic power spectrum components
         ks = self.camb.ks
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(ks, p)
@@ -122,7 +121,7 @@ if __name__ == "__main__":
     data = dataset.get_data()
     model_pre.set_data(data)
     model_post.set_data(data)
-    p = {"om": 0.3, "alpha": 1.0, "sigma_s":10.0, "b": 1, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
+    p = {"om": 0.3, "alpha": 1.0, "sigma_s": 10.0, "b": 1, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
 
     import timeit
     n = 100
