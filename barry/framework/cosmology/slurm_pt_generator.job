@@ -4,7 +4,7 @@
 #SBATCH --mem-per-cpu=4GB
 #SBATCH -t 04:00:00
 #SBATCH -o zlog.o%j
-#SBATCH -n 50
+#SBATCH -n 5
 
 module load openmpi-x86_64
 conda deactivate
@@ -12,4 +12,4 @@ conda activate Barry
 echo "Activated python"
 echo `which python`
 
-/opt/openmpi/bin/mpirun python PT_generator.py
+/opt/openmpi/bin/mpirun python PT_generator.py --om_resolution 20
