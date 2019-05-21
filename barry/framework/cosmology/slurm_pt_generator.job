@@ -6,7 +6,7 @@
 #SBATCH -o zlog.o%j
 #SBATCH -n 50
 
-module load openmpi_eth
+module load openmpi-x86_64
 conda deactivate
 conda activate {conda_env}
 echo $PATH
