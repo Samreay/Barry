@@ -125,12 +125,12 @@ if __name__ == "__main__":
     p = {"om": 0.3, "alpha": 1.0, "sigma_s":10.0, "b": 1, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
 
     import timeit
-    n = 500
+    n = 100
 
     def test():
-        model.get_likelihood(p)
+        model_post.get_likelihood(p)
 
-    #print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
+    print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
     if True:
         ks = data["ks"]

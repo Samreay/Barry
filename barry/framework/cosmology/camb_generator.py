@@ -23,7 +23,7 @@ class CambGenerator(object):
 
         self.k_min = 1e-4
         self.k_max = 5
-        self.k_num = 5000
+        self.k_num = 2000
         self.ks = np.logspace(np.log(self.k_min), np.log(self.k_max), self.k_num, base=np.e)
 
         self.omch2s = np.linspace(0.05, 0.3, self.om_resolution)
