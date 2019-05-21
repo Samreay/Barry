@@ -42,7 +42,7 @@ class PowerBeutler2017(PowerSpectrumFit):
 
         # Get the basic power spectrum components
         ks = self.camb.ks
-        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(ks, p)
+        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p)
 
         # Compute the propagator
         C = np.exp(-0.5*ks**2*p["sigma_nl"]**2)
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     dataset = MockPowerSpectrum(step_size=2)
     data = dataset.get_data()
     model.set_data(data)
-    p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5, "sigma_s":10.0, "b": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
+    p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5, "sigma_s":4.0, "b": 1.6, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
 
     import timeit
     n = 500
@@ -102,5 +102,20 @@ if __name__ == "__main__":
         plt.ylabel("P(k)")
         plt.xscale('log')
         plt.yscale('log')
+        plt.legend()
+        plt.show()
+
+        model.smooth_type = "hinton2017"
+        pk_smooth_lin, _ = model.compute_basic_power_spectrum(p)
+        pk_smooth_interp = splev(data["ks_input"], splrep(model.camb.ks, pk_smooth_lin))
+        pk_smooth_lin_windowed, mask = model.adjust_model_window_effects(pk_smooth_interp)
+        pk2 = model.get_model(data, p)
+        import matplotlib.pyplot as plt
+        plt.plot(ks, pk2/pk_smooth_lin_windowed[mask], '.', c='r', label="pre-recon")
+        plt.xlabel("k")
+        plt.ylabel(r"$P(k)/P_{sm}(k)$")
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.ylim(0.4, 3.0)
         plt.legend()
         plt.show()

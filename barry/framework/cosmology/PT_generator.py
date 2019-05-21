@@ -203,10 +203,11 @@ if __name__ == "__main__":
     import sys
     sys.path.append("../../..")
     from barry.framework.cosmology.camb_generator import CambGenerator
+    import pandas as pd
 
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
-    generator = CambGenerator(om_resolution=2)
+    generator = CambGenerator(om_resolution=20)
     PT_generator = PTGenerator(generator, recon_smoothing_scale=21.21)
 
     #import timeit
@@ -243,12 +244,24 @@ if __name__ == "__main__":
     plt.legend()
     plt.show()
 
+    PT = np.array(
+        pd.read_csv("/Volumes/Work/ICRAR/codes/PT_integrals_waves_linear.dat", delim_whitespace=True, dtype=float,
+                    header=None, skiprows=1))
+    PT = PT.T
+    pk_dd = PT[1,0:] + 2.0*PT[2,0:] + 6.0*PT[0,0:]**2*PT[1,0:]*PT[18,0:]
+    pk_dt = PT[1,0:] + 2.0*PT[3,0:] + 6.0*PT[0,0:]**2*PT[1,0:]*PT[19,0:]
+    pk_tt = PT[1,0:] + 2.0*PT[7,0:] + 6.0*PT[0,0:]**2*PT[1,0:]*PT[22,0:]
+
+
     pk_lin = generator.get_data(0.3121)[1]
     pk_smooth_lin = smooth(generator.ks, pk_lin, method=PT_generator.smooth_type)
     plt.plot(PT_generator.CAMBGenerator.ks, generator.get_data(0.3121)[1], label=r"$P(k)$")
-    plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin*(1.0 + PT_generator.get_data(0.3121)[11] + PT_generator.get_data(0.3121)[14]), label=r"$P_{sm,\delta \delta}(\Omega_{m}=0.3)$")
-    plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin*(1.0 + PT_generator.get_data(0.3121)[12] + PT_generator.get_data(0.3121)[15]), label=r"$P_{sm,\delta \theta}(\Omega_{m}=0.3)$")
-    plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin*(1.0 + PT_generator.get_data(0.3121)[13] + PT_generator.get_data(0.3121)[16]), label=r"$P_{sm,\theta \theta}(\Omega_{m}=0.3)$")
+    plt.plot(PT[0,0:], -6.0*PT[0,0:]**2*PT[1,0:]*PT[18,0:], label=r"$P_{PT,\delta \delta}$")
+    plt.plot(PT[0,0:], -6.0*PT[0,0:]**2*PT[1,0:]*PT[19,0:], label=r"$P_{PT,\delta \theta}$")
+    plt.plot(PT[0,0:], -6.0*PT[0,0:]**2*PT[1,0:]*PT[22,0:], label=r"$P_{PT,\theta \theta}$")
+    plt.plot(PT_generator.CAMBGenerator.ks, -pk_smooth_lin*(PT_generator.get_data(0.3121)[11]), label=r"$P_{sm,\delta \delta}(\Omega_{m}=0.3)$")
+    plt.plot(PT_generator.CAMBGenerator.ks, -pk_smooth_lin*(PT_generator.get_data(0.3121)[12]), label=r"$P_{sm,\delta \theta}(\Omega_{m}=0.3)$")
+    plt.plot(PT_generator.CAMBGenerator.ks, -pk_smooth_lin*(PT_generator.get_data(0.3121)[13]), label=r"$P_{sm,\theta \theta}(\Omega_{m}=0.3)$")
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()

@@ -1,19 +1,19 @@
 import logging
 import numpy as np
 from scipy.interpolate import splev, splrep
-from scipy.integrate import simps
 import sys
 sys.path.append("../../..")
 from barry.framework.models.bao_power import PowerSpectrumFit
 from barry.framework.cosmology.PT_generator import PTGenerator
 
+class PowerNoda2019(PowerSpectrumFit):
 
-class PowerSeo2016(PowerSpectrumFit):
-
-    def __init__(self, fit_omega_m=False, fit_growth=False, smooth_type="hinton2017", recon=False, recon_smoothing_scale=21.21, name="BAO Power Spectrum Seo 2016 Fit"):
+    def __init__(self, fit_omega_m=False, fit_growth=False, fit_gamma=False, gammaval=4.0, smooth_type="hinton2017", recon=False, recon_smoothing_scale=21.21, name="BAO Power Spectrum Ding 2018 Fit"):
         self.recon = recon
         self.recon_smoothing_scale = recon_smoothing_scale
         self.fit_growth = fit_growth
+        self.fit_gamma = fit_gamma
+        self.gammaval = gammaval
         super().__init__(fit_omega_m=fit_omega_m, smooth_type=smooth_type, name=name)
 
         self.nmu = 100
@@ -21,32 +21,24 @@ class PowerSeo2016(PowerSpectrumFit):
 
         self.PT = PTGenerator(self.camb, smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
         if not self.fit_omega_m:
-            self.sigma, self.sigma_dd, self.sigma_ss, _, _, _, _, _, _, self.R1, self.R2, _, _, _, _, _, _ = self.PT.get_data(om=self.omega_m)
+            _, _, _, _, _, _, _, self.sigma_dd_rs, self.sigma_ss_rs, _, _, self.J00, self.J01, self.J11, self.I00, self.I01, self.I11 = self.PT.get_data(om=self.omega_m)
             if not self.fit_growth:
                 self.growth = self.omega_m ** 0.55
-                if self.recon:
-                    self.damping_dd = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.sigma_dd / 2.0)
-                    self.damping_ss = np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.sigma_ss / 2.0)
-                else:
-                    self.damping = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.sigma / 2.0)
-
-        # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
-        if self.recon:
-            self.smoothing_kernel = np.exp(-self.camb.ks ** 2 * self.recon_smoothing_scale ** 2 / 4.0)
+                self.damping = -np.outer((1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2) * self.sigma_dd_rs + (self.growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * self.sigma_ss_rs, self.camb.ks ** 2)
+                if not self.fit_gamma:
+                    if self.recon:
+                        self.damping /= self.gammaval
 
     def declare_parameters(self):
         super().declare_parameters()
         if self.fit_growth:
             self.add_param("f", r"$f$", 0.01, 1.0)  # Growth rate of structure
-        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0)  # Fingers-of-god damping
-        self.add_param("a1", r"$a_1$", -50000.0, 50000.0)  # Polynomial marginalisation 1
-        self.add_param("a2", r"$a_2$", -50000.0, 50000.0)  # Polynomial marginalisation 2
-        self.add_param("a3", r"$a_3$", -50000.0, 50000.0)  # Polynomial marginalisation 3
-        self.add_param("a4", r"$a_4$", -1000.0, 1000.0)  # Polynomial marginalisation 4
-        self.add_param("a5", r"$a_5$", -10.0, 10.0)  # Polynomial marginalisation 5
+        if self.fit_gamma:
+            self.add_param("gamma", r"$\gamma_{rec}$", 1.0, 8.0)  # Describes the sharpening of the BAO post-reconstruction
+        self.add_param("A", r"$A$", 0.01, 30.0)  # Fingers-of-god damping
 
     def compute_power_spectrum(self, k, p):
-        """ Computes the power spectrum model using the LPT based propagators from Seo et. al., 2016 at k/alpha
+        """ Computes the power spectrum model at k/alpha using the Ding et. al., 2018 EFT0 model
         
         Parameters
         ----------
@@ -62,13 +54,15 @@ class PowerSeo2016(PowerSpectrumFit):
         
         """
 
+        from scipy import integrate
+
         # Get the basic power spectrum components
         ks = self.camb.ks
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p)
         if self.fit_omega_m:
-            sigma, sigma_dd, sigma_ss, _, _, _, _, _, _, R1, R2, _, _, _, _, _, _ = self.PT.get_data(om=p["om"])
+            _, _, _, _, _, _, _, sigma_dd_rs, sigma_ss_rs, _, _, J00, J01, J11, I00, I01, I11 = self.PT.get_data(om=p["om"])
         else:
-            sigma, sigma_dd, sigma_ss, R1, R2 = self.sigma, self.sigma_dd, self.sigma_ss, self.R1, self.R2
+            sigma_dd_rs, sigma_ss_rs, J01, J11, I00, I01, I11 = self.J00, self.J01, self.J11, self.I00, self.I01, self.I11
 
         # Compute the growth rate depending on what we have left as free parameters
         if self.fit_growth:
@@ -80,42 +74,38 @@ class PowerSeo2016(PowerSpectrumFit):
                 growth = self.growth
 
         # Compute the BAO damping
-        if self.recon:
-            if self.fit_growth or self.fit_omega_m:
-                damping_dd = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * sigma_dd / 2.0)
-                damping_ss = np.exp(-np.tile(ks ** 2, (self.nmu, 1)) * sigma_ss / 2.0)
+        if self.fit_growth or self.fit_omega_m:
+            damping = -np.outer((1.0 + (2.0 + growth) * growth * self.mu ** 2) * sigma_dd_rs + (
+                        growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * sigma_ss_rs, ks ** 2)
+            if self.fit_gamma:
+                damping /= p["gamma"]
             else:
-                damping_dd, damping_ss = self.damping_dd, self.damping_ss
+                if self.recon:
+                    damping /= self.gammaval
         else:
-            if self.fit_growth or self.fit_omega_m:
-                damping = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * sigma / 2.0)
-            else:
-                damping = self.damping
+            damping = self.damping
+        damping = np.exp(damping)
 
         # Compute the propagator
         if self.recon:
-            kaiser = 1.0 + np.outer(growth/p["b"]*self.mu**2, 1.0-self.smoothing_kernel)
-            smooth_prefac = np.tile(self.smoothing_kernel/p["b"], (self.nmu, 1))
-            propagator = (kaiser*damping_dd + smooth_prefac*(damping_ss-damping_dd))**2
+            # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
+            smoothing_kernel = np.exp(-ks ** 2 * self.recon_smoothing_scale ** 2 / 4.0)
+            kaiser_prefac = 1.0 + np.outer(growth / p["b"] * self.mu ** 2, 1.0-smoothing_kernel)
         else:
-            prefac_k = 1.0 + np.tile(3.0/7.0*(R1*(1.0-4.0/(9.0*p["b"]))+R2), (self.nmu, 1))
-            prefac_mu = np.outer(self.mu**2, growth/p["b"] + 3.0/7.0*growth*R1*(2.0-1.0/(3.0*p["b"])) + 6.0/7.0*growth*R2)
-            propagator = ((prefac_k + prefac_mu)*damping)**2
+            kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T
+        propagator = kaiser_prefac**2*damping
 
         # Compute the smooth model
-        fog = 1.0/(1.0 + np.outer(self.mu**2, ks**2*p["sigma_s"]**2/2.0))**2
+        fog = np.exp(-p["A"]*ks**2)
         pk_smooth = p["b"]**2*pk_smooth_lin*fog
 
+        # Compute the non-linear SPT correction to the smooth power spectrum
+        pk_spt = I00 + J00 + 2.0*np.outer(growth/p["b"]*self.mu**2, I01 + J01) + np.outer((growth/p["b"]*self.mu**2)**2, I11 + J11)
+
         # Integrate over mu
-        pk1d = simps(pk_smooth*(1.0 + pk_ratio*propagator), self.mu, axis=0)
+        pk1d = integrate.simps(pk_smooth*(1.0 + pk_ratio*propagator + pk_spt), self.mu, axis=0)
 
-        # Polynomial shape
-        if self.recon:
-            shape = p["a1"] * ks**2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
-        else:
-            shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
-
-        pk_final = splev(k / p["alpha"], splrep(ks, pk1d + shape))
+        pk_final = splev(k / p["alpha"], splrep(ks, pk1d))
 
         return pk_final
 
@@ -130,23 +120,23 @@ class PowerSeo2016(PowerSpectrumFit):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
-    model_pre = PowerSeo2016(fit_omega_m=True, recon=False)
-    model_post = PowerSeo2016(fit_omega_m=True, recon=True)
+    model_pre = PowerNoda2019(fit_omega_m=True, recon=False)
+    model_post = PowerNoda2019(fit_omega_m=True, recon=True, gammaval=4.0)
 
     from barry.framework.datasets.mock_power import MockPowerSpectrum
     dataset = MockPowerSpectrum(step_size=2)
     data = dataset.get_data()
     model_pre.set_data(data)
     model_post.set_data(data)
-    p = {"om": 0.3, "alpha": 1.0, "sigma_s":10.0, "b": 1.6, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
+    p = {"om": 0.3, "alpha": 1.0, "A":20.0, "b": 1.6}
 
     import timeit
-    n = 500
+    n = 100
 
     def test():
         model_post.get_likelihood(p)
 
-    #print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
+    print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
     if True:
         ks = data["ks"]
@@ -167,7 +157,10 @@ if __name__ == "__main__":
 
         model_pre.smooth_type = "hinton2017"
         pk_smooth_lin, _ = model_pre.compute_basic_power_spectrum(p)
-        pk_smooth_interp = splev(data["ks_input"], splrep(model_pre.camb.ks, pk_smooth_lin))
+        growth = p["om"]**0.55
+        _, _, _, _, _, _, _, sigma_dd_rs, sigma_ss_rs, _, _, J00, J01, J11, I00, I01, I11 = model_pre.PT.get_data(om=p["om"])
+        pk_spt = I00 + J00 + 2.0/3.0*growth/p["b"]*(I01 + J01) + 1.0/5.0*(growth/p["b"])**2*(I11 + J11)
+        pk_smooth_interp = splev(data["ks_input"], splrep(model_pre.camb.ks, pk_smooth_lin*(1.0+pk_spt)))
         pk_smooth_lin_windowed, mask = model_pre.adjust_model_window_effects(pk_smooth_interp)
         pk2 = model_pre.get_model(data, p)
         pk3 = model_post.get_model(data, p)
