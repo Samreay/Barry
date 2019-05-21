@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 import numpy as np
 import inspect
 import os
@@ -44,6 +46,7 @@ class CambGenerator(object):
             self.logger.info("Loading existing CAMB data")
             self.data = np.load(self.filename)
 
+    @lru_cache(maxsize=512)
     def get_data(self, om=0.3121, h0=0.6751):
         """ Returns the sound horizon the linear power spectrum"""
         if self.data is None:
@@ -126,6 +129,7 @@ def test_rand():
     def fn():
         g.get_data(np.random.uniform(0.1, 0.2), h0=np.random.uniform(60, 80))
     return fn
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")

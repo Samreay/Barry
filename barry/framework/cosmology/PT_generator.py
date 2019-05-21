@@ -1,9 +1,12 @@
+from functools import lru_cache
+
 import numpy as np
 import inspect
 import os
 import logging
-
+from scipy import integrate, special, interpolate
 import sys
+import pickle
 sys.path.append("../../../")
 
 from barry.framework.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
@@ -37,8 +40,10 @@ class PTGenerator(object):
             self.data = self._generate_data()
         else:
             self.logger.info("Loading existing PT data")
-            self.data = np.load(self.filename)
+            with open(self.filename, "rb") as f:
+                self.data = pickle.load(f)
 
+    @lru_cache(maxsize=512)
     def get_data(self, om=0.3121, h0=0.6751):
         """ Returns the PT integrals: Sigma, Sigma_dd, Sigma_ss, Sigma_dd,nl, Sigma_sd,nl, Sigma_ss,nl, Sigma_rs,
             R_1, R_2 and the SPT integrals"""
@@ -46,12 +51,11 @@ class PTGenerator(object):
             self.load_data()
         omch2 = (om - self.CAMBGenerator.omega_b) * h0 * h0
         data = self._interpolate(omch2, h0)
-        return data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9:9+self.CAMBGenerator.k_num], data[9+self.CAMBGenerator.k_num:9+2*self.CAMBGenerator.k_num], data[9+2*self.CAMBGenerator.k_num:9+3*self.CAMBGenerator.k_num], data[9+3*self.CAMBGenerator.k_num:9+4*self.CAMBGenerator.k_num], data[9+4*self.CAMBGenerator.k_num:9+5*self.CAMBGenerator.k_num], data[9+5*self.CAMBGenerator.k_num:9+6*self.CAMBGenerator.k_num], data[9+6*self.CAMBGenerator.k_num:9+7*self.CAMBGenerator.k_num], data[9+7*self.CAMBGenerator.k_num:9+8*self.CAMBGenerator.k_num]
+        return data
 
     def _generate_data(self):
         self.logger.info("Generating PT data")
         os.makedirs(self.data_dir, exist_ok=True)
-        from scipy import integrate, special, interpolate
 
         # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
         smoothing_kernel = np.exp(-self.CAMBGenerator.ks**2*self.recon_smoothing_scale**2/4.0)
@@ -89,7 +93,13 @@ class PTGenerator(object):
         J01[index] = -200.0/3024.0
         J11[index] = -1.0/10.0
 
-        data = np.zeros((self.CAMBGenerator.om_resolution, self.CAMBGenerator.h0_resolution, 9 + 8*self.CAMBGenerator.k_num))
+        data = {}
+        for key in ["sigma", "sigma_dd", "sigma_ss", "sigma_nl", "sigma_dd_nl", "sigma_sd_nl", "sigma_ss_nl", "sigma_dd_rs", "sigma_ss_rs"]:
+            data[key] = np.zeros((self.CAMBGenerator.om_resolution, self.CAMBGenerator.h0_resolution))
+        for key in ["R1", "R2", "J00", "J01", "J11", "I00", "I01", "I11"]:
+            data[key] = np.zeros((self.CAMBGenerator.om_resolution, self.CAMBGenerator.h0_resolution, self.CAMBGenerator.k_num))
+
+        # data = np.zeros((self.CAMBGenerator.om_resolution, self.CAMBGenerator.h0_resolution, 9 + 8*self.CAMBGenerator.k_num))
         for i, omch2 in enumerate(self.CAMBGenerator.omch2s):
             for j, h0 in enumerate(self.CAMBGenerator.h0s):
                 self.logger.debug("Generating %d:%d  %0.3f  %0.3f" % (i, j, omch2, h0))
@@ -108,30 +118,30 @@ class PTGenerator(object):
                 pk_smooth_spline = interpolate.splrep(self.CAMBGenerator.ks, pk_smooth_lin)
 
                 # Sigma^2
-                data[i, j, 0] = integrate.simps(pk_lin,self.CAMBGenerator.ks)/(6.0*np.pi**2)
+                data["sigma"][i, j] = integrate.simps(pk_lin, self.CAMBGenerator.ks)/(6.0*np.pi**2)
 
                 # Sigma^2_dd, Sigma^2_ss   (Seo2016-LPT model)
-                data[i, j, 1] = integrate.simps(pk_lin*(1.0 - smoothing_kernel)**2,self.CAMBGenerator.ks)/(6.0*np.pi**2)
-                data[i, j, 2] = integrate.simps(pk_lin*smoothing_kernel**2,self.CAMBGenerator.ks)/(6.0*np.pi**2)
+                data["sigma_dd"][i, j] = integrate.simps(pk_lin*(1.0 - smoothing_kernel)**2, self.CAMBGenerator.ks)/(6.0*np.pi**2)
+                data["sigma_ss"][i, j] = integrate.simps(pk_lin*smoothing_kernel**2, self.CAMBGenerator.ks)/(6.0*np.pi**2)
 
                 # Sigma^2_nl, Sigma^2_dd,nl, Sigma^2_sd,nl Sigma^2_ss,nl (Ding2018-EFT model)
-                data[i, j, 3] = integrate.simps(pk_lin*(1.0 - j0),self.CAMBGenerator.ks)/(6.0*np.pi**2)
-                data[i, j, 4] = integrate.simps(pk_lin*(1.0 - smoothing_kernel)**2*(1.0 - j0),self.CAMBGenerator.ks)/(6.0*np.pi**2)
-                data[i, j, 5] = integrate.simps(pk_lin*(0.5*(smoothing_kernel**2-(1.0 - smoothing_kernel)**2) - j0*smoothing_kernel*(1.0 - smoothing_kernel)),self.CAMBGenerator.ks)/(6.0*np.pi**2)
-                data[i, j, 6] = integrate.simps(pk_lin*smoothing_kernel**2*(1.0 - j0),self.CAMBGenerator.ks)/(6.0*np.pi**2)
+                data["sigma_nl"][i, j] = integrate.simps(pk_lin*(1.0 - j0),self.CAMBGenerator.ks)/(6.0*np.pi**2)
+                data["sigma_dd_nl"][i, j] = integrate.simps(pk_lin*(1.0 - smoothing_kernel)**2*(1.0 - j0),self.CAMBGenerator.ks)/(6.0*np.pi**2)
+                data["sigma_dd_nl"][i, j] = integrate.simps(pk_lin*(0.5*(smoothing_kernel**2-(1.0 - smoothing_kernel)**2) - j0*smoothing_kernel*(1.0 - smoothing_kernel)),self.CAMBGenerator.ks)/(6.0*np.pi**2)
+                data["sigma_sd_nl"][i, j] = integrate.simps(pk_lin*smoothing_kernel**2*(1.0 - j0),self.CAMBGenerator.ks)/(6.0*np.pi**2)
 
                 # Sigma^2_dd,rs, Sigma^2_ss,rs (Noda2017 model)
-                data[i, j, 7] = integrate.simps(pk_smooth_lin*(1.0 - j0 + 2.0*j2),self.CAMBGenerator.ks)/(6.0*np.pi**2)
-                data[i, j, 8] = integrate.simps(pk_smooth_lin*j2,self.CAMBGenerator.ks)/(2.0*np.pi**2)
+                data["sigma_dd_rs"][i, j] = integrate.simps(pk_smooth_lin*(1.0 - j0 + 2.0*j2),self.CAMBGenerator.ks)/(6.0*np.pi**2)
+                data["sigma_ss_rs"][i, j] = integrate.simps(pk_smooth_lin*j2,self.CAMBGenerator.ks)/(2.0*np.pi**2)
 
                 # R_1/P_lin, R_2/P_lin
-                data[i, j, 9:9+self.CAMBGenerator.k_num] = self.CAMBGenerator.ks**3*integrate.simps(pk_lin*R1, self.CAMBGenerator.ks, axis=0)/(4.0*np.pi**2)
-                data[i, j, 9+self.CAMBGenerator.k_num:9+2*self.CAMBGenerator.k_num] = self.CAMBGenerator.ks**3*integrate.simps(pk_lin*R2, self.CAMBGenerator.ks, axis=0)/(4.0*np.pi**2)
+                data["R1"][i, j, :] = self.CAMBGenerator.ks**3*integrate.simps(pk_lin*R1, self.CAMBGenerator.ks, axis=0)/(4.0*np.pi**2)
+                data["R2"][i, j, :] = self.CAMBGenerator.ks**3*integrate.simps(pk_lin*R2, self.CAMBGenerator.ks, axis=0)/(4.0*np.pi**2)
 
                 # J_00, J_01, J_11
-                data[i, j, 9+2*self.CAMBGenerator.k_num:9+3*self.CAMBGenerator.k_num] = 3.0*self.CAMBGenerator.ks**3*integrate.simps(pk_smooth_lin*J00, self.CAMBGenerator.ks, axis=0)/(np.pi**2)
-                data[i, j, 9+3*self.CAMBGenerator.k_num:9+4*self.CAMBGenerator.k_num] = 3.0*self.CAMBGenerator.ks**3*integrate.simps(pk_smooth_lin*J01, self.CAMBGenerator.ks, axis=0)/(np.pi**2)
-                data[i, j, 9+4*self.CAMBGenerator.k_num:9+5*self.CAMBGenerator.k_num] = 3.0*self.CAMBGenerator.ks**3*integrate.simps(pk_smooth_lin*J11, self.CAMBGenerator.ks, axis=0)/(np.pi**2)
+                data["J00"][i, j, :] = 3.0*self.CAMBGenerator.ks**3*integrate.simps(pk_smooth_lin*J00, self.CAMBGenerator.ks, axis=0)/(np.pi**2)
+                data["J01"][i, j, :] = 3.0*self.CAMBGenerator.ks**3*integrate.simps(pk_smooth_lin*J01, self.CAMBGenerator.ks, axis=0)/(np.pi**2)
+                data["J11"][i, j, :] = 3.0*self.CAMBGenerator.ks**3*integrate.simps(pk_smooth_lin*J11, self.CAMBGenerator.ks, axis=0)/(np.pi**2)
 
                 # I_00/P_sm,lin, I_01/P_sm,lin, I_02/P_sm,lin
                 for k, kval in enumerate(self.CAMBGenerator.ks):
@@ -144,15 +154,19 @@ class PTGenerator(object):
                     r2pk = rvals ** 2 * pk_smooth_lin
                     IP0 = kval**2*((-10.0*rx*xs + 7.0*xs).T + 3.0*rvals) / (14.0 * rvals * y**2)
                     IP1 = kval**2*((- 6.0*rx*xs + 7.0*xs).T - rvals) / (14.0 * rvals * y**2)
-                    data[i, j, 9 + 5 * self.CAMBGenerator.k_num + k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP0*IP0, xs, axis=0), rvals)
-                    data[i, j, 9 + 6 * self.CAMBGenerator.k_num + k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP0*IP1, xs, axis=0), rvals)
-                    data[i, j, 9 + 7 * self.CAMBGenerator.k_num + k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP1*IP1, xs, axis=0), rvals)
-                data[i, j, 9 + 5 * self.CAMBGenerator.k_num:9 + 6 * self.CAMBGenerator.k_num] *= self.CAMBGenerator.ks**3/(2.0*np.pi**2)/pk_smooth_lin
-                data[i, j, 9 + 6 * self.CAMBGenerator.k_num:9 + 7 * self.CAMBGenerator.k_num] *= self.CAMBGenerator.ks**3/(2.0*np.pi**2)/pk_smooth_lin
-                data[i, j, 9 + 7 * self.CAMBGenerator.k_num:9 + 8 * self.CAMBGenerator.k_num] *= self.CAMBGenerator.ks**3/(2.0*np.pi**2)/pk_smooth_lin
+                    data["I00"][i, j, :] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP0*IP0, xs, axis=0), rvals)
+                    data["I01"][i, j, :] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP0*IP1, xs, axis=0), rvals)
+                    data["I11"][i, j, :] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP1*IP1, xs, axis=0), rvals)
+                data["I00"][i, j, :] *= self.CAMBGenerator.ks**3/(2.0*np.pi**2)/pk_smooth_lin
+                data["I01"][i, j, :] *= self.CAMBGenerator.ks**3/(2.0*np.pi**2)/pk_smooth_lin
+                data["I11"][i, j, :] *= self.CAMBGenerator.ks**3/(2.0*np.pi**2)/pk_smooth_lin
 
         self.logger.info(f"Saving to {self.filename}")
-        np.save(self.filename, data)
+        for key in data.keys():
+            if isinstance(data[key], np.ndarray):
+                data[key] = data[key].astype(np.float32)
+        with open(self.filename, "wb") as f:
+            pickle.dump(data, f)
         return data
 
     def _interpolate(self, omch2, h0):
@@ -168,16 +182,19 @@ class PTGenerator(object):
         y = h0_index - np.floor(h0_index)
 
         data = self.data
-        v1 = data[int(np.floor(omch2_index)), int(np.floor(h0_index))]  # 00
-        v2 = data[int(np.ceil(omch2_index)), int(np.floor(h0_index))]   # 01
+        result = {}
+        for key in data.keys():
 
-        if self.CAMBGenerator.h0_resolution == 1:
-            final = v1 * (1 - x) * (1 - y) + v2 * x * (1 - y)
-        else:
-            v3 = data[int(np.floor(omch2_index)), int(np.ceil(h0_index))]  # 10
-            v4 = data[int(np.ceil(omch2_index)), int(np.ceil(h0_index))]  # 11
-            final = v1 * (1 - x) * (1 - y) + v2 * x * (1 - y) + v3 * y * (1 - x) + v4 * x * y
-        return final
+            v1 = data[key][int(np.floor(omch2_index)), int(np.floor(h0_index))]  # 00
+            v2 = data[key][int(np.ceil(omch2_index)), int(np.floor(h0_index))]   # 01
+
+            if self.CAMBGenerator.h0_resolution == 1:
+                result[key] = v1 * (1 - x) * (1 - y) + v2 * x * (1 - y)
+            else:
+                v3 = data[key][int(np.floor(omch2_index)), int(np.ceil(h0_index))]  # 10
+                v4 = data[key][int(np.ceil(omch2_index)), int(np.ceil(h0_index))]  # 11
+                result[key] = v1 * (1 - x) * (1 - y) + v2 * x * (1 - y) + v3 * y * (1 - x) + v4 * x * y
+        return result
 
 
 def test_rand_h0const():
@@ -198,6 +215,7 @@ def test_rand():
         g.get_data(np.random.uniform(0.1, 0.2), h0=np.random.uniform(60, 80))
     return fn
 
+
 if __name__ == "__main__":
 
     import sys
@@ -209,60 +227,48 @@ if __name__ == "__main__":
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
     generator = CambGenerator(om_resolution=20)
     PT_generator = PTGenerator(generator, recon_smoothing_scale=21.21)
-
+    PT_generator.get_data()
     #import timeit
     #n = 1000
     #print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
 
-    import matplotlib.pyplot as plt
-    nvals = 100
-    sigmas = np.empty((nvals, 9))
-    oms = np.linspace(0.2,0.4,nvals)
-    for i, om in enumerate(oms):
-        sigmas[i] = PT_generator.get_data(om)[0:9]
-
-    plt.plot(oms, sigmas[0:, 0], label=r"$\Sigma^{2}$")
-    plt.plot(oms, sigmas[0:, 1], label=r"$\Sigma^{2}_{dd}$")
-    plt.plot(oms, sigmas[0:, 2], label=r"$\Sigma^{2}_{ss}$")
-    plt.plot(oms, sigmas[0:, 3], label=r"$\Sigma^{2}_{nl}$")
-    plt.plot(oms, sigmas[0:, 4], label=r"$\Sigma^{2}_{dd,nl}$")
-    plt.plot(oms, sigmas[0:, 5], label=r"$\Sigma^{2}_{sd,nl}$")
-    plt.plot(oms, sigmas[0:, 6], label=r"$\Sigma^{2}_{ss,nl}$")
-    plt.plot(oms, sigmas[0:, 7], label=r"$\Sigma^{2}_{dd,rs}$")
-    plt.plot(oms, sigmas[0:, 8], label=r"$\Sigma^{2}_{ss,rs}$")
-    plt.ylim(0.0, 50.0)
-    plt.legend()
-    plt.show()
-
-    plt.plot(PT_generator.CAMBGenerator.ks, PT_generator.get_data(0.2)[9], label=r"$R_{1}(\Omega_{m}=0.2)$")
-    plt.plot(PT_generator.CAMBGenerator.ks, PT_generator.get_data(0.3)[9], label=r"$R_{1}(\Omega_{m}=0.3)$")
-    plt.plot(PT_generator.CAMBGenerator.ks, -PT_generator.get_data(0.2)[10], label=r"$-R_{2}(\Omega_{m}=0.2)$")
-    plt.plot(PT_generator.CAMBGenerator.ks, -PT_generator.get_data(0.3)[10], label=r"$-R_{2}(\Omega_{m}=0.3)$")
-    plt.ylim(1.0e-8, 1.0e5)
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.legend()
-    plt.show()
-
-    PT = np.array(
-        pd.read_csv("/Volumes/Work/ICRAR/codes/PT_integrals_waves_linear.dat", delim_whitespace=True, dtype=float,
-                    header=None, skiprows=1))
-    PT = PT.T
-    pk_dd = PT[1,0:] + 2.0*PT[2,0:] + 6.0*PT[0,0:]**2*PT[1,0:]*PT[18,0:]
-    pk_dt = PT[1,0:] + 2.0*PT[3,0:] + 6.0*PT[0,0:]**2*PT[1,0:]*PT[19,0:]
-    pk_tt = PT[1,0:] + 2.0*PT[7,0:] + 6.0*PT[0,0:]**2*PT[1,0:]*PT[22,0:]
-
-
-    pk_lin = generator.get_data(0.3121)[1]
-    pk_smooth_lin = smooth(generator.ks, pk_lin, method=PT_generator.smooth_type)
-    plt.plot(PT_generator.CAMBGenerator.ks, generator.get_data(0.3121)[1], label=r"$P(k)$")
-    plt.plot(PT[0,0:], -6.0*PT[0,0:]**2*PT[1,0:]*PT[18,0:], label=r"$P_{PT,\delta \delta}$")
-    plt.plot(PT[0,0:], -6.0*PT[0,0:]**2*PT[1,0:]*PT[19,0:], label=r"$P_{PT,\delta \theta}$")
-    plt.plot(PT[0,0:], -6.0*PT[0,0:]**2*PT[1,0:]*PT[22,0:], label=r"$P_{PT,\theta \theta}$")
-    plt.plot(PT_generator.CAMBGenerator.ks, -pk_smooth_lin*(PT_generator.get_data(0.3121)[11]), label=r"$P_{sm,\delta \delta}(\Omega_{m}=0.3)$")
-    plt.plot(PT_generator.CAMBGenerator.ks, -pk_smooth_lin*(PT_generator.get_data(0.3121)[12]), label=r"$P_{sm,\delta \theta}(\Omega_{m}=0.3)$")
-    plt.plot(PT_generator.CAMBGenerator.ks, -pk_smooth_lin*(PT_generator.get_data(0.3121)[13]), label=r"$P_{sm,\theta \theta}(\Omega_{m}=0.3)$")
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.legend()
-    plt.show()
+    # import matplotlib.pyplot as plt
+    # nvals = 100
+    # sigmas = np.empty((nvals, 9))
+    # oms = np.linspace(0.2,0.4,nvals)
+    # for i, om in enumerate(oms):
+    #     sigmas[i] = PT_generator.get_data(om)[0:9]
+    #
+    # plt.plot(oms, sigmas[0:, 0], label=r"$\Sigma^{2}$")
+    # plt.plot(oms, sigmas[0:, 1], label=r"$\Sigma^{2}_{dd}$")
+    # plt.plot(oms, sigmas[0:, 2], label=r"$\Sigma^{2}_{ss}$")
+    # plt.plot(oms, sigmas[0:, 3], label=r"$\Sigma^{2}_{nl}$")
+    # plt.plot(oms, sigmas[0:, 4], label=r"$\Sigma^{2}_{dd,nl}$")
+    # plt.plot(oms, sigmas[0:, 5], label=r"$\Sigma^{2}_{sd,nl}$")
+    # plt.plot(oms, sigmas[0:, 6], label=r"$\Sigma^{2}_{ss,nl}$")
+    # plt.plot(oms, sigmas[0:, 7], label=r"$\Sigma^{2}_{dd,rs}$")
+    # plt.plot(oms, sigmas[0:, 8], label=r"$\Sigma^{2}_{ss,rs}$")
+    # plt.ylim(0.0, 50.0)
+    # plt.legend()
+    # plt.show()
+    #
+    # plt.plot(PT_generator.CAMBGenerator.ks, PT_generator.get_data(0.2)[9], label=r"$R_{1}(\Omega_{m}=0.2)$")
+    # plt.plot(PT_generator.CAMBGenerator.ks, PT_generator.get_data(0.3)[9], label=r"$R_{1}(\Omega_{m}=0.3)$")
+    # plt.plot(PT_generator.CAMBGenerator.ks, -PT_generator.get_data(0.2)[10], label=r"$-R_{2}(\Omega_{m}=0.2)$")
+    # plt.plot(PT_generator.CAMBGenerator.ks, -PT_generator.get_data(0.3)[10], label=r"$-R_{2}(\Omega_{m}=0.3)$")
+    # plt.ylim(1.0e-8, 1.0e5)
+    # plt.xscale("log")
+    # plt.yscale("log")
+    # plt.legend()
+    # plt.show()
+    #
+    # pk_lin = generator.get_data(0.3121)[1]
+    # pk_smooth_lin = smooth(generator.ks, pk_lin, method=PT_generator.smooth_type)
+    # plt.plot(PT_generator.CAMBGenerator.ks, generator.get_data(0.3121)[1], label=r"$P(k)$")
+    # plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin*(1.0 + PT_generator.get_data(0.3121)[11] + PT_generator.get_data(0.3121)[14]), label=r"$P_{sm,\delta \delta}(\Omega_{m}=0.3)$")
+    # plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin*(1.0 + PT_generator.get_data(0.3121)[12] + PT_generator.get_data(0.3121)[15]), label=r"$P_{sm,\delta \theta}(\Omega_{m}=0.3)$")
+    # plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin*(1.0 + PT_generator.get_data(0.3121)[13] + PT_generator.get_data(0.3121)[16]), label=r"$P_{sm,\theta \theta}(\Omega_{m}=0.3)$")
+    # plt.xscale("log")
+    # plt.yscale("log")
+    # plt.legend()
+    # plt.show()
