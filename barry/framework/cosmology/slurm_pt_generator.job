@@ -6,7 +6,7 @@
 #SBATCH -o zlog.o%j
 #SBATCH -n 5
 
-module load openmpi-x86_64
+module load rocks-openmpi
 conda deactivate
 conda activate Barry
 echo "Activated python"
