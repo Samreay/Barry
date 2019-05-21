@@ -1,0 +1,16 @@
+#!/bin/bash -l
+#SBATCH -p smp
+#SBATCH -J ptgenerator
+#SBATCH --mem-per-cpu=4GB
+#SBATCH -t 04:00:00
+#SBATCH -o zlog.o%j
+#SBATCH -pe mpi 50
+
+module load openmpi_eth
+conda deactivate
+conda activate {conda_env}
+echo $PATH
+echo "Activated python"
+echo `which python`
+
+/opt/openmpi/bin/mpirun -np $NSLOTS python PT_generator.py

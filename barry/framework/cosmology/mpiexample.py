@@ -14,7 +14,7 @@ class Thingo:
         global comm, size, rank
         xs = np.linspace(0, 10, 3)
         ys = np.linspace(100, 110, 3)
-
+        print("Generating with rank ", rank)
         all_indexes = [(i, j) for i in range(xs.size) for j in range(ys.size)]
         delegations = [all_indexes[i::size] for i in range(size)]
 
