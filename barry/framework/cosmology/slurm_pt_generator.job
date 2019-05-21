@@ -8,8 +8,7 @@
 
 module load openmpi-x86_64
 conda deactivate
-conda activate {conda_env}
-echo $PATH
+conda activate Barry
 echo "Activated python"
 echo `which python`
 
