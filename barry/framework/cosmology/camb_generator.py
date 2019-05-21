@@ -135,8 +135,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
-    generator = CambGenerator(om_resolution=10, h0_resolution=1)
-    generator.get_data(0.3)
+    generator = CambGenerator(om_resolution=101, h0_resolution=1)
+    generator.get_data()
     # generator = CambGenerator()
     # generator = CambGenerator(om_resolution=50, h0_resolution=1)
     # generator = CambGenerator(om_resolution=10, h0_resolution=10)
