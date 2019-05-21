@@ -10,15 +10,30 @@ from barry.framework.cosmology.PT_generator import PTGenerator
 
 class PowerDing2018(PowerSpectrumFit):
 
-    def __init__(self, fit_omega_m=False, fit_growth=False, smooth_type="hinton2017", recon=False, recon_smoothing_scale=10.0, name="BAO Power Spectrum Ding 2018 Fit"):
+    def __init__(self, fit_omega_m=False, fit_growth=False, smooth_type="hinton2017", recon=False, recon_smoothing_scale=21.21, name="BAO Power Spectrum Ding 2018 Fit"):
         self.recon = recon
         self.recon_smoothing_scale = recon_smoothing_scale
         self.fit_growth = fit_growth
         super().__init__(fit_omega_m=fit_omega_m, smooth_type=smooth_type, name=name)
 
+        self.nmu = 100
+        self.mu = np.linspace(0.0, 1.0, self.nmu)
+
         self.PT = PTGenerator(self.camb, smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
         if not self.fit_omega_m:
-            _, _, _, self.sigma_nl, self.sigma_dd_nl, self.sigma_sd_nl, self.sigma_ss_nl, _, _, _, _ = self.PT.get_data(om=self.omega_m)
+            _, _, _, self.sigma_nl, self.sigma_dd_nl, self.sigma_sd_nl, self.sigma_ss_nl, _, _, _, _, _, _, _, _, _, _ = self.PT.get_data(om=self.omega_m)
+            if not self.fit_growth:
+                self.growth = self.omega_m ** 0.55
+                if self.recon:
+                    self.damping_dd = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.sigma_dd_nl)
+                    self.damping_sd = np.exp(-np.outer(1.0 + self.growth * self.mu ** 2, self.camb.ks ** 2) * self.sigma_dd_nl)
+                    self.damping_ss = np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.sigma_ss_nl)
+                else:
+                    self.damping = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.sigma_nl)
+
+        # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
+        if self.recon:
+            self.smoothing_kernel = np.exp(-self.camb.ks ** 2 * self.recon_smoothing_scale ** 2 / 4.0)
 
     def declare_parameters(self):
         super().declare_parameters()
@@ -50,9 +65,9 @@ class PowerDing2018(PowerSpectrumFit):
         """
         # Get the basic power spectrum components
         ks = self.camb.ks
-        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(ks, p)
+        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p)
         if self.fit_omega_m:
-            _, _, _, sigma_nl, sigma_dd_nl, sigma_sd_nl, sigma_ss_nl, _, _, _, _ = self.PT.get_data(om=p["om"])
+            _, _, _, sigma_nl, sigma_dd_nl, sigma_sd_nl, sigma_ss_nl, _, _, _, _, _, _, _, _, _, _ = self.PT.get_data(om=p["om"])
         else:
             sigma_nl, sigma_dd_nl, sigma_sd_nl, sigma_ss_nl = self.sigma_nl, self.sigma_dd_nl, self.sigma_sd_nl, self.sigma_ss_nl
 
@@ -63,34 +78,39 @@ class PowerDing2018(PowerSpectrumFit):
             if self.fit_omega_m:
                 growth = p["om"]**0.55
             else:
-                growth = self.omega_m**0.55
+                growth = self.growth
+
+        # Compute the BAO damping
+        if self.recon:
+            if self.fit_growth or self.fit_omega_m:
+                damping_dd = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * sigma_dd_nl)
+                damping_sd = np.exp(-np.outer(1.0 + growth * self.mu ** 2, ks ** 2) * sigma_dd_nl)
+                damping_ss = np.exp(-np.tile(ks ** 2, (self.nmu, 1)) * sigma_ss_nl)
+            else:
+                damping_dd, damping_sd, damping_ss = self.damping_dd, self.damping_sd, self.damping_ss
+        else:
+            if self.fit_growth or self.fit_omega_m:
+                damping = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * sigma_nl)
+            else:
+                damping = self.damping
 
         # Compute the propagator
-        nmu = 100
-        mu = np.linspace(0.0, 1.0, nmu)
         if self.recon:
-            # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
-            smoothing_kernel = np.exp(-ks ** 2 * self.recon_smoothing_scale ** 2 / 4.0)
-
-            damping_dd = np.exp(-np.outer(1.0 + (2.0 + growth)*growth*mu**2, ks**2)*sigma_dd_nl)
-            damping_sd = np.exp(-np.outer(1.0 + growth*mu**2, ks**2)*sigma_dd_nl)
-            damping_ss = np.exp(-np.tile(ks**2, (nmu, 1))*sigma_ss_nl)
-            smooth_prefac = np.tile(smoothing_kernel/p["b"], (nmu, 1))
-            bdelta_prefac = np.tile(0.5*p["b_delta"]/p["b"]*ks**2, (nmu, 1))
-            kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth/p["b"]*mu**2, 1.0-smoothing_kernel) + bdelta_prefac
+            smooth_prefac = np.tile(self.smoothing_kernel/p["b"], (self.nmu, 1))
+            bdelta_prefac = np.tile(0.5*p["b_delta"]/p["b"]*ks**2, (self.nmu, 1))
+            kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth/p["b"]*self.mu**2, 1.0-self.smoothing_kernel) + bdelta_prefac
             propagator = (kaiser_prefac**2 - bdelta_prefac**2)*damping_dd + 2.0*kaiser_prefac*smooth_prefac*damping_sd + smooth_prefac**2*damping_ss
         else:
-            damping = np.exp(-np.outer(1.0 + (2.0 + growth)*growth*mu**2, ks**2)*sigma_nl)
-            bdelta_prefac = np.tile(0.5*p["b_delta"]/p["b"]*ks**2, (nmu, 1))
-            kaiser_prefac = 1.0 + np.tile(growth/p["b"]*mu**2, (len(ks), 1)).T + bdelta_prefac
+            bdelta_prefac = np.tile(0.5*p["b_delta"]/p["b"]*ks**2, (self.nmu, 1))
+            kaiser_prefac = 1.0 + np.tile(growth/p["b"]*self.mu**2, (len(ks), 1)).T + bdelta_prefac
             propagator = (kaiser_prefac**2 - bdelta_prefac**2)*damping
 
         # Compute the smooth model
-        fog = 1.0/(1.0 + np.outer(mu**2, ks**2*p["sigma_s"]**2/2.0))**2
+        fog = 1.0/(1.0 + np.outer(self.mu**2, ks**2*p["sigma_s"]**2/2.0))**2
         pk_smooth = p["b"]**2*pk_smooth_lin*fog
 
         # Integrate over mu
-        pk1d = integrate.simps(pk_smooth*(1.0 + pk_ratio*propagator), mu, axis=0)
+        pk1d = integrate.simps(pk_smooth*(1.0 + pk_ratio*propagator), self.mu, axis=0)
 
         # Polynomial shape
         if self.recon:
@@ -121,7 +141,7 @@ if __name__ == "__main__":
     data = dataset.get_data()
     model_pre.set_data(data)
     model_post.set_data(data)
-    p = {"om": 0.3, "alpha": 1.0, "sigma_s": 10.0, "b": 1, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
+    p = {"om": 0.3, "alpha": 1.0, "sigma_s":10.0, "b": 1.6, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
 
     import timeit
     n = 100
@@ -149,7 +169,7 @@ if __name__ == "__main__":
         plt.show()
 
         model_pre.smooth_type = "hinton2017"
-        pk_smooth_lin, _ = model_pre.compute_basic_power_spectrum(model_pre.camb.ks, p)
+        pk_smooth_lin, _ = model_pre.compute_basic_power_spectrum(p)
         pk_smooth_interp = splev(data["ks_input"], splrep(model_pre.camb.ks, pk_smooth_lin))
         pk_smooth_lin_windowed, mask = model_pre.adjust_model_window_effects(pk_smooth_interp)
         pk2 = model_pre.get_model(data, p)
@@ -158,8 +178,9 @@ if __name__ == "__main__":
         plt.plot(ks, pk2/pk_smooth_lin_windowed[mask], '.', c='r', label="pre-recon")
         plt.plot(ks, pk3/pk_smooth_lin_windowed[mask], '+', c='b', label="post-recon")
         plt.xlabel("k")
-        plt.ylabel("P(k)")
+        plt.ylabel(r"$P(k)/P_{sm}(k)$")
         plt.xscale('log')
         plt.yscale('log')
+        plt.ylim(0.4, 3.0)
         plt.legend()
         plt.show()

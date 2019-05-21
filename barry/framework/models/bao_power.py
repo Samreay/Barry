@@ -16,10 +16,12 @@ class PowerSpectrumFit(Model):
 
         # Set up data structures for model fitting
         self.h0 = 0.6751
-        self.camb = CambGenerator(h0=self.h0)
+        self.camb = CambGenerator(om_resolution=20, h0=self.h0)
         if not self.fit_omega_m:
             self.omega_m = 0.3121
             self.r_s, self.pk_lin = self.camb.get_data(om=self.omega_m)
+            self.pk_smooth_lin = smooth(self.camb.ks, self.pk_lin, method=self.smooth_type, om=self.omega_m, h0=self.h0) # Get the smoothed power spectrum
+            self.pk_ratio = (self.pk_lin / self.pk_smooth_lin - 1.0) # Get the ratio
 
         self.declare_parameters()
 
@@ -30,7 +32,7 @@ class PowerSpectrumFit(Model):
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2)  # Stretch
         self.add_param("b", r"$b$", 0.8, 1.2)  # bias
 
-    def compute_basic_power_spectrum(self, ks, p):
+    def compute_basic_power_spectrum(self, p):
         """ Computes the smoothed, linear power spectrum and the wiggle ratio
 
         Parameters
@@ -52,14 +54,10 @@ class PowerSpectrumFit(Model):
         # Get base linear power spectrum from camb
         if self.fit_omega_m:
             r_s, pk_lin = self.camb.get_data(om=p["om"], h0=self.h0)
+            pk_smooth_lin = smooth(self.camb.ks, pk_lin, method=self.smooth_type, om=p["om"], h0=self.h0)  # Get the smoothed power spectrum
+            pk_ratio = (pk_lin / pk_smooth_lin - 1.0) # Get the ratio
         else:
-            pk_lin = self.pk_lin
-
-        # Get the smoothed power spectrum
-        pk_smooth_lin = smooth(ks, pk_lin, method=self.smooth_type, om=p["om"], h0=self.h0)
-
-        # Get the ratio
-        pk_ratio = (pk_lin / pk_smooth_lin - 1.0)
+            pk_smooth_lin, pk_ratio = self.pk_smooth_lin, self.pk_ratio
 
         return pk_smooth_lin, pk_ratio
 
@@ -81,7 +79,7 @@ class PowerSpectrumFit(Model):
 
         """
         ks = self.camb.ks
-        pk_smooth, pk_ratio_dewiggled = self.compute_basic_power_spectrum(ks, p)
+        pk_smooth, pk_ratio_dewiggled = self.compute_basic_power_spectrum()
         pk_final = splev(k / p["alpha"], splrep(ks, pk_ratio_dewiggled))
         return pk_final
 

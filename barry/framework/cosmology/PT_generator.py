@@ -261,6 +261,8 @@ if __name__ == "__main__":
     import sys
     sys.path.append("../../..")
     from barry.framework.cosmology.camb_generator import CambGenerator
+    import pandas as pd
+
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
