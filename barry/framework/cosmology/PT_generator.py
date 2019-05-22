@@ -133,8 +133,8 @@ class PTGenerator(object):
             # Sigma^2_nl, Sigma^2_dd,nl, Sigma^2_sd,nl Sigma^2_ss,nl (Ding2018-EFT model)
             data["sigma_nl"][i, j] = integrate.simps(pk_lin*(1.0 - j0),self.CAMBGenerator.ks)/(6.0*np.pi**2)
             data["sigma_dd_nl"][i, j] = integrate.simps(pk_lin*(1.0 - smoothing_kernel)**2*(1.0 - j0),self.CAMBGenerator.ks)/(6.0*np.pi**2)
-            data["sigma_dd_nl"][i, j] = integrate.simps(pk_lin*(0.5*(smoothing_kernel**2-(1.0 - smoothing_kernel)**2) - j0*smoothing_kernel*(1.0 - smoothing_kernel)),self.CAMBGenerator.ks)/(6.0*np.pi**2)
-            data["sigma_sd_nl"][i, j] = integrate.simps(pk_lin*smoothing_kernel**2*(1.0 - j0),self.CAMBGenerator.ks)/(6.0*np.pi**2)
+            data["sigma_sd_nl"][i, j] = integrate.simps(pk_lin*(0.5*(smoothing_kernel**2-(1.0 - smoothing_kernel)**2) - j0*smoothing_kernel*(1.0 - smoothing_kernel)),self.CAMBGenerator.ks)/(6.0*np.pi**2)
+            data["sigma_ss_nl"][i, j] = integrate.simps(pk_lin*smoothing_kernel**2*(1.0 - j0),self.CAMBGenerator.ks)/(6.0*np.pi**2)
 
             # Sigma^2_dd,rs, Sigma^2_ss,rs (Noda2017 model)
             data["sigma_dd_rs"][i, j] = integrate.simps(pk_smooth_lin*(1.0 - j0 + 2.0*j2),self.CAMBGenerator.ks)/(6.0*np.pi**2)
@@ -282,7 +282,7 @@ if __name__ == "__main__":
         PT_generator._generate_data()
 
     else:
-        generator = CambGenerator(om_resolution=2)
+        generator = CambGenerator(om_resolution=101)
         PT_generator = PTGenerator(generator, recon_smoothing_scale=21.21)
         PT_generator.get_data()
 
@@ -291,12 +291,21 @@ if __name__ == "__main__":
         #print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
 
         # import matplotlib.pyplot as plt
-        nvals = 100
-        sigmas = np.empty((nvals, 9))
-        oms = np.linspace(0.2, 0.4, nvals)
-        for i, om in enumerate(oms):
-            data = PT_generator.get_data(om)
-
+        # nvals = 100
+        # sigmas = np.empty((nvals, 9))
+        # oms = np.linspace(0.2, 0.4, nvals)
+        # for i, om in enumerate(oms):
+        #     data = PT_generator.get_data(om)
+        #     sigmas[i, 0] = data["sigma"]
+        #     sigmas[i, 1] = data["sigma_dd"]
+        #     sigmas[i, 2] = data["sigma_ss"]
+        #     sigmas[i, 3] = data["sigma_nl"]
+        #     sigmas[i, 4] = data["sigma_dd_nl"]
+        #     sigmas[i, 5] = data["sigma_sd_nl"]
+        #     sigmas[i, 6] = data["sigma_ss_nl"]
+        #     sigmas[i, 7] = data["sigma_dd_rs"]
+        #     sigmas[i, 8] = data["sigma_ss_rs"]
+        #
         # plt.plot(oms, sigmas[0:, 0], label=r"$\Sigma^{2}$")
         # plt.plot(oms, sigmas[0:, 1], label=r"$\Sigma^{2}_{dd}$")
         # plt.plot(oms, sigmas[0:, 2], label=r"$\Sigma^{2}_{ss}$")
@@ -309,7 +318,7 @@ if __name__ == "__main__":
         # plt.ylim(0.0, 50.0)
         # plt.legend()
         # plt.show()
-        #
+
         # plt.plot(PT_generator.CAMBGenerator.ks, PT_generator.get_data(0.2)[9], label=r"$R_{1}(\Omega_{m}=0.2)$")
         # plt.plot(PT_generator.CAMBGenerator.ks, PT_generator.get_data(0.3)[9], label=r"$R_{1}(\Omega_{m}=0.3)$")
         # plt.plot(PT_generator.CAMBGenerator.ks, -PT_generator.get_data(0.2)[10], label=r"$-R_{2}(\Omega_{m}=0.2)$")

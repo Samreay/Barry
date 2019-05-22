@@ -21,7 +21,7 @@ class PowerDing2018(PowerSpectrumFit):
 
         self.PT = PTGenerator(self.camb, smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
         if not self.fit_omega_m:
-            _, _, _, self.sigma_nl, self.sigma_dd_nl, self.sigma_sd_nl, self.sigma_ss_nl, _, _, _, _, _, _, _, _, _, _ = self.PT.get_data(om=self.omega_m)
+            PT_data = self.PT.get_data(om=self.omega_m)
             if not self.fit_growth:
                 self.growth = self.omega_m ** 0.55
                 if self.recon:
