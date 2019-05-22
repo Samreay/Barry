@@ -160,9 +160,9 @@ class PTGenerator(object):
                 r2pk = rvals ** 2 * pk_smooth_lin
                 IP0 = kval**2*((-10.0*rx*xs + 7.0*xs).T + 3.0*rvals) / (14.0 * rvals * y**2)
                 IP1 = kval**2*((- 6.0*rx*xs + 7.0*xs).T - rvals) / (14.0 * rvals * y**2)
-                data["I00"][i, j, :] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP0*IP0, xs, axis=0), rvals)
-                data["I01"][i, j, :] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP0*IP1, xs, axis=0), rvals)
-                data["I11"][i, j, :] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP1*IP1, xs, axis=0), rvals)
+                data["I00"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP0*IP0, xs, axis=0), rvals)
+                data["I01"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP0*IP1, xs, axis=0), rvals)
+                data["I11"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP1*IP1, xs, axis=0), rvals)
             data["I00"][i, j, :] *= self.CAMBGenerator.ks**3/(2.0*np.pi**2)/pk_smooth_lin
             data["I01"][i, j, :] *= self.CAMBGenerator.ks**3/(2.0*np.pi**2)/pk_smooth_lin
             data["I11"][i, j, :] *= self.CAMBGenerator.ks**3/(2.0*np.pi**2)/pk_smooth_lin
@@ -305,6 +305,7 @@ if __name__ == "__main__":
         #     sigmas[i, 6] = data["sigma_ss_nl"]
         #     sigmas[i, 7] = data["sigma_dd_rs"]
         #     sigmas[i, 8] = data["sigma_ss_rs"]
+        #     print(data["sigma_dd"], data["sigma_dd_nl"])
         #
         # plt.plot(oms, sigmas[0:, 0], label=r"$\Sigma^{2}$")
         # plt.plot(oms, sigmas[0:, 1], label=r"$\Sigma^{2}_{dd}$")
@@ -318,11 +319,16 @@ if __name__ == "__main__":
         # plt.ylim(0.0, 50.0)
         # plt.legend()
         # plt.show()
-
-        # plt.plot(PT_generator.CAMBGenerator.ks, PT_generator.get_data(0.2)[9], label=r"$R_{1}(\Omega_{m}=0.2)$")
-        # plt.plot(PT_generator.CAMBGenerator.ks, PT_generator.get_data(0.3)[9], label=r"$R_{1}(\Omega_{m}=0.3)$")
-        # plt.plot(PT_generator.CAMBGenerator.ks, -PT_generator.get_data(0.2)[10], label=r"$-R_{2}(\Omega_{m}=0.2)$")
-        # plt.plot(PT_generator.CAMBGenerator.ks, -PT_generator.get_data(0.3)[10], label=r"$-R_{2}(\Omega_{m}=0.3)$")
+        #
+        # PT = np.array(
+        #     pd.read_csv("/Volumes/Work/ICRAR/codes/PT_integrals_waves_linear.dat", delim_whitespace=True, dtype=float,
+        #                 header=None, skiprows=1))
+        # PT = PT.T
+        #
+        # plt.plot(PT_generator.CAMBGenerator.ks, PT_generator.get_data(0.2)["R1"], label=r"$R_{1}(\Omega_{m}=0.2)$")
+        # plt.plot(PT_generator.CAMBGenerator.ks, PT_generator.get_data(0.3)["R1"], label=r"$R_{1}(\Omega_{m}=0.3)$")
+        # plt.plot(PT_generator.CAMBGenerator.ks, -PT_generator.get_data(0.2)["R2"], label=r"$-R_{2}(\Omega_{m}=0.2)$")
+        # plt.plot(PT_generator.CAMBGenerator.ks, -PT_generator.get_data(0.3)["R2"], label=r"$-R_{2}(\Omega_{m}=0.3)$")
         # plt.ylim(1.0e-8, 1.0e5)
         # plt.xscale("log")
         # plt.yscale("log")
@@ -332,9 +338,10 @@ if __name__ == "__main__":
         # pk_lin = generator.get_data(0.3121)[1]
         # pk_smooth_lin = smooth(generator.ks, pk_lin, method=PT_generator.smooth_type)
         # plt.plot(PT_generator.CAMBGenerator.ks, generator.get_data(0.3121)[1], label=r"$P(k)$")
-        # plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin*(1.0 + PT_generator.get_data(0.3121)[11] + PT_generator.get_data(0.3121)[14]), label=r"$P_{sm,\delta \delta}(\Omega_{m}=0.3)$")
-        # plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin*(1.0 + PT_generator.get_data(0.3121)[12] + PT_generator.get_data(0.3121)[15]), label=r"$P_{sm,\delta \theta}(\Omega_{m}=0.3)$")
-        # plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin*(1.0 + PT_generator.get_data(0.3121)[13] + PT_generator.get_data(0.3121)[16]), label=r"$P_{sm,\theta \theta}(\Omega_{m}=0.3)$")
+        # plt.plot(PT[0,0:], -6.0*PT[0,0:]**2*PT[1,0:]*PT[18,0:])
+        # plt.plot(PT_generator.CAMBGenerator.ks, -pk_smooth_lin*(PT_generator.get_data(0.3121)["J00"]), label=r"$P_{sm,\delta \delta}(\Omega_{m}=0.3)$")
+        # #plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin*(1.0 + PT_generator.get_data(0.3121)["I01"] + PT_generator.get_data(0.3121)["J01"]), label=r"$P_{sm,\delta \theta}(\Omega_{m}=0.3)$")
+        # #plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin*(1.0 + PT_generator.get_data(0.3121)["I11"] + PT_generator.get_data(0.3121)["J11"]), label=r"$P_{sm,\theta \theta}(\Omega_{m}=0.3)$")
         # plt.xscale("log")
         # plt.yscale("log")
         # plt.legend()
