@@ -21,10 +21,10 @@ class PowerNoda2019(PowerSpectrumFit):
 
         self.PT = PTGenerator(self.camb, smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
         if not self.fit_omega_m:
-            _, _, _, _, _, _, _, self.sigma_dd_rs, self.sigma_ss_rs, _, _, self.J00, self.J01, self.J11, self.I00, self.I01, self.I11 = self.PT.get_data(om=self.omega_m)
+            self.pt_data = self.PT.get_data(om=self.omega_m)
             if not self.fit_growth:
                 self.growth = self.omega_m ** 0.55
-                self.damping = -np.outer((1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2) * self.sigma_dd_rs + (self.growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * self.sigma_ss_rs, self.camb.ks ** 2)
+                self.damping = -np.outer((1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2) * self.pt_data["sigma_dd_rs"] + (self.growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * self.pt_data["sigma_ss_rs"], self.camb.ks ** 2)
                 if not self.fit_gamma:
                     if self.recon:
                         self.damping /= self.gammaval
@@ -60,9 +60,9 @@ class PowerNoda2019(PowerSpectrumFit):
         ks = self.camb.ks
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p)
         if self.fit_omega_m:
-            _, _, _, _, _, _, _, sigma_dd_rs, sigma_ss_rs, _, _, J00, J01, J11, I00, I01, I11 = self.PT.get_data(om=p["om"])
+            pt_data = self.PT.get_data(om=p["om"])
         else:
-            sigma_dd_rs, sigma_ss_rs, J01, J11, I00, I01, I11 = self.J00, self.J01, self.J11, self.I00, self.I01, self.I11
+            pt_data = self.pt_data
 
         # Compute the growth rate depending on what we have left as free parameters
         if self.fit_growth:
@@ -75,8 +75,8 @@ class PowerNoda2019(PowerSpectrumFit):
 
         # Compute the BAO damping
         if self.fit_growth or self.fit_omega_m:
-            damping = -np.outer((1.0 + (2.0 + growth) * growth * self.mu ** 2) * sigma_dd_rs + (
-                        growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * sigma_ss_rs, ks ** 2)
+            damping = -np.outer((1.0 + (2.0 + growth) * growth * self.mu ** 2) * pt_data["sigma_dd_rs"] + (
+                        growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * pt_data["sigma_ss_rs"], ks ** 2)
             if self.fit_gamma:
                 damping /= p["gamma"]
             else:
@@ -100,7 +100,7 @@ class PowerNoda2019(PowerSpectrumFit):
         pk_smooth = p["b"]**2*pk_smooth_lin*fog
 
         # Compute the non-linear SPT correction to the smooth power spectrum
-        pk_spt = I00 + J00 + 2.0*np.outer(growth/p["b"]*self.mu**2, I01 + J01) + np.outer((growth/p["b"]*self.mu**2)**2, I11 + J11)
+        pk_spt = pt_data["I00"] + pt_data["J00"] + 2.0*np.outer(growth/p["b"]*self.mu**2, pt_data["I01"] + pt_data["J01"]) + np.outer((growth/p["b"]*self.mu**2)**2, pt_data["I11"] + pt_data["J11"])
 
         # Integrate over mu
         pk1d = integrate.simps(pk_smooth*(1.0 + pk_ratio*propagator + pk_spt), self.mu, axis=0)
@@ -158,8 +158,8 @@ if __name__ == "__main__":
         model_pre.smooth_type = "hinton2017"
         pk_smooth_lin, _ = model_pre.compute_basic_power_spectrum(p)
         growth = p["om"]**0.55
-        _, _, _, _, _, _, _, sigma_dd_rs, sigma_ss_rs, _, _, J00, J01, J11, I00, I01, I11 = model_pre.PT.get_data(om=p["om"])
-        pk_spt = I00 + J00 + 2.0/3.0*growth/p["b"]*(I01 + J01) + 1.0/5.0*(growth/p["b"])**2*(I11 + J11)
+        pt_data = model_pre.PT.get_data(om=p["om"])
+        pk_spt = pt_data["I00"] + pt_data["J00"] + 2.0/3.0*growth/p["b"]*(pt_data["I01"] + pt_data["J01"]) + 1.0/5.0*(growth/p["b"])**2*(pt_data["I11"] + pt_data["J11"])
         pk_smooth_interp = splev(data["ks_input"], splrep(model_pre.camb.ks, pk_smooth_lin*(1.0+pk_spt)))
         pk_smooth_lin_windowed, mask = model_pre.adjust_model_window_effects(pk_smooth_interp)
         pk2 = model_pre.get_model(data, p)

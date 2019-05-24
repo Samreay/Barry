@@ -21,15 +21,15 @@ class PowerDing2018(PowerSpectrumFit):
 
         self.PT = PTGenerator(self.camb, smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
         if not self.fit_omega_m:
-            PT_data = self.PT.get_data(om=self.omega_m)
+            self.pt_data = self.PT.get_data(om=self.omega_m)
             if not self.fit_growth:
                 self.growth = self.omega_m ** 0.55
                 if self.recon:
-                    self.damping_dd = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.sigma_dd_nl)
-                    self.damping_sd = np.exp(-np.outer(1.0 + self.growth * self.mu ** 2, self.camb.ks ** 2) * self.sigma_dd_nl)
-                    self.damping_ss = np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.sigma_ss_nl)
+                    self.damping_dd = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_dd_nl"])
+                    self.damping_sd = np.exp(-np.outer(1.0 + self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_dd_nl"])
+                    self.damping_ss = np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.pt_data["sigma_ss_nl"])
                 else:
-                    self.damping = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.sigma_nl)
+                    self.damping = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_nl"])
 
         # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
         if self.recon:
@@ -67,9 +67,9 @@ class PowerDing2018(PowerSpectrumFit):
         ks = self.camb.ks
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p)
         if self.fit_omega_m:
-            _, _, _, sigma_nl, sigma_dd_nl, sigma_sd_nl, sigma_ss_nl, _, _, _, _, _, _, _, _, _, _ = self.PT.get_data(om=p["om"])
+            pt_data = self.PT.get_data(om=p["om"])
         else:
-            sigma_nl, sigma_dd_nl, sigma_sd_nl, sigma_ss_nl = self.sigma_nl, self.sigma_dd_nl, self.sigma_sd_nl, self.sigma_ss_nl
+            pt_data = self.pt_data
 
         # Compute the growth rate depending on what we have left as free parameters
         if self.fit_growth:
@@ -83,14 +83,14 @@ class PowerDing2018(PowerSpectrumFit):
         # Compute the BAO damping
         if self.recon:
             if self.fit_growth or self.fit_omega_m:
-                damping_dd = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * sigma_dd_nl)
-                damping_sd = np.exp(-np.outer(1.0 + growth * self.mu ** 2, ks ** 2) * sigma_dd_nl)
-                damping_ss = np.exp(-np.tile(ks ** 2, (self.nmu, 1)) * sigma_ss_nl)
+                damping_dd = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * pt_data["sigma_dd_nl"])
+                damping_sd = np.exp(-np.outer(1.0 + growth * self.mu ** 2, ks ** 2) * pt_data["sigma_dd_nl"])
+                damping_ss = np.exp(-np.tile(ks ** 2, (self.nmu, 1)) * pt_data["sigma_ss_nl"])
             else:
                 damping_dd, damping_sd, damping_ss = self.damping_dd, self.damping_sd, self.damping_ss
         else:
             if self.fit_growth or self.fit_omega_m:
-                damping = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * sigma_nl)
+                damping = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * pt_data["sigma_nl"])
             else:
                 damping = self.damping
 

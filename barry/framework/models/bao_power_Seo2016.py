@@ -21,14 +21,14 @@ class PowerSeo2016(PowerSpectrumFit):
 
         self.PT = PTGenerator(self.camb, smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
         if not self.fit_omega_m:
-            self.sigma, self.sigma_dd, self.sigma_ss, _, _, _, _, _, _, self.R1, self.R2, _, _, _, _, _, _ = self.PT.get_data(om=self.omega_m)
+            self.pt_data = self.PT.get_data(om=self.omega_m)
             if not self.fit_growth:
                 self.growth = self.omega_m ** 0.55
                 if self.recon:
-                    self.damping_dd = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.sigma_dd / 2.0)
-                    self.damping_ss = np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.sigma_ss / 2.0)
+                    self.damping_dd = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_dd"] / 2.0)
+                    self.damping_ss = np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.pt_data["sigma_ss"] / 2.0)
                 else:
-                    self.damping = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.sigma / 2.0)
+                    self.damping = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma"] / 2.0)
 
         # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
         if self.recon:
@@ -66,9 +66,9 @@ class PowerSeo2016(PowerSpectrumFit):
         ks = self.camb.ks
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p)
         if self.fit_omega_m:
-            sigma, sigma_dd, sigma_ss, _, _, _, _, _, _, R1, R2, _, _, _, _, _, _ = self.PT.get_data(om=p["om"])
+            pt_data = self.PT.get_data(om=p["om"])
         else:
-            sigma, sigma_dd, sigma_ss, R1, R2 = self.sigma, self.sigma_dd, self.sigma_ss, self.R1, self.R2
+            pt_data = self.pt_data
 
         # Compute the growth rate depending on what we have left as free parameters
         if self.fit_growth:
@@ -82,13 +82,13 @@ class PowerSeo2016(PowerSpectrumFit):
         # Compute the BAO damping
         if self.recon:
             if self.fit_growth or self.fit_omega_m:
-                damping_dd = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * sigma_dd / 2.0)
-                damping_ss = np.exp(-np.tile(ks ** 2, (self.nmu, 1)) * sigma_ss / 2.0)
+                damping_dd = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * pt_data["sigma_dd"] / 2.0)
+                damping_ss = np.exp(-np.tile(ks ** 2, (self.nmu, 1)) * pt_data["sigma_ss"] / 2.0)
             else:
                 damping_dd, damping_ss = self.damping_dd, self.damping_ss
         else:
             if self.fit_growth or self.fit_omega_m:
-                damping = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * sigma / 2.0)
+                damping = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * pt_data["sigma"] / 2.0)
             else:
                 damping = self.damping
 
@@ -98,8 +98,8 @@ class PowerSeo2016(PowerSpectrumFit):
             smooth_prefac = np.tile(self.smoothing_kernel/p["b"], (self.nmu, 1))
             propagator = (kaiser*damping_dd + smooth_prefac*(damping_ss-damping_dd))**2
         else:
-            prefac_k = 1.0 + np.tile(3.0/7.0*(R1*(1.0-4.0/(9.0*p["b"]))+R2), (self.nmu, 1))
-            prefac_mu = np.outer(self.mu**2, growth/p["b"] + 3.0/7.0*growth*R1*(2.0-1.0/(3.0*p["b"])) + 6.0/7.0*growth*R2)
+            prefac_k = 1.0 + np.tile(3.0/7.0*(pt_data["R1"]*(1.0-4.0/(9.0*p["b"]))+pt_data["R2"]), (self.nmu, 1))
+            prefac_mu = np.outer(self.mu**2, growth/p["b"] + 3.0/7.0*growth*pt_data["R1"]*(2.0-1.0/(3.0*p["b"])) + 6.0/7.0*growth*pt_data["R2"])
             propagator = ((prefac_k + prefac_mu)*damping)**2
 
         # Compute the smooth model
