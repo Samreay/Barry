@@ -24,9 +24,10 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_cpu=24,
 #SBATCH -p {partition}
 #SBATCH -J {name}
 #SBATCH --array=1-{num_tasks}%{num_cpu}
-#SBATCH -n 1
 #SBATCH --ntasks=1
-#SBATCH --mem=4G
+#SBATCH --cpus-per-task=4
+#SBATCH --nodes=1
+#SBATCH --mem=12G
 #SBATCH -t 04:00:00
 #SBATCH -o {output_dir}/{name}.o%j
 

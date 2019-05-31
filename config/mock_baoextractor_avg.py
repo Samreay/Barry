@@ -27,7 +27,7 @@ if __name__ == "__main__":
     fitter.set_models(*models)
     fitter.set_data(*datas)
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(50)
+    fitter.set_num_walkers(15)
     fitter.fit(file, viewer=False)
 
     if fitter.is_laptop():
