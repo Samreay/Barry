@@ -1,28 +1,22 @@
-import logging
 import sys
+sys.path.append("..")
 
-
-sys.path.append("../..")
-from barry.framework.models import PowerNoda2019
-from barry.framework.datasets import MockPowerSpectrum
-from barry.framework.postprocessing import BAOExtractor
-from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
-from barry.config.base import setup
+from barry.setup import setup
 from barry.framework.fitter import Fitter
+from barry.framework.datasets.mock_correlation import MockAverageCorrelations
+from barry.framework.models.bao_correlation_poly import CorrelationPolynomial
+
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
-    c = CambGenerator()
-    r_s, _ = c.get_data()
+    models = [CorrelationPolynomial(fit_omega_m=False, name="PolyCorrelation (NoOm)"),
+              CorrelationPolynomial(fit_omega_m=True, name="PolyCorrelation (FitOm)")]
 
-    postprocess = BAOExtractor(r_s)
-    models = [PowerNoda2019(postprocess=postprocess)]
+    datas = [MockAverageCorrelations(name="MockAvgRecon30-200", recon=True, min_dist=30, max_dist=200)]
 
-    datas = [MockPowerSpectrum(name="BAOE mean", recon=True, min_k=0.02, max_k=0.30, postprocess=postprocess)]
-
-    sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name, save_interval=30)
+    sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name, save_interval=300)
 
     fitter = Fitter(dir_name)
     fitter.set_models(*models)

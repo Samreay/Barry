@@ -1,20 +1,22 @@
-import logging
 import sys
-sys.path.append("../..")
+sys.path.append("..")
 
 from barry.framework.samplers.ensemble import EnsembleSampler
-from barry.config.base import setup
+from barry.setup import setup
 from barry.framework.fitter import Fitter
 from barry.framework.datasets.mock_power import MockPowerSpectrum
-from barry.framework.models.bao_power_poly import PowerPolynomial
+from barry.framework.models import PowerBeutler2017, PowerDing2018, PowerSeo2016
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
-    models = [PowerPolynomial(fit_omega_m=False, name="PolyPk (NoOm)")]
+    models = [
+        PowerBeutler2017(fit_omega_m=False, name="Beutler2017"),
+        PowerDing2018(fit_omega_m=False, name="Ding2018", recon_smoothing_scale=21.21, recon=True),
+        PowerSeo2016(fit_omega_m=False, name="Seo2016", recon_smoothing_scale=21.21, recon=True),
+    ]
 
-    datas = [MockPowerSpectrum(name="MockAvgPk 02-30 Recon", recon=True, min_k=0.02, max_k=0.30),
-             MockPowerSpectrum(name="MockAvgPk 02-30", recon=False, min_k=0.02, max_k=0.30)]
+    datas = [MockPowerSpectrum(name="MockAvgPk 02-30 Recon", recon=True, min_k=0.02, max_k=0.30)]
 
     sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name, save_interval=30)
 
