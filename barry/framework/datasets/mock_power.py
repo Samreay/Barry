@@ -2,12 +2,11 @@ import os
 import logging
 import inspect
 import pickle
-import numpy as np
 from barry.framework.dataset import Dataset
 
 
 class MockPowerSpectrum(Dataset):
-    def __init__(self, average=True, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True, reduce_cov_factor=1, name="BAOExtractor"):
+    def __init__(self, average=True, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True, reduce_cov_factor=1, name="BAOExtractor", postprocess=None):
         super().__init__(name)
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + "/../../data/taipan_mocks/mock_individual/")
@@ -17,6 +16,7 @@ class MockPowerSpectrum(Dataset):
         self.recon = recon
         self.realisation = realisation
         self.average = average
+        self.postprocess = postprocess
 
         self.data_filename = os.path.abspath(self.data_location + "/taipan_mock_lpow.pkl")
 
@@ -85,6 +85,8 @@ class MockPowerSpectrum(Dataset):
 
     def _rebin_data(self, dataframe):
         k_rebinned, pk_rebinned, mask = self._agg_data(dataframe)
+        if self.postprocess is not None:
+            pk_rebinned = self.postprocess(ks=k_rebinned, pk=pk_rebinned)
         return k_rebinned[mask], pk_rebinned[mask]
 
     def _load_winfit(self, winfit_file):

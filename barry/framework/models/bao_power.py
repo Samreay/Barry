@@ -5,10 +5,11 @@ from barry.framework.cosmology.power_spectrum_smoothing import smooth, validate_
 from barry.framework.model import Model
 import numpy as np
 
+
 # TODO: make h0 and omega_m more easily changable if we are not fitting them
 class PowerSpectrumFit(Model):
-    def __init__(self, fit_omega_m=False, smooth_type="hinton2017", name="Base Power Spectrum Fit"):
-        super().__init__(name)
+    def __init__(self, fit_omega_m=False, smooth_type="hinton2017", name="Pk Basic", postprocess=None):
+        super().__init__(name, postprocess=postprocess)
         self.smooth_type = smooth_type.lower()
         if not validate_smooth_method(smooth_type):
             exit(0)
@@ -20,8 +21,8 @@ class PowerSpectrumFit(Model):
         if not self.fit_omega_m:
             self.omega_m = 0.3121
             self.r_s, self.pk_lin = self.camb.get_data(om=self.omega_m)
-            self.pk_smooth_lin = smooth(self.camb.ks, self.pk_lin, method=self.smooth_type, om=self.omega_m, h0=self.h0) # Get the smoothed power spectrum
-            self.pk_ratio = (self.pk_lin / self.pk_smooth_lin - 1.0) # Get the ratio
+            self.pk_smooth_lin = smooth(self.camb.ks, self.pk_lin, method=self.smooth_type, om=self.omega_m, h0=self.h0)  # Get the smoothed power spectrum
+            self.pk_ratio = (self.pk_lin / self.pk_smooth_lin - 1.0)  # Get the ratio
 
         self.declare_parameters()
 
@@ -55,7 +56,7 @@ class PowerSpectrumFit(Model):
         if self.fit_omega_m:
             r_s, pk_lin = self.camb.get_data(om=p["om"], h0=self.h0)
             pk_smooth_lin = smooth(self.camb.ks, pk_lin, method=self.smooth_type, om=p["om"], h0=self.h0)  # Get the smoothed power spectrum
-            pk_ratio = (pk_lin / pk_smooth_lin - 1.0) # Get the ratio
+            pk_ratio = (pk_lin / pk_smooth_lin - 1.0)  # Get the ratio
         else:
             pk_smooth_lin, pk_ratio = self.pk_smooth_lin, self.pk_ratio
 
@@ -110,8 +111,11 @@ class PowerSpectrumFit(Model):
         pk_generated = self.compute_power_spectrum(data["ks_input"], p)
 
         # Morph it into a model representative of our survey and its selection/window/binning effects
-        pk_windowed, mask = self.adjust_model_window_effects(pk_generated)
-        return pk_windowed[mask]
+        pk_model, mask = self.adjust_model_window_effects(pk_generated)
+
+        if self.postprocess is not None:
+            pk_model = self.postprocess(ks=data["ks_output"], pk=pk_model)
+        return pk_model[mask]
 
 
 if __name__ == "__main__":

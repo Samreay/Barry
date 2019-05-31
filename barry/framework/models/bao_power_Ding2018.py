@@ -10,11 +10,11 @@ from barry.framework.cosmology.PT_generator import PTGenerator
 
 class PowerDing2018(PowerSpectrumFit):
 
-    def __init__(self, fit_omega_m=False, fit_growth=False, smooth_type="hinton2017", recon=False, recon_smoothing_scale=21.21, name="BAO Power Spectrum Ding 2018 Fit"):
+    def __init__(self, fit_omega_m=False, fit_growth=False, smooth_type="hinton2017", recon=False, recon_smoothing_scale=21.21, name="Pk Ding 2018", postprocess=None):
         self.recon = recon
         self.recon_smoothing_scale = recon_smoothing_scale
         self.fit_growth = fit_growth
-        super().__init__(fit_omega_m=fit_omega_m, smooth_type=smooth_type, name=name)
+        super().__init__(fit_omega_m=fit_omega_m, smooth_type=smooth_type, name=name, postprocess=postprocess)
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
@@ -121,14 +121,6 @@ class PowerDing2018(PowerSpectrumFit):
         pk_final = splev(k / p["alpha"], splrep(ks, pk1d + shape))
 
         return pk_final
-
-    def get_model(self, data, p):
-        # Get the generic pk model
-        pk_generated = self.compute_power_spectrum(data["ks_input"], p)
-
-        # Morph it into a model representative of our survey and its selection/window/binning effects
-        pk_windowed, mask = self.adjust_model_window_effects(pk_generated)
-        return pk_windowed[mask]
 
 
 if __name__ == "__main__":

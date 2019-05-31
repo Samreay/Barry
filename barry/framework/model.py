@@ -9,11 +9,12 @@ Param = namedtuple('Param', ['name', 'label', 'min', 'max'])
 
 
 class Model(ABC):
-    def __init__(self, name):
+    def __init__(self, name, postprocess=None):
         self.name = name
         self.logger = logging.getLogger("barry")
         self.data = None
         self.params = []
+        self.postprocess = postprocess
 
     def get_name(self):
         return self.name

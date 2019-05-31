@@ -1,9 +1,12 @@
 import logging
 import sys
+
+
 sys.path.append("../..")
+from barry.framework.models import PowerNoda2019
+from barry.framework.datasets import MockPowerSpectrum
+from barry.framework.postprocessing import BAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.models.baoextractor_power_poly import BAOExtractor
-from barry.framework.datasets.mock_bao_extractor import MockBAOExtractorPowerSpectrum
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.config.base import setup
 from barry.framework.fitter import Fitter
@@ -14,9 +17,10 @@ if __name__ == "__main__":
     c = CambGenerator()
     r_s, _ = c.get_data()
 
-    models = [BAOExtractor(r_s, name="BAO Extractor")]
+    postprocess = BAOExtractor(r_s)
+    models = [PowerNoda2019(postprocess=postprocess)]
 
-    datas = [MockBAOExtractorPowerSpectrum(r_s, name="BAOE mean", recon=True, min_k=0.02, max_k=0.30)]
+    datas = [MockPowerSpectrum(name="BAOE mean", recon=True, min_k=0.02, max_k=0.30, postprocess=postprocess)]
 
     sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name, save_interval=30)
 

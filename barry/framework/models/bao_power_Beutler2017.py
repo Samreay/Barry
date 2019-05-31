@@ -8,8 +8,8 @@ from barry.framework.models.bao_power import PowerSpectrumFit
 
 class PowerBeutler2017(PowerSpectrumFit):
 
-    def __init__(self, fit_omega_m=False, smooth_type="hinton2017", recon=False, name="BAO Power Spectrum Beutler 2017 Fit"):
-        super().__init__(fit_omega_m=fit_omega_m, smooth_type=smooth_type, name=name)
+    def __init__(self, fit_omega_m=False, smooth_type="hinton2017", recon=False, name="Pk Beutler 2017", postprocess=None):
+        super().__init__(fit_omega_m=fit_omega_m, smooth_type=smooth_type, name=name, postprocess=postprocess)
 
         self.recon = recon
 
@@ -60,14 +60,6 @@ class PowerBeutler2017(PowerSpectrumFit):
         pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth*(1.0 + pk_ratio*C) + shape))
 
         return pk_final
-
-    def get_model(self, data, p):
-        # Get the generic pk model
-        pk_generated = self.compute_power_spectrum(data["ks_input"], p)
-
-        # Morph it into a model representative of our survey and its selection/window/binning effects
-        pk_windowed, mask = self.adjust_model_window_effects(pk_generated)
-        return pk_windowed[mask]
 
 
 if __name__ == "__main__":
