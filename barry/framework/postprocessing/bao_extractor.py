@@ -6,9 +6,10 @@ class BAOExtractor(PkPostProcess):
     """
     Parameters
     ----------
+    r_s : float
+        The sound horizon distance. In units of Mpc/h
     plot : bool, optional
         Whether to output debugging plots
-
     delta : float, optional
         The window (in units of `r_s` to smooth)
     """
@@ -18,7 +19,7 @@ class BAOExtractor(PkPostProcess):
         self.plot = plot
         self.delta = delta
 
-    def _postprocess(self, ks, pk, r_s):
+    def postprocess(self, ks, pk):
         """ Runs the BAO Extractor method and returns the extracted BAO signal.
 
         Warning that this is the estimator given in Eq5 Nishimichi et al 2018 (1708.00375)
@@ -32,8 +33,6 @@ class BAOExtractor(PkPostProcess):
             The k values for the BAO power spectrum
         pk : np.array
             The power spectrum at `ks`
-        r_s : float
-            The sound horizon distance. In units of Mpc/h
 
         Returns
         -------
