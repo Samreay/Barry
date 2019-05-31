@@ -3,7 +3,7 @@ import sys
 
 sys.path.append("..")
 from barry.setup import setup
-from barry.framework.models import PowerNoda2019
+from barry.framework.models import PowerNoda2019, PowerSeo2016, PowerBeutler2017, PowerDing2018
 from barry.framework.datasets import MockPowerSpectrum
 from barry.framework.postprocessing import BAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
@@ -17,7 +17,12 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
 
     postprocess = BAOExtractor(r_s)
-    models = [PowerNoda2019(postprocess=postprocess)]
+    models = [
+        PowerNoda2019(postprocess=postprocess),
+        PowerSeo2016(postprocess=postprocess),
+        PowerDing2018(postprocess=postprocess),
+        PowerBeutler2017(postprocess=postprocess)
+    ]
 
     datas = [MockPowerSpectrum(name="BAOE mean", recon=True, min_k=0.02, max_k=0.30, postprocess=postprocess)]
 
@@ -27,7 +32,7 @@ if __name__ == "__main__":
     fitter.set_models(*models)
     fitter.set_data(*datas)
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(15)
+    fitter.set_num_walkers(20)
     fitter.fit(file, viewer=False)
 
     if fitter.is_laptop():
