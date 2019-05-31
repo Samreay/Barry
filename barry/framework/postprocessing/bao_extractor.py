@@ -46,7 +46,7 @@ class BAOExtractor(PkPostProcess):
             k_diff = np.abs(ks - k)
             mask = k_diff < k_range
             numerator = (1 - (pk[mask] / p)).sum()
-            denominator = (1 - np.cos(r_s * (ks[mask] - k))).sum()
+            denominator = (1 - np.cos(self.r_s * (ks[mask] - k))).sum()
             res = numerator / denominator
             result.append(res)
 
