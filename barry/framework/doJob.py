@@ -25,16 +25,15 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_cpu=24,
 #SBATCH -J {name}
 #SBATCH --array=1-{num_tasks}%{num_cpu}
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
-#SBATCH --mem=20G
-#SBATCH -t 04:00:00
+#SBATCH --mem=12G
+#SBATCH -t 05:00:00
 #SBATCH -o {output_dir}/{name}.o%j
 
 IDIR={directory}
 conda deactivate
 conda activate {conda_env}
-module load mpich-x86_64
 echo $PATH
 echo "Activated python"
 executable=$(which python)
@@ -43,8 +42,8 @@ echo $executable
 PROG={executable}
 PARAMS=`expr ${{SLURM_ARRAY_TASK_ID}} - 1`
 cd $IDIR
-sleep $((RANDOM % 3))
-mpirun -np 4 $executable $PROG $PARAMS
+sleep $((RANDOM % 5))
+$executable $PROG $PARAMS
 '''
 
     n = "%s/%s.q" % (directory, executable[:executable.index(".py")])

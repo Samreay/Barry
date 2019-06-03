@@ -71,7 +71,7 @@ class MetropolisHastings(GenericSampler):
         self.covariance_file = None
         self.covariance_plot = None
 
-    def fit(self, log_posterior, start, save_dims=None, uid=None, mpi=False):
+    def fit(self, log_posterior, start, save_dims=None, uid=None):
         """
         Fit the model
 
