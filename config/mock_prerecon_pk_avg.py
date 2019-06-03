@@ -5,27 +5,22 @@ sys.path.append("..")
 from barry.setup import setup
 from barry.framework.models import PowerNoda2019, PowerSeo2016, PowerBeutler2017, PowerDing2018
 from barry.framework.datasets import MockPowerSpectrum
-from barry.framework.postprocessing import BAOExtractor
-from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
-    c = CambGenerator()
-    r_s, _ = c.get_data()
+    r = False
 
-    postprocess = BAOExtractor(r_s)
-    r = True
     models = [
-        PowerNoda2019(postprocess=postprocess, recon=r),
-        PowerSeo2016(postprocess=postprocess, recon=r),
-        PowerDing2018(postprocess=postprocess, recon=r),
-        PowerBeutler2017(postprocess=postprocess, recon=r)
+        PowerNoda2019(recon=r),
+        PowerSeo2016(recon=r),
+        PowerDing2018(recon=r),
+        PowerBeutler2017(recon=r)
     ]
 
-    datas = [MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.02, max_k=0.30, postprocess=postprocess)]
+    datas = [MockPowerSpectrum(name="Preprecon mean", recon=r, min_k=0.02, max_k=0.30)]
 
     sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name, save_interval=30)
 
