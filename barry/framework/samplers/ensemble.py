@@ -49,7 +49,7 @@ class EnsembleSampler(GenericSampler):
         self.save_interval = save_interval
         self.num_walkers = num_walkers
 
-    def fit(self, log_posterior, start, save_dims=None, uid=None):
+    def fit(self, log_posterior, start, save_dims=None, uid=None, mpi=False):
         """ Runs the sampler over the model and returns the flat chain of results
 
         Parameters
@@ -77,52 +77,37 @@ class EnsembleSampler(GenericSampler):
         """
         assert log_posterior is not None
         assert start is not None
-        from emcee.utils import MPIPool
+        import schwimmbad
         import emcee
-        try:  # pragma: no cover
-            self.pool = MPIPool()
-            if not self.pool.is_master():
-                self.logger.info("Slave waiting")
-                self.master = False
-                self.pool.wait()
-                sys.exit(0)
+        with schwimmbad.choose_pool(mpi=mpi, processes=4) as pool:
+
+            if callable(start):
+                num_dim = np.array(start()).size
             else:
-                self.logger.info("MPIPool successful initialised and master found. "
-                                 "Running with %d cores." % self.pool.size)
-        except ImportError:
-            self.logger.info("mpi4py is not installed or not configured properly. "
-                             "Ignore if running through python, not mpirun")
-        except ValueError as e:  # pragma: no cover
-            self.logger.info("Unable to start MPI pool, expected normal python execution")
-            self.logger.info(str(e))
+                num_dim = np.array(start.size)
+            if self.num_walkers is None:
+                self.num_walkers = num_dim * 8
+                self.num_walkers = max(self.num_walkers, 20)
 
-        if callable(start):
-            num_dim = np.array(start()).size
-        else:
-            num_dim = np.array(start.size)
-        if self.num_walkers is None:
-            self.num_walkers = num_dim * 8
-            self.num_walkers = max(self.num_walkers, 20)
+            self.logger.debug("Fitting framework with %d dimensions" % num_dim)
 
-        self.logger.debug("Fitting framework with %d dimensions" % num_dim)
+            self.logger.info("Using Ensemble Sampler")
+            sampler = emcee.EnsembleSampler(self.num_walkers, num_dim,
+                                            log_posterior,
+                                            pool=pool, live_dangerously=True)
 
-        self.logger.info("Using Ensemble Sampler")
-        sampler = emcee.EnsembleSampler(self.num_walkers, num_dim,
-                                        log_posterior,
-                                        pool=self.pool, live_dangerously=True)
-
-        emcee_wrapper = EmceeWrapper(sampler)
-        flat_chain = emcee_wrapper.run_chain(self.num_steps, self.num_burn,
-                                             self.num_walkers, num_dim,
-                                             start=start,
-                                             save_dim=save_dims,
-                                             temp_dir=self.temp_dir,
-                                             uid=uid,
-                                             save_interval=self.save_interval)
-        self.logger.debug("Fit finished")
-        if self.pool is not None:  # pragma: no cover
-            self.pool.close()
-            self.logger.debug("Pool closed")
+            emcee_wrapper = EmceeWrapper(sampler)
+            flat_chain = emcee_wrapper.run_chain(self.num_steps, self.num_burn,
+                                                 self.num_walkers, num_dim,
+                                                 start=start,
+                                                 save_dim=save_dims,
+                                                 temp_dir=self.temp_dir,
+                                                 uid=uid,
+                                                 save_interval=self.save_interval)
+            self.logger.debug("Fit finished")
+            if self.pool is not None:  # pragma: no cover
+                self.pool.close()
+                self.logger.debug("Pool closed")
         return {"chain": flat_chain, "weights": np.ones(flat_chain.shape[0])}
 
     def load_file(self, filename):

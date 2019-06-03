@@ -29,7 +29,8 @@ if __name__ == "__main__":
     fitter.set_data(*datas)
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
-    fitter.fit(file, viewer=False)
+    mpi = not fitter.is_laptop()
+    fitter.fit(file, viewer=False, mpi=mpi)
 
     if fitter.is_laptop():
         from chainconsumer import ChainConsumer
