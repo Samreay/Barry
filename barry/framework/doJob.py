@@ -34,7 +34,7 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_cpu=24,
 IDIR={directory}
 conda deactivate
 conda activate {conda_env}
-module load rocks-openmpi
+module load mpich-x86_64
 echo $PATH
 echo "Activated python"
 executable=$(which python)
@@ -43,8 +43,8 @@ echo $executable
 PROG={executable}
 PARAMS=`expr ${{SLURM_ARRAY_TASK_ID}} - 1`
 cd $IDIR
-sleep $((RANDOM % 10))
-/opt/openmpi/bin/mpirun $executable $PROG $PARAMS
+sleep $((RANDOM % 3))
+mpirun -np 4 $executable $PROG $PARAMS
 '''
 
     n = "%s/%s.q" % (directory, executable[:executable.index(".py")])
