@@ -16,8 +16,8 @@ class PowerSpectrumFit(Model):
         self.fit_omega_m = fit_omega_m
 
         # Set up data structures for model fitting
-        self.h0 = 0.6751
-        self.camb = CambGenerator(om_resolution=20, h0=self.h0)
+        self.camb = CambGenerator()
+        self.h0 = self.camb.h0
         if not self.fit_omega_m:
             self.omega_m = 0.3121
             self.r_s, self.pk_lin = self.camb.get_data(om=self.omega_m)
