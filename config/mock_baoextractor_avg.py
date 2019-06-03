@@ -27,13 +27,13 @@ if __name__ == "__main__":
 
     datas = [MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.02, max_k=0.30, postprocess=postprocess)]
 
-    sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name, save_interval=30)
+    sampler = EnsembleSampler(num_steps=2500, num_burn=500, temp_dir=dir_name, save_interval=30)
 
     fitter = Fitter(dir_name)
     fitter.set_models(*models)
     fitter.set_data(*datas)
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(10)
+    fitter.set_num_walkers(50)
     fitter.fit(file, viewer=False)
 
     if fitter.is_laptop():
