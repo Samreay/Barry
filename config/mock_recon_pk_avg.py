@@ -14,7 +14,7 @@ if __name__ == "__main__":
     r = True
 
     models = [
-        PowerNoda2019(recon=r),
+        # PowerNoda2019(recon=r),
         PowerSeo2016(recon=r),
         PowerDing2018(recon=r),
         PowerBeutler2017(recon=r)
