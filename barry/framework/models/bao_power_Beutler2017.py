@@ -1,27 +1,25 @@
 import logging
 import numpy as np
 from scipy.interpolate import splev, splrep
-import sys
-sys.path.append("../../..")
 from barry.framework.models.bao_power import PowerSpectrumFit
 
 
 class PowerBeutler2017(PowerSpectrumFit):
 
-    def __init__(self, fit_omega_m=False, smooth_type="hinton2017", recon=False, name="Pk Beutler 2017", postprocess=None):
-        super().__init__(fit_omega_m=fit_omega_m, smooth_type=smooth_type, name=name, postprocess=postprocess)
+    def __init__(self, fix_params=["om"], smooth_type="hinton2017", recon=False, name="Pk Beutler 2017", postprocess=None):
+        super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess)
 
         self.recon = recon
 
     def declare_parameters(self):
         super().declare_parameters()
-        self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 10.0)  # BAO damping
-        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0)  # Fingers-of-god damping
-        self.add_param("a1", r"$a_1$", -50000.0, 50000.0)  # Polynomial marginalisation 1
-        self.add_param("a2", r"$a_2$", -50000.0, 50000.0)  # Polynomial marginalisation 2
-        self.add_param("a3", r"$a_3$", -50000.0, 50000.0)  # Polynomial marginalisation 3
-        self.add_param("a4", r"$a_4$", -1000.0, 1000.0)  # Polynomial marginalisation 4
-        self.add_param("a5", r"$a_5$", -10.0, 10.0)  # Polynomial marginalisation 5
+        self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 10.0, 5.0)  # BAO damping
+        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
+        self.add_param("a1", r"$a_1$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 1
+        self.add_param("a2", r"$a_2$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 2
+        self.add_param("a3", r"$a_3$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 3
+        self.add_param("a4", r"$a_4$", -1000.0, 1000.0, 0)  # Polynomial marginalisation 4
+        self.add_param("a5", r"$a_5$", -10.0, 10.0, 0)  # Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p):
         """ Computes the power spectrum for the Beutler et. al., 2017 model at k/alpha
@@ -42,7 +40,7 @@ class PowerBeutler2017(PowerSpectrumFit):
 
         # Get the basic power spectrum components
         ks = self.camb.ks
-        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p)
+        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
 
         # Compute the propagator
         C = np.exp(-0.5*ks**2*p["sigma_nl"]**2)
@@ -63,8 +61,10 @@ class PowerBeutler2017(PowerSpectrumFit):
 
 
 if __name__ == "__main__":
+    import sys
+    sys.path.append("../../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
-    model = PowerBeutler2017(fit_omega_m=True)
+    model = PowerBeutler2017()
 
     from barry.framework.datasets.mock_power import MockPowerSpectrum
     dataset = MockPowerSpectrum(step_size=2)
@@ -73,12 +73,12 @@ if __name__ == "__main__":
     p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5, "sigma_s":4.0, "b": 1.6, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
 
     import timeit
-    n = 500
+    n = 100
 
     def test():
         model.get_likelihood(p)
 
-    #print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
+    print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
     if True:
         ks = data["ks"]

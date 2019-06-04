@@ -8,11 +8,11 @@ class TestModel(Model):
 
     def __init__(self):
         super().__init__("TestModel")
-        self.add_param("om", r"$\Omega_m$", 0.1, 0.6)
-        self.add_param("alpha", r"$\alpha$", 0.8, 1.2)
+        self.add_param("om", r"$\Omega_m$", 0.1, 0.6, 0.3)
+        self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)
 
     def get_likelihood(self, p):
-        return np.sum(norm.logpdf(self.data, loc=p["omega_m"], scale=p["alpha"]))
+        return np.sum(norm.logpdf(self.data, loc=p["om"], scale=p["alpha"]))
 
 
 if __name__ == "__main__":

@@ -22,13 +22,13 @@ class CorrelationPolynomial(Model):
         # Define parameters
         self.fit_omega_m = fit_omega_m
         if self.fit_omega_m:
-            self.add_param("om", r"$\Omega_m$", 0.1, 0.5)  # Cosmology
-        self.add_param("alpha", r"$\alpha$", 0.8, 1.2)  # Stretch
-        self.add_param("sigma_nl", r"$\Sigma_{NL}$", 1.0, 20.0)  # dampening
-        self.add_param("b", r"$b$", 0.01, 10.0)  # Bias
-        self.add_param("a1", r"$a_1$", -100, 100)  # Polynomial marginalisation 1
-        self.add_param("a2", r"$a_2$", -2, 2)  # Polynomial marginalisation 2
-        self.add_param("a3", r"$a_3$", -0.2, 0.2)  # Polynomial marginalisation 3
+            self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.3121)  # Cosmology
+        self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch
+        self.add_param("sigma_nl", r"$\Sigma_{NL}$", 1.0, 20.0, 1.0)  # dampening
+        self.add_param("b", r"$b$", 0.01, 10.0, 1.0)  # Bias
+        self.add_param("a1", r"$a_1$", -100, 100, 0)  # Polynomial marginalisation 1
+        self.add_param("a2", r"$a_2$", -2, 2, 0)  # Polynomial marginalisation 2
+        self.add_param("a3", r"$a_3$", -0.2, 0.2, 0)  # Polynomial marginalisation 3
 
         # Set up data structures for model fitting
         self.h0 = 0.6751

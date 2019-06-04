@@ -10,16 +10,19 @@ from barry.framework.cosmology.PT_generator import PTGenerator
 
 class PowerDing2018(PowerSpectrumFit):
 
-    def __init__(self, fit_omega_m=False, fit_growth=False, smooth_type="hinton2017", recon=False, recon_smoothing_scale=21.21, name="Pk Ding 2018", postprocess=None):
+    def __init__(self, fix_params=["om", "f"], fit_growth=False, smooth_type="hinton2017", recon=False, recon_smoothing_scale=21.21, name="Pk Ding 2018", postprocess=None):
         self.recon = recon
         self.recon_smoothing_scale = recon_smoothing_scale
         self.fit_growth = fit_growth
-        super().__init__(fit_omega_m=fit_omega_m, smooth_type=smooth_type, name=name, postprocess=postprocess)
+        super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess)
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
 
         self.PT = PTGenerator(self.camb, smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
+        self.fit_omega_m = fix_params is None or "om" not in fix_params
+        self.fit_growth = fix_params is None or "f" not in fix_params
+        self.omega_m = self.get_default("om")
         if not self.fit_omega_m:
             self.pt_data = self.PT.get_data(om=self.omega_m)
             if not self.fit_growth:
@@ -37,15 +40,14 @@ class PowerDing2018(PowerSpectrumFit):
 
     def declare_parameters(self):
         super().declare_parameters()
-        if self.fit_growth:
-            self.add_param("f", r"$f$", 0.01, 1.0)  # Growth rate of structure
-        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0)  # Fingers-of-god damping
-        self.add_param("b_delta", r"$b_{\delta}$", 0.01, 10.0)  # Non-linear galaxy bias
-        self.add_param("a1", r"$a_1$", -50000.0, 50000.0)  # Polynomial marginalisation 1
-        self.add_param("a2", r"$a_2$", -50000.0, 50000.0)  # Polynomial marginalisation 2
-        self.add_param("a3", r"$a_3$", -50000.0, 50000.0)  # Polynomial marginalisation 3
-        self.add_param("a4", r"$a_4$", -1000.0, 1000.0)  # Polynomial marginalisation 4
-        self.add_param("a5", r"$a_5$", -10.0, 10.0)  # Polynomial marginalisation 5
+        self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure
+        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
+        self.add_param("b_delta", r"$b_{\delta}$", 0.01, 10.0, 5.0)  # Non-linear galaxy bias
+        self.add_param("a1", r"$a_1$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 1
+        self.add_param("a2", r"$a_2$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 2
+        self.add_param("a3", r"$a_3$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 3
+        self.add_param("a4", r"$a_4$", -1000.0, 1000.0, 0)  # Polynomial marginalisation 4
+        self.add_param("a5", r"$a_5$", -10.0, 10.0, 0)  # Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p):
         """ Computes the power spectrum model at k/alpha using the Ding et. al., 2018 EFT0 model
@@ -65,7 +67,7 @@ class PowerDing2018(PowerSpectrumFit):
         """
         # Get the basic power spectrum components
         ks = self.camb.ks
-        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p)
+        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
         if self.fit_omega_m:
             pt_data = self.PT.get_data(om=p["om"])
         else:
@@ -125,8 +127,8 @@ class PowerDing2018(PowerSpectrumFit):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
-    model_pre = PowerDing2018(fit_omega_m=True, recon=False)
-    model_post = PowerDing2018(fit_omega_m=True, recon=True)
+    model_pre = PowerDing2018(recon=False)
+    model_post = PowerDing2018(recon=True)
 
     from barry.framework.datasets.mock_power import MockPowerSpectrum
     dataset = MockPowerSpectrum(step_size=2)
@@ -161,7 +163,7 @@ if __name__ == "__main__":
         plt.show()
 
         model_pre.smooth_type = "hinton2017"
-        pk_smooth_lin, _ = model_pre.compute_basic_power_spectrum(p)
+        pk_smooth_lin, _ = model_pre.compute_basic_power_spectrum(p["om"])
         pk_smooth_interp = splev(data["ks_input"], splrep(model_pre.camb.ks, pk_smooth_lin))
         pk_smooth_lin_windowed, mask = model_pre.adjust_model_window_effects(pk_smooth_interp)
         pk2 = model_pre.get_model(data, p)

@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from scipy.interpolate import splev, splrep
 
 from barry.framework.cosmology.camb_generator import CambGenerator
@@ -8,41 +10,33 @@ import numpy as np
 
 # TODO: make h0 and omega_m more easily changable if we are not fitting them
 class PowerSpectrumFit(Model):
-    def __init__(self, fit_omega_m=False, smooth_type="hinton2017", name="Pk Basic", postprocess=None):
+    def __init__(self, smooth_type="hinton2017", name="Pk Basic", postprocess=None, fix_params=['om']):
         super().__init__(name, postprocess=postprocess)
         self.smooth_type = smooth_type.lower()
         if not validate_smooth_method(smooth_type):
             exit(0)
-        self.fit_omega_m = fit_omega_m
+
+        self.declare_parameters()
+        self.set_fix_params(fix_params)
 
         # Set up data structures for model fitting
         self.camb = CambGenerator()
         self.h0 = self.camb.h0
-        if not self.fit_omega_m:
-            self.omega_m = 0.3121
-            self.r_s, self.pk_lin = self.camb.get_data(om=self.omega_m)
-            self.pk_smooth_lin = smooth(self.camb.ks, self.pk_lin, method=self.smooth_type, om=self.omega_m, h0=self.h0)  # Get the smoothed power spectrum
-            self.pk_ratio = (self.pk_lin / self.pk_smooth_lin - 1.0)  # Get the ratio
-
-        self.declare_parameters()
 
     def declare_parameters(self):
         # Define parameters
-        if self.fit_omega_m:
-            self.add_param("om", r"$\Omega_m$", 0.1, 0.5)  # Cosmology
-        self.add_param("alpha", r"$\alpha$", 0.8, 1.2)  # Stretch
-        self.add_param("b", r"$b$", 0.8, 1.2)  # bias
+        self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.3121)  # Cosmology
+        self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch
+        self.add_param("b", r"$b$", 0.8, 1.2, 1.0)  # bias
 
-    def compute_basic_power_spectrum(self, p):
+    @lru_cache(maxsize=1024)
+    def compute_basic_power_spectrum(self, om):
         """ Computes the smoothed, linear power spectrum and the wiggle ratio
 
         Parameters
         ----------
-        ks : np.ndarray
-            Array of wavenumbers to compute.
-            This should probably be camb.ks, not the k values of your data
-        p : dict
-            dictionary of parameter names to their values
+        om : float
+            The Omega_m value to generate a power spectrum for
 
         Returns
         -------
@@ -53,13 +47,9 @@ class PowerSpectrumFit(Model):
 
         """
         # Get base linear power spectrum from camb
-        if self.fit_omega_m:
-            r_s, pk_lin = self.camb.get_data(om=p["om"], h0=self.h0)
-            pk_smooth_lin = smooth(self.camb.ks, pk_lin, method=self.smooth_type, om=p["om"], h0=self.h0)  # Get the smoothed power spectrum
-            pk_ratio = (pk_lin / pk_smooth_lin - 1.0)  # Get the ratio
-        else:
-            pk_smooth_lin, pk_ratio = self.pk_smooth_lin, self.pk_ratio
-
+        r_s, pk_lin = self.camb.get_data(om=om, h0=self.h0)
+        pk_smooth_lin = smooth(self.camb.ks, pk_lin, method=self.smooth_type, om=om, h0=self.h0)  # Get the smoothed power spectrum
+        pk_ratio = (pk_lin / pk_smooth_lin - 1.0)  # Get the ratio
         return pk_smooth_lin, pk_ratio
 
     def compute_power_spectrum(self, k, p):
@@ -80,7 +70,7 @@ class PowerSpectrumFit(Model):
 
         """
         ks = self.camb.ks
-        pk_smooth, pk_ratio_dewiggled = self.compute_basic_power_spectrum()
+        pk_smooth, pk_ratio_dewiggled = self.compute_basic_power_spectrum(p["om"])
         pk_final = splev(k / p["alpha"], splrep(ks, pk_ratio_dewiggled))
         return pk_final
 
@@ -96,9 +86,6 @@ class PowerSpectrumFit(Model):
 
     def get_likelihood(self, p):
         d = self.data
-        if not self.fit_omega_m:
-            p["om"] = 0.3121
-
         pk_model = self.get_model(d, p)
 
         # Compute the chi2
@@ -137,16 +124,16 @@ if __name__ == "__main__":
 
     print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
-    if True:
-        ks = data["ks"]
-        pk = data["pk"]
-        pk2 = model.get_model(data, p)
-        model.smooth_type = "eh1998"
-        pk3 = model.get_model(data, p)
-        import matplotlib.pyplot as plt
-        plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
-        plt.plot(ks, pk2, '.', c='r')
-        plt.plot(ks, pk3, '+', c='b')
-        plt.xlabel("k")
-        plt.ylabel("P(k)")
-        plt.show()
+    # if True:
+    #     ks = data["ks"]
+    #     pk = data["pk"]
+    #     pk2 = model.get_model(data, p)
+    #     model.smooth_type = "eh1998"
+    #     pk3 = model.get_model(data, p)
+    #     import matplotlib.pyplot as plt
+    #     plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
+    #     plt.plot(ks, pk2, '.', c='r')
+    #     plt.plot(ks, pk3, '+', c='b')
+    #     plt.xlabel("k")
+    #     plt.ylabel("P(k)")
+    #     plt.show()
