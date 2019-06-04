@@ -11,8 +11,8 @@ if __name__ == "__main__":
 
     r = True
     models = [
-        PowerBeutler2017(recon=r, smooth_type="hinton2017"),
-        PowerBeutler2017(recon=r, smooth_type="eh1998")
+        PowerBeutler2017(recon=r, smooth_type="hinton2017", name="Hinton2017"),
+        PowerBeutler2017(recon=r, smooth_type="eh1998", name="EH1998")
     ]
     datas = [MockPowerSpectrum(name="Recon mean", recon=r, min_k=0.02, max_k=0.30)]
     sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name, save_interval=30)
