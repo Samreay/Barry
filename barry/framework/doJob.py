@@ -27,7 +27,7 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_cpu=24,
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
-#SBATCH --mem=12G
+#SBATCH --mem=6G
 #SBATCH -t 05:00:00
 #SBATCH -o {output_dir}/{name}.o%j
 
