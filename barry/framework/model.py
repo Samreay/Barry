@@ -54,7 +54,7 @@ class Model(ABC):
 
     def get_prior(self, params):
         """ The prior, implemented as a flat prior by default"""
-        for pname, val in params:
+        for pname, val in params.items():
             if val < self.param_dict[pname].min or val > self.param_dict[pname].max:
                 return -np.inf
         return 0

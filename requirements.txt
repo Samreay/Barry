@@ -5,4 +5,3 @@ matplotlib
 hankel
 chainconsumer
 emcee
-schwimmbad
