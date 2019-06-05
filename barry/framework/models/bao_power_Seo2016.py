@@ -45,7 +45,7 @@ class PowerSeo2016(PowerSpectrumFit):
         self.add_param("a4", r"$a_4$", -1000.0, 1000.0, 0)  # Polynomial marginalisation 4
         self.add_param("a5", r"$a_5$", -10.0, 10.0, 0)  # Polynomial marginalisation 5
 
-    def compute_power_spectrum(self, k, p):
+    def compute_power_spectrum(self, k, p, smooth=False):
         """ Computes the power spectrum model using the LPT based propagators from Seo et. al., 2016 at k/alpha
         
         Parameters
@@ -107,7 +107,10 @@ class PowerSeo2016(PowerSpectrumFit):
         pk_smooth = p["b"]**2*pk_smooth_lin*fog
 
         # Integrate over mu
-        pk1d = simps(pk_smooth*(1.0 + pk_ratio*propagator), self.mu, axis=0)
+        if smooth:
+            pk1d = simps(pk_smooth*(1.0 + 0.0 * pk_ratio*propagator), self.mu, axis=0)
+        else:
+            pk1d = simps(pk_smooth*(1.0 + pk_ratio*propagator), self.mu, axis=0)
 
         # Polynomial shape
         if self.recon:

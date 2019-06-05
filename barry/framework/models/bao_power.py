@@ -52,7 +52,7 @@ class PowerSpectrumFit(Model):
         pk_ratio = (pk_lin / pk_smooth_lin - 1.0)  # Get the ratio
         return pk_smooth_lin, pk_ratio
 
-    def compute_power_spectrum(self, k, p):
+    def compute_power_spectrum(self, k, p, smooth=False):
         """ Returns the wiggle ratio interpolated at some k/alpha values. Useful if we only want alpha to modify
             the BAO feature and not the smooth component.
 
@@ -71,7 +71,10 @@ class PowerSpectrumFit(Model):
         """
         ks = self.camb.ks
         pk_smooth, pk_ratio_dewiggled = self.compute_basic_power_spectrum(p["om"])
-        pk_final = splev(k / p["alpha"], splrep(ks, pk_ratio_dewiggled))
+        if smooth:
+            pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth))
+        else:
+            pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth * (1 + pk_ratio_dewiggled)))
         return pk_final
 
     def adjust_model_window_effects(self, pk_generated):
@@ -93,9 +96,9 @@ class PowerSpectrumFit(Model):
         chi2 = diff.T @ d["icov"] @ diff
         return -0.5 * chi2
 
-    def get_model(self, data, p):
+    def get_model(self, data, p, smooth=False):
         # Get the generic pk model
-        pk_generated = self.compute_power_spectrum(data["ks_input"], p)
+        pk_generated = self.compute_power_spectrum(data["ks_input"], p, smooth=smooth)
 
         # Morph it into a model representative of our survey and its selection/window/binning effects
         pk_model, mask = self.adjust_model_window_effects(pk_generated)
@@ -104,25 +107,50 @@ class PowerSpectrumFit(Model):
             pk_model = self.postprocess(ks=data["ks_output"], pk=pk_model)
         return pk_model[mask]
 
-    def plot(self, *params):
+    def plot(self, params, *extra_params, ratio=False):
         import matplotlib.pyplot as plt
 
         ks = self.data["ks"]
         pk = self.data["pk"]
+        err = np.sqrt(np.diag(self.data["cov"]))
+        if ratio:
+            smooth = self.get_model(self.data, params, smooth=True)
+            pk = pk / smooth
+            err = err / smooth
+        else:
+            pk = pk * ks
+            err = err * ks
 
         fig, ax = plt.subplots(figsize=(7, 5))
-        ax.errorbar(ks, ks*pk, yerr=ks*np.sqrt(np.diag(self.data["cov"])), fmt="o", c='k', ms=4, label="Data")
 
-        for i, p in enumerate(params):
+        ax.errorbar(ks, pk, yerr=err, fmt="o", c='k', ms=4, label="Data")
+
+        pk2 = self.get_model(self.data, params)
+        if ratio:
+            pk2 = pk2 / smooth
+        else:
+            pk2 = pk2 * ks
+        plt.plot(ks, pk2, label=self.get_name())
+
+        for i, p in enumerate(extra_params):
             pk2 = self.get_model(self.data, p)
-            plt.plot(ks, ks*pk2, label=f"Model {i}")
+            if ratio:
+                pk2 = pk2 / smooth
+            else:
+                pk2 = pk2 * ks
+            plt.plot(ks, pk2, label=f"Extra model {i}")
 
-        if len(params) == 1:
-            string = "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params[0].items()])
-            plt.annotate(string, (0.98, 0.5), xycoords="axes fraction", horizontalalignment="right", verticalalignment="center")
+        string = "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params.items()])
+        ycord = 0 if ratio else 0.5
+        va = "bottom" if ratio else "center"
+        plt.annotate(string, (0.98, ycord), xycoords="axes fraction", horizontalalignment="right", verticalalignment=va)
+
         plt.legend()
         plt.xlabel("k")
-        plt.ylabel("k * P(k)")
+        if ratio:
+            plt.ylabel("P(k) / P_{smooth}(k)")
+        else:
+            plt.ylabel("k * P(k)")
         plt.show()
 
 

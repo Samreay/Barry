@@ -39,7 +39,7 @@ class PowerNoda2019(PowerSpectrumFit):
         self.add_param("gamma", r"$\gamma_{rec}$", 1.0, 8.0, self.gammaval)  # Describes the sharpening of the BAO post-reconstruction
         self.add_param("A", r"$A$", 0.01, 30.0, 10)  # Fingers-of-god damping
 
-    def compute_power_spectrum(self, k, p):
+    def compute_power_spectrum(self, k, p, smooth=False):
         """ Computes the power spectrum model at k/alpha using the Ding et. al., 2018 EFT0 model
         
         Parameters
@@ -105,7 +105,10 @@ class PowerNoda2019(PowerSpectrumFit):
         pk_spt = pt_data["I00"] + pt_data["J00"] + 2.0*np.outer(growth/p["b"]*self.mu**2, pt_data["I01"] + pt_data["J01"]) + np.outer((growth/p["b"]*self.mu**2)**2, pt_data["I11"] + pt_data["J11"])
 
         # Integrate over mu
-        pk1d = integrate.simps(pk_smooth*(1.0 + pk_ratio*propagator + pk_spt), self.mu, axis=0)
+        if smooth:
+            pk1d = integrate.simps(pk_smooth*(1.0 + 0.0 * pk_ratio*propagator + pk_spt), self.mu, axis=0)
+        else:
+            pk1d = integrate.simps(pk_smooth*(1.0 + pk_ratio*propagator + pk_spt), self.mu, axis=0)
 
         pk_final = splev(k / p["alpha"], splrep(ks, pk1d))
 

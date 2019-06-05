@@ -14,14 +14,14 @@ class PowerBeutler2017(PowerSpectrumFit):
     def declare_parameters(self):
         super().declare_parameters()
         self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 10.0, 1.0)  # BAO damping
-        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 1.0)  # Fingers-of-god damping
+        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 0.01)  # Fingers-of-god damping
         self.add_param("a1", r"$a_1$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 1
         self.add_param("a2", r"$a_2$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 2
         self.add_param("a3", r"$a_3$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 3
         self.add_param("a4", r"$a_4$", -1000.0, 1000.0, 0)  # Polynomial marginalisation 4
         self.add_param("a5", r"$a_5$", -10.0, 10.0, 0)  # Polynomial marginalisation 5
 
-    def compute_power_spectrum(self, k, p):
+    def compute_power_spectrum(self, k, p, smooth=False):
         """ Computes the power spectrum for the Beutler et. al., 2017 model at k/alpha
         
         Parameters
@@ -30,6 +30,8 @@ class PowerBeutler2017(PowerSpectrumFit):
             Array of wavenumbers to compute
         p : dict
             dictionary of parameter names to their values
+        smooth : bool, optional
+            Whether to return a smooth model or not. Defaults to False
             
         Returns
         -------
@@ -55,7 +57,10 @@ class PowerBeutler2017(PowerSpectrumFit):
         else:
             shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
 
-        pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth*(1.0 + pk_ratio*C) + shape))
+        if smooth:
+            pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth + shape))
+        else:
+            pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth*(1.0 + pk_ratio*C) + shape))
 
         return pk_final
 
@@ -64,15 +69,16 @@ if __name__ == "__main__":
     import sys
     sys.path.append("../../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
-    model = PowerBeutler2017(recon=True)
+    recon = True
+    model = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}")
 
     from barry.framework.datasets.mock_power import MockPowerSpectrum
-    dataset = MockPowerSpectrum(name="Recon mean", recon=True, min_k=0.03, max_k=0.30, reduce_cov_factor=31)
+    dataset = MockPowerSpectrum(name="Recon mean", recon=recon, min_k=0.03, max_k=0.30, reduce_cov_factor=31)
     data = dataset.get_data()
     model.set_data(data)
     p, minv = model.optimize()
     print(p)
-    model.plot(p)
+    model.plot(p, ratio=True)
 
     if False:
         import timeit
