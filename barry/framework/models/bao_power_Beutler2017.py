@@ -73,7 +73,7 @@ if __name__ == "__main__":
     model = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}")
 
     from barry.framework.datasets.mock_power import MockPowerSpectrum
-    dataset = MockPowerSpectrum(name="Recon mean", recon=recon, min_k=0.03, max_k=0.3, reduce_cov_factor=1)
+    dataset = MockPowerSpectrum(name="Recon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=3)
     data = dataset.get_data()
     model.set_data(data)
 
