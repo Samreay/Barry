@@ -60,8 +60,8 @@ class PowerBeutler2017(PowerSpectrumFit):
         if smooth:
             pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth + shape))
         else:
-            # pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth*(1.0 + pk_ratio*C) + shape))
-            pk_final = splev(k / p["alpha"], splrep(ks, (pk_smooth + shape)*(1.0 + pk_ratio*C)))
+            pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth*(1.0 + pk_ratio*C) + shape))
+            # pk_final = splev(k / p["alpha"], splrep(ks, (pk_smooth + shape)*(1.0 + pk_ratio*C)))
 
         return pk_final
 
