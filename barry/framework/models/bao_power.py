@@ -116,6 +116,10 @@ class PowerSpectrumFit(Model):
         for i, p in enumerate(params):
             pk2 = self.get_model(self.data, p)
             plt.plot(ks, ks*pk2, label=f"Model {i}")
+
+        if len(params) == 1:
+            string = "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params[0].items()])
+            plt.annotate(string, (0.98, 0.5), xycoords="axes fraction", horizontalalignment="right", verticalalignment="center")
         plt.legend()
         plt.xlabel("k")
         plt.ylabel("k * P(k)")

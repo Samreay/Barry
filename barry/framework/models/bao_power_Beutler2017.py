@@ -71,6 +71,7 @@ if __name__ == "__main__":
     data = dataset.get_data()
     model.set_data(data)
     p, minv = model.optimize()
+    print(p)
     model.plot(p)
 
     if False:
