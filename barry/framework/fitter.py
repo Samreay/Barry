@@ -91,7 +91,7 @@ class Fitter(object):
 
         self.logger.info("Running fitting job, saving to %s" % self.temp_dir)
 
-        sampler.fit(model.get_posterior_scaled, model.get_start_scaled, uid=uid)
+        sampler.fit(model.get_posterior, model.get_start, uid=uid)
         # Perform the fitting here
         # Save results out
 
