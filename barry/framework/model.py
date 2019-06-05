@@ -66,10 +66,54 @@ class Model(ABC):
     def get_start(self):
         return [uniform(x.min, x.max) for x in self.get_active_params()]
 
-    def get_posterior(self, params):
+    def get_start_scaled(self):
+        return self.scale(self.get_start())
+
+    def get_param_dict(self, params):
         ps = OrderedDict([(p.name, v) for p, v in zip(self.get_active_params(), params)])
         ps.update({(p.name, p.default) for p in self.get_inactive_params()})
+        return ps
+
+    def get_posterior_scaled(self, scaled):
+        return self.get_posterior(self.unscale(scaled))
+
+    def get_posterior(self, params):
+        ps = self.get_param_dict(params)
         prior = self.get_prior(ps)
         if not np.isfinite(prior):
             return -np.inf
         return prior + self.get_likelihood(ps)
+
+    def scale(self, params):
+        scaled = np.array([(s - p.min) / (p.max - p.min) for s, p in zip(params, self.get_active_params())])
+        return scaled
+
+    def unscale(self, scaled):
+        params = [p.min + s * (p.max - p.min) for s, p in zip(scaled, self.get_active_params())]
+        return params
+
+    def optimize(self, niter=10, close_default=5):
+        from scipy.optimize import minimize
+
+        def minimise(scale_params):
+            return -self.get_posterior(self.unscale(scale_params))
+
+        fs = []
+        xs = []
+        methods = ['Nelder-Mead']
+        for i in range(niter):
+            for m in methods:
+                start = np.array(self.get_start())
+                if close_default:
+                    start = [(s + p.default * close_default) / (1 + close_default) for s, p in zip(start, self.get_active_params())]
+                bounds = [(0, 1) for p in self.get_active_params()]
+                res = minimize(minimise, self.scale(start), method=m, bounds=bounds, options={"maxiter": 1000})
+                fs.append(res.fun)
+                xs.append(res.x)
+        fs = np.array(fs)
+        ps = self.unscale(xs[fs.argmin()])
+        return self.get_param_dict(ps), fs.min()
+
+    @abstractmethod
+    def plot(self, *params):
+        pass

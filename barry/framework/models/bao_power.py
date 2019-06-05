@@ -104,6 +104,23 @@ class PowerSpectrumFit(Model):
             pk_model = self.postprocess(ks=data["ks_output"], pk=pk_model)
         return pk_model[mask]
 
+    def plot(self, *params):
+        import matplotlib.pyplot as plt
+
+        ks = self.data["ks"]
+        pk = self.data["pk"]
+
+        fig, ax = plt.subplots(figsize=(7, 5))
+        ax.errorbar(ks, ks*pk, yerr=ks*np.sqrt(np.diag(self.data["cov"])), fmt="o", c='k', ms=4, label="Data")
+
+        for i, p in enumerate(params):
+            pk2 = self.get_model(self.data, p)
+            plt.plot(ks, ks*pk2, label=f"Model {i}")
+        plt.legend()
+        plt.xlabel("k")
+        plt.ylabel("k * P(k)")
+        plt.show()
+
 
 if __name__ == "__main__":
     import logging
@@ -137,3 +154,4 @@ if __name__ == "__main__":
     #     plt.xlabel("k")
     #     plt.ylabel("P(k)")
     #     plt.show()
+

@@ -39,15 +39,6 @@ if __name__ == "__main__":
             model.set_data(datas[0].get_data())
             key = f"{model.name}, alpha={params['alpha']:0.4f}"
             pks[key] = model.get_model(datas[0].get_data(), params)
-            print(params)
-            print(weight)
-
-        import matplotlib.pyplot as plt
-        for n, v in pks.items():
-            plt.plot(datas[0].get_data()["ks"], datas[0].get_data()["ks"]*v, label=n)
-        plt.plot(datas[0].get_data()["ks"], datas[0].get_data()["ks"]*datas[0].get_data()["pk"], label="Data", c='k', ls='--')
-        plt.legend()
-        plt.show()
 
         c.configure(shade=True)
         c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})

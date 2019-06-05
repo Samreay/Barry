@@ -13,8 +13,8 @@ class PowerBeutler2017(PowerSpectrumFit):
 
     def declare_parameters(self):
         super().declare_parameters()
-        self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 10.0, 5.0)  # BAO damping
-        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
+        self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 10.0, 1.0)  # BAO damping
+        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 1.0)  # Fingers-of-god damping
         self.add_param("a1", r"$a_1$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 1
         self.add_param("a2", r"$a_2$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 2
         self.add_param("a3", r"$a_3$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 3
@@ -64,23 +64,25 @@ if __name__ == "__main__":
     import sys
     sys.path.append("../../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
-    model = PowerBeutler2017()
+    model = PowerBeutler2017(recon=True)
 
     from barry.framework.datasets.mock_power import MockPowerSpectrum
-    dataset = MockPowerSpectrum(step_size=2)
+    dataset = MockPowerSpectrum(name="Recon mean", recon=True, min_k=0.03, max_k=0.30, reduce_cov_factor=31)
     data = dataset.get_data()
     model.set_data(data)
-    p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5, "sigma_s":4.0, "b": 1.6, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
+    p, minv = model.optimize()
+    model.plot(p)
 
-    import timeit
-    n = 100
+    if False:
+        import timeit
+        n = 100
 
-    def test():
-        model.get_likelihood(p)
+        def test():
+            model.get_likelihood(p)
 
-    print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
+        print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
-    if True:
+    if False:
         ks = data["ks"]
         pk = data["pk"]
         pk2 = model.get_model(data, p)
@@ -98,7 +100,7 @@ if __name__ == "__main__":
         plt.show()
 
         model.smooth_type = "hinton2017"
-        pk_smooth_lin, _ = model.compute_basic_power_spectrum(p)
+        pk_smooth_lin, _ = model.compute_basic_power_spectrum(p["om"])
         pk_smooth_interp = splev(data["ks_input"], splrep(model.camb.ks, pk_smooth_lin))
         pk_smooth_lin_windowed, mask = model.adjust_model_window_effects(pk_smooth_interp)
         pk2 = model.get_model(data, p)
