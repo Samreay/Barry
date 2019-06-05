@@ -113,50 +113,39 @@ class PowerSpectrumFit(Model):
             pk_model = self.postprocess(ks=data["ks_output"], pk=pk_model)
         return pk_model[mask]
 
-    def plot(self, params, *extra_params, ratio=False):
+    def plot(self, params, *extra_params):
         import matplotlib.pyplot as plt
 
         ks = self.data["ks"]
         pk = self.data["pk"]
         err = np.sqrt(np.diag(self.data["cov"]))
-        if ratio:
-            smooth = self.get_model(self.data, params, smooth=True)
-            pk = pk / smooth
-            err = err / smooth
-        else:
-            pk = pk * ks
-            err = err * ks
 
-        fig, ax = plt.subplots(figsize=(7, 5))
+        smooth = self.get_model(self.data, params, smooth=True)
+        fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
 
-        ax.errorbar(ks, pk, yerr=err, fmt="o", c='k', ms=4, label="Data")
+        axes[0].errorbar(ks, pk, yerr=err, fmt="o", c='k', ms=4, label="Data")
+        axes[1].errorbar(ks, pk / smooth, yerr=err / smooth, fmt="o", c='k', ms=4, label="Data")
 
         pk2 = self.get_model(self.data, params)
-        if ratio:
-            pk2 = pk2 / smooth
-        else:
-            pk2 = pk2 * ks
-        plt.plot(ks, pk2, label=self.get_name())
+        axes[0].plot(ks, pk2, label=self.get_name())
+        axes[1].plot(ks, pk2 / smooth, label=self.get_name())
+
+        _, pkratio = self.compute_basic_power_spectrum(params["om"])
+        axes[1].plot(ks, splev(ks, splrep(self.camb.ks, 1+pkratio)), c='r', ls='--', label="Explicit 1+pk_ratio", alpha=0.5)
 
         for i, p in enumerate(extra_params):
             pk2 = self.get_model(self.data, p)
-            if ratio:
-                pk2 = pk2 / smooth
-            else:
-                pk2 = pk2 * ks
-            plt.plot(ks, pk2, label=f"Extra model {i}")
+            axes[0].plot(ks, pk2, label=f"Extra model {i}")
+            axes[1].plot(ks, pk2 / smooth, label=f"Extra model {i}")
 
         string = "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params.items()])
-        ycord = 0 if ratio else 0.5
-        va = "bottom" if ratio else "center"
-        plt.annotate(string, (0.98, ycord), xycoords="axes fraction", horizontalalignment="right", verticalalignment=va)
-
-        plt.legend()
-        plt.xlabel("k")
-        if ratio:
-            plt.ylabel("P(k) / P_{smooth}(k)")
-        else:
-            plt.ylabel("k * P(k)")
+        axes[0].annotate(string, (0.98, 0.5), xycoords="axes fraction", horizontalalignment="right", verticalalignment="center")
+        axes[1].legend()
+        axes[1].set_xlabel("k")
+        axes[1].set_ylabel("P(k) / P_{smooth}(k)")
+        axes[0].set_ylabel("k * P(k)")
+        axes[0].axhline(0, c="k", alpha=0.3)
+        axes[1].axhline(1, c="k", alpha=0.3)
         plt.show()
 
 

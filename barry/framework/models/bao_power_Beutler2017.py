@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     p, minv = model.optimize()
     print(minv)
-    model.plot(p, ratio=True)
+    model.plot(p)
 
     if False:
         import timeit
