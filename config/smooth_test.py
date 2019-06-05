@@ -15,13 +15,13 @@ if __name__ == "__main__":
         PowerBeutler2017(recon=r, smooth_type="eh1998", name="EH1998")
     ]
     datas = [MockPowerSpectrum(name="Recon mean", recon=r, min_k=0.03, max_k=0.30)]
-    sampler = EnsembleSampler(num_steps=2500, num_burn=500, temp_dir=dir_name, save_interval=30)
+    sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name)
 
     fitter = Fitter(dir_name)
     fitter.set_models(*models)
     fitter.set_data(*datas)
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(50)
+    fitter.set_num_walkers(10)
     fitter.fit(file)
 
     if fitter.is_laptop():

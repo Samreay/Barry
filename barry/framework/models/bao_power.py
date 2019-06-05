@@ -27,7 +27,7 @@ class PowerSpectrumFit(Model):
         # Define parameters
         self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.3121)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch
-        self.add_param("b", r"$b$", 0.8, 1.2, 1.0)  # bias
+        self.add_param("b", r"$b$", 0.8, 2.5, 1.5)  # bias
 
     @lru_cache(maxsize=1024)
     def compute_basic_power_spectrum(self, om):
@@ -50,6 +50,12 @@ class PowerSpectrumFit(Model):
         r_s, pk_lin = self.camb.get_data(om=om, h0=self.h0)
         pk_smooth_lin = smooth(self.camb.ks, pk_lin, method=self.smooth_type, om=om, h0=self.h0)  # Get the smoothed power spectrum
         pk_ratio = (pk_lin / pk_smooth_lin - 1.0)  # Get the ratio
+        # import matplotlib.pyplot as plt
+        # plt.plot(self.camb.ks, pk_ratio)
+        # plt.xlim(0, 0.3)
+        # plt.show()
+        # exit()
+
         return pk_smooth_lin, pk_ratio
 
     def compute_power_spectrum(self, k, p, smooth=False):

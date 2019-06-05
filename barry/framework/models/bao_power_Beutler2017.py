@@ -60,7 +60,8 @@ class PowerBeutler2017(PowerSpectrumFit):
         if smooth:
             pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth + shape))
         else:
-            pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth*(1.0 + pk_ratio*C) + shape))
+            # pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth*(1.0 + pk_ratio*C) + shape))
+            pk_final = splev(k / p["alpha"], splrep(ks, (pk_smooth + shape)*(1.0 + pk_ratio*C)))
 
         return pk_final
 
@@ -70,14 +71,15 @@ if __name__ == "__main__":
     sys.path.append("../../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     recon = True
-    model = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}")
+    model = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}", fix_params=["om", "alpha"])
 
     from barry.framework.datasets.mock_power import MockPowerSpectrum
     dataset = MockPowerSpectrum(name="Recon mean", recon=recon, min_k=0.03, max_k=0.30, reduce_cov_factor=31)
     data = dataset.get_data()
     model.set_data(data)
+
     p, minv = model.optimize()
-    print(p)
+    print(minv)
     model.plot(p, ratio=True)
 
     if False:
