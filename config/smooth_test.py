@@ -34,13 +34,13 @@ if __name__ == "__main__":
             linestyle = "--" if "FitOm" in name else "-"
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), name=name, linestyle=linestyle)
 
-            params = dict([(p.name, v) for p, v in zip(model.get_active_params(), chain[posterior.argmax(), :])])
-            params["om"] = 0.3121
-            model.set_data(datas[0].get_data())
-            key = f"{model.name}, alpha={params['alpha']:0.4f}"
-            pks[key] = model.get_model(datas[0].get_data(), params)
+            # params = dict([(p.name, v) for p, v in zip(model.get_active_params(), chain[posterior.argmax(), :])])
+            # params["om"] = 0.3121
+            # model.set_data(datas[0].get_data())
+            # key = f"{model.name}, alpha={params['alpha']:0.4f}"
+            # pks[key] = model.get_model(datas[0].get_data(), params)
 
-        c.configure(shade=True)
+        c.configure(shade=True, bins=0.7)
         c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         with open(pfn + "_params.txt", "w") as f:
             f.write(c.analysis.get_latex_table(transpose=True))

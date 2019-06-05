@@ -111,19 +111,19 @@ class PowerDing2018(PowerSpectrumFit):
         fog = 1.0/(1.0 + np.outer(self.mu**2, ks**2*p["sigma_s"]**2/2.0))**2
         pk_smooth = p["b"]**2*pk_smooth_lin*fog
 
-        # Integrate over mu
-        if smooth:
-            pk1d = integrate.simps(pk_smooth*(1.0 + 0.0 * pk_ratio*propagator), self.mu, axis=0)
-        else:
-            pk1d = integrate.simps(pk_smooth*(1.0 + pk_ratio*propagator), self.mu, axis=0)
-
         # Polynomial shape
         if self.recon:
             shape = p["a1"] * ks**2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
         else:
             shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
 
-        pk_final = splev(k / p["alpha"], splrep(ks, pk1d + shape))
+        # Integrate over mu
+        if smooth:
+            pk1d = integrate.simps((pk_smooth + shape)*(1.0 + 0.0 * pk_ratio*propagator), self.mu, axis=0)
+        else:
+            pk1d = integrate.simps((pk_smooth + shape)*(1.0 + pk_ratio*propagator), self.mu, axis=0)
+
+        pk_final = splev(k / p["alpha"], splrep(ks, pk1d))
 
         return pk_final
 
