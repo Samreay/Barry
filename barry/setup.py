@@ -10,5 +10,5 @@ def setup(filename):
     pfn = plot_dir + os.path.basename(filename)[:-3]
     file = os.path.abspath(filename)
     if not os.path.exists(dir_name):
-        os.makedirs(dir_name)
+        os.makedirs(dir_name, exist_ok=True)
     return pfn, dir_name, file
