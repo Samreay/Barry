@@ -22,8 +22,8 @@ class EmceeWrapper(object):
         pos = None
         if temp_dir is not None:
             self.logger.debug("Looking in temp dir %s" % temp_dir)
-            chain_file = temp_dir + os.sep + uid + "_ens.chain.npy"
-            position_file = temp_dir + os.sep + uid + "_ens.pos.npy"
+            chain_file = os.path.join(temp_dir, uid + "_ens.chain.npy")
+            position_file = os.path.join(temp_dir, uid + "_ens.pos.npy")
             try:
                 pos = np.load(position_file)
                 past_chain = np.load(chain_file)

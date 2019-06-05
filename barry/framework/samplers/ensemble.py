@@ -45,7 +45,7 @@ class EnsembleSampler(GenericSampler):
         self.num_burn = num_burn
         self.temp_dir = temp_dir
         if temp_dir is not None and not os.path.exists(temp_dir):
-            os.makedirs(temp_dir)
+            os.makedirs(temp_dir, exist_ok=True)
         self.save_interval = save_interval
         self.num_walkers = num_walkers
 

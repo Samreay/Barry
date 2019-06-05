@@ -20,8 +20,7 @@ class Fitter(object):
         self.num_cpu = None
         self.temp_dir = temp_dir
         self.sampler = None
-        if not os.path.exists(temp_dir):
-            os.makedirs(temp_dir)
+        os.makedirs(temp_dir, exist_ok=True)
 
     def set_models(self, *models):
         self.models = models
