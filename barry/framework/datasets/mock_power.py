@@ -160,7 +160,7 @@ if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
     import numpy as np
-    plt.errorbar(data["ks"], data["pk"], yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
+    plt.errorbar(data["ks"], data["ks"]*data["pk"], yerr=data["ks"]*np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
     plt.show()
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30)
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30, step_size=1)

@@ -15,7 +15,10 @@ class PowerNoda2019(PowerSpectrumFit):
         self.fit_omega_m = fix_params is None or "om" not in fix_params
         self.fit_growth = fix_params is None or "f" not in fix_params
         self.fit_gamma = fix_params is None or "gamma" not in fix_params
-        self.gammaval = gammaval
+        if self.recon:
+            self.gammaval = gammaval
+        else:
+            self.gammaval = 1.0
         super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess)
 
         self.nmu = 100
@@ -28,8 +31,7 @@ class PowerNoda2019(PowerSpectrumFit):
                 self.growth = self.omega_m ** 0.55
                 self.damping = -np.outer((1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2) * self.pt_data["sigma_dd_rs"] + (self.growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * self.pt_data["sigma_ss_rs"], self.camb.ks ** 2)
                 if not self.fit_gamma:
-                    if self.recon:
-                        self.damping /= self.gammaval
+                    self.damping /= self.gammaval
 
     def declare_parameters(self):
         super().declare_parameters()
@@ -80,10 +82,12 @@ class PowerNoda2019(PowerSpectrumFit):
             if self.fit_gamma:
                 damping /= p["gamma"]
             else:
-                if self.recon:
-                    damping /= self.gammaval
+                damping /= self.gammaval
         else:
-            damping = self.damping
+            if self.fit_gamma:
+                damping = self.damping/p["gamma"]
+            else:
+                damping = self.damping
         damping = np.exp(damping)
 
         # Compute the propagator
