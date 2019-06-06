@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     datas = [MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)]
 
-    sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name, save_interval=60)
+    sampler = EnsembleSampler(num_steps=1000, num_burn=300, temp_dir=dir_name, save_interval=60)
 
     fitter = Fitter(dir_name)
     fitter.set_models(*models)
