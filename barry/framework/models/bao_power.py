@@ -121,31 +121,43 @@ class PowerSpectrumFit(Model):
         err = np.sqrt(np.diag(self.data["cov"]))
 
         smooth = self.get_model(self.data, params, smooth=True)
+
+        def adj(data, err=False):
+            if self.postprocess is None:
+                return data / smooth
+            else:
+                if err:
+                    return data
+                else:
+                    return data - pk
+
         fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
 
         axes[0].errorbar(ks, pk, yerr=err, fmt="o", c='k', ms=4, label="Data")
-        axes[1].errorbar(ks, pk / smooth, yerr=err / smooth, fmt="o", c='k', ms=4, label="Data")
+        axes[1].errorbar(ks, adj(pk), yerr=adj(err, err=True), fmt="o", c='k', ms=4, label="Data")
 
         pk2 = self.get_model(self.data, params)
         axes[0].plot(ks, pk2, label=self.get_name())
-        axes[1].plot(ks, pk2 / smooth, label=self.get_name())
-
-        _, pkratio = self.compute_basic_power_spectrum(params["om"])
-        axes[1].plot(ks, splev(ks, splrep(self.camb.ks, 1+pkratio)), c='r', ls='--', label="Explicit 1+pk_ratio", alpha=0.5)
+        axes[1].plot(ks, adj(pk2), label=self.get_name())
 
         for i, p in enumerate(extra_params):
             pk2 = self.get_model(self.data, p)
             axes[0].plot(ks, pk2, label=f"Extra model {i}")
-            axes[1].plot(ks, pk2 / smooth, label=f"Extra model {i}")
+            axes[1].plot(ks, adj(pk2), label=f"Extra model {i}")
 
-        string = "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params.items()])
-        axes[0].annotate(string, (0.98, 0.5), xycoords="axes fraction", horizontalalignment="right", verticalalignment="center")
+        string = f"Likelihood: {self.get_likelihood(params):0.2f}\n"
+        string += "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params.items()])
+        va = "center" if self.postprocess is None else "top"
+        ypos = 0.5 if self.postprocess is None else 0.98
+        axes[0].annotate(string, (0.98, ypos), xycoords="axes fraction", horizontalalignment="right", verticalalignment=va)
         axes[1].legend()
         axes[1].set_xlabel("k")
-        axes[1].set_ylabel("P(k) / P_{smooth}(k)")
+        if self.postprocess is None:
+            axes[1].set_ylabel("P(k) / P_{smooth}(k)")
+        else:
+            axes[1].set_ylabel("P(k) - data")
         axes[0].set_ylabel("k * P(k)")
         axes[0].axhline(0, c="k", alpha=0.3)
-        axes[1].axhline(1, c="k", alpha=0.3)
         plt.show()
 
 

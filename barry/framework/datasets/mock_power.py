@@ -7,7 +7,7 @@ from barry.framework.dataset import Dataset
 
 
 class MockPowerSpectrum(Dataset):
-    def __init__(self, average=True, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True, reduce_cov_factor=1, name="BAOExtractor", postprocess=None):
+    def __init__(self, average=True, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True, reduce_cov_factor=1, name="BAOExtractor", postprocess=None, diag_only=False):
         super().__init__(name)
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + "/../../data/taipan_mocks/mock_individual/")
@@ -18,6 +18,7 @@ class MockPowerSpectrum(Dataset):
         self.realisation = realisation
         self.average = average
         self.postprocess = postprocess
+        self.diag_only = diag_only
 
         self.data_filename = os.path.abspath(self.data_location + "/taipan_mock_lpow.pkl")
 
@@ -54,6 +55,8 @@ class MockPowerSpectrum(Dataset):
     def _compute_cov(self):
         pks = np.array(self.pks_all)
         cov = np.cov(pks.T)
+        if self.diag_only:
+            cov = np.diag(np.diag(cov))
         return cov
 
     def _get_data_avg(self):

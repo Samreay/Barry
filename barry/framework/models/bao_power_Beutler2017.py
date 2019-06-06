@@ -13,7 +13,7 @@ class PowerBeutler2017(PowerSpectrumFit):
 
     def declare_parameters(self):
         super().declare_parameters()
-        self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 10.0, 1.0)  # BAO damping
+        self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 25.0, 1.0)  # BAO damping
         self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 0.01)  # Fingers-of-god damping
         self.add_param("a1", r"$a_1$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 1
         self.add_param("a2", r"$a_2$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 2

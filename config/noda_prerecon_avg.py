@@ -17,11 +17,11 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
 
     postprocess = BAOExtractor(r_s)
-    r = True
+    r = False
     models = [
-        PowerNoda2019(postprocess=postprocess, recon=r),
-        PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f"]),
-        PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om"]),
+        PowerNoda2019(postprocess=postprocess, recon=r, name="Node fixed gamma and f"),
+        PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f"], name="Noda fixed f"),
+        PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om"], name="Noda"),
     ]
 
     datas = [MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)]
