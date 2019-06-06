@@ -18,22 +18,23 @@ if __name__ == "__main__":
 
     postprocess = BAOExtractor(r_s)
     r = True
+    fix = ["om", "f", "a1", "a2", "a3", "a4", "a5"]
     models = [
         PowerNoda2019(postprocess=postprocess, recon=r),
-        PowerSeo2016(postprocess=postprocess, recon=r),
-        PowerDing2018(postprocess=postprocess, recon=r),
-        PowerBeutler2017(postprocess=postprocess, recon=r)
+        PowerSeo2016(postprocess=postprocess, recon=r, fix_params=fix),
+        PowerDing2018(postprocess=postprocess, recon=r, fix_params=fix),
+        PowerBeutler2017(postprocess=postprocess, recon=r, fix_params=fix)
     ]
 
-    datas = [MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.02, max_k=0.30, postprocess=postprocess)]
+    datas = [MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)]
 
-    sampler = EnsembleSampler(num_steps=2500, num_burn=500, temp_dir=dir_name, save_interval=30)
+    sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name, save_interval=60)
 
     fitter = Fitter(dir_name)
     fitter.set_models(*models)
     fitter.set_data(*datas)
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(50)
+    fitter.set_num_walkers(10)
     fitter.fit(file, viewer=False)
 
     if fitter.is_laptop():

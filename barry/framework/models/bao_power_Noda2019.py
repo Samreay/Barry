@@ -117,6 +117,7 @@ class PowerNoda2019(PowerSpectrumFit):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
+    logging.getLogger("matplotlib").setLevel(logging.ERROR)
     model_pre = PowerNoda2019(recon=False)
     model_post = PowerNoda2019(recon=True, gammaval=4.0)
 

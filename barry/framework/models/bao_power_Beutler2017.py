@@ -66,9 +66,8 @@ class PowerBeutler2017(PowerSpectrumFit):
 
 
 if __name__ == "__main__":
-    import sys
-    sys.path.append("../../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
+    logging.getLogger("matplotlib").setLevel(logging.ERROR)
     recon = True
     model = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}")
 
@@ -78,6 +77,7 @@ if __name__ == "__main__":
     model.set_data(data)
 
     p, minv = model.optimize()
+    print(p)
     print(minv)
     model.plot(p)
 

@@ -92,7 +92,7 @@ class Model(ABC):
         params = [p.min + s * (p.max - p.min) for s, p in zip(scaled, self.get_active_params())]
         return params
 
-    def optimize(self, niter=10, close_default=5):
+    def optimize(self, niter=10, close_default=5, maxiter=1000):
         from scipy.optimize import minimize
 
         def minimise(scale_params):
@@ -107,7 +107,7 @@ class Model(ABC):
                 if close_default:
                     start = [(s + p.default * close_default) / (1 + close_default) for s, p in zip(start, self.get_active_params())]
                 bounds = [(0, 1) for p in self.get_active_params()]
-                res = minimize(minimise, self.scale(start), method=m, bounds=bounds, options={"maxiter": 1000})
+                res = minimize(minimise, self.scale(start), method=m, bounds=bounds, options={"maxiter": maxiter})
                 fs.append(res.fun)
                 xs.append(res.x)
         fs = np.array(fs)

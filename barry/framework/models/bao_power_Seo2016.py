@@ -37,7 +37,7 @@ class PowerSeo2016(PowerSpectrumFit):
 
     def declare_parameters(self):
         super().declare_parameters()
-        self.add_param("f", r"$f$", 0.01, 1.0, 5.0)  # Growth rate of structure
+        self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure
         self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
         self.add_param("a1", r"$a_1$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 1
         self.add_param("a2", r"$a_2$", -50000.0, 50000.0, 0)  # Polynomial marginalisation 2
@@ -125,6 +125,7 @@ class PowerSeo2016(PowerSpectrumFit):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
+    logging.getLogger("matplotlib").setLevel(logging.ERROR)
     model_pre = PowerSeo2016(recon=False)
     model_post = PowerSeo2016(recon=True)
 
@@ -133,17 +134,22 @@ if __name__ == "__main__":
     data = dataset.get_data()
     model_pre.set_data(data)
     model_post.set_data(data)
-    p = {"om": 0.3, "alpha": 1.0, "sigma_s":10.0, "b": 1.6, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
+    p = {"om": 0.3, "alpha": 1.0, "sigma_s": 10.0, "b": 1.6, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
+    p, minv = model_post.optimize(niter=1, maxiter=100, close_default=100)
+    print(p)
+    print(minv)
+    model_post.plot(p)
 
-    import timeit
-    n = 500
+    if False:
+        import timeit
+        n = 500
 
-    def test():
-        model_post.get_likelihood(p)
+        def test():
+            model_post.get_likelihood(p)
 
-    #print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
+        print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
-    if True:
+    if False:
         ks = data["ks"]
         pk = data["pk"]
         pk2 = model_pre.get_model(data, p)
