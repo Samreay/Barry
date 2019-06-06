@@ -5,29 +5,37 @@ sys.path.append("..")
 from barry.setup import setup
 from barry.framework.models import PowerNoda2019, PowerSeo2016, PowerBeutler2017, PowerDing2018
 from barry.framework.datasets import MockPowerSpectrum
+from barry.framework.postprocessing import BAOExtractor
+from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
-    r = True
+    c = CambGenerator()
+    r_s, _ = c.get_data()
 
+    postprocess = BAOExtractor(r_s)
+    r = False
+    fix = ["om", "f", "a1", "a2", "a3", "a4", "a5"]
     models = [
-        # PowerNoda2019(recon=r),
-        PowerBeutler2017(recon=r)
+        PowerNoda2019(postprocess=postprocess, recon=r, gammaval=1),
+        PowerSeo2016(postprocess=postprocess, recon=r, fix_params=fix),
+        PowerDing2018(postprocess=postprocess, recon=r, fix_params=fix),
+        PowerBeutler2017(postprocess=postprocess, recon=r, fix_params=fix)
     ]
 
-    datas = [MockPowerSpectrum(name="Recon mean", recon=r, min_k=0.03, max_k=0.30)]
+    datas = [MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)]
 
-    sampler = EnsembleSampler(num_steps=1000, num_burn=500, temp_dir=dir_name, save_interval=60, num_walkers=200)
+    sampler = EnsembleSampler(num_steps=1500, num_burn=500, temp_dir=dir_name, save_interval=60)
 
     fitter = Fitter(dir_name)
     fitter.set_models(*models)
     fitter.set_data(*datas)
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
-    fitter.fit(file)
+    fitter.fit(file, viewer=False)
 
     if fitter.is_laptop():
         from chainconsumer import ChainConsumer

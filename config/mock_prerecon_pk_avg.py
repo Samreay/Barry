@@ -39,8 +39,9 @@ if __name__ == "__main__":
             name = f"{model.get_name()} {data.get_name()}"
             linestyle = "--" if "FitOm" in name else "-"
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), name=name, linestyle=linestyle)
-        c.configure(shade=True)
+        c.configure(shade=True, bins=20)
         c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
+        c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         with open(pfn + "_params.txt", "w") as f:
             f.write(c.analysis.get_latex_table(transpose=True))
 
