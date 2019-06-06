@@ -2,7 +2,7 @@ import numpy as np
 from barry.framework.postprocessing.postprocessor import PkPostProcess
 
 
-class BAOExtractor(PkPostProcess):
+class PureBAOExtractor(PkPostProcess):
     """
     Parameters
     ----------
@@ -13,7 +13,7 @@ class BAOExtractor(PkPostProcess):
     delta : float, optional
         The window (in units of `r_s` to smooth)
     """
-    def __init__(self, r_s, plot=False, delta=0.5):
+    def __init__(self, r_s, plot=False, delta=0.6):
         super().__init__()
         self.r_s = r_s
         self.plot = plot
@@ -60,6 +60,22 @@ class BAOExtractor(PkPostProcess):
         return np.array(result)
 
 
+class BAOExtractor(PureBAOExtractor):
+    def __init__(self, r_s, plot=False, delta=0.6, mink=0.05, maxk=0.15):
+        super().__init__(r_s, plot=plot, delta=delta)
+        self.mink = mink
+        self.maxk = maxk
+
+    def postprocess(self, ks, pk):
+        extracted_pk = super().postprocess(ks, pk)
+
+        # Use indexes to blend the two together
+        indices = np.array(list(range(ks.size)))
+        mask_bao = ((ks < self.mink) | (indices % 2 == 1)) & (ks < self.maxk)
+        val = mask_bao.astype(np.float)
+        return extracted_pk * val + pk * (1 - val)
+
+
 if __name__ == "__main__":
     from barry.framework.cosmology.camb_generator import CambGenerator
 
@@ -75,16 +91,21 @@ if __name__ == "__main__":
     pk_lin2 = splev(ks2, rep)
 
     print("Got pklin")
-    k_range, pk_extract = BAOExtractor()._postprocess(ks2, pk_lin2, r_s)
+    b = BAOExtractor(r_s)
+    pk_extract = b.postprocess(ks2, pk_lin2)
     print("Got pk_extract")
 
     import matplotlib.pyplot as plt
     fig, axes = plt.subplots(nrows=2, figsize=(5, 9), sharex=True)
-    m1 = (ks2 > (ks2.min() + k_range)) & (ks2 < (ks2.max() - k_range))
-    axes[0].plot(ks2[m1], pk_lin2[m1])
+    axes[0].plot(ks2, pk_lin2)
     axes[0].set_title("pk_lin")
-    axes[1].plot(ks2[m1], pk_extract[m1])
+    axes[1].plot(ks2, pk_extract)
     axes[1].set_title("Extracted BAO, using winfit_2 bins (0, 0.398, 100)")
     plt.show()
 
-    # Whats with the odd limits
+    from barry.framework.datasets.mock_power import MockPowerSpectrum
+    dataset = MockPowerSpectrum(name="Recon mean", recon=True, min_k=0.02, step_size=3, postprocess=b)
+    data = dataset.get_data()
+    import seaborn as sb
+    sb.heatmap(data["corr"])
+    plt.show()

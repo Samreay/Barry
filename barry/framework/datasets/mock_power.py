@@ -50,6 +50,8 @@ class MockPowerSpectrum(Dataset):
         if reduce_cov_factor != 1:
             self.logger.info(f"Reducing covariance by factor of {reduce_cov_factor}")
             self.cov /= reduce_cov_factor
+        d = np.sqrt(np.diag(self.cov))
+        self.corr = self.cov / (d * np.atleast_2d(d).T)
         self.icov = np.linalg.inv(self.cov)
 
     def _compute_cov(self):
@@ -146,7 +148,8 @@ class MockPowerSpectrum(Dataset):
             "w_scale": self.w_k0_scale,
             "w_transform": self.w_transform,
             "w_pk": self.w_pk,
-            "w_mask": self.w_mask
+            "w_mask": self.w_mask,
+            "corr": self.corr
         }
 
 

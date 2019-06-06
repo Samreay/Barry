@@ -1,3 +1,3 @@
-from barry.framework.postprocessing.bao_extractor import BAOExtractor
+from barry.framework.postprocessing.bao_extractor import BAOExtractor, PureBAOExtractor
 
-__all__ = [BAOExtractor]
+__all__ = [BAOExtractor, PureBAOExtractor]
