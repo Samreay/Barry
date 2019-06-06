@@ -12,6 +12,9 @@ def setup(filename):
     pfn = plot_dir + os.path.basename(filename)[:-3]
     file = os.path.abspath(filename)
     time.sleep(random.random())
-    if not os.path.exists(dir_name):
-        os.makedirs(dir_name, exist_ok=True)
+    try:
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name, exist_ok=True)
+    except Exception:
+        pass
     return pfn, dir_name, file
