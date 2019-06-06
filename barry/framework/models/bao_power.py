@@ -127,9 +127,9 @@ class PowerSpectrumFit(Model):
                 return data / smooth
             else:
                 if err:
-                    return data
+                    return data / pk
                 else:
-                    return data - pk
+                    return data / pk
 
         fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
 
@@ -155,7 +155,7 @@ class PowerSpectrumFit(Model):
         if self.postprocess is None:
             axes[1].set_ylabel("P(k) / P_{smooth}(k)")
         else:
-            axes[1].set_ylabel("P(k) - data")
+            axes[1].set_ylabel("P(k) / data")
         axes[0].set_ylabel("k * P(k)")
         axes[0].axhline(0, c="k", alpha=0.3)
         plt.show()

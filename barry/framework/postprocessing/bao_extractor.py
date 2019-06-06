@@ -72,8 +72,8 @@ class BAOExtractor(PureBAOExtractor):
         # Use indexes to blend the two together
         indices = np.array(list(range(ks.size)))
         mask_bao = ((ks < self.mink) | (indices % 2 == 1)) & (ks < self.maxk)
-        val = mask_bao.astype(np.float)
-        return extracted_pk * val + pk * (1 - val)
+        result = np.concatenate((extracted_pk[mask_bao], pk[~mask_bao]))
+        return result
 
 
 if __name__ == "__main__":
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     plt.show()
 
     from barry.framework.datasets.mock_power import MockPowerSpectrum
-    dataset = MockPowerSpectrum(name="Recon mean", recon=True, min_k=0.02, step_size=3, postprocess=b)
+    dataset = MockPowerSpectrum(name="Recon mean", recon=True, min_k=0.02, step_size=2, postprocess=b)
     data = dataset.get_data()
     import seaborn as sb
     sb.heatmap(data["corr"])

@@ -18,12 +18,12 @@ if __name__ == "__main__":
 
     postprocess = BAOExtractor(r_s)
     r = True
-    fix = ["om", "f", "a1", "a2", "a3", "a4", "a5"]
+    fix = ["om", "f"]
     models = [
-        PowerNoda2019(postprocess=postprocess, recon=r),
+        PowerNoda2019(postprocess=postprocess, recon=r, fix_params=fix),
         PowerSeo2016(postprocess=postprocess, recon=r, fix_params=fix),
         PowerDing2018(postprocess=postprocess, recon=r, fix_params=fix),
-        PowerBeutler2017(postprocess=postprocess, recon=r, fix_params=fix + ["b"])
+        PowerBeutler2017(postprocess=postprocess, recon=r, fix_params=fix)
     ]
 
     datas = [MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)]
