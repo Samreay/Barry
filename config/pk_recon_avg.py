@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     datas = [MockPowerSpectrum(name="Recon mean", recon=r, min_k=0.03, max_k=0.30)]
 
-    sampler = EnsembleSampler(num_steps=1000, num_burn=300, temp_dir=dir_name, save_interval=60)
+    sampler = EnsembleSampler(temp_dir=dir_name)
 
     fitter = Fitter(dir_name)
     fitter.set_models(*models)
