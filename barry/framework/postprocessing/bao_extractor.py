@@ -19,7 +19,7 @@ class PureBAOExtractor(PkPostProcess):
         self.plot = plot
         self.delta = delta
 
-    def postprocess(self, ks, pk):
+    def postprocess(self, ks, pk, return_denominator=False):
         """ Runs the BAO Extractor method and returns the extracted BAO signal.
 
         Warning that this is the estimator given in Eq5 Nishimichi et al 2018 (1708.00375)
@@ -42,12 +42,14 @@ class PureBAOExtractor(PkPostProcess):
         k_range = self.delta * k_s  # Range of k to sum over
 
         result = []
+        denoms = []
         for k, p in zip(ks, pk):
             k_diff = np.abs(ks - k)
             mask = k_diff < k_range
             numerator = (1 - (pk[mask] / p)).sum()
             denominator = (1 - np.cos(self.r_s * (ks[mask] - k))).sum()
             res = numerator / denominator
+            denoms.append(denominator)
             result.append(res)
 
         if self.plot:
@@ -57,6 +59,8 @@ class PureBAOExtractor(PkPostProcess):
             axes[1].plot(ks, result, label="Output")
             plt.show()
 
+        if return_denominator:
+            return np.array(denoms)
         return np.array(result)
 
 
@@ -72,7 +76,7 @@ class BAOExtractor(PureBAOExtractor):
         # Use indexes to blend the two together
         indices = np.array(list(range(ks.size)))
         mask_bao = ((ks < self.mink) | (indices % 2 == 1)) & (ks < self.maxk)
-        result = np.concatenate((extracted_pk[mask_bao], pk[~mask_bao]))
+        result = np.concatenate((extracted_pk[~mask_bao], pk[mask_bao]))
         return result
 
 

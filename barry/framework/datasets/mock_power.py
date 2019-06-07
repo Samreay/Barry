@@ -52,7 +52,9 @@ class MockPowerSpectrum(Dataset):
             self.cov /= reduce_cov_factor
         d = np.sqrt(np.diag(self.cov))
         self.corr = self.cov / (d * np.atleast_2d(d).T)
-        self.icov = np.linalg.inv(self.cov)
+        self.correction_factor = (len(self.all_data) - self.corr.shape[0] - 2) / (len(self.all_data) - 1)
+        self.logger.info(f"icov correction factor is {self.correction_factor:0.5f}, from Hartlap 2007")
+        self.icov = np.linalg.inv(self.cov) * self.correction_factor
 
     def _compute_cov(self):
         pks = np.array(self.pks_all)
