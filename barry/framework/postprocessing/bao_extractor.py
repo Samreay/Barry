@@ -24,7 +24,7 @@ class PureBAOExtractor(PkPostProcess):
         k_range = self.delta * k_s  # Range of k to sum over
         return k_range
 
-    def postprocess(self, ks, pk, return_denominator=False):
+    def postprocess(self, ks, pk, return_denominator=False, plot=False):
         """ Runs the BAO Extractor method and returns the extracted BAO signal.
 
         Warning that this is the estimator given in Eq5 Nishimichi et al 2018 (1708.00375)

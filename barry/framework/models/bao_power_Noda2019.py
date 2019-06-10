@@ -143,9 +143,9 @@ if __name__ == "__main__":
     if True:
         ks = data["ks"]
         pk = data["pk"]
-        pk2 = model_pre.get_model(data, p)
+        pk2 = model_pre.get_model(p)
         model_pre.smooth_type = "eh1998"
-        pk3 = model_pre.get_model(data, p)
+        pk3 = model_pre.get_model(p)
         import matplotlib.pyplot as plt
         plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k', label="Data")
         plt.plot(ks, pk2, '.', c='r', label="hinton2017")
@@ -164,8 +164,8 @@ if __name__ == "__main__":
         pk_spt = pt_data["I00"] + pt_data["J00"] + 2.0/3.0*growth/p["b"]*(pt_data["I01"] + pt_data["J01"]) + 1.0/5.0*(growth/p["b"])**2*(pt_data["I11"] + pt_data["J11"])
         pk_smooth_interp = splev(data["ks_input"], splrep(model_pre.camb.ks, pk_smooth_lin*(1.0+pk_spt)))
         pk_smooth_lin_windowed, mask = model_pre.adjust_model_window_effects(pk_smooth_interp)
-        pk2 = model_pre.get_model(data, p)
-        pk3 = model_post.get_model(data, p)
+        pk2 = model_pre.get_model(p)
+        pk3 = model_post.get_model(p)
         import matplotlib.pyplot as plt
         plt.plot(ks, pk2/pk_smooth_lin_windowed[mask], '.', c='r', label="pre-recon")
         plt.plot(ks, pk3/pk_smooth_lin_windowed[mask], '+', c='b', label="post-recon")

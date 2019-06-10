@@ -30,7 +30,7 @@ def get_rs_ps_index(pk_cov, denoms, ks, pks, delta_k, i, j):
     return sum * prefactor
 
 
-def calc_cov_noda(pk_cov, denoms, ks, pks, delta_k, is_extracted):
+def calc_cov_noda_mixed(pk_cov, denoms, ks, pks, delta_k, is_extracted):
     # Implementing equation 23 of arXiv:1901.06854v1
     # Yes, super slow non-vectorised to make sure its exactly as described
     num = pk_cov.shape[0]
@@ -71,8 +71,8 @@ if __name__ == "__main__":
     cov_brute = data2.cov
 
     k_range = extractor.get_krange()
-    cov_noda = calc_cov_noda(pk_cov, denoms, ks, pk, k_range, is_extracted)
-    cov_noda_diag = calc_cov_noda(pk_cov_diag, denoms, ks, pk, k_range, is_extracted)
+    cov_noda = calc_cov_noda_mixed(pk_cov, denoms, ks, pk, k_range, is_extracted)
+    cov_noda_diag = calc_cov_noda_mixed(pk_cov_diag, denoms, ks, pk, k_range, is_extracted)
 
     la_cov_brute = np.log(np.abs(cov_brute))
     la_cov_noda = np.log(np.abs(cov_noda) + np.abs(cov_brute).min())

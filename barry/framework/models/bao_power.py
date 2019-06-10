@@ -95,22 +95,22 @@ class PowerSpectrumFit(Model):
 
     def get_likelihood(self, p):
         d = self.data
-        pk_model = self.get_model(d, p)
+        pk_model = self.get_model(p)
 
         # Compute the chi2
         diff = (d["pk"] - pk_model)
         chi2 = diff.T @ d["icov"] @ diff
         return -0.5 * chi2
 
-    def get_model(self, data, p, smooth=False):
+    def get_model(self, p, smooth=False):
         # Get the generic pk model
-        pk_generated = self.compute_power_spectrum(data["ks_input"], p, smooth=smooth)
+        pk_generated = self.compute_power_spectrum(self.data["ks_input"], p, smooth=smooth)
 
         # Morph it into a model representative of our survey and its selection/window/binning effects
         pk_model, mask = self.adjust_model_window_effects(pk_generated)
 
         if self.postprocess is not None:
-            pk_model = self.postprocess(ks=data["ks_output"], pk=pk_model)
+            pk_model = self.postprocess(ks=self.data["ks_output"], pk=pk_model)
         return pk_model[mask]
 
     def plot(self, params, *extra_params):
@@ -120,7 +120,7 @@ class PowerSpectrumFit(Model):
         pk = self.data["pk"]
         err = np.sqrt(np.diag(self.data["cov"]))
 
-        smooth = self.get_model(self.data, params, smooth=True)
+        smooth = self.get_model(params, smooth=True)
 
         def adj(data, err=False):
             if self.postprocess is None:
@@ -136,12 +136,12 @@ class PowerSpectrumFit(Model):
         axes[0].errorbar(ks, pk, yerr=err, fmt="o", c='k', ms=4, label="Data")
         axes[1].errorbar(ks, adj(pk), yerr=adj(err, err=True), fmt="o", c='k', ms=4, label="Data")
 
-        pk2 = self.get_model(self.data, params)
+        pk2 = self.get_model(params)
         axes[0].plot(ks, pk2, label=self.get_name())
         axes[1].plot(ks, adj(pk2), label=self.get_name())
 
         for i, p in enumerate(extra_params):
-            pk2 = self.get_model(self.data, p)
+            pk2 = self.get_model(p)
             axes[0].plot(ks, pk2, label=f"Extra model {i}")
             axes[1].plot(ks, adj(pk2), label=f"Extra model {i}")
 

@@ -4,7 +4,9 @@ from barry.framework.datasets import MockPowerSpectrum
 from barry.framework.postprocessing import PureBAOExtractor
 
 
-def calc_cov_noda(pk_cov, denoms, ks, pks, delta_k):
+def calc_cov_noda(pk_cov, denoms, ks, pks, delta_k, assume_diag=False):
+    if assume_diag:
+        pk_cov = np.diag(pk_cov)
     # Implementing equation 23 of arXiv:1901.06854v1
     # Yes, super slow non-vectorised to make sure its exactly as described
     num = pk_cov.shape[0]
@@ -40,24 +42,42 @@ if __name__ == "__main__":
     data = MockPowerSpectrum(step_size=step_size)
     data2 = MockPowerSpectrum(postprocess=extractor, step_size=step_size)
 
+    # Get all the data to compute the covariance
     ks = data.ks
     pk = data.data
     pk_cov = data.cov
     denoms = data2.postprocess.postprocess(ks, pk, return_denominator=True)
+    k_range = extractor.get_krange()
 
+    cov_noda = calc_cov_noda(pk_cov, denoms, ks, pk, k_range, assume_diag=False)
+    cov_noda2 = calc_cov_noda(pk_cov, denoms, ks, pk, k_range, assume_diag=False)
     cov_brute = data2.cov
 
-    k_range = extractor.get_krange()
-    cov_noda = calc_cov_noda(pk_cov, denoms, ks, pk, k_range)
+    # Sanity check - print determinants
+    print(np.linalg.det(cov_brute), np.linalg.det(cov_noda), np.linalg.det(cov_noda2))
+    ii1 = cov_brute @ np.linalg.inv(cov_brute)
+    ii2 = cov_noda @ np.linalg.inv(cov_noda)
+    ii3 = cov_noda @ np.linalg.inv(cov_noda2)
 
-    fig, axes = plt.subplots(ncols=3, figsize=(14, 4))
+    # A * inv(A) = I
+    # If its not, there is an issue with the det being too close to zero
+    print("This should all be one ", np.diag(ii2))
+    print("This should all be one ", np.diag(ii3))
+
+    icov_noda = np.linalg.inv(cov_noda)
+    icov_brute = np.linalg.inv(cov_brute)
+
+    # Plot results
+    fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(8, 6))
+    axes = axes.flatten()
     axes[0].set_title("Covariance from Mocks")
     axes[1].set_title("Covariance from Nishimichi 2018, eq 7")
-    axes[2].set_title("Normalised difference, capped at unity")
-    vmin, vmax = -0.002, 0.009
+    axes[2].set_title("Precision mocks")
+    axes[3].set_title("Precision Nishimichi")
     sb.heatmap(cov_brute, ax=axes[0])
     sb.heatmap(cov_noda, ax=axes[1])
-    sb.heatmap((cov_brute - cov_noda) / cov_brute, ax=axes[2], vmin=-1, vmax=1)
+    sb.heatmap(icov_brute, ax=axes[2])
+    sb.heatmap(icov_noda, ax=axes[3])
     plt.show()
 
     # The interesting finding here is that the covariance in P(k) significantly modifies
