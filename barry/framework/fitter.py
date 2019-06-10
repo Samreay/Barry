@@ -21,8 +21,8 @@ class Fitter(object):
         self.sampler = None
         os.makedirs(temp_dir, exist_ok=True)
 
-    def add_model_and_dataset(self, model, dataset):
-        self.model_datasets.append((model, dataset))
+    def add_model_and_dataset(self, model, dataset, extra_args=None):
+        self.model_datasets.append((model, dataset, extra_args))
         return self
 
     def set_num_cpu(self, num_cpu=None):
@@ -44,10 +44,9 @@ class Fitter(object):
         return num_jobs
 
     def get_indexes_from_index(self, index):
-        num_walkers = self.num_walkers
-        index = index // num_walkers
-        walker_index = index % num_walkers
-        return index, walker_index
+        model_index = index // self.num_walkers
+        walker_index = index % self.num_walkers
+        return model_index, walker_index
 
     def set_sampler(self, sampler):
         self.sampler = sampler
@@ -97,7 +96,7 @@ class Fitter(object):
 
         if self.is_laptop():
             self.logger.info("Running locally on the 0th index.")
-            self.run_fit(0, 0, 0, full=False, show_viewer=viewer)
+            self.run_fit(0, 0, full=False, show_viewer=viewer)
         else:
             if len(sys.argv) == 1:
                 h = socket.gethostname()
@@ -164,7 +163,7 @@ class Fitter(object):
             posterior = result[:, 0]
             weight = result[:, 1]
             chain = result[:, 2:]
-            finals.append((posterior, weight, chain, model[0], model[1]))
+            finals.append((posterior, weight, chain, model[0], model[1], model[2]))
         self.logger.info(f"Loaded {len(finals)} chains")
         if len(finals) == 1:
             self.logger.info(f"Chain has shape {finals[0][2].shape}")
