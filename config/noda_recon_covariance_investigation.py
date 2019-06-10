@@ -1,8 +1,8 @@
 import sys
 
-from investigations.does_nova_cov_match_bruteforce_mixed import calc_cov_noda
 
 sys.path.append("..")
+from investigations.does_nova_cov_match_bruteforce_mixed import calc_cov_noda
 from barry.setup import setup
 from barry.framework.models import PowerNoda2019
 from barry.framework.datasets import MockPowerSpectrum
