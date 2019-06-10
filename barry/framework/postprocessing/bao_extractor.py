@@ -19,6 +19,11 @@ class PureBAOExtractor(PkPostProcess):
         self.plot = plot
         self.delta = delta
 
+    def get_krange(self):
+        k_s = 2 * np.pi / self.r_s  # BAO Wavenumber
+        k_range = self.delta * k_s  # Range of k to sum over
+        return k_range
+
     def postprocess(self, ks, pk, return_denominator=False):
         """ Runs the BAO Extractor method and returns the extracted BAO signal.
 
@@ -38,8 +43,7 @@ class PureBAOExtractor(PkPostProcess):
         -------
 
         """
-        k_s = 2 * np.pi / self.r_s  # BAO Wavenumber
-        k_range = self.delta * k_s  # Range of k to sum over
+        k_range = self.get_krange()
 
         result = []
         denoms = []

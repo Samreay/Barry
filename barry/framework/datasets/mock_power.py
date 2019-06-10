@@ -19,6 +19,7 @@ class MockPowerSpectrum(Dataset):
         self.average = average
         self.postprocess = postprocess
         self.diag_only = diag_only
+        self.reduce_cov_factor = reduce_cov_factor
 
         self.data_filename = os.path.abspath(self.data_location + "/taipan_mock_lpow.pkl")
 
@@ -44,12 +45,14 @@ class MockPowerSpectrum(Dataset):
         self._load_winpk_file(winpk_file)
 
         self.logger.debug(f"Computing cov")
-        self.cov = self._compute_cov()
+        self.set_cov(self._compute_cov())
 
+    def set_cov(self, cov):
         self.logger.info(f"Computed cov {self.cov.shape}")
-        if reduce_cov_factor != 1:
-            self.logger.info(f"Reducing covariance by factor of {reduce_cov_factor}")
-            self.cov /= reduce_cov_factor
+        if self.reduce_cov_factor != 1:
+            self.logger.info(f"Reducing covariance by factor of {self.reduce_cov_factor}")
+            self.cov /= self.reduce_cov_factor
+        self.cov = cov
         d = np.sqrt(np.diag(self.cov))
         self.corr = self.cov / (d * np.atleast_2d(d).T)
         self.correction_factor = (len(self.all_data) - self.corr.shape[0] - 2) / (len(self.all_data) - 1)
