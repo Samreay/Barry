@@ -7,7 +7,7 @@ from barry.framework.dataset import Dataset
 
 
 class MockPowerSpectrum(Dataset):
-    def __init__(self, average=True, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True, reduce_cov_factor=1, name="BAOExtractor", postprocess=None, diag_only=False):
+    def __init__(self, average=True, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True, reduce_cov_factor=1, name="BAOExtractor", postprocess=None, diag_only=False, apply_hartlap_correction=True):
         super().__init__(name)
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + "/../../data/taipan_mocks/mock_individual/")
@@ -45,18 +45,19 @@ class MockPowerSpectrum(Dataset):
         self._load_winpk_file(winpk_file)
 
         self.logger.debug(f"Computing cov")
-        self.set_cov(self._compute_cov())
+        self.set_cov(self._compute_cov(), apply_correction=apply_hartlap_correction)
 
-    def set_cov(self, cov):
-        self.logger.info(f"Computed cov {self.cov.shape}")
+    def set_cov(self, cov, apply_correction=True):
+        self.logger.info(f"Computed cov {cov.shape}")
         if self.reduce_cov_factor != 1:
             self.logger.info(f"Reducing covariance by factor of {self.reduce_cov_factor}")
             self.cov /= self.reduce_cov_factor
         self.cov = cov
         d = np.sqrt(np.diag(self.cov))
         self.corr = self.cov / (d * np.atleast_2d(d).T)
-        self.correction_factor = (len(self.all_data) - self.corr.shape[0] - 2) / (len(self.all_data) - 1)
-        self.logger.info(f"icov correction factor is {self.correction_factor:0.5f}, from Hartlap 2007")
+        if apply_correction:
+            self.correction_factor = (len(self.all_data) - self.corr.shape[0] - 2) / (len(self.all_data) - 1)
+            self.logger.info(f"icov correction factor is {self.correction_factor:0.5f}, from Hartlap 2007")
         self.icov = np.linalg.inv(self.cov) * self.correction_factor
 
     def _compute_cov(self):

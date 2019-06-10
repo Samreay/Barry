@@ -21,8 +21,8 @@ if __name__ == "__main__":
     models = [PowerNoda2019(postprocess=postprocess, recon=r, name="Node fixed gamma and f")]
 
     datas = [
-        MockPowerSpectrum(name="Mock covariance", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess),
-        MockPowerSpectrum(name="Nishimichi covariance", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess),
+        MockPowerSpectrum(name="Mock covariance", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess, apply_hartlap_correction=False),
+        MockPowerSpectrum(name="Nishimichi covariance", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess, apply_hartlap_correction=False),
     ]
 
     # Compute the pseudo-analytic cov from Noda and Nishimichi
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     cov_noda = calc_cov_noda(pk_cov, denoms, ks, pk, k_range)
 
     # Override the mock covariance in the second model with the newly computed one
-    datas[1].set_cov(cov_noda)
+    datas[1].set_cov(cov_noda, apply_correction=False)
 
     sampler = EnsembleSampler(temp_dir=dir_name)
     fitter = Fitter(dir_name)
