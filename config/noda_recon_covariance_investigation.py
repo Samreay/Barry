@@ -26,7 +26,7 @@ if __name__ == "__main__":
     ]
 
     # Compute the pseudo-analytic cov from Noda and Nishimichi
-    data = MockPowerSpectrum()
+    data = MockPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, apply_hartlap_correction=False)
     ks = data.ks
     pk = data.data
     pk_cov = data.cov
