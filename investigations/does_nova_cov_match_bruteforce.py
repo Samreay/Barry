@@ -37,16 +37,17 @@ if __name__ == "__main__":
     camb = CambGenerator()
     r_s, _ = camb.get_data()
     extractor = PureBAOExtractor(r_s)
+    mink = 0.02
 
     step_size = 3
-    data = MockPowerSpectrum(step_size=step_size)
-    data2 = MockPowerSpectrum(postprocess=extractor, step_size=step_size)
+    data = MockPowerSpectrum(step_size=step_size, min_k=mink)
+    data2 = MockPowerSpectrum(postprocess=extractor, step_size=step_size, min_k=mink)
 
     # Get all the data to compute the covariance
     ks = data.ks
     pk = data.data
     pk_cov = data.cov
-    denoms = data2.postprocess.postprocess(ks, pk, return_denominator=True)
+    denoms = extractor.postprocess(ks, pk, return_denominator=True)
     k_range = extractor.get_krange()
 
     cov_noda = calc_cov_noda(pk_cov, denoms, ks, pk, k_range, assume_diag=False)
