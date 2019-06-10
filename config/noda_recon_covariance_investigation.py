@@ -1,11 +1,12 @@
 import sys
 
+from investigations.does_nova_cov_match_bruteforce_mixed import calc_cov_noda
+
 sys.path.append("..")
-from investigations.does_nova_cov_match_bruteforce import calc_cov_noda
 from barry.setup import setup
 from barry.framework.models import PowerNoda2019
 from barry.framework.datasets import MockPowerSpectrum
-from barry.framework.postprocessing import PureBAOExtractor
+from barry.framework.postprocessing import BAOExtractor, PureBAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
@@ -16,26 +17,33 @@ if __name__ == "__main__":
     c = CambGenerator()
     r_s, _ = c.get_data()
 
-    postprocess = PureBAOExtractor(r_s)
+    postprocess = BAOExtractor(r_s, reorder=False)
     r = True
-    models = [PowerNoda2019(postprocess=postprocess, recon=r, name="Node fixed gamma and f")]
+    models = [PowerNoda2019(postprocess=postprocess, recon=r, name="")]
 
     datas = [
         MockPowerSpectrum(name="Mock covariance", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess, apply_hartlap_correction=False),
-        MockPowerSpectrum(name="Nishimichi covariance", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess, apply_hartlap_correction=False),
+        MockPowerSpectrum(name="Nishimichi, full", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess, apply_hartlap_correction=False),
+        MockPowerSpectrum(name="Nishimichi, diag", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess, apply_hartlap_correction=False),
     ]
 
     # Compute the pseudo-analytic cov from Noda and Nishimichi
     data = MockPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, apply_hartlap_correction=False)
+    data2 = MockPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, apply_hartlap_correction=False, fake_diag=True)
     ks = data.ks
     pk = data.data
     pk_cov = data.cov
-    denoms = datas[1].postprocess.postprocess(ks, pk, return_denominator=True)
-    k_range = postprocess.get_krange()
-    cov_noda = calc_cov_noda(pk_cov, denoms, ks, pk, k_range)
+    pk_cov_diag = data2.cov
+    e = PureBAOExtractor(r_s)
+    denoms = e.postprocess(ks, pk, return_denominator=True)
+    k_range = e.get_krange()
+    is_extracted = postprocess.get_is_extracted(ks)
+    cov_noda = calc_cov_noda(pk_cov, denoms, ks, pk, k_range, is_extracted)
+    cov_noda_diag = calc_cov_noda(pk_cov_diag, denoms, ks, pk, k_range, is_extracted)
 
     # Override the mock covariance in the second model with the newly computed one
     datas[1].set_cov(cov_noda, apply_correction=False)
+    datas[2].set_cov(cov_noda_diag, apply_correction=False)
 
     sampler = EnsembleSampler(temp_dir=dir_name)
     fitter = Fitter(dir_name)
