@@ -1,6 +1,4 @@
 import numpy as np
-import seaborn as sb
-import matplotlib.pyplot as plt
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.datasets import MockPowerSpectrum
 from barry.framework.postprocessing import PureBAOExtractor
@@ -31,6 +29,8 @@ def calc_cov_noda(pk_cov, denoms, ks, pks, delta_k):
 
 
 if __name__ == "__main__":
+    import seaborn as sb
+    import matplotlib.pyplot as plt
 
     camb = CambGenerator()
     r_s, _ = camb.get_data()
