@@ -58,6 +58,8 @@ class MockPowerSpectrum(Dataset):
         if apply_correction:
             self.correction_factor = (len(self.all_data) - self.corr.shape[0] - 2) / (len(self.all_data) - 1)
             self.logger.info(f"icov correction factor is {self.correction_factor:0.5f}, from Hartlap 2007")
+        else:
+            self.correction_factor = 1
         self.icov = np.linalg.inv(self.cov) * self.correction_factor
 
     def _compute_cov(self):
