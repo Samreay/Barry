@@ -21,7 +21,7 @@ class Fitter(object):
         self.sampler = None
         os.makedirs(temp_dir, exist_ok=True)
 
-    def add_model_and_dataset(self, model, dataset, extra_args=None):
+    def add_model_and_dataset(self, model, dataset, **extra_args):
         self.model_datasets.append((model, dataset, extra_args))
         return self
 

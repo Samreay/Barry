@@ -17,19 +17,16 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
 
     fitter = Fitter(dir_name)
-    postprocess = BAOExtractor(r_s)
+    p = BAOExtractor(r_s)
     for r in [True, False]:
         fix = ["om", "f"]
         t = "Recon" if r else "Prerecon"
-        models = [
-            PowerNoda2019(name=f"Noda {t}", postprocess=postprocess, recon=r, fix_params=fix),
-            PowerSeo2016(name=f"Seo {t}", postprocess=postprocess, recon=r, fix_params=fix),
-            PowerDing2018(name=f"Ding {t}", postprocess=postprocess, recon=r, fix_params=fix),
-            PowerBeutler2017(name=f"Beutler {t}", postprocess=postprocess, recon=r, fix_params=fix)
-        ]
-        data = MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)
-        for m in models:
-            fitter.add_model_and_dataset(m, data)
+        ls = "-" if r else "--"
+        data = MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.03, max_k=0.30, postprocess=p)
+        fitter.add_model_and_dataset(PowerNoda2019(postprocess=p, recon=r, fix_params=fix), data, name=f"Noda {t}", linestyle=ls, color="r")
+        fitter.add_model_and_dataset(PowerSeo2016(postprocess=p, recon=r, fix_params=fix), data, name=f"Seo {t}", linestyle=ls, color="lg")
+        fitter.add_model_and_dataset(PowerBeutler2017(postprocess=p, recon=r, fix_params=fix), data, name=f"Beutler {t}", linestyle=ls, color="d")
+        fitter.add_model_and_dataset(PowerDing2018(postprocess=p, recon=r, fix_params=fix), data, name=f"Ding {t}", linestyle=ls, color="o")
 
     sampler = EnsembleSampler(temp_dir=dir_name)
     fitter.set_sampler(sampler)
@@ -40,10 +37,8 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         c = ChainConsumer()
-        for posterior, weight, chain, model, data in fitter.load():
-            name = f"{model.get_name()} {data.get_name()}"
-            linestyle = "--" if "Prerecon" in name else "-"
-            c.add_chain(chain, weights=weight, parameters=model.get_labels(), name=name, linestyle=linestyle)
+        for posterior, weight, chain, model, data, extra in fitter.load():
+            c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20)
         c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})

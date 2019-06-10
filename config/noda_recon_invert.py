@@ -28,8 +28,8 @@ if __name__ == "__main__":
 
     sampler = EnsembleSampler(temp_dir=dir_name)
     fitter = Fitter(dir_name)
-    fitter.add_model_and_dataset(model, data)
-    fitter.add_model_and_dataset(model_inverted, data_inverted)
+    fitter.add_model_and_dataset(model, data, name="Noda mixing")
+    fitter.add_model_and_dataset(model_inverted, data_inverted, name="Invert mixing")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
@@ -39,10 +39,8 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         c = ChainConsumer()
-        for posterior, weight, chain, model, data in fitter.load():
-            name = f"{model.get_name()} {data.get_name()}"
-            linestyle = "--" if "FitOm" in name else "-"
-            c.add_chain(chain, weights=weight, parameters=model.get_labels(), name=name, linestyle=linestyle)
+        for posterior, weight, chain, model, data, extra in fitter.load():
+            c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20)
         c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})

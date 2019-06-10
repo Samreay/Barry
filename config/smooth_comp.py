@@ -18,8 +18,8 @@ if __name__ == "__main__":
     sampler = EnsembleSampler(temp_dir=dir_name)
 
     fitter = Fitter(dir_name)
-    fitter.add_model_and_dataset(models[0], data)
-    fitter.add_model_and_dataset(models[1], data)
+    fitter.add_model_and_dataset(models[0], data, name="Hinton2017")
+    fitter.add_model_and_dataset(models[1], data, name="EH1998")
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
     fitter.fit(file)
@@ -29,10 +29,8 @@ if __name__ == "__main__":
 
         c = ChainConsumer()
         pks = {}
-        for posterior, weight, chain, model, data in fitter.load():
-            name = f"{model.get_name()} {data.get_name()}"
-            linestyle = "--" if "FitOm" in name else "-"
-            c.add_chain(chain, weights=weight, parameters=model.get_labels(), name=name, linestyle=linestyle)
+        for posterior, weight, chain, model, data, extra in fitter.load():
+            c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
 
             # params = dict([(p.name, v) for p, v in zip(model.get_active_params(), chain[posterior.argmax(), :])])
             # params["om"] = 0.3121

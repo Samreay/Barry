@@ -22,14 +22,11 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name)
 
     for r in [True, False]:
-        models = [
-            PowerNoda2019(postprocess=postprocess, recon=r, name="Node fixed gamma and f"),
-            PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f"], name="Noda fixed f"),
-            PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om"], name="Noda"),
-        ]
+        rt = "Recon" if r else "Prerecon"
         data = MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)
-        for m in models:
-            fitter.add_model_and_dataset(m, data)
+        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r), data, name=f"Node {rt} fixed gamma and f", linestyle="-" if r else "--", color="r")
+        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f"],), data, name=f"Node {rt} fixed f", linestyle="-" if r else "--", color="lb")
+        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om"],), data, name=f"Node {rt} free", linestyle="-" if r else "--", color="p")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
@@ -39,10 +36,8 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         c = ChainConsumer()
-        for posterior, weight, chain, model, data in fitter.load():
-            name = f"{model.get_name()} {data.get_name()}"
-            linestyle = "--" if "FitOm" in name else "-"
-            c.add_chain(chain, weights=weight, parameters=model.get_labels(), name=name, linestyle=linestyle)
+        for posterior, weight, chain, model, data, extra in fitter.load():
+            c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20)
         c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
