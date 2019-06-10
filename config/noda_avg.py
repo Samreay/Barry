@@ -3,7 +3,7 @@ import sys
 
 sys.path.append("..")
 from barry.setup import setup
-from barry.framework.models import PowerNoda2019, PowerSeo2016, PowerBeutler2017, PowerDing2018
+from barry.framework.models import PowerNoda2019
 from barry.framework.datasets import MockPowerSpectrum
 from barry.framework.postprocessing import BAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
@@ -17,22 +17,20 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
 
     postprocess = BAOExtractor(r_s)
-    r = True
-    fix = ["om", "f"]
-    models = [
-        PowerNoda2019(postprocess=postprocess, recon=r, fix_params=fix),
-        PowerSeo2016(postprocess=postprocess, recon=r, fix_params=fix),
-        PowerDing2018(postprocess=postprocess, recon=r, fix_params=fix),
-        PowerBeutler2017(postprocess=postprocess, recon=r, fix_params=fix)
-    ]
-
-    datas = [MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)]
 
     sampler = EnsembleSampler(temp_dir=dir_name)
-
     fitter = Fitter(dir_name)
-    fitter.set_models(*models)
-    fitter.set_data(*datas)
+
+    for r in [True, False]:
+        models = [
+            PowerNoda2019(postprocess=postprocess, recon=r, name="Node fixed gamma and f"),
+            PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f"], name="Noda fixed f"),
+            PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om"], name="Noda"),
+        ]
+        data = MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)
+        for m in models:
+            fitter.add_model_and_dataset(m, data)
+
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
     fitter.fit(file, viewer=False)

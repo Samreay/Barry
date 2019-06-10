@@ -17,20 +17,20 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
 
     postprocess_invert = BAOExtractor(r_s, invert=True)
-    r = True
-    models = [
-        PowerNoda2019(postprocess=postprocess_invert, recon=r),
-    ]
+    postprocess = BAOExtractor(r_s)
 
-    datas = [
-        MockPowerSpectrum(name="Invert mixing", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess_invert),
-    ]
+    r = True
+    model_inverted = PowerNoda2019(postprocess=postprocess_invert, recon=r)
+    model = PowerNoda2019(postprocess=postprocess)
+
+    data_inverted = MockPowerSpectrum(name="Invert mixing", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess_invert)
+    data = MockPowerSpectrum(name="Invert mixing", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)
 
     sampler = EnsembleSampler(temp_dir=dir_name)
-
     fitter = Fitter(dir_name)
-    fitter.set_models(*models)
-    fitter.set_data(*datas)
+    fitter.add_model_and_dataset(model, data)
+    fitter.add_model_and_dataset(model_inverted, data_inverted)
+
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
     fitter.fit(file, viewer=False)

@@ -16,23 +16,22 @@ if __name__ == "__main__":
     c = CambGenerator()
     r_s, _ = c.get_data()
 
+    fitter = Fitter(dir_name)
     postprocess = BAOExtractor(r_s)
-    r = False
-    fix = ["om", "f"]
-    models = [
-        PowerNoda2019(postprocess=postprocess, recon=r, fix_params=fix),
-        PowerSeo2016(postprocess=postprocess, recon=r, fix_params=fix),
-        PowerDing2018(postprocess=postprocess, recon=r, fix_params=fix),
-        PowerBeutler2017(postprocess=postprocess, recon=r, fix_params=fix)
-    ]
-
-    datas = [MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)]
+    for r in [True, False]:
+        fix = ["om", "f"]
+        t = "Recon" if r else "Prerecon"
+        models = [
+            PowerNoda2019(name=f"Noda {t}", postprocess=postprocess, recon=r, fix_params=fix),
+            PowerSeo2016(name=f"Seo {t}", postprocess=postprocess, recon=r, fix_params=fix),
+            PowerDing2018(name=f"Ding {t}", postprocess=postprocess, recon=r, fix_params=fix),
+            PowerBeutler2017(name=f"Beutler {t}", postprocess=postprocess, recon=r, fix_params=fix)
+        ]
+        data = MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)
+        for m in models:
+            fitter.add_model_and_dataset(m, data)
 
     sampler = EnsembleSampler(temp_dir=dir_name)
-
-    fitter = Fitter(dir_name)
-    fitter.set_models(*models)
-    fitter.set_data(*datas)
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
     fitter.fit(file, viewer=False)
@@ -43,7 +42,7 @@ if __name__ == "__main__":
         c = ChainConsumer()
         for posterior, weight, chain, model, data in fitter.load():
             name = f"{model.get_name()} {data.get_name()}"
-            linestyle = "--" if "FitOm" in name else "-"
+            linestyle = "--" if "Prerecon" in name else "-"
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), name=name, linestyle=linestyle)
         c.configure(shade=True, bins=20)
         c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
