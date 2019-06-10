@@ -69,17 +69,21 @@ class PureBAOExtractor(PkPostProcess):
 
 
 class BAOExtractor(PureBAOExtractor):
-    def __init__(self, r_s, plot=False, delta=0.6, mink=0.05, maxk=0.15, reorder=True):
+    def __init__(self, r_s, plot=False, delta=0.6, mink=0.05, maxk=0.15, reorder=True, invert=False):
         super().__init__(r_s, plot=plot, delta=delta)
         self.mink = mink
         self.maxk = maxk
         self.reorder = reorder
+        self.invert = invert
 
     def get_is_extracted(self, ks):
         # Use indexes to blend the two together
         indices = np.array(list(range(ks.size)))
         mask_ps = ((ks < self.mink) | (indices % 2 == 1)) & (ks < self.maxk)
-        return ~mask_ps
+        if self.invert:
+            return mask_ps
+        else:
+            return ~mask_ps
 
     def postprocess(self, ks, pk):
         extracted_pk = super().postprocess(ks, pk)
