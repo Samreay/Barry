@@ -21,16 +21,15 @@ if __name__ == "__main__":
     postprocess = BAOExtractor(r_s)
     r = True
     model = PowerNoda2019(postprocess=postprocess, recon=r, name="")
-
+    mink = 0.03
+    maxk = 0.30
     datas = [
-        MockPowerSpectrum(name="Mock covariance", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess),
-        MockPowerSpectrum(name="Nishimichi, full", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess),
-        MockPowerSpectrum(name="Nishimichi, diag", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess),
+        MockPowerSpectrum(name="Mock covariance", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
+        MockPowerSpectrum(name="Nishimichi, full", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
+        MockPowerSpectrum(name="Nishimichi, diag", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
     ]
 
     # Compute the pseudo-analytic cov from Noda and Nishimichi
-    mink = 0.03
-    maxk = 0.30
     data = MockPowerSpectrum(recon=r, min_k=0.0, max_k=0.32, apply_hartlap_correction=False)
     data2 = MockPowerSpectrum(recon=r, min_k=0.0, max_k=0.32, apply_hartlap_correction=False, fake_diag=True)
     ks = data.ks
@@ -44,12 +43,17 @@ if __name__ == "__main__":
     cov_original = datas[0].cov
     cov_noda = calc_cov_noda_mixed(pk_cov, denoms, ks, pk, k_range, is_extracted)
     cov_noda_diag = calc_cov_noda_mixed(pk_cov_diag, denoms, ks, pk, k_range, is_extracted)
-    mask = (ks < mink) | (ks > maxk)
     import numpy as np
-    cov_noda = np.delete(np.delete(cov_noda, mask, 0), mask, 1)
-    cov_noda_diag = np.delete(np.delete(cov_noda_diag, mask, 0), mask, 1)
+    mask = (ks >= mink) & (ks <= maxk)
+    mask2d = mask[np.newaxis, :] & mask[:, np.newaxis]
+    import seaborn as sb
+    sb.heatmap(mask2d.astype(np.int))
+    import matplotlib.pyplot as plt
+    plt.show()
 
-    # Override the mock covariance in the second model with the newly computed one
+    cov_noda = cov_noda[mask2d].reshape((mask.sum(), mask.sum()))
+    cov_noda_diag = cov_noda_diag[mask2d].reshape((mask.sum(), mask.sum()))
+
     datas[1].set_cov(cov_noda)
     datas[2].set_cov(cov_noda_diag)
 
@@ -100,10 +104,8 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         c = ChainConsumer()
-        for posterior, weight, chain, model, data in fitter.load():
-            name = f"{model.get_name()} {data.get_name()}"
-            linestyle = "--" if "FitOm" in name else "-"
-            c.add_chain(chain, weights=weight, parameters=model.get_labels(), name=name, linestyle=linestyle)
+        for posterior, weight, chain, model, data, extra in fitter.load():
+            c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20)
         c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
