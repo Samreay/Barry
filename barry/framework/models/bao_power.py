@@ -110,8 +110,8 @@ class PowerSpectrumFit(Model):
         pk_model, mask = self.adjust_model_window_effects(pk_generated)
 
         if self.postprocess is not None:
-            pk_model = self.postprocess(ks=self.data["ks_output"], pk=pk_model)
-        return pk_model[mask]
+            pk_model = self.postprocess(ks=self.data["ks_output"], pk=pk_model, mask=mask)
+        return pk_model
 
     def plot(self, params, *extra_params):
         import matplotlib.pyplot as plt

@@ -24,7 +24,7 @@ class PureBAOExtractor(PkPostProcess):
         k_range = self.delta * k_s  # Range of k to sum over
         return k_range
 
-    def postprocess(self, ks, pk, return_denominator=False, plot=False):
+    def postprocess(self, ks, pk, mask, return_denominator=False, plot=False):
         """ Runs the BAO Extractor method and returns the extracted BAO signal.
 
         Warning that this is the estimator given in Eq5 Nishimichi et al 2018 (1708.00375)
@@ -49,12 +49,13 @@ class PureBAOExtractor(PkPostProcess):
         denoms = []
         for k, p in zip(ks, pk):
             k_diff = np.abs(ks - k)
-            mask = k_diff < k_range
-            numerator = (1 - (pk[mask] / p)).sum()
-            denominator = (1 - np.cos(self.r_s * (ks[mask] - k))).sum()
+            m = k_diff < k_range
+            numerator = (1 - (pk[m] / p)).sum()
+            denominator = (1 - np.cos(self.r_s * (ks[m] - k))).sum()
             res = numerator / denominator
             denoms.append(denominator)
             result.append(res)
+        result = np.array(result)
 
         if self.plot:
             import matplotlib.pyplot as plt
@@ -63,9 +64,12 @@ class PureBAOExtractor(PkPostProcess):
             axes[1].plot(ks, result, label="Output")
             plt.show()
 
+        if mask is None:
+            mask = np.ones(result.shape).astype(np.bool)
+
         if return_denominator:
-            return np.array(denoms)
-        return np.array(result)
+            return np.array(denoms)[mask]
+        return result[mask]
 
 
 class BAOExtractor(PureBAOExtractor):
@@ -85,14 +89,16 @@ class BAOExtractor(PureBAOExtractor):
         else:
             return mask_bao
 
-    def postprocess(self, ks, pk):
-        extracted_pk = super().postprocess(ks, pk)
+    def postprocess(self, ks, pk, mask):
+        if mask is None:
+            mask = np.ones(pk.shape).astype(np.bool)
+        extracted_pk = super().postprocess(ks, pk, None)
         mask_bao = self.get_is_extracted(ks)
         if self.reorder:
-            result = np.concatenate((extracted_pk[mask_bao], pk[~mask_bao]))
+            result = np.concatenate((pk[mask & ~mask_bao], extracted_pk[mask & mask_bao]))
         else:
             mask_int = mask_bao.astype(np.int)
-            result = extracted_pk * (mask_int) + pk * (1 - mask_int)
+            result = (extracted_pk * (mask_int) + pk * (1 - mask_int))[mask]
         return result
 
 

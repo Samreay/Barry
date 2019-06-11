@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.datasets import MockPowerSpectrum
@@ -51,6 +53,8 @@ def calc_cov_noda_mixed(pk_cov, denoms, ks, pks, delta_k, is_extracted):
 if __name__ == "__main__":
     import seaborn as sb
     import matplotlib.pyplot as plt
+    logging.basicConfig(level=logging.INFO, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
+    logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
     camb = CambGenerator()
     r_s, _ = camb.get_data()
@@ -58,21 +62,26 @@ if __name__ == "__main__":
     extractor2 = PureBAOExtractor(r_s)
 
     step_size = 3
-    data = MockPowerSpectrum(step_size=step_size, fake_diag=False, apply_hartlap_correction=False)
-    data3 = MockPowerSpectrum(step_size=step_size, fake_diag=True, apply_hartlap_correction=False)
-    data2 = MockPowerSpectrum(postprocess=extractor, step_size=step_size, apply_hartlap_correction=False)
+    data = MockPowerSpectrum(step_size=step_size, fake_diag=False)
+    data3 = MockPowerSpectrum(step_size=step_size, fake_diag=True)
+    data2 = MockPowerSpectrum(postprocess=extractor, step_size=step_size)
 
     ks = data.ks
     pk = data.data
     pk_cov = data.cov
     pk_cov_diag = data3.cov
-    denoms = extractor2.postprocess(ks, pk, return_denominator=True)
+    denoms = extractor2.postprocess(ks, pk, None, return_denominator=True)
     is_extracted = extractor.get_is_extracted(ks)
     cov_brute = data2.cov
 
     k_range = extractor.get_krange()
     cov_noda = calc_cov_noda_mixed(pk_cov, denoms, ks, pk, k_range, is_extracted)
     cov_noda_diag = calc_cov_noda_mixed(pk_cov_diag, denoms, ks, pk, k_range, is_extracted)
+
+    print("Raw pk should be ones: ", np.diag(pk_cov @ np.linalg.inv(pk_cov)))
+    print("Brute mix should be ones: ", np.diag(cov_brute @ np.linalg.inv(cov_brute)))
+    print("Noda mix should be ones: ", np.diag(cov_noda @ np.linalg.inv(cov_noda)))
+    print("Noda mix diag should be ones: ", np.diag(cov_noda_diag @ np.linalg.inv(cov_noda_diag)))
 
     la_cov_brute = np.log(np.abs(cov_brute))
     la_cov_noda = np.log(np.abs(cov_noda) + np.abs(cov_brute).min())

@@ -1,4 +1,5 @@
 import numpy as np
+import logging
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.datasets import MockPowerSpectrum
 from barry.framework.postprocessing import PureBAOExtractor
@@ -6,7 +7,7 @@ from barry.framework.postprocessing import PureBAOExtractor
 
 def calc_cov_noda(pk_cov, denoms, ks, pks, delta_k, assume_diag=False):
     if assume_diag:
-        pk_cov = np.diag(pk_cov)
+        pk_cov = np.diag(np.diag(pk_cov))
     # Implementing equation 23 of arXiv:1901.06854v1
     # Yes, super slow non-vectorised to make sure its exactly as described
     num = pk_cov.shape[0]
@@ -33,13 +34,15 @@ def calc_cov_noda(pk_cov, denoms, ks, pks, delta_k, assume_diag=False):
 if __name__ == "__main__":
     import seaborn as sb
     import matplotlib.pyplot as plt
+    logging.basicConfig(level=logging.INFO, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
+    logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
     camb = CambGenerator()
     r_s, _ = camb.get_data()
     extractor = PureBAOExtractor(r_s)
     mink = 0.02
 
-    step_size = 3
+    step_size = 2
     data = MockPowerSpectrum(step_size=step_size, min_k=mink)
     data2 = MockPowerSpectrum(postprocess=extractor, step_size=step_size, min_k=mink)
 
@@ -47,11 +50,11 @@ if __name__ == "__main__":
     ks = data.ks
     pk = data.data
     pk_cov = data.cov
-    denoms = extractor.postprocess(ks, pk, return_denominator=True)
+    denoms = extractor.postprocess(ks, pk, None, return_denominator=True)
     k_range = extractor.get_krange()
 
     cov_noda = calc_cov_noda(pk_cov, denoms, ks, pk, k_range, assume_diag=False)
-    cov_noda2 = calc_cov_noda(pk_cov, denoms, ks, pk, k_range, assume_diag=False)
+    cov_noda2 = calc_cov_noda(pk_cov, denoms, ks, pk, k_range, assume_diag=True)
     cov_brute = data2.cov
 
     # Sanity check - print determinants
@@ -62,6 +65,7 @@ if __name__ == "__main__":
 
     # A * inv(A) = I
     # If its not, there is an issue with the det being too close to zero
+    print("This should all be one ", np.diag(ii1))
     print("This should all be one ", np.diag(ii2))
     print("This should all be one ", np.diag(ii3))
 

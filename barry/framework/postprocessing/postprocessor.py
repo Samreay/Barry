@@ -13,8 +13,8 @@ class PostProcess(ABC):
 
 class PkPostProcess(PostProcess):
     def __call__(self, **inputs):
-        return self.postprocess(inputs["ks"], inputs["pk"])
+        return self.postprocess(inputs["ks"], inputs["pk"], inputs["mask"])
 
     @abstractmethod
-    def postprocess(self, ks, pk):
+    def postprocess(self, ks, pk, mask):
         pass

@@ -7,7 +7,7 @@ from barry.framework.dataset import Dataset
 
 
 class MockPowerSpectrum(Dataset):
-    def __init__(self, average=True, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True, reduce_cov_factor=1, name="BAOExtractor", postprocess=None, diag_only=False, apply_hartlap_correction=True, fake_diag=False):
+    def __init__(self, average=True, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True, reduce_cov_factor=1, name="BAOExtractor", postprocess=None, diag_only=False, apply_hartlap_correction=False, fake_diag=False):
         super().__init__(name)
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + "/../../data/taipan_mocks/mock_individual/")
@@ -55,6 +55,11 @@ class MockPowerSpectrum(Dataset):
         if fake_diag:
             cov = np.diag(np.diag(cov))
         self.cov = cov
+
+        v = np.diag(cov @ np.linalg.inv(cov))
+        if not np.all(np.isclose(v, 1)):
+            self.logger.error("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
+            self.logger.error(f"These should all be 1: {v}")
         d = np.sqrt(np.diag(self.cov))
         self.corr = self.cov / (d * np.atleast_2d(d).T)
         if apply_correction:
@@ -102,8 +107,10 @@ class MockPowerSpectrum(Dataset):
     def _rebin_data(self, dataframe):
         k_rebinned, pk_rebinned, mask = self._agg_data(dataframe)
         if self.postprocess is not None:
-            pk_rebinned = self.postprocess(ks=k_rebinned, pk=pk_rebinned)
-        return k_rebinned[mask], pk_rebinned[mask]
+            pk_rebinned = self.postprocess(ks=k_rebinned, pk=pk_rebinned, mask=mask)
+        else:
+            pk_rebinned = pk_rebinned[mask]
+        return k_rebinned[mask], pk_rebinned
 
     def _load_winfit(self, winfit_file):
         # TODO: Add documentation when I figure out how this works
