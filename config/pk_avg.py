@@ -1,9 +1,8 @@
 import sys
 
+sys.path.append("..")
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.postprocessing import BAOExtractor
-
-sys.path.append("..")
 from barry.setup import setup
 from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
 from barry.framework.datasets import MockPowerSpectrum
