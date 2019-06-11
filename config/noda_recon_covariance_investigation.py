@@ -46,10 +46,10 @@ if __name__ == "__main__":
     import numpy as np
     mask = (ks >= mink) & (ks <= maxk)
     mask2d = mask[np.newaxis, :] & mask[:, np.newaxis]
-    import seaborn as sb
-    sb.heatmap(mask2d.astype(np.int))
-    import matplotlib.pyplot as plt
-    plt.show()
+    # import seaborn as sb
+    # sb.heatmap(mask2d.astype(np.int))
+    # import matplotlib.pyplot as plt
+    # plt.show()
 
     cov_noda = cov_noda[mask2d].reshape((mask.sum(), mask.sum()))
     cov_noda_diag = cov_noda_diag[mask2d].reshape((mask.sum(), mask.sum()))
