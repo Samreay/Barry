@@ -39,10 +39,12 @@ if __name__ == "__main__":
         BAOExtractor(r_s, mink=0.05, maxk=0.30),
     ]
 
+    recon = True
     for p in ps:
         n = f"{p.mink:0.2f}-{p.maxk:0.2f}"
-        model = PowerNoda2019(postprocess=p, fix_params=["om", "f", "gamma", "b"])
-        data = MockPowerSpectrum(min_k=0.02, max_k=0.30, postprocess=p, apply_hartlap_correction=False)
+        print(n)
+        model = PowerNoda2019(postprocess=p, recon=recon, fix_params=["om", "f", "gamma", "b"])
+        data = MockPowerSpectrum(min_k=0.02, max_k=0.30, recon=recon, postprocess=p, apply_hartlap_correction=False)
         fitter.add_model_and_dataset(model, data, name=n)
 
     sampler = EnsembleSampler(temp_dir=dir_name)
@@ -56,12 +58,14 @@ if __name__ == "__main__":
 
         c = ChainConsumer()
         for posterior, weight, chain, model, data, extra in fitter.load():
+            print(extra["name"])
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20)
+        c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         with open(pfn + "_params.txt", "w") as f:
-            f.write(c.analysis.get_latex_table(transpose=True))
+            f.write(c.analysis.get_latex_table())
 
 
 

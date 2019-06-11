@@ -83,7 +83,7 @@ class BAOExtractor(PureBAOExtractor):
         if self.invert:
             return ~mask_bao
         else:
-            return ~mask_bao
+            return mask_bao
 
     def postprocess(self, ks, pk):
         extracted_pk = super().postprocess(ks, pk)

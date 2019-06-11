@@ -141,9 +141,14 @@ class Fitter(object):
 
         results = []
         results_models = []
-        prev_model, prev_sim, prev_walkers = 0, 0, 0
+        prev_model, prev_walkers = 0, 0
         stacked = None
-        for c, mi, wi in zip(chains, model_indexes, walker_indexes):
+
+        to_sort = np.array(model_indexes) + 0.0001 * np.array(walker_indexes)
+        sorted_indexes = np.argsort(to_sort)
+
+        for index in sorted_indexes:
+            c, mi, wi = chains[index], model_indexes[index], walker_indexes[index]
             if (prev_walkers != wi and split_walkers) or (prev_model != mi and split_models):
                 if stacked is not None:
                     results.append(stacked)
