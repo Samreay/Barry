@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     for p in ps:
         n = f"{p.mink:0.2f}-{p.maxk:0.2f}"
-        model = PowerNoda2019(postprocess=p, fix_params=["om", "f", "gamma", "b"])
+        model = PowerNoda2019(postprocess=p)
         data = MockPowerSpectrum(min_k=0.02, max_k=0.30, postprocess=p, apply_hartlap_correction=False)
         fitter.add_model_and_dataset(model, data, name=n)
 

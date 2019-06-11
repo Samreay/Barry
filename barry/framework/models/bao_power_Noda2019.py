@@ -9,8 +9,14 @@ from barry.framework.cosmology.PT_generator import PTGenerator
 
 class PowerNoda2019(PowerSpectrumFit):
 
-    def __init__(self, fix_params=["om", "f", "gamma"], gammaval=None, smooth_type="hinton2017", recon=False, recon_smoothing_scale=21.21, name="Pk Noda 2019", postprocess=None):
+    def __init__(self, fix_params=None, gammaval=None, smooth_type="hinton2017", recon=False, recon_smoothing_scale=21.21, name="Pk Noda 2019", postprocess=None):
         self.recon = recon
+        if fix_params is None:
+            if recon:
+                fix_params = ["om", "f"]
+            else:
+                fix_params = ["om", "f", "gamma"]
+
         self.recon_smoothing_scale = recon_smoothing_scale
         self.fit_omega_m = fix_params is None or "om" not in fix_params
         self.fit_growth = fix_params is None or "f" not in fix_params
