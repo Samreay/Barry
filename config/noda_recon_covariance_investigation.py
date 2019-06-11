@@ -38,7 +38,7 @@ if __name__ == "__main__":
     pk_cov = data.cov
     pk_cov_diag = data2.cov
     e = PureBAOExtractor(r_s)
-    denoms = e.postprocess(ks, pk, return_denominator=True)
+    denoms = e.postprocess(ks, pk, None, return_denominator=True)
     k_range = e.get_krange()
     is_extracted = postprocess.get_is_extracted(ks)
     cov_original = datas[0].cov
