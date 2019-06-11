@@ -26,7 +26,7 @@ if __name__ == "__main__":
     names = ["0.05-0.18", "0.03-0.18", "0.05-0.15", "0.05-0.25"]
 
     for p, n in zip([p1, p2, p3, p4], names):
-        model = PowerNoda2019(postprocess=p)
+        model = PowerNoda2019(postprocess=p, fix_params=["om", "f", "gamma", "b"])
         data = MockPowerSpectrum(min_k=0.02, max_k=0.30, postprocess=p, apply_hartlap_correction=False)
         fitter.add_model_and_dataset(model, data, name=n)
 
