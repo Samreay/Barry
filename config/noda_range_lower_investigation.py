@@ -19,12 +19,12 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name)
 
     ps = [
-        BAOExtractor(r_s, mink=0.02, maxk=0.25),
-        BAOExtractor(r_s, mink=0.03, maxk=0.25),
-        BAOExtractor(r_s, mink=0.04, maxk=0.25),
-        BAOExtractor(r_s, mink=0.05, maxk=0.25),
-        BAOExtractor(r_s, mink=0.06, maxk=0.25),
-        BAOExtractor(r_s, mink=0.07, maxk=0.25),
+        BAOExtractor(r_s, mink=0.02, maxk=0.15),
+        BAOExtractor(r_s, mink=0.03, maxk=0.15),
+        BAOExtractor(r_s, mink=0.04, maxk=0.15),
+        BAOExtractor(r_s, mink=0.05, maxk=0.15),
+        BAOExtractor(r_s, mink=0.06, maxk=0.15),
+        BAOExtractor(r_s, mink=0.07, maxk=0.15),
     ]
 
     for p in ps:
