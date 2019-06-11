@@ -20,23 +20,14 @@ if __name__ == "__main__":
 
     ps = [
         BAOExtractor(r_s, mink=0.05, maxk=0.13),
-        BAOExtractor(r_s, mink=0.05, maxk=0.14),
         BAOExtractor(r_s, mink=0.05, maxk=0.15),
-        BAOExtractor(r_s, mink=0.05, maxk=0.16),
         BAOExtractor(r_s, mink=0.05, maxk=0.17),
-        BAOExtractor(r_s, mink=0.05, maxk=0.18),
         BAOExtractor(r_s, mink=0.05, maxk=0.19),
-        BAOExtractor(r_s, mink=0.05, maxk=0.20),
         BAOExtractor(r_s, mink=0.05, maxk=0.21),
-        BAOExtractor(r_s, mink=0.05, maxk=0.22),
         BAOExtractor(r_s, mink=0.05, maxk=0.23),
-        BAOExtractor(r_s, mink=0.05, maxk=0.24),
         BAOExtractor(r_s, mink=0.05, maxk=0.25),
-        BAOExtractor(r_s, mink=0.05, maxk=0.26),
         BAOExtractor(r_s, mink=0.05, maxk=0.27),
-        BAOExtractor(r_s, mink=0.05, maxk=0.28),
         BAOExtractor(r_s, mink=0.05, maxk=0.29),
-        BAOExtractor(r_s, mink=0.05, maxk=0.30),
     ]
 
     recon = True
