@@ -18,14 +18,17 @@ if __name__ == "__main__":
 
     fitter = Fitter(dir_name)
 
-    p1 = BAOExtractor(r_s, mink=0.05, maxk=0.18)
-    p2 = BAOExtractor(r_s, mink=0.03, maxk=0.18)
-    p3 = BAOExtractor(r_s, mink=0.05, maxk=0.15)
-    p4 = BAOExtractor(r_s, mink=0.05, maxk=0.25)
+    ps = [
+        BAOExtractor(r_s, mink=0.02, maxk=0.25),
+        BAOExtractor(r_s, mink=0.03, maxk=0.25),
+        BAOExtractor(r_s, mink=0.04, maxk=0.25),
+        BAOExtractor(r_s, mink=0.05, maxk=0.25),
+        BAOExtractor(r_s, mink=0.06, maxk=0.25),
+        BAOExtractor(r_s, mink=0.07, maxk=0.25),
+    ]
 
-    names = ["0.05-0.18", "0.03-0.18", "0.05-0.15", "0.05-0.25"]
-
-    for p, n in zip([p1, p2, p3, p4], names):
+    for p in ps:
+        n = f"{p.mink:0.2f}-{p.maxk:0.2f}"
         model = PowerNoda2019(postprocess=p, fix_params=["om", "f", "gamma", "b"])
         data = MockPowerSpectrum(min_k=0.02, max_k=0.30, postprocess=p, apply_hartlap_correction=False)
         fitter.add_model_and_dataset(model, data, name=n)
@@ -33,7 +36,7 @@ if __name__ == "__main__":
     sampler = EnsembleSampler(temp_dir=dir_name)
 
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(30)
+    fitter.set_num_walkers(10)
     fitter.fit(file, viewer=False)
 
     if fitter.is_laptop():
