@@ -24,7 +24,7 @@ if __name__ == "__main__":
     for r in [True, False]:
         rt = "Recon" if r else "Prerecon"
         data = MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)
-        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"]), data, name=f"Node {rt} fixed gamma, f, b", linestyle="-" if r else "--", color="r")
+        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"]), data, name=f"Node {rt} fixed gamma, f, b", linestyle="-" if r else "--", color="o")
         fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma"]), data, name=f"Node {rt} fixed gamma and f", linestyle="-" if r else "--", color="r")
         fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f"],), data, name=f"Node {rt} fixed f", linestyle="-" if r else "--", color="lb")
         fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om"],), data, name=f"Node {rt} free", linestyle="-" if r else "--", color="p")
@@ -39,11 +39,12 @@ if __name__ == "__main__":
         c = ChainConsumer()
         for posterior, weight, chain, model, data, extra in fitter.load():
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
-        c.configure(shade=True, bins=20)
+        c.configure(shade=True, bins=20, legend_artists=True)
         c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
+        c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         with open(pfn + "_params.txt", "w") as f:
-            f.write(c.analysis.get_latex_table(transpose=True))
+            f.write(c.analysis.get_latex_table())
 
-
-
+    # FINDINGS
+    # So turns out that fixing all these parameters really helps get good constraints.
