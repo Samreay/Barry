@@ -111,6 +111,8 @@ class PowerSpectrumFit(Model):
 
         if self.postprocess is not None:
             pk_model = self.postprocess(ks=self.data["ks_output"], pk=pk_model, mask=mask)
+        else:
+            pk_model = pk_model[mask]
         return pk_model
 
     def plot(self, params, *extra_params):
