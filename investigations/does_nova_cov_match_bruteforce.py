@@ -14,7 +14,7 @@ def calc_cov_noda(pk_cov, denoms, ks, pks, delta_k, assume_diag=False):
     cov = np.zeros((num, num))
     for i in range(num):
         for j in range(num):
-            prefactor = 1 / (denoms[i] * denoms[j] * (pks[i] * pks[j])**2)
+            prefactor = 1.0 / (denoms[i] * denoms[j] * (pks[i] * pks[j])**2)
 
             # Here is our first issue. The paper 1901.06854 does not define m or n,
             # however, from 1708.00375v3 we have that it is the values within k_range
@@ -43,13 +43,14 @@ if __name__ == "__main__":
     mink = 0.02
 
     step_size = 2
+    data_raw = MockPowerSpectrum(step_size=step_size, min_k=0.0)
     data = MockPowerSpectrum(step_size=step_size, min_k=mink)
     data2 = MockPowerSpectrum(postprocess=extractor, step_size=step_size, min_k=mink)
 
     # Get all the data to compute the covariance
-    ks = data.ks
-    pk = data.data
-    pk_cov = data.cov
+    ks = data_raw.ks
+    pk = data_raw.data
+    pk_cov = data_raw.cov
     denoms = extractor.postprocess(ks, pk, None, return_denominator=True)
     k_range = extractor.get_krange()
 
@@ -57,11 +58,15 @@ if __name__ == "__main__":
     cov_noda2 = calc_cov_noda(pk_cov, denoms, ks, pk, k_range, assume_diag=True)
     cov_brute = data2.cov
 
+    mask = np.where(ks < mink)
+    cov_noda = np.delete(np.delete(cov_noda,mask,0),mask,1)
+    cov_noda2 = np.delete(np.delete(cov_noda2,mask,0),mask,1)
+
     # Sanity check - print determinants
     print(np.linalg.det(cov_brute), np.linalg.det(cov_noda), np.linalg.det(cov_noda2))
     ii1 = cov_brute @ np.linalg.inv(cov_brute)
     ii2 = cov_noda @ np.linalg.inv(cov_noda)
-    ii3 = cov_noda @ np.linalg.inv(cov_noda2)
+    ii3 = cov_noda2 @ np.linalg.inv(cov_noda2)
 
     # A * inv(A) = I
     # If its not, there is an issue with the det being too close to zero
@@ -69,7 +74,7 @@ if __name__ == "__main__":
     print("This should all be one ", np.diag(ii2))
     print("This should all be one ", np.diag(ii3))
 
-    icov_noda = np.linalg.inv(cov_noda)
+    icov_noda = np.linalg.inv(cov_noda2)
     icov_brute = np.linalg.inv(cov_brute)
 
     # Plot results
@@ -80,7 +85,7 @@ if __name__ == "__main__":
     axes[2].set_title("Precision mocks")
     axes[3].set_title("Precision Nishimichi")
     sb.heatmap(cov_brute, ax=axes[0])
-    sb.heatmap(cov_noda, ax=axes[1])
+    sb.heatmap(cov_noda2, ax=axes[1])
     sb.heatmap(icov_brute, ax=axes[2])
     sb.heatmap(icov_noda, ax=axes[3])
     plt.show()
