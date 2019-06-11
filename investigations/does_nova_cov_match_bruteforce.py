@@ -59,8 +59,8 @@ if __name__ == "__main__":
     cov_brute = data2.cov
 
     mask = np.where(ks < mink)
-    cov_noda = np.delete(np.delete(cov_noda,mask,0),mask,1)
-    cov_noda2 = np.delete(np.delete(cov_noda2,mask,0),mask,1)
+    cov_noda = np.delete(np.delete(cov_noda, mask, 0), mask, 1)
+    cov_noda2 = np.delete(np.delete(cov_noda2, mask, 0), mask, 1)
 
     # Sanity check - print determinants
     print(np.linalg.det(cov_brute), np.linalg.det(cov_noda), np.linalg.det(cov_noda2))

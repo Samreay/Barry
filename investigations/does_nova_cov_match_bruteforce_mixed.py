@@ -62,21 +62,24 @@ if __name__ == "__main__":
     extractor2 = PureBAOExtractor(r_s)
 
     step_size = 3
-    data = MockPowerSpectrum(step_size=step_size, fake_diag=False)
-    data3 = MockPowerSpectrum(step_size=step_size, fake_diag=True)
-    data2 = MockPowerSpectrum(postprocess=extractor, step_size=step_size)
+    mink = 0.02
+    data_raw = MockPowerSpectrum(step_size=step_size, fake_diag=False, min_k=0.0)
+    data3 = MockPowerSpectrum(step_size=step_size, fake_diag=True, min_k=mink)
+    data2 = MockPowerSpectrum(postprocess=extractor, step_size=step_size, min_k=mink)
 
-    ks = data.ks
-    pk = data.data
-    pk_cov = data.cov
-    pk_cov_diag = data3.cov
+    ks = data_raw.ks
+    pk = data_raw.data
+    pk_cov = data_raw.cov
     denoms = extractor2.postprocess(ks, pk, None, return_denominator=True)
     is_extracted = extractor.get_is_extracted(ks)
     cov_brute = data2.cov
-
     k_range = extractor.get_krange()
     cov_noda = calc_cov_noda_mixed(pk_cov, denoms, ks, pk, k_range, is_extracted)
-    cov_noda_diag = calc_cov_noda_mixed(pk_cov_diag, denoms, ks, pk, k_range, is_extracted)
+    cov_noda_diag = calc_cov_noda_mixed(np.diag(np.diag(pk_cov)), denoms, ks, pk, k_range, is_extracted)
+
+    mask = np.where(ks < mink)
+    cov_noda = np.delete(np.delete(cov_noda, mask, 0), mask, 1)
+    cov_noda2 = np.delete(np.delete(cov_noda_diag, mask, 0), mask, 1)
 
     print("Raw pk should be ones: ", np.diag(pk_cov @ np.linalg.inv(pk_cov)))
     print("Brute mix should be ones: ", np.diag(cov_brute @ np.linalg.inv(cov_brute)))
