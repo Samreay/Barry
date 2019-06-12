@@ -112,6 +112,8 @@ if __name__ == "__main__":
         with open(pfn + "_params.txt", "w") as f:
             f.write(c.analysis.get_latex_table(transpose=True))
 
-    # FINDINGS: Highly sensitive to the b value you fix. I got all the range models to the wrong alpha because
+    # FINDINGS
+    # Highly sensitive to the b value you fix. I got all the range models to the wrong alpha because
     # I fixed b to a slightly low value.
     # You cannot fix b
+    # Diagonal errors only reduces uncertainty by at least 15%. Also shifts values by a small but non-negligible amount

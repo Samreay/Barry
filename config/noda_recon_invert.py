@@ -50,5 +50,6 @@ if __name__ == "__main__":
         with open(pfn + "_params.txt", "w") as f:
             f.write(c.analysis.get_latex_table(transpose=True))
 
-
+    # FINDINGS
+    # Sanity check passed and helped iron out a bug.
 

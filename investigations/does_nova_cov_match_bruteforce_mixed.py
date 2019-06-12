@@ -63,9 +63,10 @@ if __name__ == "__main__":
 
     step_size = 3
     mink = 0.02
-    data_raw = MockPowerSpectrum(step_size=step_size, fake_diag=False, min_k=0.0)
-    data3 = MockPowerSpectrum(step_size=step_size, fake_diag=True, min_k=mink)
-    data2 = MockPowerSpectrum(postprocess=extractor, step_size=step_size, min_k=mink)
+    maxk = 0.3
+    data_raw = MockPowerSpectrum(step_size=step_size, fake_diag=False, min_k=0.0, max_k=0.32)
+    data3 = MockPowerSpectrum(step_size=step_size, fake_diag=True, min_k=mink, max_k=maxk)
+    data2 = MockPowerSpectrum(postprocess=extractor, step_size=step_size, min_k=mink, max_k=maxk)
 
     ks = data_raw.ks
     pk = data_raw.data
@@ -77,9 +78,11 @@ if __name__ == "__main__":
     cov_noda = calc_cov_noda_mixed(pk_cov, denoms, ks, pk, k_range, is_extracted)
     cov_noda_diag = calc_cov_noda_mixed(np.diag(np.diag(pk_cov)), denoms, ks, pk, k_range, is_extracted)
 
-    mask = np.where(ks < mink)
-    cov_noda = np.delete(np.delete(cov_noda, mask, 0), mask, 1)
-    cov_noda2 = np.delete(np.delete(cov_noda_diag, mask, 0), mask, 1)
+    mask = (ks >= mink) & (ks <= maxk)
+    mask2d = mask[np.newaxis, :] & mask[:, np.newaxis]
+
+    cov_noda = cov_noda[mask2d].reshape((mask.sum(), mask.sum()))
+    cov_noda_diag = cov_noda_diag[mask2d].reshape((mask.sum(), mask.sum()))
 
     print("Raw pk should be ones: ", np.diag(pk_cov @ np.linalg.inv(pk_cov)))
     print("Brute mix should be ones: ", np.diag(cov_brute @ np.linalg.inv(cov_brute)))
@@ -90,21 +93,26 @@ if __name__ == "__main__":
     la_cov_noda = np.log(np.abs(cov_noda) + np.abs(cov_brute).min())
     la_cov_noda_diag = np.log(np.abs(cov_noda_diag) + np.abs(cov_brute).min())
 
-    fig, axes = plt.subplots(ncols=4, figsize=(18, 4))
-    axes[0].set_title("cov from Mocks")
-    axes[1].set_title("cov from Nishimichi 2018, eq 7")
-    axes[2].set_title("cov from Nishimichi 2018, eq 7 and diag")
-    axes[3].set_title("norm diff first two, capped at unity")
+    fig, axes = plt.subplots(ncols=3, figsize=(14, 4))
+    axes[0].set_title("Mocks")
+    axes[1].set_title("Nishimichi 2018, (Eq7)")
+    axes[2].set_title("Nishimichi 2018, (Eq7), diagonal")
+    # axes[3].set_title("norm diff first two, capped at unity")
     vmin = min(la_cov_brute.min(), la_cov_noda.min(), la_cov_noda_diag.min())
     vmax = max(la_cov_brute.max(), la_cov_noda.max(), la_cov_noda_diag.max())
     sb.heatmap(la_cov_brute, ax=axes[0], vmin=vmin, vmax=vmax)
     sb.heatmap(la_cov_noda, ax=axes[1], vmin=vmin, vmax=vmax)
     sb.heatmap(la_cov_noda_diag, ax=axes[2], vmin=vmin, vmax=vmax)
-    sb.heatmap((cov_brute - cov_noda) / cov_brute, ax=axes[3], vmin=-1, vmax=1)
+    # sb.heatmap((cov_brute - cov_noda_diag) / cov_brute, ax=axes[3], vmin=-1, vmax=1)
     fig.subplots_adjust(hspace=0.0)
-    plt.show()
 
-    # The interesting finding here is that the covariance in P(k) significantly modifies
-    # even the diagonal covariance in the BAO extractor method. Because the extractor utilises
-    # a filter of pk values, correlation of pk enters directly into the diagonal error.
-    # The paper versions of Noda report better constraints on alpha primarily because of this.
+    output = "plots"
+    import os
+    filename = os.path.join(output, "covariance_mixed.png")
+    os.makedirs(output, exist_ok=True)
+    plt.show()
+    fig.savefig(filename, transparent=True, dpi=300, bbox_inches="tight")
+
+    # FINDINGS
+    # Their math is good... but not their assumption you can use diagonal covariance for the underlying
+    # pk uncertainty.

@@ -48,3 +48,6 @@ if __name__ == "__main__":
 
     # FINDINGS
     # So turns out that fixing all these parameters really helps get good constraints.
+    # Both the choice of b and gamma entirely determine where alpha will fit.
+    # Fixing gamma, f and b gives constraints 4 times better than letting them free
+    # Really fixing b is what is driving down uncertainty.
