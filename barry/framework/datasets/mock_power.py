@@ -118,7 +118,7 @@ class MockPowerSpectrum(Dataset):
         matrix = np.genfromtxt(winfit_file, skip_header=4)
         self.w_ks_input = matrix[:, 0]
         self.w_k0_scale = matrix[:, 1]
-        self.w_transform = matrix[:, 2:]
+        self.w_transform = matrix[:, 2:]/(np.sum(matrix[:, 2:], axis=0))
 
         # God I am sorry for doing this manually but the file format is... tricky
         with open(winfit_file, "r") as f:

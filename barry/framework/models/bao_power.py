@@ -27,7 +27,7 @@ class PowerSpectrumFit(Model):
         # Define parameters
         self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.3121)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch
-        self.add_param("b", r"$b$", 0.8, 2.5, 1.73)  # bias
+        self.add_param("b", r"$b$", 0.5, 2.5, 1.73)  # bias
 
     @lru_cache(maxsize=1024)
     def compute_basic_power_spectrum(self, om):
@@ -86,7 +86,7 @@ class PowerSpectrumFit(Model):
     def adjust_model_window_effects(self, pk_generated):
 
         p0 = np.sum(self.data["w_scale"] * pk_generated)
-        integral_constraint = self.data["w_pk"][2] * p0
+        integral_constraint = self.data["w_pk"] * p0
 
         pk_convolved = np.atleast_2d(pk_generated) @ self.data["w_transform"]
         pk_normalised = (pk_convolved - integral_constraint).flatten()
@@ -135,11 +135,11 @@ class PowerSpectrumFit(Model):
 
         fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
 
-        axes[0].errorbar(ks, pk, yerr=err, fmt="o", c='k', ms=4, label="Data")
+        axes[0].errorbar(ks, ks*pk, yerr=ks*err, fmt="o", c='k', ms=4, label="Data")
         axes[1].errorbar(ks, adj(pk), yerr=adj(err, err=True), fmt="o", c='k', ms=4, label="Data")
 
         pk2 = self.get_model(params)
-        axes[0].plot(ks, pk2, label=self.get_name())
+        axes[0].plot(ks, ks*pk2, label=self.get_name())
         axes[1].plot(ks, adj(pk2), label=self.get_name())
 
         for i, p in enumerate(extra_params):
