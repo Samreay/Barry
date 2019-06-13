@@ -41,6 +41,7 @@ class DummyPowerSpectrum(MockPowerSpectrum):
         # Set covariance to something nice and simple to sample from
         # 1% diagonal uncertainty seems pretty good.
         cov = np.diag((uncert * pk_final) ** 2)
+        self.data = pk_final
         self.set_cov(cov)
 
 
