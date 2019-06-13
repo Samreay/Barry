@@ -1,10 +1,11 @@
 import logging
 from abc import ABC, abstractmethod
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict
 from numpy.random import uniform
 import numpy as np
+from recordtype import recordtype
 
-Param = namedtuple('Param', ['name', 'label', 'min', 'max', 'default'])
+Param = recordtype('Param', ['name', 'label', 'min', 'max', 'default'])
 
 
 class Model(ABC):
@@ -44,6 +45,9 @@ class Model(ABC):
 
     def get_default(self, name):
         return self.param_dict[name].default
+
+    def set_default(self, name, default):
+        self.param_dict[name].default = default
 
     def get_labels(self):
         return [x.label for x in self.get_active_params()]

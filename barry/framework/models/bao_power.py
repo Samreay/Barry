@@ -10,7 +10,7 @@ import numpy as np
 
 # TODO: make h0 and omega_m more easily changable if we are not fitting them
 class PowerSpectrumFit(Model):
-    def __init__(self, smooth_type="hinton2017", name="Pk Basic", postprocess=None, fix_params=['om']):
+    def __init__(self, smooth_type="hinton2017", name="Pk Basic", postprocess=None, fix_params=['om'], smooth=False):
         super().__init__(name, postprocess=postprocess)
         self.smooth_type = smooth_type.lower()
         if not validate_smooth_method(smooth_type):
@@ -22,6 +22,7 @@ class PowerSpectrumFit(Model):
         # Set up data structures for model fitting
         self.camb = CambGenerator()
         self.h0 = self.camb.h0
+        self.smooth = smooth
 
     def declare_parameters(self):
         # Define parameters
@@ -95,7 +96,7 @@ class PowerSpectrumFit(Model):
 
     def get_likelihood(self, p):
         d = self.data
-        pk_model = self.get_model(p)
+        pk_model = self.get_model(p, smooth=self.smooth)
 
         # Compute the chi2
         diff = (d["pk"] - pk_model)
@@ -115,7 +116,7 @@ class PowerSpectrumFit(Model):
             pk_model = pk_model[mask]
         return pk_model
 
-    def plot(self, params, *extra_params):
+    def plot(self, params, smooth_params=None):
         import matplotlib.pyplot as plt
 
         ks = self.data["ks"]
@@ -123,7 +124,10 @@ class PowerSpectrumFit(Model):
         err = np.sqrt(np.diag(self.data["cov"]))
         pk2 = self.get_model(params)
 
-        smooth = self.get_model(params, smooth=True)
+        if smooth_params is not None:
+            smooth = self.get_model(smooth_params, smooth=True)
+        else:
+            smooth = self.get_model(params, smooth=True)
 
         def adj(data, err=False):
             if self.postprocess is None:
@@ -139,13 +143,12 @@ class PowerSpectrumFit(Model):
         axes[0].errorbar(ks, ks*pk, yerr=ks*err, fmt="o", c='k', ms=4, label=self.data["name"])
         axes[1].errorbar(ks, adj(pk), yerr=adj(err, err=True), fmt="o", c='k', ms=4, label=self.data["name"])
 
+        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(params["om"])
+        axes[1].plot(ks * params["alpha"], 1 + splev(ks, splrep(self.camb.ks, pk_ratio)), label="pkratio", c="r", ls="--")
+
+
         axes[0].plot(ks, ks*pk2, label=self.get_name())
         axes[1].plot(ks, adj(pk2), label=self.get_name())
-
-        for i, p in enumerate(extra_params):
-            pk2 = self.get_model(p)
-            axes[0].plot(ks, pk2, label=f"Extra model {i}")
-            axes[1].plot(ks, adj(pk2), label=f"Extra model {i}")
 
         string = f"Likelihood: {self.get_likelihood(params):0.2f}\n"
         string += "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params.items()])
@@ -159,7 +162,6 @@ class PowerSpectrumFit(Model):
         else:
             axes[1].set_ylabel("P(k) / data")
         axes[0].set_ylabel("k * P(k)")
-        axes[0].axhline(0, c="k", alpha=0.3)
         plt.show()
 
 

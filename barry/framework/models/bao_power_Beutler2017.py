@@ -6,8 +6,8 @@ from barry.framework.models.bao_power import PowerSpectrumFit
 
 class PowerBeutler2017(PowerSpectrumFit):
 
-    def __init__(self, fix_params=["om"], smooth_type="hinton2017", recon=False, name="Pk Beutler 2017", postprocess=None):
-        super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess)
+    def __init__(self, fix_params=["om"], smooth_type="hinton2017", recon=False, name="Pk Beutler 2017", postprocess=None, smooth=False):
+        super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess, smooth=smooth)
 
         self.recon = recon
 
@@ -70,26 +70,58 @@ if __name__ == "__main__":
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
     recon = True
     model1 = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}")
+    model_smooth = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}", smooth=True)
 
     from barry.framework.datasets.mock_power import MockPowerSpectrum
     from barry.framework.datasets.dummy_power import DummyPowerSpectrum
     dataset1 = MockPowerSpectrum(name="Recon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=30, step_size=3)
-    dataset2 = DummyPowerSpectrum(min_k=0.02, max_k=0.25, step_size=2)
+    dataset2 = DummyPowerSpectrum(name="Dummy data, real window fn", min_k=0.02, max_k=0.25, step_size=2, dummy_window=False)
+    dataset3 = DummyPowerSpectrum(name="DummyWindowFnToo", min_k=0.02, max_k=0.25, step_size=2, dummy_window=True)
     data1 = dataset1.get_data()
     data2 = dataset2.get_data()
+    data3 = dataset3.get_data()
 
 
-    model1.set_data(data1)
+    # model1.set_data(data1)
+    # p, minv = model1.optimize()
+    # print(p)
+    # print(minv)
+    # model1.plot(p)
+
+    model1.set_fix_params(["om", "sigma_nl", "sigma_s"])
+    model1.set_default("sigma_nl", 0.01)
+    model1.set_default("sigma_s", 0.01)
+    model_smooth.set_fix_params(["om", "sigma_nl", "sigma_s"])
+    model_smooth.set_default("sigma_nl", 0.01)
+    model_smooth.set_default("sigma_s", 0.01)
+
+    # First comparison - the actual recon data
+    # model1.set_data(data1)
+    # p, minv = model1.optimize()
+    # model_smooth.set_data(data1)
+    # p2, minv2 = model_smooth.optimize()
+    # print(p)
+    # print(minv)
+    # model1.plot(p, smooth_params=p2)
+
+
+    # The second comparison, dummy data with real window function
+    # model1.set_data(data2)
+    # p, minv = model1.optimize()
+    # model_smooth.set_data(data2)
+    # p2, minv2 = model_smooth.optimize()
+    # print(p)
+    # print(minv)
+    # model1.plot(p, smooth_params=p2)
+
+    # Dummy data *and* dummy window function
+    model1.set_data(data3)
     p, minv = model1.optimize()
+    model_smooth.set_data(data3)
+    p2, minv2 = model_smooth.optimize()
     print(p)
     print(minv)
-    model1.plot(p)
-
-    model1.set_data(data2)
-    p, minv = model1.optimize()
-    print(p)
-    print(minv)
-    model1.plot(p)
+    model1.plot(p, smooth_params=p2)
 
     if False:
         import timeit
