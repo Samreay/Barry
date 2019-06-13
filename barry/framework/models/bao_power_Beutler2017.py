@@ -69,24 +69,34 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
     recon = True
-    model = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}")
+    model1 = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}")
 
     from barry.framework.datasets.mock_power import MockPowerSpectrum
-    dataset = MockPowerSpectrum(name="Recon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=3)
-    data = dataset.get_data()
-    model.set_data(data)
+    from barry.framework.datasets.dummy_power import DummyPowerSpectrum
+    dataset1 = MockPowerSpectrum(name="Recon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=30, step_size=3)
+    dataset2 = DummyPowerSpectrum(min_k=0.02, max_k=0.25, step_size=2)
+    data1 = dataset1.get_data()
+    data2 = dataset2.get_data()
 
-    p, minv = model.optimize()
+
+    model1.set_data(data1)
+    p, minv = model1.optimize()
     print(p)
     print(minv)
-    model.plot(p)
+    model1.plot(p)
+
+    model1.set_data(data2)
+    p, minv = model1.optimize()
+    print(p)
+    print(minv)
+    model1.plot(p)
 
     if False:
         import timeit
         n = 100
 
         def test():
-            model.get_likelihood(p)
+            model1.get_likelihood(p)
 
         print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 

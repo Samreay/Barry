@@ -37,7 +37,8 @@ class MockAverageCorrelations(Dataset):
             "dist": self.data[:, 0],
             "xi": self.data[:, 1],
             "cov": self.cov,
-            "icov": self.icov
+            "icov": self.icov,
+            "name": self.name
         }
 
 

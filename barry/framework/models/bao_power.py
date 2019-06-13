@@ -121,6 +121,7 @@ class PowerSpectrumFit(Model):
         ks = self.data["ks"]
         pk = self.data["pk"]
         err = np.sqrt(np.diag(self.data["cov"]))
+        pk2 = self.get_model(params)
 
         smooth = self.get_model(params, smooth=True)
 
@@ -135,10 +136,9 @@ class PowerSpectrumFit(Model):
 
         fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
 
-        axes[0].errorbar(ks, ks*pk, yerr=ks*err, fmt="o", c='k', ms=4, label="Data")
-        axes[1].errorbar(ks, adj(pk), yerr=adj(err, err=True), fmt="o", c='k', ms=4, label="Data")
+        axes[0].errorbar(ks, ks*pk, yerr=ks*err, fmt="o", c='k', ms=4, label=self.data["name"])
+        axes[1].errorbar(ks, adj(pk), yerr=adj(err, err=True), fmt="o", c='k', ms=4, label=self.data["name"])
 
-        pk2 = self.get_model(params)
         axes[0].plot(ks, ks*pk2, label=self.get_name())
         axes[1].plot(ks, adj(pk2), label=self.get_name())
 
