@@ -8,6 +8,7 @@ from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018
 from barry.framework.datasets import MockPowerSpectrum
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
+import numpy as np
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
@@ -16,14 +17,14 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
 
-    sampler = EnsembleSampler(temp_dir=dir_name)
+    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=200)
     fitter = Fitter(dir_name)
 
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
-        d = MockPowerSpectrum(recon=r, min_k=0.03, max_k=0.30)
-        de = MockPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, postprocess=p)
+        d = MockPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, reduce_cov_factor=np.sqrt(1000))
+        de = MockPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, postprocess=p, reduce_cov_factor=np.sqrt(1000))
 
         fitter.add_model_and_dataset(PowerBeutler2017(recon=r), d, name=f"Beutler {t}", linestyle=ls, color="p")
         fitter.add_model_and_dataset(PowerSeo2016(recon=r), d, name=f"Seo {t}", linestyle=ls, color="r")
