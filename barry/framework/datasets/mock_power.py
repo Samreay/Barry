@@ -8,10 +8,11 @@ from barry.framework.dataset import Dataset
 
 class MockPowerSpectrum(Dataset):
     def __init__(self, average=True, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True,
-                 reduce_cov_factor=1, name="MockPowerSpectrum", postprocess=None, apply_hartlap_correction=False, fake_diag=False):
+                 reduce_cov_factor=1, name="MockPowerSpectrum", postprocess=None, apply_hartlap_correction=False,
+                 fake_diag=False, data_dir="taipan_mocks"):
         super().__init__(name)
         current_file = os.path.dirname(inspect.stack()[0][1])
-        self.data_location = os.path.normpath(current_file + "/../../data/taipan_mocks/mock_individual/")
+        self.data_location = os.path.normpath(current_file + f"/../../data/{data_dir}/")
         self.min_k = min_k
         self.max_k = max_k
         self.step_size = step_size
@@ -21,7 +22,7 @@ class MockPowerSpectrum(Dataset):
         self.postprocess = postprocess
         self.reduce_cov_factor = reduce_cov_factor
 
-        self.data_filename = os.path.abspath(self.data_location + "/taipan_mock_lpow.pkl")
+        self.data_filename = os.path.abspath(self.data_location + "/mock_lpow.pkl")
 
         assert os.path.exists(self.data_filename), f"Cannot find {self.data_filename}"
 
@@ -38,10 +39,10 @@ class MockPowerSpectrum(Dataset):
         else:
             self.data = self.pks_all[realisation]
 
-        winfit_file = os.path.abspath(self.data_location + f"/../taipanmock_year1_mock_rand_cullan.winfit_{step_size}")
+        winfit_file = os.path.abspath(self.data_location + f"/bin0_winfit_{step_size}.txt")
         self._load_winfit(winfit_file)
 
-        winpk_file = os.path.abspath(self.data_location + "/../taipanmock_year1_mock_rand_cullan.lwin")
+        winpk_file = os.path.abspath(self.data_location + "/lwin.txt")
         self._load_winpk_file(winpk_file)
 
         self.logger.debug(f"Computing cov")
@@ -171,15 +172,13 @@ class MockPowerSpectrum(Dataset):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
-    from barry.framework.cosmology.camb_generator import CambGenerator
 
     # Some basic checks for data we expect to be there
-    c = CambGenerator()
-    r_s, _ = c.get_data()
-    dataset = MockPowerSpectrum(r_s, step_size=2)
+    dataset = MockPowerSpectrum(step_size=20, recon=False, data_dir="sdss_mgs_mocks")
+    # print(dataset.all_data)
     data = dataset.get_data()
-    print(data["ks"])
-
+    # print(data["ks"])
+    #
     import matplotlib.pyplot as plt
     import numpy as np
     plt.errorbar(data["ks"], data["ks"]*data["pk"], yerr=data["ks"]*np.sqrt(np.diag(data["cov"])), fmt="o", c='k')

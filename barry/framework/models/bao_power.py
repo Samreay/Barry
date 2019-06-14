@@ -85,7 +85,7 @@ class PowerSpectrumFit(Model):
         return pk_final
 
     def adjust_model_window_effects(self, pk_generated):
-
+        print(pk_generated.shape, self.data["w_scale"].shape, self.data["w_pk"].shape, self.data["w_transform"].shape, self.data["w_mask"].shape)
         p0 = np.sum(self.data["w_scale"] * pk_generated)
         integral_constraint = self.data["w_pk"] * p0
 
