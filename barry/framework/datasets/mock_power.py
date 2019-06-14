@@ -134,7 +134,6 @@ class MockPowerSpectrum(Dataset):
 
         # data files contain (index, k, pk, nk)
         data = np.genfromtxt(winpk_file)
-
         if self.step_size == 1:
             self.w_pk = data[:, 2]
         else:

@@ -85,7 +85,7 @@ class PowerSpectrumFit(Model):
         return pk_final
 
     def adjust_model_window_effects(self, pk_generated):
-        print(pk_generated.shape, self.data["w_scale"].shape, self.data["w_pk"].shape, self.data["w_transform"].shape, self.data["w_mask"].shape)
+        # print(pk_generated.shape, self.data["w_scale"].shape, self.data["w_pk"].shape, self.data["w_transform"].shape, self.data["w_mask"].shape)
         p0 = np.sum(self.data["w_scale"] * pk_generated)
         integral_constraint = self.data["w_pk"] * p0
 
@@ -143,9 +143,8 @@ class PowerSpectrumFit(Model):
         axes[0].errorbar(ks, ks*pk, yerr=ks*err, fmt="o", c='k', ms=4, label=self.data["name"])
         axes[1].errorbar(ks, adj(pk), yerr=adj(err, err=True), fmt="o", c='k', ms=4, label=self.data["name"])
 
-        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(params["om"])
-        axes[1].plot(ks * params["alpha"], 1 + splev(ks, splrep(self.camb.ks, pk_ratio)), label="pkratio", c="r", ls="--")
-
+        # pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(params["om"])
+        # axes[1].plot(ks * params["alpha"], 1 + splev(ks, splrep(self.camb.ks, pk_ratio)), label="pkratio", c="r", ls="--")
 
         axes[0].plot(ks, ks*pk2, label=self.get_name())
         axes[1].plot(ks, adj(pk2), label=self.get_name())
