@@ -10,11 +10,11 @@ from barry.framework.cosmology.PT_generator import PTGenerator
 
 class PowerDing2018(PowerSpectrumFit):
 
-    def __init__(self, fix_params=["om", "f"], fit_growth=False, smooth_type="hinton2017", recon=False, recon_smoothing_scale=21.21, name="Pk Ding 2018", postprocess=None):
+    def __init__(self, fix_params=["om", "f"], fit_growth=False, smooth_type="hinton2017", recon=False, recon_smoothing_scale=21.21, name="Pk Ding 2018", postprocess=None, smooth=False):
         self.recon = recon
         self.recon_smoothing_scale = recon_smoothing_scale
         self.fit_growth = fit_growth
-        super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess)
+        super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess, smooth=smooth)
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)

@@ -22,3 +22,7 @@ if __name__ == "__main__":
         print(p)
         print(minv)
         model1.plot(p, smooth_params=p2)
+
+    # FINDINGS
+    # Looks like we recover alpha alright with the pre recon
+    # But not with the post recon, where alpha fits too low

@@ -1,13 +1,13 @@
 import logging
 
-from barry.framework.models import PowerBeutler2017
+from barry.framework.models import PowerSeo2016
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
     recon = True
-    model1 = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}")
-    model_smooth = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}", smooth=True)
+    model1 = PowerSeo2016(recon=recon, name=f"Seo2016, recon={recon}")
+    model_smooth = PowerSeo2016(recon=recon, name=f"Seo2016, recon={recon}", smooth=True)
 
     from barry.framework.datasets.mock_power import MockPowerSpectrum
     from barry.framework.datasets.dummy_power import DummyPowerSpectrum
@@ -46,4 +46,4 @@ if __name__ == "__main__":
     model1.plot(p, smooth_params=p2)
 
     # FINDINGS
-    # Yes, Beutler2017 can thankfully fit pklin perfectly.
+    # Yes, Seo recon recovers pklin
