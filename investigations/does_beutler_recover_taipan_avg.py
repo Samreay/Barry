@@ -11,7 +11,7 @@ if __name__ == "__main__":
         model1 = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}")
         model_smooth = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}", smooth=True)
 
-        dataset1 = MockPowerSpectrum(name=f"Taipan mock avg recon={recon}", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=30, step_size=2)
+        dataset1 = MockPowerSpectrum(name=f"Taipan mock avg recon={recon}", recon=recon, min_k=0.03, max_k=0.3, reduce_cov_factor=1, step_size=2)
         data1 = dataset1.get_data()
 
         # First comparison - the actual recon data
