@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     for r in [False]:
         rt = "Recon" if r else "Prerecon"
-        data = MockSDSSPowerSpectrum(recon=r, postprocess=postprocess)
+        data = MockSDSSPowerSpectrum(recon=r, postprocess=postprocess, reduce_cov_factor=31)
         fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"]), data, name=f"Node {rt} fixed gamma, f, b", linestyle="-" if r else "--", color="o")
         fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma"]), data, name=f"Node {rt} fixed gamma and f", linestyle="-" if r else "--", color="r")
         fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f"],), data, name=f"Node {rt} fixed f", linestyle="-" if r else "--", color="lb")
