@@ -169,6 +169,18 @@ class MockPowerSpectrum(Dataset):
         }
 
 
+class MockSDSSPowerSpectrum(MockPowerSpectrum):
+    def __init__(self, name="SDSS MGS DR7", average=True, realisation=0, apply_hartlap_correction=False, fake_diag=False, recon=False, min_k=0.03, max_k=0.25, reduce_cov_factor=1, step_size=20, data_dir="sdss_mgs_mocks", postprocess=None):
+        super().__init__(min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, name=name, postprocess=postprocess, data_dir=data_dir, average=average, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
+
+
+class MockTaipanPowerSpectrum(MockPowerSpectrum):
+    def __init__(self, average=True, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True,
+                 reduce_cov_factor=1, name="MockPowerSpectrum", postprocess=None, apply_hartlap_correction=False,
+                 fake_diag=False, data_dir="taipan_mocks"):
+        super().__init__(min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, name=name, postprocess=postprocess, data_dir=data_dir, average=average, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
 
