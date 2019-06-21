@@ -170,7 +170,7 @@ class MockPowerSpectrum(Dataset):
 
 
 class MockSDSSPowerSpectrum(MockPowerSpectrum):
-    def __init__(self, name="SDSS MGS DR7", average=True, realisation=0, apply_hartlap_correction=False, fake_diag=False, recon=False, min_k=0.03, max_k=0.25, reduce_cov_factor=1, step_size=20, data_dir="sdss_mgs_mocks", postprocess=None):
+    def __init__(self, name="SDSS MGS DR7", average=True, realisation=0, apply_hartlap_correction=False, fake_diag=False, recon=False, min_k=0.03, max_k=0.25, reduce_cov_factor=1, step_size=5, data_dir="sdss_mgs_mocks", postprocess=None):
         super().__init__(min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, name=name, postprocess=postprocess, data_dir=data_dir, average=average, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
 
 

@@ -106,7 +106,6 @@ class PowerSpectrumFit(Model):
     def get_model(self, p, smooth=False):
         # Get the generic pk model
         pk_generated = self.compute_power_spectrum(self.data["ks_input"], p, smooth=smooth)
-
         # Morph it into a model representative of our survey and its selection/window/binning effects
         pk_model, mask = self.adjust_model_window_effects(pk_generated)
 

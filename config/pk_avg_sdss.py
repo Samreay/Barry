@@ -5,7 +5,7 @@ from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.postprocessing import BAOExtractor
 from barry.setup import setup
 from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
-from barry.framework.datasets import MockPowerSpectrum
+from barry.framework.datasets import MockSDSSPowerSpectrum
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
 import numpy as np
@@ -20,11 +20,11 @@ if __name__ == "__main__":
     sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100)
     fitter = Fitter(dir_name)
 
-    for r in [False]:
+    for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
-        d = MockPowerSpectrum(name=f"SDSS {t}", recon=r, min_k=0.03, max_k=0.25, reduce_cov_factor=np.sqrt(1000), step_size=20, data_dir="sdss_mgs_mocks")
-        de = MockPowerSpectrum(name=f"SDSS {t}", recon=r, min_k=0.03, max_k=0.25, reduce_cov_factor=np.sqrt(1000), step_size=20, data_dir="sdss_mgs_mocks", postprocess=p)
+        d = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r,  reduce_cov_factor=np.sqrt(1000))
+        de = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r,  reduce_cov_factor=np.sqrt(1000), postprocess=p)
 
         fitter.add_model_and_dataset(PowerBeutler2017(recon=r), d, name=f"Beutler {t}", linestyle=ls, color="p")
         fitter.add_model_and_dataset(PowerSeo2016(recon=r), d, name=f"Seo {t}", linestyle=ls, color="r")
