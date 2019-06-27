@@ -112,9 +112,10 @@ class Fitter(object):
                 os.system("sbatch %s" % filename)
             else:
                 index = int(sys.argv[1])
-                mi, wi = self.get_indexes_from_index(index)
-                self.logger.info("Running model_dataset %d, walker number %d" % (mi, wi))
-                self.run_fit(mi, wi)
+                if index != -1:
+                    mi, wi = self.get_indexes_from_index(index)
+                    self.logger.info("Running model_dataset %d, walker number %d" % (mi, wi))
+                    self.run_fit(mi, wi)
 
     def load_file(self, file):
         d = self.get_sampler().load_file(file)
