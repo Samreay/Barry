@@ -84,7 +84,7 @@ class Fitter(object):
         self.logger.info("Finished sampling")
 
     def is_laptop(self):
-        return "centos" not in platform.platform() or (len(sys.argv) == 1 and int(sys.argv[1]) == -1)
+        return "centos" not in platform.platform() or (len(sys.argv) == 2 and int(sys.argv[1]) == -1)
 
     def fit(self, file, viewer=False):
         if self.num_cpu is None:

@@ -36,6 +36,8 @@ if __name__ == "__main__":
     fitter.fit(file)
 
     if fitter.is_laptop():
+        import logging
+        logging.info("Creating plots")
         from chainconsumer import ChainConsumer
 
         c = ChainConsumer()
