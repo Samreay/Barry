@@ -21,7 +21,7 @@ if __name__ == "__main__":
     sampler = EnsembleSampler(temp_dir=dir_name)
     fitter = Fitter(dir_name)
 
-    for r in [False]:
+    for r in [True, False]:
         rt = "Recon" if r else "Prerecon"
         data = MockSDSSPowerSpectrum(recon=r, postprocess=postprocess, reduce_cov_factor=31)
         fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"]), data, name=f"Node {rt} fixed gamma, f, b", linestyle="-" if r else "--", color="o")
