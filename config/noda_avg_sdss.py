@@ -33,7 +33,7 @@ if __name__ == "__main__":
     fitter.set_num_walkers(10)
     fitter.fit(file, viewer=False)
 
-    if fitter.is_laptop():
+    if fitter.should_plot():
         from chainconsumer import ChainConsumer
 
         c = ChainConsumer()
