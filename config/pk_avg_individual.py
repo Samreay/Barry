@@ -43,6 +43,7 @@ if __name__ == "__main__":
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
+    fitter.get_num_jobs(300)
     fitter.fit(file)
 
     if fitter.should_plot():
