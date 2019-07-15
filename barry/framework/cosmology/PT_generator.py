@@ -16,7 +16,7 @@ from barry.framework.cosmology.power_spectrum_smoothing import smooth, validate_
 # TODO: Expand to work for smoothing kernels other than Gaussian (perhaps the user can choose Gaussian, Tophat, CIC)
 # TODO: Add some basic checks of CAMBGenerator to make sure it is valid
 class PTGenerator(object):
-    def __init__(self, CAMBGenerator, smooth_type="hinton2017", recon_smoothing_scale=10.0, mpi_comm=None):
+    def __init__(self, CAMBGenerator, smooth_type="hinton2017", recon_smoothing_scale=21.213, mpi_comm=None):
         """ 
         Precomputes certain integrals over the camb power spectrum for efficiency given a list of smoothing scales. Access ks via self.ks, and use get_data for an array
         of all the Perturbation Theory integrals.
@@ -46,7 +46,7 @@ class PTGenerator(object):
                 self.data = pickle.load(f)
 
     @lru_cache(maxsize=512)
-    def get_data(self, om=0.3121, h0=0.6751):
+    def get_data(self, om=0.31, h0=0.67):
         """ Returns the PT integrals: Sigma, Sigma_dd, Sigma_ss, Sigma_dd,nl, Sigma_sd,nl, Sigma_ss,nl, Sigma_rs,
             R_1, R_2 and the SPT integrals"""
         if self.data is None:

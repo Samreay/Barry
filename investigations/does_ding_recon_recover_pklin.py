@@ -11,9 +11,9 @@ if __name__ == "__main__":
 
     from barry.framework.datasets.mock_power import MockSDSSPowerSpectrum
     from barry.framework.datasets.dummy_power import DummyPowerSpectrum
-    dataset1 = MockSDSSPowerSpectrum(name="Recon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=30, step_size=5)
-    dataset2 = DummyPowerSpectrum(name="Dummy data, real window fn", min_k=0.02, max_k=0.25, step_size=2, dummy_window=False)
-    dataset3 = DummyPowerSpectrum(name="DummyWindowFnToo", min_k=0.02, max_k=0.25, step_size=2, dummy_window=True)
+    dataset1 = MockSDSSPowerSpectrum(name="Recon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=31.62, step_size=5)
+    dataset2 = DummyPowerSpectrum(name="Dummy data, real window fn", min_k=0.02, max_k=0.25, step_size=5, dummy_window=False)
+    dataset3 = DummyPowerSpectrum(name="DummyWindowFnToo", min_k=0.02, max_k=0.25, step_size=5, dummy_window=True)
     data1 = dataset1.get_data()
     data2 = dataset2.get_data()
     data3 = dataset3.get_data()

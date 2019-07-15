@@ -9,7 +9,7 @@ import logging
 # TODO: Add options for mnu, h0 default, omega_b, etc
 # TODO: Calculate/Tabulate r_s alongside power spectra for different omega_m and hubble. We need this for eh98 smoothing of powerspectra
 class CambGenerator(object):
-    def __init__(self, redshift=0.11, om_resolution=101, h0_resolution=1, h0=0.6751):
+    def __init__(self, redshift=0.15, om_resolution=101, h0_resolution=1, h0=0.67):
         """ 
         Precomputes CAMB for efficiency. Access ks via self.ks, and use get_data for an array
         of both the linear and non-linear power spectrum
@@ -21,11 +21,8 @@ class CambGenerator(object):
         self.redshift = redshift
 
         self.data_dir = os.path.dirname(inspect.stack()[0][1]) + os.sep + "data/"
-        if h0 == 0.6751:
-            self.filename = self.data_dir + f"cosmo_{int(self.redshift * 100)}_{self.om_resolution}_{self.h0_resolution}.npy"
-        else:
-            hh = int(h0 * 10000)
-            self.filename = self.data_dir + f"cosmo_{int(self.redshift * 100)}_{self.om_resolution}_{self.h0_resolution}_{hh}.npy"
+        hh = int(h0 * 10000)
+        self.filename = self.data_dir + f"cosmo_{int(self.redshift * 100)}_{self.om_resolution}_{self.h0_resolution}_{hh}.npy"
 
         self.k_min = 1e-4
         self.k_max = 5
@@ -34,7 +31,7 @@ class CambGenerator(object):
 
         self.omch2s = np.linspace(0.05, 0.3, self.om_resolution)
         self.omega_b = 0.0491
-        self.ns = 0.9653
+        self.ns = 0.96
         if h0_resolution == 1:
             self.h0s = [h0]
         else:
@@ -51,7 +48,7 @@ class CambGenerator(object):
             self.data = np.load(self.filename)
 
     @lru_cache(maxsize=512)
-    def get_data(self, om=0.3121, h0=0.6751):
+    def get_data(self, om=0.31, h0=0.67):
         """ Returns the sound horizon the linear power spectrum"""
         if self.data is None:
             self.load_data()
@@ -66,7 +63,7 @@ class CambGenerator(object):
 
         pars = camb.CAMBparams()
         pars.set_dark_energy(w=-1.0, sound_speed=1.0, dark_energy_model='fluid')
-        pars.InitPower.set_params(As=2.130e-9, ns=0.9653)
+        pars.InitPower.set_params(As=2.130e-9, ns=0.96)
         pars.set_matter_power(redshifts=[self.redshift], kmax=self.k_max)
         self.logger.info("Configured CAMB power and dark energy")
 

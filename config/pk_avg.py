@@ -42,7 +42,6 @@ if __name__ == "__main__":
 
         c = ChainConsumer()
         for posterior, weight, chain, model, data, extra in fitter.load():
-            print(extra["name"], chain.shape)
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=30, legend_artists=True)
         with open(pfn + "_params.txt", "w") as f:

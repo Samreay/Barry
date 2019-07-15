@@ -12,4 +12,4 @@ conda activate Barry
 echo "Activated python"
 echo `which python`
 
-/opt/openmpi/bin/mpirun python PT_generator.py --om_resolution 20
+/opt/openmpi/bin/mpirun python PT_generator.py --om_resolution 101

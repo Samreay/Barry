@@ -26,3 +26,6 @@ if __name__ == "__main__":
         print(p)
         print(minv)
         model.plot(p, smooth_params=p2)
+
+        # FINDINGS
+        # Yes, no issue recovering SDSS mean to alpha=0.998
