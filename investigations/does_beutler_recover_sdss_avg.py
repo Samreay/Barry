@@ -15,7 +15,7 @@ if __name__ == "__main__":
         model_smooth.set_default("om", 0.31)
         # Assuming the change from 0.675 to 0.68 is something we can ignore, or we can add h0 to the default parameters.
 
-        dataset1 = MockSDSSPowerSpectrum(name=f"SDSS recon={recon}", recon=recon, reduce_cov_factor=30)
+        dataset1 = MockSDSSPowerSpectrum(name=f"SDSS recon={recon}", recon=recon, reduce_cov_factor=31.62)
         data1 = dataset1.get_data()
 
         # First comparison - the actual recon data

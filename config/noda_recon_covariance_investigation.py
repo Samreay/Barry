@@ -1,12 +1,9 @@
 import sys
-
-
 sys.path.append("..")
-from investigations.does_nova_cov_match_bruteforce import calc_cov_noda
 from investigations.does_nova_cov_match_bruteforce_mixed import calc_cov_noda_mixed
 from barry.setup import setup
 from barry.framework.models import PowerNoda2019
-from barry.framework.datasets import MockPowerSpectrum
+from barry.framework.datasets import MockSDSSPowerSpectrum
 from barry.framework.postprocessing import BAOExtractor, PureBAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
@@ -24,14 +21,14 @@ if __name__ == "__main__":
     mink = 0.03
     maxk = 0.30
     datas = [
-        MockPowerSpectrum(name="Mock covariance", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
-        MockPowerSpectrum(name="Nishimichi, full", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
-        MockPowerSpectrum(name="Nishimichi, diag", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
+        MockSDSSPowerSpectrum(name="Mock covariance", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
+        MockSDSSPowerSpectrum(name="Nishimichi, full", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
+        MockSDSSPowerSpectrum(name="Nishimichi, diag", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
     ]
 
     # Compute the pseudo-analytic cov from Noda and Nishimichi
-    data = MockPowerSpectrum(recon=r, min_k=0.0, max_k=0.32, apply_hartlap_correction=False)
-    data2 = MockPowerSpectrum(recon=r, min_k=0.0, max_k=0.32, apply_hartlap_correction=False, fake_diag=True)
+    data = MockSDSSPowerSpectrum(recon=r, min_k=0.0, max_k=0.32, apply_hartlap_correction=False)
+    data2 = MockSDSSPowerSpectrum(recon=r, min_k=0.0, max_k=0.32, apply_hartlap_correction=False, fake_diag=True)
     ks = data.ks
     pk = data.data
     pk_cov = data.cov
@@ -100,7 +97,7 @@ if __name__ == "__main__":
     fitter.set_num_walkers(10)
     fitter.fit(file, viewer=False)
 
-    if fitter.is_laptop():
+    if fitter.should_plot():
         from chainconsumer import ChainConsumer
 
         c = ChainConsumer()

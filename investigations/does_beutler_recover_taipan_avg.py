@@ -5,13 +5,13 @@ from barry.framework.models import PowerBeutler2017
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
-    from barry.framework.datasets.mock_power import MockPowerSpectrum
+    from barry.framework.datasets.mock_power import MockTaipanPowerSpectrum
 
     for recon in [True, False]:
         model1 = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}")
         model_smooth = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}", smooth=True)
 
-        dataset1 = MockPowerSpectrum(name=f"Taipan mock avg recon={recon}", recon=recon, min_k=0.03, max_k=0.3, reduce_cov_factor=1, step_size=2)
+        dataset1 = MockTaipanPowerSpectrum(name=f"Taipan mock avg recon={recon}", recon=recon, min_k=0.03, max_k=0.3, reduce_cov_factor=1)
         data1 = dataset1.get_data()
 
         # First comparison - the actual recon data

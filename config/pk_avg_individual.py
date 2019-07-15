@@ -23,16 +23,17 @@ if __name__ == "__main__":
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
-        d = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r,  reduce_cov_factor=np.sqrt(1000))
-        de = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r,  reduce_cov_factor=np.sqrt(1000), postprocess=p)
+        for i in range(1000):
+            d = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r, average=False, realisation=i)
+            de = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r, postprocess=p, average=False, realisation=i)
 
-        fitter.add_model_and_dataset(PowerBeutler2017(recon=r), d, name=f"Beutler {t}", linestyle=ls, color="p")
-        fitter.add_model_and_dataset(PowerSeo2016(recon=r), d, name=f"Seo {t}", linestyle=ls, color="r")
-        fitter.add_model_and_dataset(PowerDing2018(recon=r), d, name=f"Ding {t}", linestyle=ls, color="lb")
-        fitter.add_model_and_dataset(PowerNoda2019(recon=r, postprocess=p), de, name=f"Noda {t}", linestyle=ls, color="o")
+            fitter.add_model_and_dataset(PowerBeutler2017(recon=r), d, name=f"Beutler {t}, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(PowerSeo2016(recon=r), d, name=f"Seo {t}, mock number {i}", linestyle=ls, color="r")
+            fitter.add_model_and_dataset(PowerDing2018(recon=r), d, name=f"Ding {t}, mock number {i}", linestyle=ls, color="lb")
+            fitter.add_model_and_dataset(PowerNoda2019(recon=r, postprocess=p), de, name=f"Noda {t}, mock number {i}", linestyle=ls, color="o")
 
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(10)
+    fitter.set_num_walkers(1)
     fitter.fit(file)
 
     if fitter.should_plot():

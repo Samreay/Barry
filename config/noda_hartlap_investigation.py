@@ -4,7 +4,7 @@ import sys
 sys.path.append("..")
 from barry.setup import setup
 from barry.framework.models import PowerNoda2019
-from barry.framework.datasets import MockPowerSpectrum
+from barry.framework.datasets import MockSDSSPowerSpectrum
 from barry.framework.postprocessing import BAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
@@ -21,8 +21,8 @@ if __name__ == "__main__":
 
     for r in [True, False]:
         model = PowerNoda2019(postprocess=postprocess)
-        data1 = MockPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess, apply_hartlap_correction=True)
-        data2 = MockPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess, apply_hartlap_correction=False)
+        data1 = MockSDSSPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess, apply_hartlap_correction=True)
+        data2 = MockSDSSPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess, apply_hartlap_correction=False)
 
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     fitter.set_num_walkers(30)
     fitter.fit(file, viewer=False)
 
-    if fitter.is_laptop():
+    if fitter.should_plot():
         from chainconsumer import ChainConsumer
 
         c = ChainConsumer()

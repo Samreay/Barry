@@ -5,7 +5,7 @@ from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.postprocessing import BAOExtractor
 from barry.setup import setup
 from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
-from barry.framework.datasets import MockPowerSpectrum
+from barry.framework.datasets import MockSDSSPowerSpectrum
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
 import numpy as np
@@ -23,8 +23,8 @@ if __name__ == "__main__":
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
-        d = MockPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, reduce_cov_factor=np.sqrt(1000))
-        de = MockPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, postprocess=p, reduce_cov_factor=np.sqrt(1000))
+        d = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r,  reduce_cov_factor=np.sqrt(1000))
+        de = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r,  reduce_cov_factor=np.sqrt(1000), postprocess=p)
 
         fitter.add_model_and_dataset(PowerBeutler2017(recon=r), d, name=f"Beutler {t}", linestyle=ls, color="p")
         fitter.add_model_and_dataset(PowerSeo2016(recon=r), d, name=f"Seo {t}", linestyle=ls, color="r")
@@ -35,17 +35,20 @@ if __name__ == "__main__":
     fitter.set_num_walkers(10)
     fitter.fit(file)
 
-    if fitter.is_laptop():
+    if fitter.should_plot():
+        import logging
+        logging.info("Creating plots")
         from chainconsumer import ChainConsumer
 
         c = ChainConsumer()
         for posterior, weight, chain, model, data, extra in fitter.load():
+            print(extra["name"], chain.shape)
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=30, legend_artists=True)
-        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
-        c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         with open(pfn + "_params.txt", "w") as f:
             f.write(c.analysis.get_latex_table())
+        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
+        c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
 
 

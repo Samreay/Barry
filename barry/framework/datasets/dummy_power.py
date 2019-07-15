@@ -6,11 +6,11 @@ import numpy as np
 from scipy.interpolate import splev, splrep
 
 from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.datasets import MockPowerSpectrum
+from barry.framework.datasets import MockSDSSPowerSpectrum
 
 
-class DummyPowerSpectrum(MockPowerSpectrum):
-    def __init__(self, min_k=0.02, max_k=0.30, step_size=2, uncert=0.01,
+class DummyPowerSpectrum(MockSDSSPowerSpectrum):
+    def __init__(self, min_k=0.02, max_k=0.30, step_size=5, uncert=0.01,
                  reduce_cov_factor=1, name="DummyPowerSpectrum", postprocess=None,
                  apply_hartlap_correction=False, fake_diag=False, dummy_window=False):
         super().__init__(average=True, min_k=min_k, max_k=max_k, step_size=step_size,

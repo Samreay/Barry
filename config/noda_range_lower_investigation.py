@@ -4,7 +4,7 @@ import sys
 sys.path.append("..")
 from barry.setup import setup
 from barry.framework.models import PowerNoda2019
-from barry.framework.datasets import MockPowerSpectrum, MockSDSSPowerSpectrum
+from barry.framework.datasets import MockSDSSPowerSpectrum
 from barry.framework.postprocessing import BAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     fitter.set_num_walkers(10)
     fitter.fit(file, viewer=False)
 
-    if fitter.is_laptop():
+    if fitter.should_plot():
         from chainconsumer import ChainConsumer
 
         c = ChainConsumer()

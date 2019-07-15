@@ -1,6 +1,6 @@
 import logging
 
-from barry.framework.models import PowerSeo2016, PowerDing2018
+from barry.framework.models import PowerDing2018
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
@@ -9,9 +9,9 @@ if __name__ == "__main__":
     model1 = PowerDing2018(recon=recon, name=f"Ding2018, recon={recon}")
     model_smooth = PowerDing2018(recon=recon, name=f"Ding2018, recon={recon}", smooth=True)
 
-    from barry.framework.datasets.mock_power import MockPowerSpectrum
+    from barry.framework.datasets.mock_power import MockSDSSPowerSpectrum
     from barry.framework.datasets.dummy_power import DummyPowerSpectrum
-    dataset1 = MockPowerSpectrum(name="Recon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=30, step_size=3)
+    dataset1 = MockSDSSPowerSpectrum(name="Recon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=30, step_size=5)
     dataset2 = DummyPowerSpectrum(name="Dummy data, real window fn", min_k=0.02, max_k=0.25, step_size=2, dummy_window=False)
     dataset3 = DummyPowerSpectrum(name="DummyWindowFnToo", min_k=0.02, max_k=0.25, step_size=2, dummy_window=True)
     data1 = dataset1.get_data()

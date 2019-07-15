@@ -4,7 +4,7 @@ import sys
 sys.path.append("..")
 from barry.setup import setup
 from barry.framework.models import PowerNoda2019
-from barry.framework.datasets import MockPowerSpectrum
+from barry.framework.datasets import MockSDSSPowerSpectrum
 from barry.framework.postprocessing import BAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
@@ -24,8 +24,8 @@ if __name__ == "__main__":
         model_inverted = PowerNoda2019(postprocess=postprocess_invert, recon=r)
         model = PowerNoda2019(postprocess=postprocess)
 
-        data_inverted = MockPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess_invert)
-        data = MockPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)
+        data_inverted = MockSDSSPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess_invert)
+        data = MockSDSSPowerSpectrum(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)
 
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
