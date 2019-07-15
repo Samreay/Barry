@@ -35,8 +35,10 @@ class MockPowerSpectrum(Dataset):
         self.pks_all = [x[1] for x in self.rebinned]
 
         if self.average:
+            self.logger.info(f"Loading data average")
             self.data = self._get_data_avg()
         else:
+            self.logger.info(f"Loading realisation {realisation}")
             self.data = self.pks_all[realisation]
 
         winfit_file = os.path.abspath(self.data_location + f"/bin0_winfit_{step_size}.txt")
