@@ -23,14 +23,23 @@ if __name__ == "__main__":
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
-        for i in range(1000):
-            d = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r, average=False, realisation=i)
-            de = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r, postprocess=p, average=False, realisation=i)
 
-            fitter.add_model_and_dataset(PowerBeutler2017(recon=r), d, name=f"Beutler {t}, mock number {i}", linestyle=ls, color="p")
-            fitter.add_model_and_dataset(PowerSeo2016(recon=r), d, name=f"Seo {t}, mock number {i}", linestyle=ls, color="r")
-            fitter.add_model_and_dataset(PowerDing2018(recon=r), d, name=f"Ding {t}, mock number {i}", linestyle=ls, color="lb")
-            fitter.add_model_and_dataset(PowerNoda2019(recon=r, postprocess=p), de, name=f"Noda {t}, mock number {i}", linestyle=ls, color="o")
+        d = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r, average=False, realisation=0)
+        de = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r, postprocess=p, average=False, realisation=0)
+
+        beutler = PowerBeutler2017(recon=r)
+        seo = PowerSeo2016(recon=r)
+        ding = PowerDing2018(recon=r)
+        noda = PowerNoda2019(recon=r, postprocess=p)
+
+        for i in range(1000):
+            d.set_realisation(i)
+            de.set_realisation(i)
+
+            fitter.add_model_and_dataset(beutler, d, name=f"Beutler {t}, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(seo, d, name=f"Seo {t}, mock number {i}", linestyle=ls, color="r")
+            fitter.add_model_and_dataset(ding, d, name=f"Ding {t}, mock number {i}", linestyle=ls, color="lb")
+            fitter.add_model_and_dataset(noda, de, name=f"Noda {t}, mock number {i}", linestyle=ls, color="o")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)

@@ -50,6 +50,9 @@ class MockPowerSpectrum(Dataset):
         self.logger.debug(f"Computing cov")
         self.set_cov(self._compute_cov(), apply_correction=apply_hartlap_correction, fake_diag=fake_diag)
 
+    def set_realisation(self, index):
+        self.data = self.pks_all[index]
+
     def set_cov(self, cov, apply_correction=False, fake_diag=False):
         self.logger.info(f"Computed cov {cov.shape}")
         if self.reduce_cov_factor != 1:

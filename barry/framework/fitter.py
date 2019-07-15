@@ -22,7 +22,7 @@ class Fitter(object):
         os.makedirs(temp_dir, exist_ok=True)
 
     def add_model_and_dataset(self, model, dataset, **extra_args):
-        self.model_datasets.append((model, dataset, extra_args))
+        self.model_datasets.append((model, dataset.get_data(), extra_args))
         return self
 
     def set_num_cpu(self, num_cpu=None):
@@ -51,32 +51,24 @@ class Fitter(object):
     def set_sampler(self, sampler):
         self.sampler = sampler
 
-    def get_sampler(self, full=True, show_viewer=False, model_index=None):
+    def get_sampler(self, full=True):
         if self.sampler is None:
-            callback = None
-            if show_viewer:
-                from barry.framework.samplers.viewer import Viewer
-                model = self.model_datasets[model_index][1]
-                viewer = Viewer(model.get_extents(), parameters=model.get_labels())
-                callback = viewer.callback
-
             debug = not full
-            self.sampler = MetropolisHastings(num_burn=5000, num_steps=10000, temp_dir=self.temp_dir,
-                                              callback=callback, plot_covariance=debug)
+            self.sampler = MetropolisHastings(num_burn=5000, num_steps=10000, temp_dir=self.temp_dir, plot_covariance=debug)
         return self.sampler
 
-    def run_fit(self, model_index, walker_index, full=True, show_viewer=False):
+    def run_fit(self, model_index, walker_index, full=True):
         model = self.model_datasets[model_index][0]
-        data = self.model_datasets[model_index][1].get_data()
+        data = self.model_datasets[model_index][1]
 
         model.set_data(data)
         uid = f"chain_{model_index}_{walker_index}"
 
-        sampler = self.get_sampler(full=full, show_viewer=show_viewer, model_index=model_index)
+        sampler = self.get_sampler(full=full)
 
         self.logger.info("Running fitting job, saving to %s" % self.temp_dir)
         self.logger.info(f"Model is {model}")
-        self.logger.info(f"Data is {self.model_datasets[model_index][1]}")
+        self.logger.info(f"Data is {self.model_datasets[model_index][1]['name']}")
         sampler.fit(model.get_posterior, model.get_start, uid=uid)
         # Perform the fitting here
         # Save results out
