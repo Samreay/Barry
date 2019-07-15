@@ -4,7 +4,7 @@
 #SBATCH --mem-per-cpu=4GB
 #SBATCH -t 04:00:00
 #SBATCH -o zlog.o%j
-#SBATCH -n 5
+#SBATCH -n 50
 
 module load rocks-openmpi
 conda deactivate
