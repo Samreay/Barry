@@ -17,7 +17,7 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
 
-    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100)
+    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100, num_steps=400, num_burn=300)
     fitter = Fitter(dir_name)
 
     for r in [True, False]:
