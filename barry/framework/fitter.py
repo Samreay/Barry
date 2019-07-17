@@ -81,7 +81,7 @@ class Fitter(object):
     def should_plot(self):
         return self.is_laptop() or (len(sys.argv) == 2 and int(sys.argv[1]) == -1)
 
-    def fit(self, file, viewer=False):
+    def fit(self, file):
         if self.num_cpu is None:
             self.set_num_cpu()
 
@@ -92,7 +92,7 @@ class Fitter(object):
 
         if self.is_laptop():
             self.logger.info("Running locally on the 0th index.")
-            self.run_fit(0, 0, full=False, show_viewer=viewer)
+            self.run_fit(0, 0, full=False)
         else:
             if len(sys.argv) == 1:
                 h = socket.gethostname()

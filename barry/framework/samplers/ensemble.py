@@ -109,5 +109,7 @@ class EnsembleSampler(GenericSampler):
 
     def load_file(self, filename):
         results = np.load(filename)
+        posterior = np.load(filename.replace("chain.npy", "prob.npy"))
         flat_chain = results[:, self.num_burn:, :].reshape((-1, results.shape[2]))
-        return {"chain": flat_chain}
+        flat_posterior = posterior[:, self.num_burn:].reshape((-1, 1))
+        return {"chain": flat_chain, "posterior": flat_posterior}
