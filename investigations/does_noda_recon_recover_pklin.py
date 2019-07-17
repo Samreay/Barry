@@ -38,3 +38,4 @@ if __name__ == "__main__":
     model1.plot(p)
 
     # FINDINGS
+    # 0.993 for the SDSS data, 0.978 for Dummy data. Bit odd.
