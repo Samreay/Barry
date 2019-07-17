@@ -24,10 +24,12 @@ if __name__ == "__main__":
     for r in [True, False]:
         rt = "Recon" if r else "Prerecon"
         data = MockSDSSPowerSpectrum(recon=r, postprocess=postprocess, reduce_cov_factor=np.sqrt(1000))
-        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"]), data, name=f"Node {rt} fixed om, f, gamma, b", linestyle="-" if r else "--", color="o")
-        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma"]), data, name=f"Node {rt} fixed om, f, gamma", linestyle="-" if r else "--", color="r")
-        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f"],), data, name=f"Node {rt} fixed om, f", linestyle="-" if r else "--", color="lb")
-        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om"],), data, name=f"Node {rt} fixed om", linestyle="-" if r else "--", color="p")
+        n = PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"])
+        n.param_dict["b"].default = 0.992
+        fitter.add_model_and_dataset(n, data, name=f"Noda {rt} fixed om, f, gamma, b", linestyle="-" if r else "--", color="o")
+        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma"]), data, name=f"Noda {rt} fixed om, f, gamma", linestyle="-" if r else "--", color="r")
+        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f"],), data, name=f"Noda {rt} fixed om, f", linestyle="-" if r else "--", color="lb")
+        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om"],), data, name=f"Noda {rt} fixed om", linestyle="-" if r else "--", color="p")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
