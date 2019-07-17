@@ -103,7 +103,7 @@ if __name__ == "__main__":
             from scipy.interpolate import interp1d
             bins = np.linspace(0.73, 1.15, 31)
             cols = {"Beutler": c4[0], "BeutlerExtracted": c4[2]}
-            fig, axes = plt.subplots(2, 2, figsize=(10, 10), sharex=True)
+            fig, axes = plt.subplots(2, 2, figsize=(5, 5), sharex=True)
             labels = ["Beutler Recon", "BeutlerExtracted Recon"]
             #labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
             for i, label1 in enumerate(labels):

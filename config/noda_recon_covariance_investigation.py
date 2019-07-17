@@ -95,7 +95,7 @@ if __name__ == "__main__":
     fitter.add_model_and_dataset(model, datas[2], name="Nishimichi diag")
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
-    fitter.fit(file, viewer=False)
+    fitter.fit(file)
 
     if fitter.should_plot():
         from chainconsumer import ChainConsumer
