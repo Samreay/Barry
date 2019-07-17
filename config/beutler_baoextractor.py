@@ -30,7 +30,7 @@ if __name__ == "__main__":
         beutler = PowerBeutler2017(recon=r)
         beutler_extracted = PowerBeutler2017(recon=r, postprocess=p)
 
-        for i in range(50):
+        for i in range(1000):
             d.set_realisation(i)
             de.set_realisation(i)
             fitter.add_model_and_dataset(beutler, d, name=f"Beutler {t}, mock number {i}", linestyle=ls, color="p")
@@ -99,12 +99,12 @@ if __name__ == "__main__":
             return to_hex(0.5 * (a + b))
                 
         # Alpha-alpha comparison
-        if False:
+        if True:
             from scipy.interpolate import interp1d
             bins = np.linspace(0.73, 1.15, 31)
-            cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
-            fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
-            labels = ["Beutler Recon", "Seo Recon", "Ding Recon", "Noda Recon"]
+            cols = {"Beutler": c4[0], "BeutlerExtracted": c4[2]}
+            fig, axes = plt.subplots(2, 2, figsize=(10, 10), sharex=True)
+            labels = ["Beutler Recon", "BeutlerExtracted Recon"]
             #labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
@@ -124,7 +124,7 @@ if __name__ == "__main__":
                         ax.spines['top'].set_visible(False)
                         if j == 0:
                             ax.spines['left'].set_visible(False)
-                        if j == 3:
+                        if j == 1:
                             ax.set_xlabel(label2.split()[0], fontsize=12)
                             ax.set_xticks([0.9, 1.0, 1.1])
                     else:
@@ -146,7 +146,7 @@ if __name__ == "__main__":
                         else:
                             ax.set_ylabel(label1.split()[0], fontsize=12)
                             ax.set_yticks([0.9, 1.0, 1.1])
-                        if i == 3:
+                        if i == 1:
                             ax.set_xlabel(label2.split()[0], fontsize=12)
                             ax.set_xticks([0.9, 1.0, 1.1])
             plt.subplots_adjust(hspace=0.0, wspace=0)
