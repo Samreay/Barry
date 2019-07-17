@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(30)
-    fitter.fit(file, viewer=False)
+    fitter.fit(file)
 
     if fitter.is_laptop():
         from chainconsumer import ChainConsumer
