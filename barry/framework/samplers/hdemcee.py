@@ -72,8 +72,8 @@ class EmceeWrapper(object):
                     t = t2
                     position = result[0]
                     np.save(position_file, position)
-                    np.save(chain_file, self.chain[:, :step, :])
-                    np.save(posterior_file, self.posterior[:, :step])
+                    np.save(chain_file, self.chain[:, :step, :].astype(np.float32))
+                    np.save(posterior_file, self.posterior[:, :step].astype(np.float32))
                     self.logger.debug("Saving chain with %d steps" % step)
         return self.get_results(num_burn)
 

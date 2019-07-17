@@ -39,12 +39,11 @@ if __name__ == "__main__":
         c = ChainConsumer()
         for posterior, weight, chain, model, data, extra in fitter.load():
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
-        c.configure(shade=True, bins=20, legend_artists=True)
-        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
-        c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
-        c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
-        with open(pfn + "_params.txt", "w") as f:
-            f.write(c.analysis.get_latex_table())
+        c.configure(shade=True, bins=30, legend_artists=True)
+        c.analysis.get_latex_table(filename=pfn + "_params.txt")
+        c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
+        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
+        # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
 
     # FINDINGS: All non-noda methods similarly fit to a low alpha, whilst noda fits high. Noda would fit better if we could assume a gamma
     # value of around 4 to 5, but this makes me feel... uncomfortable.

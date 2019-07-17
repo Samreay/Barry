@@ -12,13 +12,14 @@ from barry.framework.samplers.metropolisHastings import MetropolisHastings
 
 
 class Fitter(object):
-    def __init__(self, temp_dir):
+    def __init__(self, temp_dir, save_dims=None):
         self.logger = logging.getLogger("barry")
         self.model_datasets = []
         self.num_walkers = 10
         self.num_cpu = None
         self.temp_dir = temp_dir
         self.sampler = None
+        self.save_dims = save_dims
         os.makedirs(temp_dir, exist_ok=True)
 
     def add_model_and_dataset(self, model, dataset, **extra_args):
@@ -69,7 +70,7 @@ class Fitter(object):
         self.logger.info("Running fitting job, saving to %s" % self.temp_dir)
         self.logger.info(f"Model is {model}")
         self.logger.info(f"Data is {self.model_datasets[model_index][1]['name']}")
-        sampler.fit(model.get_posterior, model.get_start, uid=uid)
+        sampler.fit(model.get_posterior, model.get_start, uid=uid, save_dims=self.save_dims)
         # Perform the fitting here
         # Save results out
 
