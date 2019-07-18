@@ -12,7 +12,7 @@ from barry.framework.samplers.metropolisHastings import MetropolisHastings
 
 
 class Fitter(object):
-    def __init__(self, temp_dir, save_dims=None):
+    def __init__(self, temp_dir, save_dims=None, remove_output=True):
         self.logger = logging.getLogger("barry")
         self.model_datasets = []
         self.num_walkers = 10
@@ -20,6 +20,7 @@ class Fitter(object):
         self.temp_dir = temp_dir
         self.sampler = None
         self.save_dims = save_dims
+        self.remove_output = True
         os.makedirs(temp_dir, exist_ok=True)
 
     def add_model_and_dataset(self, model, dataset, **extra_args):
@@ -99,8 +100,9 @@ class Fitter(object):
                 h = socket.gethostname()
                 partition = "regular" if "edison" in h else "smp"
                 if os.path.exists(self.temp_dir):
-                    self.logger.info("Deleting %s" % self.temp_dir)
-                    shutil.rmtree(self.temp_dir)
+                    if self.remove_output:
+                        self.logger.info("Deleting %s" % self.temp_dir)
+                        shutil.rmtree(self.temp_dir)
                 filename = write_jobscript_slurm(file, name=os.path.basename(file),
                                                  num_tasks=self.get_num_jobs(), num_cpu=self.get_num_cpu(),
                                                  delete=True, partition=partition)

@@ -12,7 +12,7 @@ import numpy as np
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
-    fitter = Fitter(dir_name, save_dims=2)
+    fitter = Fitter(dir_name, save_dims=2, remove_output=False)
     
     c = CambGenerator()
     r_s, _ = c.get_data()
@@ -56,16 +56,22 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         res = {}
-        rese = {}
         for posterior, weight, chain, model, data, extra in fitter.load():
             n = extra["name"].split(",")[0]
             if res.get(n) is None:
                 res[n] = []
-            if rese.get(n) is None:
-                rese[n] = []
             print(chain.shape)
-            res[n].append(chain[:, 0].mean())
-            rese[n].append(np.std(chain[:, 0]))
+            i = posterior.argmax()
+            num_params = len(model.params)
+            bic = - 2 * posterior[i] + num_params * np.log(data["ks_output"].size)
+            res[n].append([chain[:, 0].mean(), np.std(chain[:, 0]), chain[i, 0], posterior[i], bic, bic])
+        smooth_prerecon = res["Smooth Prerecon"]
+        smooth_recon = res["Smooth Prerecon"]
+        for label, values in res.items():
+                smooth = smooth_prerecon if "Prerecon" in label else smooth_recon
+                for i, row in enumerate(values):
+                    print(smooth, i)
+                    row[-1] = row[-1] - smooth[i][-1]
         
         # Define colour scheme
         c2 = ["#225465", "#5FA45E"] # ["#581d7f", "#e05286"]
@@ -79,6 +85,8 @@ if __name__ == "__main__":
             fig, axes = plt.subplots(nrows=2, figsize=(5, 6), sharex=True)
             bins = np.linspace(0.73, 1.15, 31)
             for label, means in res.items():
+                if "Smooth" in label:
+                    continue
                 if "Prerecon" in label:
                     ax = axes[0]
                 else:
