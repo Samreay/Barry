@@ -20,7 +20,7 @@ class Fitter(object):
         self.temp_dir = temp_dir
         self.sampler = None
         self.save_dims = save_dims
-        self.remove_output = True
+        self.remove_output = remove_output
         os.makedirs(temp_dir, exist_ok=True)
 
     def add_model_and_dataset(self, model, dataset, **extra_args):
