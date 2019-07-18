@@ -105,7 +105,7 @@ class Fitter(object):
                         shutil.rmtree(self.temp_dir)
                 filename = write_jobscript_slurm(file, name=os.path.basename(file),
                                                  num_tasks=self.get_num_jobs(), num_cpu=self.get_num_cpu(),
-                                                 delete=True, partition=partition)
+                                                 delete=False, partition=partition)
                 self.logger.info("Running batch job at %s" % filename)
                 os.system("sbatch %s" % filename)
             else:

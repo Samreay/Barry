@@ -18,7 +18,7 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_cpu=24,
         logging.debug("Deleting %s" % output_dir)
         shutil.rmtree(output_dir)
     if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+        os.makedirs(output_dir, exist_ok=True)
 
     template = f'''#!/bin/bash -l
 #SBATCH -p {partition}
