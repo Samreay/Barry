@@ -18,8 +18,8 @@ if __name__ == "__main__":
 
     postprocess = BAOExtractor(r_s)
 
-    sampler = EnsembleSampler(temp_dir=dir_name)
-    fitter = Fitter(dir_name)
+    sampler = EnsembleSampler(temp_dir=dir_name, num_steps=2000)
+    fitter = Fitter(dir_name, remove_output=False)
 
     for r in [True, False]:
         rt = "Recon" if r else "Prerecon"
