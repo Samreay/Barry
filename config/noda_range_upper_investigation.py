@@ -55,10 +55,9 @@ if __name__ == "__main__":
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=40, legend_artists=True, rainbow=True)
         extents = {"$\\alpha$": (0.96, 1.2), "$A$": (5, 10), "$b$": (1.5, 1.8), r"$\gamma_{rec}$": (1, 4)}
-        with open(pfn + "_params.txt", "w") as f:
-            f.write(c.analysis.get_latex_table())
-        c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0}, extents=extents)
-        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0}, extents=extents)
+        c.analysis.get_latex_table(filename=pfn + "_params.txt")
+        c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0}, extents=extents)
+        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0}, extents=extents)
         # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0},
         #                      extents=extents)
 

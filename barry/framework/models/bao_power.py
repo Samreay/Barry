@@ -51,12 +51,6 @@ class PowerSpectrumFit(Model):
         r_s, pk_lin = self.camb.get_data(om=om, h0=self.h0)
         pk_smooth_lin = smooth(self.camb.ks, pk_lin, method=self.smooth_type, om=om, h0=self.h0)  # Get the smoothed power spectrum
         pk_ratio = (pk_lin / pk_smooth_lin - 1.0)  # Get the ratio
-        # import matplotlib.pyplot as plt
-        # plt.plot(self.camb.ks, pk_ratio)
-        # plt.xlim(0, 0.3)
-        # plt.show()
-        # exit()
-
         return pk_smooth_lin, pk_ratio
 
     def compute_power_spectrum(self, k, p, smooth=False):
@@ -85,7 +79,6 @@ class PowerSpectrumFit(Model):
         return pk_final
 
     def adjust_model_window_effects(self, pk_generated):
-        # print(pk_generated.shape, self.data["w_scale"].shape, self.data["w_pk"].shape, self.data["w_transform"].shape, self.data["w_mask"].shape)
         p0 = np.sum(self.data["w_scale"] * pk_generated)
         integral_constraint = self.data["w_pk"] * p0
 

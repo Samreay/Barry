@@ -20,16 +20,17 @@ if __name__ == "__main__":
     sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100)
     fitter = Fitter(dir_name)
 
+    cs = ["#262232", "#116A71", "#48AB75", "#b7c742"]
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
         d = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r,  reduce_cov_factor=1000)
         de = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r,  reduce_cov_factor=1000, postprocess=p)
 
-        fitter.add_model_and_dataset(PowerBeutler2017(recon=r), d, name=f"Beutler {t}", linestyle=ls, color="p")
-        fitter.add_model_and_dataset(PowerSeo2016(recon=r), d, name=f"Seo {t}", linestyle=ls, color="r")
-        fitter.add_model_and_dataset(PowerDing2018(recon=r), d, name=f"Ding {t}", linestyle=ls, color="lb")
-        fitter.add_model_and_dataset(PowerNoda2019(recon=r, postprocess=p), de, name=f"Noda {t}", linestyle=ls, color="o")
+        fitter.add_model_and_dataset(PowerBeutler2017(recon=r), d, name=f"Beutler {t}", linestyle=ls, color=cs[0])
+        fitter.add_model_and_dataset(PowerSeo2016(recon=r), d, name=f"Seo {t}", linestyle=ls, color=cs[1])
+        fitter.add_model_and_dataset(PowerDing2018(recon=r), d, name=f"Ding {t}", linestyle=ls, color=cs[2])
+        fitter.add_model_and_dataset(PowerNoda2019(recon=r, postprocess=p), de, name=f"Noda {t}", linestyle=ls, color=cs[3])
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
@@ -39,15 +40,13 @@ if __name__ == "__main__":
         import logging
         logging.info("Creating plots")
         from chainconsumer import ChainConsumer
-
         c = ChainConsumer()
         for posterior, weight, chain, model, data, extra in fitter.load():
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=30, legend_artists=True)
-        with open(pfn + "_params.txt", "w") as f:
-            f.write(c.analysis.get_latex_table())
-        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
-        c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
+        c.analysis.get_latex_table(filename=pfn + "_params.txt")
+        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
+        c.plotter.plot_summary(filename=pfn + "_summary2.png", extra_parameter_spacing=1.5, parameters=2, errorbar=True, truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
         # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
 
 

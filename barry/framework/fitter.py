@@ -133,7 +133,8 @@ class Fitter(object):
 
     def load(self, split_models=True, split_walkers=False):
         self.logger.info("Loading chains")
-        files = sorted([f for f in os.listdir(self.temp_dir) if f.endswith("chain.npy")])
+        files = [f for f in os.listdir(self.temp_dir) if f.endswith("chain.npy")]
+        files.sort(key=lambda s: [int(s.split("_")[1]), int(s.split("_")[2])])
         filenames = [self.temp_dir + "/" + f for f in files]
         model_indexes = [int(f.split("_")[1]) for f in files]
         walker_indexes = [int(f.split("_")[2]) for f in files]

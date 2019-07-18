@@ -1,4 +1,6 @@
 import logging
+from functools import lru_cache
+
 import numpy as np
 
 import sys
@@ -12,17 +14,25 @@ from barry.framework.model import Model
 
 class CorrelationPolynomial(Model):
 
-    def __init__(self, fit_omega_m=False, smooth_type="hinton2017", name="BAO Correlation Polynomial Fit"):
+    def __init__(self, smooth_type="hinton2017", name="BAO Correlation Polynomial Fit", fix_params=['om'], smooth=False):
         super().__init__(name)
 
         self.smooth_type = smooth_type.lower()
         if not validate_smooth_method(smooth_type):
             exit(0)
 
+        self.declare_parameters()
+        self.set_fix_params(fix_params)
+
+        # Set up data structures for model fitting
+        self.camb = CambGenerator()
+        self.h0 = self.camb.h0
+        self.smooth = smooth
+        self.pk2xi = PowerToCorrelationGauss(self.camb.ks)
+
+    def declare_parameters(self):
         # Define parameters
-        self.fit_omega_m = fit_omega_m
-        if self.fit_omega_m:
-            self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.3121)  # Cosmology
+        self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.3121)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch
         self.add_param("sigma_nl", r"$\Sigma_{NL}$", 1.0, 20.0, 1.0)  # dampening
         self.add_param("b", r"$b$", 0.01, 10.0, 1.0)  # Bias
@@ -30,19 +40,29 @@ class CorrelationPolynomial(Model):
         self.add_param("a2", r"$a_2$", -2, 2, 0)  # Polynomial marginalisation 2
         self.add_param("a3", r"$a_3$", -0.2, 0.2, 0)  # Polynomial marginalisation 3
 
-        # Set up data structures for model fitting
-        self.h0 = 0.6751
-        self.camb = CambGenerator(h0=self.h0)
+    @lru_cache(maxsize=1024)
+    def compute_basic_power_spectrum(self, om):
+        """ Computes the smoothed, linear power spectrum and the wiggle ratio
 
-        if not self.fit_omega_m:
-            self.omega_m = 0.3121
-            self.r_s, self.pk_lin = self.camb.get_data(om=self.omega_m)
-        self.pk2xi = PowerToCorrelationGauss(self.camb.ks)
-        # self.pk2xi = PowerToCorrelationFT()  # Slower than the Gauss method
+        Parameters
+        ----------
+        om : float
+            The Omega_m value to generate a power spectrum for
 
-        self.nice_data = None  # Place to store things like invert cov matrix
+        Returns
+        -------
+        array
+            pk_smooth - The power spectrum smoothed out
+        array
+            pk_ratio_dewiggled - the ratio pk_lin / pk_smooth, transitioned using sigma_nl
 
-    def compute_correlation_function(self, d, p):
+        """
+        # Get base linear power spectrum from camb
+        r_s, pk_lin = self.camb.get_data(om=om, h0=self.h0)
+        pk_smooth_lin = smooth(self.camb.ks, pk_lin, method=self.smooth_type, om=om, h0=self.h0)  # Get the smoothed power spectrum
+        return pk_lin, pk_smooth_lin
+
+    def compute_correlation_function(self, d, p, smooth=False):
         """ Computes the correlation function at distance d given the supplied params
         
         Parameters
@@ -60,13 +80,7 @@ class CorrelationPolynomial(Model):
         """
         # Get base linear power spectrum from camb
         ks = self.camb.ks
-        if self.fit_omega_m:
-            r_s, pk_lin = self.camb.get_data(om=p["om"], h0=self.h0)
-        else:
-            pk_lin = self.pk_lin
-
-        # Get the smoothed power spectrum
-        pk_smooth = smooth(ks, pk_lin, method=self.smooth_type, om=p["om"], h0=self.h0)
+        pk_lin, pk_smooth = self.compute_basic_power_spectrum(p["om"])
 
         # Blend the two
         pk_linear_weight = np.exp(-0.5 * (ks * p["sigma_nl"])**2)
@@ -82,11 +96,13 @@ class CorrelationPolynomial(Model):
         model = xi * p["b"] + shape
         return model
 
-    def get_likelihood(self, params):
+    def get_model(self, p, smooth=False):
+        pk_model = self.compute_correlation_function(self.data["dist"], p, smooth=smooth)
+        return pk_model
+
+    def get_likelihood(self, p):
         d = self.data
-        if not self.fit_omega_m:
-            params["om"] = 0.3121
-        xi_model = self.compute_correlation_function(d["dist"], params)
+        xi_model = self.get_model(p, smooth=smooth)
 
         diff = (d["xi"] - xi_model)
         chi2 = diff.T @ d["icov"] @ diff

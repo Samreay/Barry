@@ -12,13 +12,13 @@ import numpy as np
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
-    fitter = Fitter(dir_name, save_dims=2, remove_output=False)
+    fitter = Fitter(dir_name, save_dims=2)
     
     c = CambGenerator()
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
 
-    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100, num_steps=500, num_burn=300)
+    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100, num_steps=1000, num_burn=600)
 
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
@@ -33,15 +33,15 @@ if __name__ == "__main__":
         ding = PowerDing2018(recon=r)
         noda = PowerNoda2019(recon=r, postprocess=p)
 
-        for i in range(1000):
+        for i in range(200):
             d.set_realisation(i)
             de.set_realisation(i)
 
             fitter.add_model_and_dataset(smooth, d, name=f"Smooth {t}, mock number {i}", linestyle=ls, color="p")
             fitter.add_model_and_dataset(beutler, d, name=f"Beutler {t}, mock number {i}", linestyle=ls, color="p")
-            fitter.add_model_and_dataset(seo, d, name=f"Seo {t}, mock number {i}", linestyle=ls, color="r")
-            fitter.add_model_and_dataset(ding, d, name=f"Ding {t}, mock number {i}", linestyle=ls, color="lb")
-            fitter.add_model_and_dataset(noda, de, name=f"Noda {t}, mock number {i}", linestyle=ls, color="o")
+            # fitter.add_model_and_dataset(seo, d, name=f"Seo {t}, mock number {i}", linestyle=ls, color="r")
+            # fitter.add_model_and_dataset(ding, d, name=f"Ding {t}, mock number {i}", linestyle=ls, color="lb")
+            # fitter.add_model_and_dataset(noda, de, name=f"Noda {t}, mock number {i}", linestyle=ls, color="o")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
