@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
     from barry.framework.datasets.mock_power import MockSDSSPowerSpectrum
     i = 12
-    dataset1 = MockSDSSPowerSpectrum(name=f"Realisation {i}", recon=recon, min_k=0.02, max_k=0.3, average=False, realisation=i)
+    dataset1 = MockSDSSPowerSpectrum(name=f"Realisation {i}", recon=recon, average=False, realisation=i)
 
     data1 = dataset1.get_data()
 
