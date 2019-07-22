@@ -1,6 +1,6 @@
 import logging
 
-from barry.framework.models import CorrDing2018
+from barry.framework.models import CorrSeo2016
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
@@ -8,8 +8,8 @@ if __name__ == "__main__":
     from barry.framework.datasets import MockSDSSCorrelationFunction
 
     for recon in [True, False]:
-        model = CorrDing2018(recon=recon)
-        model_smooth = CorrDing2018(recon=recon, smooth=True)
+        model = CorrSeo2016(recon=recon)
+        model_smooth = CorrSeo2016(recon=recon, smooth=True)
         model.set_default("om", 0.31)
         model_smooth.set_default("om", 0.31)
         # Assuming the change from 0.675 to 0.68 is something we can ignore, or we can add h0 to the default parameters.
@@ -27,4 +27,4 @@ if __name__ == "__main__":
         model.plot(p, smooth_params=p2)
 
         # FINDINGS
-        # Good. gets 0.998
+        # 0.999 and 1.001
