@@ -4,7 +4,7 @@ sys.path.append("..")
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.postprocessing import BAOExtractor
 from barry.setup import setup
-from barry.framework.models import CorrBeutler2017
+from barry.framework.models import CorrBeutler2017, CorrDing2018, CorrSeo2016
 from barry.framework.datasets import MockSDSSCorrelationFunction
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
@@ -26,6 +26,8 @@ if __name__ == "__main__":
         ls = "-" if r else "--"
         d = MockSDSSCorrelationFunction(recon=r)
         fitter.add_model_and_dataset(CorrBeutler2017(), d, name=f"Beutler {t}", linestyle=ls, color=cs[0])
+        fitter.add_model_and_dataset(CorrSeo2016(recon=r), d, name=f"Seo {t}", linestyle=ls, color=cs[1])
+        fitter.add_model_and_dataset(CorrDing2018(recon=r), d, name=f"Ding {t}", linestyle=ls, color=cs[2])
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
@@ -42,7 +44,7 @@ if __name__ == "__main__":
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
         c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
         c.plotter.plot_summary(filename=pfn + "_summary2.png", extra_parameter_spacing=1.5, parameters=2, errorbar=True, truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
-        # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
+        c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
 
 
 

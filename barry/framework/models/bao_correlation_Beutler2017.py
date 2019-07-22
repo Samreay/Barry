@@ -19,14 +19,14 @@ class CorrBeutler2017(CorrelationPolynomial):
     def compute_correlation_function(self, d, p, smooth=False):
         # Get base linear power spectrum from camb
         ks = self.camb.ks
-        pk_lin, pk_smooth = self.compute_basic_power_spectrum(p["om"])
+        pk_smooth, pk_ratio_dewiggled = self.compute_basic_power_spectrum(p["om"])
 
         # Blend the two
         if smooth:
             pk_dewiggled = pk_smooth
         else:
             pk_linear_weight = np.exp(-0.5 * (ks * p["sigma_nl"])**2)
-            pk_dewiggled = pk_linear_weight * pk_lin + (1 - pk_linear_weight) * pk_smooth
+            pk_dewiggled = (pk_linear_weight * (1 + pk_ratio_dewiggled) + (1 - pk_linear_weight)) * pk_smooth
 
         # Convert to correlation function and take alpha into account
         xi = self.pk2xi.pk2xi(ks, pk_dewiggled, d * p["alpha"])
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
-    bao = CorrelationPolynomial()
+    bao = CorrBeutler2017()
 
     from barry.framework.datasets.mock_correlation import MockSDSSCorrelationFunction
     dataset = MockSDSSCorrelationFunction()
@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     import timeit
     n = 500
-    p = {"om":0.3, "alpha":1.0, "sigma_nl": 5.0, "b": 1.0, "a1": 0, "a2": 0, "a3": 0}
+    p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5.0, "b": 2.0, "a1": 0, "a2": 0, "a3": 0}
 
     def test():
         bao.get_likelihood(p)

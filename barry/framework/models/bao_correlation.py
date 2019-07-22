@@ -49,7 +49,8 @@ class CorrelationPolynomial(Model):
         # Get base linear power spectrum from camb
         r_s, pk_lin = self.camb.get_data(om=om, h0=self.h0)
         pk_smooth_lin = smooth(self.camb.ks, pk_lin, method=self.smooth_type, om=om, h0=self.h0)  # Get the smoothed power spectrum
-        return pk_lin, pk_smooth_lin
+        pk_ratio = (pk_lin / pk_smooth_lin - 1.0)  # Get the ratio
+        return pk_smooth_lin, pk_ratio
 
     def compute_correlation_function(self, d, p, smooth=False):
         """ Computes the correlation function at distance d given the supplied params
@@ -69,9 +70,9 @@ class CorrelationPolynomial(Model):
         """
         # Get base linear power spectrum from camb
         ks = self.camb.ks
-        pk_lin, pk_smooth = self.compute_basic_power_spectrum(p["om"])
+        pk_smooth, pk_ratio_dewiggled = self.compute_basic_power_spectrum(p["om"])
 
-        xi = self.pk2xi.pk2xi(ks, pk_lin, d * p["alpha"])
+        xi = self.pk2xi.pk2xi(ks, pk_smooth * (1 + pk_ratio_dewiggled), d * p["alpha"])
         return xi * p["b"]
 
     def get_model(self, p, smooth=False):

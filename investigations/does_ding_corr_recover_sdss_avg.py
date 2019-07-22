@@ -1,6 +1,6 @@
 import logging
 
-from barry.framework.models import CorrBeutler2017
+from barry.framework.models import CorrDing2018
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
@@ -8,8 +8,8 @@ if __name__ == "__main__":
     from barry.framework.datasets import MockSDSSCorrelationFunction
 
     for recon in [True, False]:
-        model = CorrBeutler2017()
-        model_smooth = CorrBeutler2017(smooth=True)
+        model = CorrDing2018(recon=recon)
+        model_smooth = CorrDing2018(recon=recon, smooth=True)
         model.set_default("om", 0.31)
         model_smooth.set_default("om", 0.31)
         # Assuming the change from 0.675 to 0.68 is something we can ignore, or we can add h0 to the default parameters.
@@ -27,4 +27,3 @@ if __name__ == "__main__":
         model.plot(p, smooth_params=p2)
 
         # FINDINGS
-        # Yes, no issue recovering SDSS mean to alpha=0.98 (postrecon) and 1.007 (prerecon)
