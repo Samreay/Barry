@@ -117,5 +117,5 @@ class Model(ABC):
         return self.get_param_dict(ps), fs.min()
 
     @abstractmethod
-    def plot(self, *params):
+    def plot(self, params, smooth_params=None):
         pass

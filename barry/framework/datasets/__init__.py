@@ -1,4 +1,4 @@
-from barry.framework.datasets.mock_correlation import MockAverageCorrelations
-from barry.framework.datasets.mock_power import MockPowerSpectrum, MockSDSSPowerSpectrum, MockTaipanPowerSpectrum
+from barry.framework.datasets.mock_correlation import MockSDSSCorrelationFunction
+from barry.framework.datasets.mock_power import MockSDSSPowerSpectrum, MockTaipanPowerSpectrum
 
-__all__ = [MockPowerSpectrum, MockAverageCorrelations, MockSDSSPowerSpectrum, MockTaipanPowerSpectrum]
+__all__ = [MockSDSSPowerSpectrum, MockTaipanPowerSpectrum, MockSDSSCorrelationFunction]

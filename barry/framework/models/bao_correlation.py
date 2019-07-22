@@ -1,19 +1,12 @@
-import logging
 from functools import lru_cache
-
 import numpy as np
-
-import sys
-sys.path.append("../../..")
-
 from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.cosmology.pk2xi import PowerToCorrelationFT, PowerToCorrelationGauss
+from barry.framework.cosmology.pk2xi import PowerToCorrelationGauss
 from barry.framework.cosmology.power_spectrum_smoothing import validate_smooth_method, smooth
 from barry.framework.model import Model
 
 
 class CorrelationPolynomial(Model):
-
     def __init__(self, smooth_type="hinton2017", name="BAO Correlation Polynomial Fit", fix_params=['om'], smooth=False):
         super().__init__(name)
 
@@ -34,11 +27,7 @@ class CorrelationPolynomial(Model):
         # Define parameters
         self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.3121)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch
-        self.add_param("sigma_nl", r"$\Sigma_{NL}$", 1.0, 20.0, 1.0)  # dampening
         self.add_param("b", r"$b$", 0.01, 10.0, 1.0)  # Bias
-        self.add_param("a1", r"$a_1$", -100, 100, 0)  # Polynomial marginalisation 1
-        self.add_param("a2", r"$a_2$", -2, 2, 0)  # Polynomial marginalisation 2
-        self.add_param("a3", r"$a_3$", -0.2, 0.2, 0)  # Polynomial marginalisation 3
 
     @lru_cache(maxsize=1024)
     def compute_basic_power_spectrum(self, om):
@@ -64,7 +53,7 @@ class CorrelationPolynomial(Model):
 
     def compute_correlation_function(self, d, p, smooth=False):
         """ Computes the correlation function at distance d given the supplied params
-        
+
         Parameters
         ----------
         d : array
@@ -76,25 +65,14 @@ class CorrelationPolynomial(Model):
         -------
         array
             The correlation function power at the requested distances.
-        
+
         """
         # Get base linear power spectrum from camb
         ks = self.camb.ks
         pk_lin, pk_smooth = self.compute_basic_power_spectrum(p["om"])
 
-        # Blend the two
-        pk_linear_weight = np.exp(-0.5 * (ks * p["sigma_nl"])**2)
-        pk_dewiggled = pk_linear_weight * pk_lin + (1 - pk_linear_weight) * pk_smooth
-
-        # Convert to correlation function and take alpha into account
-        xi = self.pk2xi.pk2xi(ks, pk_dewiggled, d * p["alpha"])
-
-        # Polynomial shape
-        shape = p["a1"] / (d ** 2) + p["a2"] / d + p["a3"]
-
-        # Add poly shape to xi model, include bias correction
-        model = xi * p["b"] + shape
-        return model
+        xi = self.pk2xi.pk2xi(ks, pk_lin, d * p["alpha"])
+        return xi * p["b"]
 
     def get_model(self, p, smooth=False):
         pk_model = self.compute_correlation_function(self.data["dist"], p, smooth=smooth)
@@ -102,39 +80,50 @@ class CorrelationPolynomial(Model):
 
     def get_likelihood(self, p):
         d = self.data
-        xi_model = self.get_model(p, smooth=smooth)
+        xi_model = self.get_model(p, smooth=self.smooth)
 
         diff = (d["xi"] - xi_model)
         chi2 = diff.T @ d["icov"] @ diff
         return -0.5 * chi2
 
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
-    bao = CorrelationPolynomial(fit_omega_m=True)
-
-    from barry.framework.datasets.mock_correlation import MockAverageCorrelations
-    dataset = MockAverageCorrelations()
-    data = dataset.get_data()
-    bao.set_data(data)
-
-    import timeit
-    n = 500
-
-    def test():
-        bao.get_likelihood(0.3, 1.0, 5.0, 1.0, 0, 0, 0)
-    print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
-
-    if True:
-        ss = data["dist"]
-        xi = data["xi"]
-        xi2 = bao.compute_correlation_function(ss, 0.3, 1, 5, 1, 0, 0, 0)
-        xi3 = bao.compute_correlation_function(ss, 0.3, 1, 5, 1, 0, 1, 0)
-        bao.smooth_type="eh1998"
-        xi4 = bao.compute_correlation_function(ss, 0.3, 1, 5, 1, 0, 1, 0)
+    def plot(self, params, smooth_params=None):
         import matplotlib.pyplot as plt
-        plt.errorbar(ss, xi, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
-        plt.plot(ss, xi2, '.', c='r')
-        plt.plot(ss, xi3, '.', c='g')
-        plt.plot(ss, xi4, '.', c='y')
+
+        ss = self.data["dist"]
+        xi = self.data["xi0"]
+        err = np.sqrt(np.diag(self.data["cov"]))
+        xi2 = self.get_model(params)
+
+        if smooth_params is not None:
+            smooth = self.get_model(smooth_params, smooth=True)
+        else:
+            smooth = self.get_model(params, smooth=True)
+
+        def adj(data, err=False):
+            if err:
+                return data
+            else:
+                return data - xi
+
+        fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
+
+        axes[0].errorbar(ss, ss * ss * xi, yerr=ss * ss * err, fmt="o", c='k', ms=4, label=self.data["name"])
+        axes[1].errorbar(ss, adj(xi), yerr=adj(err, err=True), fmt="o", c='k', ms=4, label=self.data["name"])
+
+        axes[0].plot(ss, ss * ss * xi2, label=self.get_name())
+        axes[1].plot(ss, adj(xi2), label=self.get_name())
+
+        string = f"Likelihood: {self.get_likelihood(params):0.2f}\n"
+        string += "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params.items()])
+        va = "bottom"
+        ypos = 0.02
+        axes[0].annotate(string, (0.01, ypos), xycoords="axes fraction", horizontalalignment="left",
+                         verticalalignment=va)
+        axes[1].legend()
+        axes[1].set_xlabel("k")
+        if self.postprocess is None:
+            axes[1].set_ylabel("xi(s) / xi_{smooth}(s)")
+        else:
+            axes[1].set_ylabel("xi(s) / data")
+        axes[0].set_ylabel("s^2 * xi(s)")
         plt.show()

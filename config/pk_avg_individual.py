@@ -13,7 +13,7 @@ import numpy as np
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
     fitter = Fitter(dir_name, save_dims=2, remove_output=False)
-    
+
     c = CambGenerator()
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     if fitter.should_plot():
         import matplotlib.pyplot as plt
-        
+
         import logging
         logging.info("Creating plots")
         
@@ -71,7 +71,7 @@ if __name__ == "__main__":
             smooth = smooth_prerecon if "Prerecon" in label else smooth_recon
             values[:, -1] += smooth[:, -2]    
         ks = [l for l in res.keys() if "Smooth" not in l]
-        
+
         # Define colour scheme
         c2 = ["#225465", "#5FA45E"] # ["#581d7f", "#e05286"]
         c3 = ["#2C455A", "#258E71", "#C1C64D"] # ["#501b73", "#a73b8f", "#ee8695"]
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
         
         # chi2 comparison
-        if True:
+        if False:
             
             for k in ks:
                 plt.hist(res[k][:, -1], label=k, lw=2, histtype='step', bins=20)
@@ -89,7 +89,7 @@ if __name__ == "__main__":
             plt.xlabel(r"$\Delta \chi^2$")
               
         # Make histogram comparison
-        if False:
+        if True:
             fig, axes = plt.subplots(nrows=2, figsize=(5, 6), sharex=True)
             bins = np.linspace(0.73, 1.15, 31)
             for label, means in res.items():
@@ -99,8 +99,9 @@ if __name__ == "__main__":
                     ax = axes[0]
                 else:
                     ax = axes[1]
-                ax.hist(means, bins=bins, label=label, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label.split()[0]])
-                ax.hist(means, bins=bins, histtype="step", linewidth=1.5, color=cols[label.split()[0]])
+                c = cols[label.split()[0]]
+                ax.hist(means[:, 0], bins=bins, label=label, histtype="stepfilled", linewidth=2, alpha=0.3, color=c)
+                ax.hist(means[:, 0], bins=bins, histtype="step", linewidth=1.5, color=cols[label.split()[0]])
             axes[1].set_xlabel(r"$\langle \alpha \rangle$", fontsize=14)
             axes[0].set_yticklabels([])
             axes[1].set_yticklabels([])
@@ -122,7 +123,7 @@ if __name__ == "__main__":
             return to_hex(0.5 * (a + b))
                 
         # Alpha-alpha comparison
-        if False:
+        if True:
             from scipy.interpolate import interp1d
             bins = np.linspace(0.73, 1.15, 31)
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
@@ -136,8 +137,8 @@ if __name__ == "__main__":
                         ax.axis('off')
                         continue
                     elif i == j:
-                        h, _, _ = ax.hist(res[label1], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
-                        ax.hist(res[label1], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
+                        h, _, _ = ax.hist(res[label1][:, 0], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
+                        ax.hist(res[label1][:, 0], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
                         ax.set_yticklabels([])
                         ax.tick_params(axis='y', left=False)
                         ax.set_xlim(0.85, 1.16)
@@ -152,8 +153,8 @@ if __name__ == "__main__":
                             ax.set_xticks([0.9, 1.0, 1.1])
                     else:
                         print(label1, label2)
-                        a1 = np.array(res[label1])
-                        a2 = np.array(res[label2])
+                        a1 = np.array(res[label1][:, 0])
+                        a2 = np.array(res[label2][:, 0])
                         c = blend_hex(cols[label1.split()[0]], cols[label2.split()[0]])
                         c = np.abs(a1 - a2)
                         ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.01, vmax=0.15)
