@@ -25,7 +25,7 @@ class CorrelationPolynomial(Model):
 
     def declare_parameters(self):
         # Define parameters
-        self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.3121)  # Cosmology
+        self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.31)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch
         self.add_param("b", r"$b$", 0.01, 10.0, 1.0)  # Bias
 
@@ -103,7 +103,7 @@ class CorrelationPolynomial(Model):
             if err:
                 return data
             else:
-                return data - xi
+                return data - smooth
 
         fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
 

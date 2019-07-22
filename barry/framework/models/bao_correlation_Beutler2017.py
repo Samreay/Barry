@@ -7,7 +7,6 @@ class CorrBeutler2017(CorrelationPolynomial):
 
     def __init__(self, smooth_type="hinton2017", name="Corr Beutler 2017", fix_params=['om'], smooth=False):
         super().__init__(smooth_type, name, fix_params, smooth)
-        self.declare_parameters()
 
     def declare_parameters(self):
         # Define parameters
