@@ -17,7 +17,7 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
 
-    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100)
+    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100, num_burn=1000, num_steps=2000)
     fitter = Fitter(dir_name)
 
     cs = ["#262232", "#116A71", "#48AB75", "#b7c742"]
@@ -30,7 +30,7 @@ if __name__ == "__main__":
         fitter.add_model_and_dataset(CorrDing2018(recon=r), d, name=f"Ding {t}", linestyle=ls, color=cs[2])
 
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(10)
+    fitter.set_num_walkers(30)
     fitter.fit(file)
 
     if fitter.should_plot():

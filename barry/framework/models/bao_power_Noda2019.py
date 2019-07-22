@@ -131,12 +131,16 @@ if __name__ == "__main__":
     model_pre = PowerNoda2019(recon=False)
     model_post = PowerNoda2019(recon=True, gammaval=4.0)
 
-    from barry.framework.datasets.mock_power import MockPowerSpectrum
-    dataset = MockPowerSpectrum(step_size=2)
+    from barry.framework.datasets.mock_power import MockTaipanPowerSpectrum
+    dataset = MockTaipanPowerSpectrum()
     data = dataset.get_data()
     model_pre.set_data(data)
     model_post.set_data(data)
-    p = {"om": 0.3, "alpha": 1.0, "A":20.0, "b": 1.6}
+
+    p = {"om": 0.3, "alpha": 1.0, "A": 7.0, "b": 1.6, "gamma": 4.0}
+    for v in np.linspace(1.0, 20, 20):
+        p["A"] = v
+        print(v, model_post.get_likelihood(p))
 
     import timeit
     n = 100
@@ -146,7 +150,7 @@ if __name__ == "__main__":
 
     print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
-    if True:
+    if False:
         ks = data["ks"]
         pk = data["pk"]
         pk2 = model_pre.get_model(p)
