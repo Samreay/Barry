@@ -24,7 +24,7 @@ if __name__ == "__main__":
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
-        d = MockSDSSCorrelationFunction(name=f"SDSS {t}", recon=r)
+        d = MockSDSSCorrelationFunction(recon=r)
         fitter.add_model_and_dataset(CorrBeutler2017(), d, name=f"Beutler {t}", linestyle=ls, color=cs[0])
 
     fitter.set_sampler(sampler)
