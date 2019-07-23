@@ -74,8 +74,7 @@ class CorrSeo2016(CorrelationPolynomial):
                 damping_dd, damping_ss = self.damping_dd, self.damping_ss
         else:
             if self.fit_growth or self.fit_omega_m:
-                damping = np.exp(
-                    -np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * pt_data["sigma"] / 2.0)
+                damping = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * pt_data["sigma"] / 2.0)
             else:
                 damping = self.damping
 
@@ -85,10 +84,8 @@ class CorrSeo2016(CorrelationPolynomial):
             smooth_prefac = np.tile(self.smoothing_kernel / p["b"], (self.nmu, 1))
             propagator = (kaiser * damping_dd + smooth_prefac * (damping_ss - damping_dd)) ** 2
         else:
-            prefac_k = 1.0 + np.tile(3.0 / 7.0 * (pt_data["R1"] * (1.0 - 4.0 / (9.0 * p["b"])) + pt_data["R2"]),
-                                     (self.nmu, 1))
-            prefac_mu = np.outer(self.mu ** 2, growth / p["b"] + 3.0 / 7.0 * growth * pt_data["R1"] * (
-                        2.0 - 1.0 / (3.0 * p["b"])) + 6.0 / 7.0 * growth * pt_data["R2"])
+            prefac_k = 1.0 + np.tile(3.0 / 7.0 * (pt_data["R1"] * (1.0 - 4.0 / (9.0 * p["b"])) + pt_data["R2"]), (self.nmu, 1))
+            prefac_mu = np.outer(self.mu ** 2, growth / p["b"] + 3.0 / 7.0 * growth * pt_data["R1"] * (2.0 - 1.0 / (3.0 * p["b"])) + 6.0 / 7.0 * growth * pt_data["R2"])
             propagator = ((prefac_k + prefac_mu) * damping) ** 2
 
         # Compute the smooth model
