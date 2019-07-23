@@ -2,10 +2,7 @@ import logging
 import numpy as np
 from scipy.interpolate import splev, splrep
 from scipy import integrate
-import sys
-sys.path.append("../../..")
 from barry.framework.models.bao_power import PowerSpectrumFit
-from barry.framework.cosmology.PT_generator import PTGenerator
 
 
 class PowerDing2018(PowerSpectrumFit):
@@ -130,6 +127,8 @@ class PowerDing2018(PowerSpectrumFit):
 
 
 if __name__ == "__main__":
+    import sys
+    sys.path.append("../../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
     model_pre = PowerDing2018(recon=False)

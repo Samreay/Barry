@@ -1,8 +1,6 @@
 import logging
 import numpy as np
 from scipy import integrate
-
-from barry.framework.cosmology.PT_generator import PTGenerator
 from barry.framework.models.bao_correlation import CorrelationPolynomial
 
 
