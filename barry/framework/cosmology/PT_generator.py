@@ -32,7 +32,7 @@ class PTGenerator(object):
         self.CAMBGenerator = CAMBGenerator
 
         self.data_dir = os.path.dirname(os.path.abspath(inspect.stack()[0][1])) + os.sep + "data/"
-        self.filename = self.data_dir + f"PT_{int(self.CAMBGenerator.redshift * 100)}_{self.CAMBGenerator.om_resolution}_{self.CAMBGenerator.h0_resolution}_{self.smooth_type}_{int(self.recon_smoothing_scale * 100)}.pkl"
+        self.filename = self.data_dir + f"PT_{int(self.CAMBGenerator.redshift * 1000)}_{self.CAMBGenerator.om_resolution}_{self.CAMBGenerator.h0_resolution}_{self.smooth_type}_{int(self.recon_smoothing_scale * 100)}.pkl"
 
         self.data = None
         self.logger.info(f"Creating PT data with {self.CAMBGenerator.om_resolution} x {self.CAMBGenerator.h0_resolution}")

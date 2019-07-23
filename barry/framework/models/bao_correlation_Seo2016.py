@@ -17,8 +17,13 @@ class CorrSeo2016(CorrelationPolynomial):
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
+        self.omega_m, self.pt_data, self.damping_dd, self.damping_sd = None, None, None, None
+        self.damping_ss, self.damping, self.growth = None, None, None
+        self.smoothing_kernel = None
+
+    def set_data(self, data):
+        super().set_data(data)
         self.omega_m = self.get_default("om")
-        self.PT = PTGenerator(self.camb, smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
         if not self.fit_omega_m:
             self.pt_data = self.PT.get_data(om=self.omega_m)
             if not self.fit_growth:

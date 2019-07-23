@@ -1,5 +1,7 @@
 from functools import lru_cache
 import numpy as np
+
+from barry.framework.cosmology.PT_generator import PTGenerator
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.cosmology.pk2xi import PowerToCorrelationGauss
 from barry.framework.cosmology.power_spectrum_smoothing import validate_smooth_method, smooth
@@ -18,10 +20,22 @@ class CorrelationPolynomial(Model):
         self.set_fix_params(fix_params)
 
         # Set up data structures for model fitting
-        self.camb = CambGenerator()
-        self.h0 = self.camb.h0
         self.smooth = smooth
-        self.pk2xi = PowerToCorrelationGauss(self.camb.ks)
+        self.camb = None
+        self.PT = None
+        self.pk2xi = None
+        self.recon_smoothing_scale = None
+        self.cosmology = None
+
+    def set_data(self, data):
+        super().set_data(data)
+        c = data["cosmology"]
+        if self.cosmology != c:
+            self.recon_smoothing_scale = c["reconsmoothscale"]
+            self.camb = CambGenerator(h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"])
+            self.PT = PTGenerator(self.camb, smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
+            self.pk2xi = PowerToCorrelationGauss(self.camb.ks)
+            self.set_default("om", c["om"])
 
     def declare_parameters(self):
         # Define parameters
@@ -47,8 +61,8 @@ class CorrelationPolynomial(Model):
 
         """
         # Get base linear power spectrum from camb
-        r_s, pk_lin = self.camb.get_data(om=om, h0=self.h0)
-        pk_smooth_lin = smooth(self.camb.ks, pk_lin, method=self.smooth_type, om=om, h0=self.h0)  # Get the smoothed power spectrum
+        r_s, pk_lin = self.camb.get_data(om=om, h0=self.camb.h0)
+        pk_smooth_lin = smooth(self.camb.ks, pk_lin, method=self.smooth_type, om=om, h0=self.camb.h0)  # Get the smoothed power spectrum
         pk_ratio = (pk_lin / pk_smooth_lin - 1.0)  # Get the ratio
         return pk_smooth_lin, pk_ratio
 

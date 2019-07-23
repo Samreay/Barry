@@ -9,7 +9,7 @@ import logging
 # TODO: Add options for mnu, h0 default, omega_b, etc
 # TODO: Calculate/Tabulate r_s alongside power spectra for different omega_m and hubble. We need this for eh98 smoothing of powerspectra
 class CambGenerator(object):
-    def __init__(self, redshift=0.15, om_resolution=101, h0_resolution=1, h0=0.67):
+    def __init__(self, redshift=0.15, om_resolution=101, h0_resolution=1, h0=0.67, ob=0.0491, ns=0.96):
         """ 
         Precomputes CAMB for efficiency. Access ks via self.ks, and use get_data for an array
         of both the linear and non-linear power spectrum
@@ -22,7 +22,7 @@ class CambGenerator(object):
 
         self.data_dir = os.path.dirname(inspect.stack()[0][1]) + os.sep + "data/"
         hh = int(h0 * 10000)
-        self.filename = self.data_dir + f"cosmo_{int(self.redshift * 100)}_{self.om_resolution}_{self.h0_resolution}_{hh}.npy"
+        self.filename = self.data_dir + f"cosmo_{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}.npy"
 
         self.k_min = 1e-4
         self.k_max = 5
@@ -30,8 +30,8 @@ class CambGenerator(object):
         self.ks = np.logspace(np.log(self.k_min), np.log(self.k_max), self.k_num, base=np.e)
 
         self.omch2s = np.linspace(0.05, 0.3, self.om_resolution)
-        self.omega_b = 0.0491
-        self.ns = 0.96
+        self.omega_b = ob
+        self.ns = ns
         if h0_resolution == 1:
             self.h0s = [h0]
         else:
@@ -48,8 +48,10 @@ class CambGenerator(object):
             self.data = np.load(self.filename)
 
     @lru_cache(maxsize=512)
-    def get_data(self, om=0.31, h0=0.67):
+    def get_data(self, om=0.31, h0=None):
         """ Returns the sound horizon the linear power spectrum"""
+        if h0 is None:
+            h0 = self.h0
         if self.data is None:
             self.load_data()
         omch2 = (om - self.omega_b) * h0 * h0
@@ -63,7 +65,7 @@ class CambGenerator(object):
 
         pars = camb.CAMBparams()
         pars.set_dark_energy(w=-1.0, sound_speed=1.0, dark_energy_model='fluid')
-        pars.InitPower.set_params(As=2.130e-9, ns=0.96)
+        pars.InitPower.set_params(As=2.130e-9, ns=self.ns)
         pars.set_matter_power(redshifts=[self.redshift], kmax=self.k_max)
         self.logger.info("Configured CAMB power and dark energy")
 
@@ -78,11 +80,6 @@ class CambGenerator(object):
                 params = results.get_derived_params()
                 rdrag = params["rdrag"]
                 kh, z, pk_lin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
-
-                # pars.NonLinear = camb.model.NonLinear_both
-                # results = camb.get_results(pars)
-                # results.calc_power_spectra(pars)
-                # kh, z, pk_nl = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
                 data[i, j, 0] = rdrag
                 data[i, j, 1:] = pk_lin
         self.logger.info(f"Saving to {self.filename}")
@@ -136,7 +133,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
-    generator = CambGenerator(om_resolution=101, h0_resolution=1)
+    c = {"om": 0.31, "h0": 0.67, "z": 0.15, "ob": 0.0491, "ns": 0.96, "reconscale": 21.21}
+
+    generator = CambGenerator(om_resolution=101, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"])
     generator.get_data()
     # generator = CambGenerator()
     # generator = CambGenerator(om_resolution=50, h0_resolution=1)

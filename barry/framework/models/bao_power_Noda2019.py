@@ -17,7 +17,6 @@ class PowerNoda2019(PowerSpectrumFit):
             else:
                 fix_params = ["om", "f", "gamma"]
 
-        self.recon_smoothing_scale = recon_smoothing_scale
         self.fit_omega_m = fix_params is None or "om" not in fix_params
         self.fit_growth = fix_params is None or "f" not in fix_params
         self.fit_gamma = fix_params is None or "gamma" not in fix_params
@@ -31,8 +30,11 @@ class PowerNoda2019(PowerSpectrumFit):
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
+        self.omega_m, self.pt_data, self.growth, self.damping = None, None, None, None
+
+    def set_data(self, data):
+        super().set_data(data)
         self.omega_m = self.get_default("om")
-        self.PT = PTGenerator(self.camb, smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
         if not self.fit_omega_m:
             self.pt_data = self.PT.get_data(om=self.omega_m)
             if not self.fit_growth:

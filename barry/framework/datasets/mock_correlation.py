@@ -48,7 +48,8 @@ class MockAverageCorrelations(Dataset):
             "xi4": self.data[:, 4],
             "cov": self.cov,
             "icov": self.icov,
-            "name": self.name
+            "name": self.name,
+            "cosmology": self.cosmology
         }
 
 

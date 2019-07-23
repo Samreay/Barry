@@ -15,23 +15,31 @@ class PowerDing2018(PowerSpectrumFit):
         self.recon_smoothing_scale = recon_smoothing_scale
         super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess, smooth=smooth)
 
-        self.nmu = 100
-        self.mu = np.linspace(0.0, 1.0, self.nmu)
-
-        self.PT = PTGenerator(self.camb, smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
         self.fit_omega_m = fix_params is None or "om" not in fix_params
         self.fit_growth = fix_params is None or "f" not in fix_params
+        self.nmu = 100
+        self.mu = np.linspace(0.0, 1.0, self.nmu)
+        self.omega_m, self.pt_data, self.damping_dd, self.damping_sd = None, None, None, None
+        self.damping_ss, self.damping, self.growth = None, None, None
+        self.smoothing_kernel = None
+
+    def set_data(self, data):
+        super().set_data(data)
         self.omega_m = self.get_default("om")
         if not self.fit_omega_m:
             self.pt_data = self.PT.get_data(om=self.omega_m)
             if not self.fit_growth:
                 self.growth = self.omega_m ** 0.55
                 if self.recon:
-                    self.damping_dd = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_dd_nl"])
-                    self.damping_sd = np.exp(-np.outer(1.0 + self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_dd_nl"])
-                    self.damping_ss = np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.pt_data["sigma_ss_nl"])
+                    self.damping_dd = np.exp(
+                        -np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) *
+                        self.pt_data["sigma_dd"] / 2.0)
+                    self.damping_ss = np.exp(
+                        -np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.pt_data["sigma_ss"] / 2.0)
                 else:
-                    self.damping = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_nl"])
+                    self.damping = np.exp(
+                        -np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) *
+                        self.pt_data["sigma"] / 2.0)
 
         # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
         if self.recon:

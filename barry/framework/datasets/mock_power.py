@@ -156,7 +156,8 @@ class MockPowerSpectrum(Dataset):
             "w_pk": self.w_pk,
             "w_mask": self.w_mask,
             "corr": self.corr,
-            "name": self.name
+            "name": self.name,
+            "cosmology": self.cosmology
         }
 
 
