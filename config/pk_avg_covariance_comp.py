@@ -20,18 +20,27 @@ if __name__ == "__main__":
     sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100)
     fitter = Fitter(dir_name)
 
-    cs = ["#262232", "#116A71", "#48AB75", "#b7c742"]
+    cs = ["#262232", "#1F4D5C", "#0E7A6E", "#5BA561", "#C1C64D"]
 
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
-        d = MockSDSSPowerSpectrum(recon=r, reduce_cov_factor=1000)
-        de = MockSDSSPowerSpectrum(recon=r, reduce_cov_factor=1000, postprocess=p)
+        d = MockSDSSPowerSpectrum(recon=r)
+        de = MockSDSSPowerSpectrum(recon=r, postprocess=p)
+
+        # Fix sigma_nl for one of the Beutler models
+        model = PowerBeutler2017(recon=r)
+        model.set_data(d.get_data())
+        ps, minv = model.optimize()
+        sigma_nl = ps["sigma_nl"]
+        model.set_default("sigma_nl", sigma_nl)
+        model.set_fix_params(["om", "sigma_nl"])
 
         fitter.add_model_and_dataset(PowerBeutler2017(recon=r), d, name=f"Beutler {t}", linestyle=ls, color=cs[0])
-        fitter.add_model_and_dataset(PowerSeo2016(recon=r), d, name=f"Seo {t}", linestyle=ls, color=cs[1])
-        fitter.add_model_and_dataset(PowerDing2018(recon=r), d, name=f"Ding {t}", linestyle=ls, color=cs[2])
-        fitter.add_model_and_dataset(PowerNoda2019(recon=r, postprocess=p), de, name=f"Noda {t}", linestyle=ls, color=cs[3])
+        fitter.add_model_and_dataset(model, d, name=f"BeutlerFixed {t}", linestyle=ls, color=cs[1])
+        fitter.add_model_and_dataset(PowerSeo2016(recon=r), d, name=f"Seo {t}", linestyle=ls, color=cs[2])
+        fitter.add_model_and_dataset(PowerDing2018(recon=r), d, name=f"Ding {t}", linestyle=ls, color=cs[3])
+        fitter.add_model_and_dataset(PowerNoda2019(recon=r, postprocess=p), de, name=f"Noda {t}", linestyle=ls, color=cs[4])
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
