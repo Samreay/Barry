@@ -26,8 +26,8 @@ if __name__ == "__main__":
 
         d = MockSDSSCorrelationFunction(recon=r, realisation=0)
 
-        smooth = CorrBeutler2017(recon=r, smooth=True)
-        beutler = CorrBeutler2017(recon=r)
+        smooth = CorrBeutler2017(smooth=True)
+        beutler = CorrBeutler2017()
         seo = CorrSeo2016(recon=r)
         ding = CorrDing2018(recon=r)
 
