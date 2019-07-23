@@ -26,14 +26,14 @@ if __name__ == "__main__":
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
-        d = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r,  reduce_cov_factor=1000)
-        de = MockSDSSPowerSpectrum(name=f"SDSS {t}", recon=r,  reduce_cov_factor=1000, postprocess=p)
+        d = MockSDSSPowerSpectrum(recon=r, reduce_cov_factor=1000)
+        de = MockSDSSPowerSpectrum(recon=r, reduce_cov_factor=1000, postprocess=p)
 
         # Fix sigma_nl for one of the Beutler models
         model = PowerBeutler2017(recon=r)
         model.set_data(d.get_data())
-        p, minv = model.optimize()
-        sigma_nl = p["sigma_nl"]
+        ps, minv = model.optimize()
+        sigma_nl = ps["sigma_nl"]
         model.set_default("sigma_nl", sigma_nl)
         model.set_fix_params(["om", "sigma_nl"])
 

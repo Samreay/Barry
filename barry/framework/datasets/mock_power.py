@@ -7,46 +7,44 @@ from barry.framework.dataset import Dataset
 
 
 class MockPowerSpectrum(Dataset):
-    def __init__(self, average=True, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True,
-                 reduce_cov_factor=1, name="MockPowerSpectrum", postprocess=None, apply_hartlap_correction=False,
-                 fake_diag=False, data_dir="taipan_mocks"):
-        super().__init__(name)
+    def __init__(self, filename, realisation=None, min_k=0.02, max_k=0.30, step_size=None, recon=True,
+                 reduce_cov_factor=1, postprocess=None, apply_hartlap_correction=False,
+                 fake_diag=False):
         current_file = os.path.dirname(inspect.stack()[0][1])
-        self.data_location = os.path.normpath(current_file + f"/../../data/{data_dir}/")
+        self.data_location = os.path.normpath(current_file + f"/../../data/{filename}")
+
+        with open(self.data_location, "rb") as f:
+            self.data_obj = pickle.load(f)
+
+        super().__init__(self.data_obj["name"])
+
         self.min_k = min_k
         self.max_k = max_k
         self.step_size = step_size
         self.recon = recon
         self.realisation = realisation
-        self.average = average
         self.postprocess = postprocess
         self.reduce_cov_factor = reduce_cov_factor
 
-        self.data_filename = os.path.abspath(self.data_location + "/mock_lpow.pkl")
+        self.cosmology = self.data_obj["cosmology"]
+        self.all_data = self.data_obj["post-recon"] if recon else self.data_obj["pre-recon"]
 
-        assert os.path.exists(self.data_filename), f"Cannot find {self.data_filename}"
-
-        self.logger.debug(f"Loading data from {self.data_filename}")
-        with open(self.data_filename, "rb") as f:
-            self.all_data = pickle.load(f)["post-recon" if recon else "pre-recon"]
+        if step_size is None:
+            self.step_size = self.data_obj["winfit"].keys()[0]
 
         self.rebinned = [self._rebin_data(df) for df in self.all_data]
         self.ks = self.rebinned[0][0]
         self.pks_all = [x[1] for x in self.rebinned]
 
-        if self.average:
+        if self.realisation is None:
             self.logger.info(f"Loading data average")
             self.data = self._get_data_avg()
         else:
             self.logger.info(f"Loading realisation {realisation}")
             self.data = self.pks_all[realisation]
 
-        winfit_file = os.path.abspath(self.data_location + f"/bin0_winfit_{step_size}.txt")
-        self._load_winfit(winfit_file)
-
-        winpk_file = os.path.abspath(self.data_location + "/lwin.txt")
-        self._load_winpk_file(winpk_file)
-
+        self._load_winfit()
+        self._load_winpk_file()
         self.logger.debug(f"Computing cov")
         self.set_cov(self._compute_cov(), apply_correction=apply_hartlap_correction, fake_diag=fake_diag)
 
@@ -116,29 +114,17 @@ class MockPowerSpectrum(Dataset):
             pk_rebinned = pk_rebinned[mask]
         return k_rebinned[mask], pk_rebinned
 
-    def _load_winfit(self, winfit_file):
-        # TODO: Add documentation when I figure out how this works
-        self.logger.debug(f"Loading winfit from {winfit_file}")
-        matrix = np.genfromtxt(winfit_file, skip_header=4)
-        self.w_ks_input = matrix[:, 0]
-        self.w_k0_scale = matrix[:, 1]
-        self.w_transform = matrix[:, 2:]/(np.sum(matrix[:, 2:], axis=0))
-
-        # God I am sorry for doing this manually but the file format is... tricky
-        with open(winfit_file, "r") as f:
-            self.w_ks_output = np.array([float(x) for x in f.readlines()[2].split()[1:]])
-
-        # Create a mask used from moving from w_pk to the data k values.
-        # This is because we can truncate the data start and end values, but we
-        # need to generate the model over a wider range of k
+    def _load_winfit(self):
+        self.w_ks_input = self.data_obj["winfit"][self.step_size]["w_ks_input"]
+        self.w_k0_scale = self.data_obj["winfit"][self.step_size]["w_k0_scale"]
+        self.w_transform = self.data_obj["winfit"][self.step_size]["w_transform"]
+        self.w_ks_output = self.data_obj["winfit"][self.step_size]["w_ks_output"]
         self.w_mask = np.array([np.isclose(x, self.ks).any() for x in self.w_ks_output])
         self.logger.info(f"Winfit matrix has shape {self.w_transform.shape}")
 
-    def _load_winpk_file(self, winpk_file):
-        self.logger.debug(f"Loading winpk from {winpk_file}")
-
+    def _load_winpk_file(self):
         # data files contain (index, k, pk, nk)
-        data = np.genfromtxt(winpk_file)
+        data = self.data_obj["winpk"]
         if self.step_size == 1:
             self.w_pk = data[:, 2]
         else:
@@ -175,22 +161,15 @@ class MockPowerSpectrum(Dataset):
 
 
 class MockSDSSPowerSpectrum(MockPowerSpectrum):
-    def __init__(self, name="SDSS MGS DR7", average=True, realisation=0, apply_hartlap_correction=False, fake_diag=False, recon=False, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=5, data_dir="sdss_mgs_mocks", postprocess=None):
-        super().__init__(min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, name=name, postprocess=postprocess, data_dir=data_dir, average=average, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
-
-
-class MockTaipanPowerSpectrum(MockPowerSpectrum):
-    def __init__(self, average=True, realisation=0, min_k=0.02, max_k=0.30, step_size=2, recon=True,
-                 reduce_cov_factor=1, name="MockPowerSpectrum", postprocess=None, apply_hartlap_correction=False,
-                 fake_diag=False, data_dir="taipan_mocks"):
-        super().__init__(min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, name=name, postprocess=postprocess, data_dir=data_dir, average=average, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
+    def __init__(self, realisation=None, apply_hartlap_correction=False, fake_diag=False, recon=False, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=5, postprocess=None):
+        super().__init__("sdss_dr7_pk.pkl", min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
 
     # Some basic checks for data we expect to be there
-    dataset = MockPowerSpectrum(step_size=20, recon=False, data_dir="sdss_mgs_mocks")
+    dataset = MockSDSSPowerSpectrum(recon=False)
     # print(dataset.all_data)
     data = dataset.get_data()
     # print(data["ks"])
