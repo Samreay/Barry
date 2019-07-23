@@ -33,8 +33,7 @@ class CorrDing2018(CorrelationPolynomial):
                     self.damping_sd = np.exp(-np.outer(1.0 + self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_dd_nl"])
                     self.damping_ss = np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.pt_data["sigma_ss_nl"])
                 else:
-                    self.damping = np.exp(
-                        -np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_nl"])
+                    self.damping = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_nl"])
 
         # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
         if self.recon:
