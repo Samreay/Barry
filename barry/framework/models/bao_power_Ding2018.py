@@ -31,16 +31,10 @@ class PowerDing2018(PowerSpectrumFit):
             if not self.fit_growth:
                 self.growth = self.omega_m ** 0.55
                 if self.recon:
-                    self.damping_dd = np.exp(
-                        -np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) *
-                        self.pt_data["sigma_dd"] / 2.0)
-                    self.damping_ss = np.exp(
-                        -np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.pt_data["sigma_ss"] / 2.0)
+                    self.damping_dd = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_dd"] / 2.0)
+                    self.damping_ss = np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.pt_data["sigma_ss"] / 2.0)
                 else:
-                    self.damping = np.exp(
-                        -np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) *
-                        self.pt_data["sigma"] / 2.0)
-
+                    self.damping = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma"] / 2.0)
         # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
         if self.recon:
             self.smoothing_kernel = np.exp(-self.camb.ks ** 2 * self.recon_smoothing_scale ** 2 / 4.0)
