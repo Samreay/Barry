@@ -156,7 +156,7 @@ if __name__ == "__main__":
         pk = data["pk"]
         pk2 = model_pre.get_model(p)
         model_pre.smooth_type = "eh1998"
-        pk3 = model_pre.get_model(data, p)
+        pk3 = model_pre.get_model(p)
         import matplotlib.pyplot as plt
         plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k', label="Data")
         plt.plot(ks, pk2, '.', c='r', label="hinton2017")
