@@ -9,9 +9,9 @@ if __name__ == "__main__":
     model1 = PowerDing2018(recon=recon, name=f"Ding2018, recon={recon}")
     model_smooth = PowerDing2018(recon=recon, name=f"Ding2018, recon={recon}", smooth=True)
 
-    from barry.framework.datasets.mock_power import MockSDSSPowerSpectrum
+    from barry.framework.datasets.mock_power import MockSDSSdr12PowerSpectrum
     from barry.framework.datasets.dummy_power import DummyPowerSpectrum
-    dataset1 = MockSDSSPowerSpectrum(name="Recon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=31.62, step_size=5)
+    dataset1 = MockSDSSdr12PowerSpectrum(name="Recon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=31.62, step_size=5)
     dataset2 = DummyPowerSpectrum(name="Dummy data, real window fn", min_k=0.02, max_k=0.25, step_size=5, dummy_window=False)
     dataset3 = DummyPowerSpectrum(name="DummyWindowFnToo", min_k=0.02, max_k=0.25, step_size=5, dummy_window=True)
     data1 = dataset1.get_data()

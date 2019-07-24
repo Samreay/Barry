@@ -136,8 +136,8 @@ if __name__ == "__main__":
     model_pre = PowerDing2018(recon=False)
     model_post = PowerDing2018(recon=True)
 
-    from barry.framework.datasets.mock_power import MockSDSSPowerSpectrum
-    dataset = MockSDSSPowerSpectrum()
+    from barry.framework.datasets.mock_power import MockSDSSdr12PowerSpectrum
+    dataset = MockSDSSdr12PowerSpectrum()
     data = dataset.get_data()
     model_pre.set_data(data)
     model_post.set_data(data)

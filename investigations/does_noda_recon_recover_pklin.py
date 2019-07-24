@@ -16,9 +16,9 @@ if __name__ == "__main__":
 
     model1 = PowerBeutler2017(recon=recon, name=f"Noda2019, recon={recon}", postprocess=postprocess)
 
-    from barry.framework.datasets.mock_power import MockSDSSPowerSpectrum
+    from barry.framework.datasets.mock_power import MockSDSSdr12PowerSpectrum
     from barry.framework.datasets.dummy_power import DummyPowerSpectrum
-    dataset1 = MockSDSSPowerSpectrum(name="SDSS Recon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=31.62, step_size=5, postprocess=postprocess)
+    dataset1 = MockSDSSdr12PowerSpectrum(name="SDSS Recon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=31.62, step_size=5, postprocess=postprocess)
     dataset2 = DummyPowerSpectrum(name="Dummy data, real window fn", min_k=0.02, max_k=0.3, step_size=5, dummy_window=False, postprocess=postprocess)
     data1 = dataset1.get_data()
     data2 = dataset2.get_data()

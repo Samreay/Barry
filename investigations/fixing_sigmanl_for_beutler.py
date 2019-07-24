@@ -6,8 +6,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
     recon = True
-    from barry.framework.datasets.mock_power import MockSDSSPowerSpectrum
-    dataset1 = MockSDSSPowerSpectrum(recon=recon)
+    from barry.framework.datasets.mock_power import MockSDSSdr12PowerSpectrum
+    dataset1 = MockSDSSdr12PowerSpectrum(recon=recon)
     data1 = dataset1.get_data()
 
     # Run on mean

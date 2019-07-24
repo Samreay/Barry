@@ -5,7 +5,7 @@ from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.postprocessing import BAOExtractor
 from barry.setup import setup
 from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
-from barry.framework.datasets import MockSDSSPowerSpectrum
+from barry.framework.datasets import MockSDSSdr12PowerSpectrum
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
 import numpy as np

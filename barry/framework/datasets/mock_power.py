@@ -161,8 +161,13 @@ class MockPowerSpectrum(Dataset):
         }
 
 
-class MockSDSSPowerSpectrum(MockPowerSpectrum):
-    def __init__(self, realisation=None, apply_hartlap_correction=False, fake_diag=False, recon=False, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=5, postprocess=None):
+class MockSDSSdr12PowerSpectrum(MockPowerSpectrum):
+    def __init__(self, realisation=None, apply_hartlap_correction=False, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
+        super().__init__("sdss_dr12_ngc_pk.pkl", min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
+
+
+class MockSDSSdr7PowerSpectrum(MockPowerSpectrum):
+    def __init__(self, realisation=None, apply_hartlap_correction=False, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=5, postprocess=None):
         super().__init__("sdss_dr7_pk.pkl", min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
 
 
@@ -170,7 +175,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
 
     # Some basic checks for data we expect to be there
-    dataset = MockSDSSPowerSpectrum(recon=False)
+    dataset = MockSDSSdr12PowerSpectrum(recon=False)
     # print(dataset.all_data)
     data = dataset.get_data()
     # print(data["ks"])
@@ -179,6 +184,8 @@ if __name__ == "__main__":
     import numpy as np
     plt.errorbar(data["ks"], data["ks"]*data["pk"], yerr=data["ks"]*np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
     plt.show()
+
+
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30)
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30, step_size=1)
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30, step_size=2, recon=False)

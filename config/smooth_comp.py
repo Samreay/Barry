@@ -2,7 +2,7 @@ import sys
 sys.path.append("..")
 from barry.setup import setup
 from barry.framework.models import PowerBeutler2017
-from barry.framework.datasets import MockSDSSPowerSpectrum
+from barry.framework.datasets import MockSDSSdr12PowerSpectrum
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
 
@@ -14,7 +14,7 @@ if __name__ == "__main__":
         PowerBeutler2017(recon=r, smooth_type="hinton2017", name="Hinton2017"),
         PowerBeutler2017(recon=r, smooth_type="eh1998", name="EH1998")
     ]
-    data = MockSDSSPowerSpectrum(name="Recon mean", recon=r, min_k=0.02, max_k=0.30)
+    data = MockSDSSdr12PowerSpectrum(name="Recon mean", recon=r, min_k=0.02, max_k=0.30)
     sampler = EnsembleSampler(temp_dir=dir_name)
 
     fitter = Fitter(dir_name)

@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.datasets import MockSDSSPowerSpectrum
+from barry.framework.datasets import MockSDSSdr12PowerSpectrum
 from barry.framework.postprocessing import PureBAOExtractor
 
 
@@ -43,9 +43,9 @@ if __name__ == "__main__":
     mink = 0.02
 
     step_size = 5
-    data_raw = MockSDSSPowerSpectrum(step_size=step_size, min_k=0.0)
-    data = MockSDSSPowerSpectrum(step_size=step_size, min_k=mink)
-    data2 = MockSDSSPowerSpectrum(postprocess=extractor, step_size=step_size, min_k=mink)
+    data_raw = MockSDSSdr12PowerSpectrum(step_size=step_size, min_k=0.0)
+    data = MockSDSSdr12PowerSpectrum(step_size=step_size, min_k=mink)
+    data2 = MockSDSSdr12PowerSpectrum(postprocess=extractor, step_size=step_size, min_k=mink)
 
     # Get all the data to compute the covariance
     ks = data_raw.ks

@@ -3,7 +3,7 @@ sys.path.append("..")
 from investigations.does_noda_cov_match_bruteforce_mixed import calc_cov_noda_mixed
 from barry.setup import setup
 from barry.framework.models import PowerNoda2019
-from barry.framework.datasets import MockSDSSPowerSpectrum
+from barry.framework.datasets import MockSDSSdr12PowerSpectrum
 from barry.framework.postprocessing import BAOExtractor, PureBAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
@@ -21,14 +21,14 @@ if __name__ == "__main__":
     mink = 0.03
     maxk = 0.30
     datas = [
-        MockSDSSPowerSpectrum(name="Mock covariance", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
-        MockSDSSPowerSpectrum(name="Nishimichi, full", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
-        MockSDSSPowerSpectrum(name="Nishimichi, diag", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
+        MockSDSSdr12PowerSpectrum(name="Mock covariance", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
+        MockSDSSdr12PowerSpectrum(name="Nishimichi, full", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
+        MockSDSSdr12PowerSpectrum(name="Nishimichi, diag", recon=r, min_k=mink, max_k=maxk, postprocess=postprocess),
     ]
 
     # Compute the pseudo-analytic cov from Noda and Nishimichi
-    data = MockSDSSPowerSpectrum(recon=r, min_k=0.0, max_k=0.32, apply_hartlap_correction=False)
-    data2 = MockSDSSPowerSpectrum(recon=r, min_k=0.0, max_k=0.32, apply_hartlap_correction=False, fake_diag=True)
+    data = MockSDSSdr12PowerSpectrum(recon=r, min_k=0.0, max_k=0.32, apply_hartlap_correction=False)
+    data2 = MockSDSSdr12PowerSpectrum(recon=r, min_k=0.0, max_k=0.32, apply_hartlap_correction=False, fake_diag=True)
     ks = data.ks
     pk = data.data
     pk_cov = data.cov
