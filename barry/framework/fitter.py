@@ -22,6 +22,8 @@ class Fitter(object):
         self.save_dims = save_dims
         self.remove_output = remove_output
         os.makedirs(temp_dir, exist_ok=True)
+        if not remove_output:
+            self.logger.warning("OUTPUT IS NOT BEING REMOVED, BE WARNED IF THIS IS SUPPOSED TO BE A FRESH RUN")
 
     def add_model_and_dataset(self, model, dataset, **extra_args):
         self.model_datasets.append((model, dataset.get_data(), extra_args))
