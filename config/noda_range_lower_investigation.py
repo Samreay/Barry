@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     for p in ps:
         n = f"{p.mink:0.2f}-{p.maxk:0.2f}"
-        model = PowerNoda2019(postprocess=p)
+        model = PowerNoda2019(postprocess=p, recon=True)
         data = MockSDSSdr12PowerSpectrum(min_k=0.02, max_k=0.30, postprocess=p, recon=True)
         fitter.add_model_and_dataset(model, data, name=n)
 

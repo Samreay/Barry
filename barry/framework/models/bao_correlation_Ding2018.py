@@ -120,8 +120,8 @@ if __name__ == "__main__":
 
     bao = CorrDing2018()
 
-    from barry.framework.datasets.mock_correlation import MockSDSSCorrelationFunction
-    dataset = MockSDSSCorrelationFunction()
+    from barry.framework.datasets.mock_correlation import MockSDSSdr7CorrelationFunction
+    dataset = MockSDSSdr7CorrelationFunction()
     data = dataset.get_data()
     bao.set_data(data)
 

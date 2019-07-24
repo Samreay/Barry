@@ -10,10 +10,10 @@ from barry.framework.datasets import MockSDSSdr12PowerSpectrum
 
 
 class DummyPowerSpectrum(MockSDSSdr12PowerSpectrum):
-    def __init__(self, min_k=0.02, max_k=0.30, step_size=5, uncert=0.01,
+    def __init__(self, min_k=0.02, max_k=0.30, step_size=1, uncert=0.01,
                  reduce_cov_factor=1, name="DummyPowerSpectrum", postprocess=None,
                  apply_hartlap_correction=False, fake_diag=False, dummy_window=False):
-        super().__init__(average=True, min_k=min_k, max_k=max_k, step_size=step_size,
+        super().__init__(min_k=min_k, max_k=max_k, step_size=step_size,
                          recon=True, reduce_cov_factor=reduce_cov_factor, name=name, postprocess=postprocess,
                          apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
 

@@ -53,7 +53,7 @@ class MockAverageCorrelations(Dataset):
         }
 
 
-class MockSDSSCorrelationFunction(MockAverageCorrelations):
+class MockSDSSdr7CorrelationFunction(MockAverageCorrelations):
     def __init__(self, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
         super().__init__("sdss_dr7_corr.pkl", min_dist, max_dist, recon, reduce_cov_factor, realisation)
 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
     # Some basic checks for data we expect to be there
-    dataset = MockSDSSCorrelationFunction()
+    dataset = MockSDSSdr7CorrelationFunction()
     data = dataset.get_data()
 
     import matplotlib.pyplot as plt

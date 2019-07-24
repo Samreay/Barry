@@ -9,7 +9,7 @@ import logging
 # TODO: Add options for mnu, h0 default, omega_b, etc
 # TODO: Calculate/Tabulate r_s alongside power spectra for different omega_m and hubble. We need this for eh98 smoothing of powerspectra
 class CambGenerator(object):
-    def __init__(self, redshift=0.15, om_resolution=101, h0_resolution=1, h0=0.67, ob=0.0491, ns=0.96):
+    def __init__(self, redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97):
         """ 
         Precomputes CAMB for efficiency. Access ks via self.ks, and use get_data for an array
         of both the linear and non-linear power spectrum

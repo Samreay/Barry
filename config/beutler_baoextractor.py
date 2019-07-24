@@ -24,8 +24,8 @@ if __name__ == "__main__":
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
 
-        d = MockSDSSdr12PowerSpectrum(name=f"SDSS {t}", recon=r, average=False, realisation=0)
-        de = MockSDSSdr12PowerSpectrum(name=f"SDSS {t}", recon=r, postprocess=p, average=False, realisation=0)
+        d = MockSDSSdr12PowerSpectrum(recon=r, realisation=0)
+        de = MockSDSSdr12PowerSpectrum(recon=r, postprocess=p, realisation=0)
 
         beutler = PowerBeutler2017(recon=r)
         beutler_extracted = PowerBeutler2017(recon=r, postprocess=p)

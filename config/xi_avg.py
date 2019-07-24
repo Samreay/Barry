@@ -5,7 +5,7 @@ from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.postprocessing import BAOExtractor
 from barry.setup import setup
 from barry.framework.models import CorrBeutler2017, CorrDing2018, CorrSeo2016
-from barry.framework.datasets import MockSDSSCorrelationFunction
+from barry.framework.datasets import MockSDSSdr7CorrelationFunction
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
 import numpy as np
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
-        d = MockSDSSCorrelationFunction(recon=r)
+        d = MockSDSSdr7CorrelationFunction(recon=r)
         fitter.add_model_and_dataset(CorrBeutler2017(), d, name=f"Beutler {t}", linestyle=ls, color=cs[0])
         fitter.add_model_and_dataset(CorrSeo2016(recon=r), d, name=f"Seo {t}", linestyle=ls, color=cs[1])
         fitter.add_model_and_dataset(CorrDing2018(recon=r), d, name=f"Ding {t}", linestyle=ls, color=cs[2])

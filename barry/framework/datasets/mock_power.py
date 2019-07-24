@@ -7,7 +7,7 @@ from barry.framework.dataset import Dataset
 
 
 class MockPowerSpectrum(Dataset):
-    def __init__(self, filename, realisation=None, min_k=0.02, max_k=0.30, step_size=None, recon=True,
+    def __init__(self, filename, realisation=None, name=None, min_k=0.02, max_k=0.30, step_size=None, recon=True,
                  reduce_cov_factor=1, postprocess=None, apply_hartlap_correction=False,
                  fake_diag=False):
         current_file = os.path.dirname(inspect.stack()[0][1])
@@ -15,8 +15,8 @@ class MockPowerSpectrum(Dataset):
 
         with open(self.data_location, "rb") as f:
             self.data_obj = pickle.load(f)
-
-        super().__init__(self.data_obj["name"])
+        name = name or self.data_obj["name"] + " Recon" if recon else " Prerecon"
+        super().__init__(name)
 
         self.min_k = min_k
         self.max_k = max_k
@@ -162,13 +162,13 @@ class MockPowerSpectrum(Dataset):
 
 
 class MockSDSSdr12PowerSpectrum(MockPowerSpectrum):
-    def __init__(self, realisation=None, apply_hartlap_correction=False, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
-        super().__init__("sdss_dr12_ngc_pk.pkl", min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
+    def __init__(self, realisation=None, name=None, apply_hartlap_correction=False, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
+        super().__init__("sdss_dr12_ngc_pk.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
 
 
 class MockSDSSdr7PowerSpectrum(MockPowerSpectrum):
-    def __init__(self, realisation=None, apply_hartlap_correction=False, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=5, postprocess=None):
-        super().__init__("sdss_dr7_pk.pkl", min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
+    def __init__(self, realisation=None, name=None, apply_hartlap_correction=False, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=5, postprocess=None):
+        super().__init__("sdss_dr7_pk.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
 
 
 if __name__ == "__main__":
