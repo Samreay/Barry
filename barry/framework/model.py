@@ -96,7 +96,7 @@ class Model(ABC):
             return -0.5 * chi2
 
     @abstractmethod
-    def get_likelihood(self, params):
+    def get_likelihood(self, params, data):
         raise NotImplementedError("You need to set your likelihood")
 
     def get_start(self):
@@ -118,7 +118,10 @@ class Model(ABC):
         prior = self.get_prior(ps)
         if not np.isfinite(prior):
             return -np.inf
-        return prior + self.get_likelihood(ps)
+        posterior = prior
+        for d in self.data:
+            posterior += self.get_likelihood(ps, d)
+        return posterior
 
     def scale(self, params):
         scaled = np.array([(s - p.min) / (p.max - p.min) for s, p in zip(params, self.get_active_params())])

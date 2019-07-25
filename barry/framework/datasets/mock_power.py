@@ -3,7 +3,7 @@ import logging
 import inspect
 import pickle
 import numpy as np
-from barry.framework.dataset import Dataset
+from barry.framework.dataset import Dataset, MultiDataset
 
 
 class MockPowerSpectrum(Dataset):
@@ -140,7 +140,7 @@ class MockPowerSpectrum(Dataset):
         self.logger.info(f"Loaded winpk with shape {self.w_pk.shape}")
 
     def get_data(self):
-        return {
+        return [{
             "ks_output": self.w_ks_output,
             "ks": self.ks,
             "pk": self.data,
@@ -155,12 +155,24 @@ class MockPowerSpectrum(Dataset):
             "name": self.name,
             "cosmology": self.cosmology,
             "num_mocks": len(self.all_data)
-        }
+        }]
 
 
 class PowerSpectrum_SDSS_DR12_Z051_NGC(MockPowerSpectrum):
     def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
         super().__init__("sdss_dr12_ngc_pk_zbin0p51.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
+
+
+class PowerSpectrum_SDSS_DR12_Z051_SGC(MockPowerSpectrum):
+    def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
+        super().__init__("sdss_dr12_sgc_pk_zbin0p51.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
+
+
+class PowerSpectrum_SDSS_DR12_Z051(MultiDataset):
+    def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
+        ngc = PowerSpectrum_SDSS_DR12_Z051_NGC(min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
+        sgc = PowerSpectrum_SDSS_DR12_Z051_NGC(min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
+        super().__init__(name, [ngc, sgc])
 
 
 class PowerSpectrum_SDSS_DR7_Z015(MockPowerSpectrum):

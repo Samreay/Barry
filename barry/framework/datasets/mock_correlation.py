@@ -40,7 +40,7 @@ class MockAverageCorrelations(Dataset):
         self.icov = np.linalg.inv(self.cov)
 
     def get_data(self):
-        return {
+        return [{
             "dist": self.data[:, 0],
             "xi": self.data[:, 1],
             "xi0": self.data[:, 2],
@@ -51,7 +51,7 @@ class MockAverageCorrelations(Dataset):
             "name": self.name,
             "cosmology": self.cosmology,
             "num_mocks": len(self.all_data)
-        }
+        }]
 
 
 class MockSDSSdr7CorrelationFunction(MockAverageCorrelations):

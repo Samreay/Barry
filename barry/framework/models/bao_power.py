@@ -29,7 +29,7 @@ class PowerSpectrumFit(Model):
 
     def set_data(self, data):
         super().set_data(data)
-        c = data["cosmology"]
+        c = data[0]["cosmology"]
         if self.cosmology != c:
             self.recon_smoothing_scale = c["reconsmoothscale"]
             self.camb = CambGenerator(h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"])
@@ -90,18 +90,17 @@ class PowerSpectrumFit(Model):
             pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth * (1 + pk_ratio_dewiggled)))
         return pk_final
 
-    def adjust_model_window_effects(self, pk_generated):
-        p0 = np.sum(self.data["w_scale"] * pk_generated)
-        integral_constraint = self.data["w_pk"] * p0
+    def adjust_model_window_effects(self, pk_generated, data):
+        p0 = np.sum(data["w_scale"] * pk_generated)
+        integral_constraint = data["w_pk"] * p0
 
-        pk_convolved = np.atleast_2d(pk_generated) @ self.data["w_transform"]
+        pk_convolved = np.atleast_2d(pk_generated) @ data["w_transform"]
         pk_normalised = (pk_convolved - integral_constraint).flatten()
         # Get the subsection of our model which corresponds to the data k values
-        return pk_normalised, self.data["w_mask"]
+        return pk_normalised, data["w_mask"]
 
-    def get_likelihood(self, p):
-        d = self.data
-        pk_model = self.get_model(p, smooth=self.smooth)
+    def get_likelihood(self, p, d):
+        pk_model = self.get_model(p, d, smooth=self.smooth)
 
         # Compute the chi2
         diff = (d["pk"] - pk_model)
@@ -109,14 +108,14 @@ class PowerSpectrumFit(Model):
         num_params = len(self.get_active_params())
         return self.get_chi2_likelihood(diff, d["icov"], num_mocks=num_mocks, num_params=num_params)
 
-    def get_model(self, p, smooth=False):
+    def get_model(self, p, d, smooth=False):
         # Get the generic pk model
-        pk_generated = self.compute_power_spectrum(self.data["ks_input"], p, smooth=smooth)
+        pk_generated = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth)
         # Morph it into a model representative of our survey and its selection/window/binning effects
-        pk_model, mask = self.adjust_model_window_effects(pk_generated)
+        pk_model, mask = self.adjust_model_window_effects(pk_generated, d)
 
         if self.postprocess is not None:
-            pk_model = self.postprocess(ks=self.data["ks_output"], pk=pk_model, mask=mask)
+            pk_model = self.postprocess(ks=d["ks_output"], pk=pk_model, mask=mask)
         else:
             pk_model = pk_model[mask]
         return pk_model
@@ -124,15 +123,15 @@ class PowerSpectrumFit(Model):
     def plot(self, params, smooth_params=None):
         import matplotlib.pyplot as plt
 
-        ks = self.data["ks"]
-        pk = self.data["pk"]
-        err = np.sqrt(np.diag(self.data["cov"]))
-        pk2 = self.get_model(params)
+        ks = self.data[0]["ks"]
+        pk = self.data[0]["pk"]
+        err = np.sqrt(np.diag(self.data[0]["cov"]))
+        pk2 = self.get_model(params, self.data[0])
 
         if smooth_params is not None:
-            smooth = self.get_model(smooth_params, smooth=True)
+            smooth = self.get_model(smooth_params, self.data[0], smooth=True)
         else:
-            smooth = self.get_model(params, smooth=True)
+            smooth = self.get_model(params, self.data[0], smooth=True)
 
         def adj(data, err=False):
             if self.postprocess is None:
@@ -145,8 +144,8 @@ class PowerSpectrumFit(Model):
 
         fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
 
-        axes[0].errorbar(ks, ks*pk, yerr=ks*err, fmt="o", c='k', ms=4, label=self.data["name"])
-        axes[1].errorbar(ks, adj(pk), yerr=adj(err, err=True), fmt="o", c='k', ms=4, label=self.data["name"])
+        axes[0].errorbar(ks, ks*pk, yerr=ks*err, fmt="o", c='k', ms=4, label=self.data[0]["name"])
+        axes[1].errorbar(ks, adj(pk), yerr=adj(err, err=True), fmt="o", c='k', ms=4, label=self.data[0]["name"])
 
         # pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(params["om"])
         # axes[1].plot(ks * params["alpha"], 1 + splev(ks, splrep(self.camb.ks, pk_ratio)), label="pkratio", c="r", ls="--")
@@ -154,7 +153,7 @@ class PowerSpectrumFit(Model):
         axes[0].plot(ks, ks*pk2, label=self.get_name())
         axes[1].plot(ks, adj(pk2), label=self.get_name())
 
-        string = f"Likelihood: {self.get_likelihood(params):0.2f}\n"
+        string = f"Likelihood: {self.get_likelihood(params, self.data[0]):0.2f}\n"
         string += "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params.items()])
         va = "center" if self.postprocess is None else "top"
         ypos = 0.5 if self.postprocess is None else 0.98
@@ -184,7 +183,7 @@ if __name__ == "__main__":
     n = 500
 
     def test():
-        model.get_likelihood(p)
+        model.get_posterior(p)
 
     print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
