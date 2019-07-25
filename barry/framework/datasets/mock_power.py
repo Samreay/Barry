@@ -161,9 +161,9 @@ class MockPowerSpectrum(Dataset):
         }
 
 
-class MockSDSSdr12PowerSpectrum(MockPowerSpectrum):
+class PowerSpectrum_SDSS_DR12_Z051_NGC(MockPowerSpectrum):
     def __init__(self, realisation=None, name=None, apply_hartlap_correction=False, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
-        super().__init__("sdss_dr12_ngc_pk.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
+        super().__init__("sdss_dr12_ngc_pk_zbin0p51.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
 
 
 class MockSDSSdr7PowerSpectrum(MockPowerSpectrum):
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
 
     # Some basic checks for data we expect to be there
-    dataset = MockSDSSdr12PowerSpectrum(recon=False)
+    dataset = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=False)
     # print(dataset.all_data)
     data = dataset.get_data()
     # print(data["ks"])

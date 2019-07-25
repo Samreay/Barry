@@ -6,10 +6,10 @@ import numpy as np
 from scipy.interpolate import splev, splrep
 
 from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.datasets import MockSDSSdr12PowerSpectrum
+from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z051_NGC
 
 
-class DummyPowerSpectrum(MockSDSSdr12PowerSpectrum):
+class DummyPowerSpectrumSDSSDR12Z051NGC(PowerSpectrum_SDSS_DR12_Z051_NGC):
     def __init__(self, min_k=0.02, max_k=0.30, step_size=1, uncert=0.01,
                  reduce_cov_factor=1, name="DummyPowerSpectrum", postprocess=None,
                  apply_hartlap_correction=False, fake_diag=False, dummy_window=False):
@@ -48,7 +48,7 @@ class DummyPowerSpectrum(MockSDSSdr12PowerSpectrum):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
 
-    dataset = DummyPowerSpectrum()
+    dataset = DummyPowerSpectrumSDSSDR12Z051NGC()
     data = dataset.get_data()
     print(data["ks"])
     print(data["pk"])

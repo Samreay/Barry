@@ -9,9 +9,9 @@ if __name__ == "__main__":
     model1 = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}")
     model_smooth = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}", smooth=True)
 
-    from barry.framework.datasets.mock_power import MockSDSSdr12PowerSpectrum
+    from barry.framework.datasets.mock_power import PowerSpectrum_SDSS_DR12_Z051_NGC
     i = 12
-    dataset1 = MockSDSSdr12PowerSpectrum(name=f"Realisation {i}", recon=recon, average=False, realisation=i)
+    dataset1 = PowerSpectrum_SDSS_DR12_Z051_NGC(name=f"Realisation {i}", recon=recon, average=False, realisation=i)
 
     data1 = dataset1.get_data()
 

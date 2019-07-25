@@ -9,11 +9,11 @@ if __name__ == "__main__":
     model1 = PowerSeo2016(recon=recon, name=f"Seo2016, recon={recon}")
     model_smooth = PowerSeo2016(recon=recon, name=f"Seo2016, recon={recon}", smooth=True)
 
-    from barry.framework.datasets.mock_power import MockSDSSdr12PowerSpectrum
-    from barry.framework.datasets.dummy_power import DummyPowerSpectrum
-    dataset1 = MockSDSSdr12PowerSpectrum(name="PreRecon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=31.62, step_size=5)
-    dataset2 = DummyPowerSpectrum(name="Dummy data, real window fn", min_k=0.02, max_k=0.25, step_size=5, dummy_window=False)
-    dataset3 = DummyPowerSpectrum(name="DummyWindowFnToo", min_k=0.02, max_k=0.25, step_size=5, dummy_window=True)
+    from barry.framework.datasets.mock_power import PowerSpectrum_SDSS_DR12_Z051_NGC
+    from barry.framework.datasets.dummy_power import DummyPowerSpectrumSDSSDR12Z051NGC
+    dataset1 = PowerSpectrum_SDSS_DR12_Z051_NGC(name="PreRecon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=31.62, step_size=5)
+    dataset2 = DummyPowerSpectrumSDSSDR12Z051NGC(name="Dummy data, real window fn", min_k=0.02, max_k=0.25, step_size=5, dummy_window=False)
+    dataset3 = DummyPowerSpectrumSDSSDR12Z051NGC(name="DummyWindowFnToo", min_k=0.02, max_k=0.25, step_size=5, dummy_window=True)
     data1 = dataset1.get_data()
     data2 = dataset2.get_data()
     data3 = dataset3.get_data()

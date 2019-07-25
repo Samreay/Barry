@@ -5,7 +5,7 @@ from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.postprocessing import BAOExtractor
 from barry.setup import setup
 from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
-from barry.framework.datasets import MockSDSSdr12PowerSpectrum
+from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z051_NGC
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
 import numpy as np
@@ -24,8 +24,8 @@ if __name__ == "__main__":
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
 
-        d = MockSDSSdr12PowerSpectrum(recon=r, realisation=0)
-        de = MockSDSSdr12PowerSpectrum(recon=r, postprocess=p, realisation=0)
+        d = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, realisation=0)
+        de = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, postprocess=p, realisation=0)
 
         beutler = PowerBeutler2017(recon=r)
         beutler_extracted = PowerBeutler2017(recon=r, postprocess=p)

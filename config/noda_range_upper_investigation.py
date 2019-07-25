@@ -4,7 +4,7 @@ import sys
 sys.path.append("..")
 from barry.setup import setup
 from barry.framework.models import PowerNoda2019
-from barry.framework.datasets import MockSDSSdr12PowerSpectrum
+from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z051_NGC
 from barry.framework.postprocessing import BAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
@@ -37,7 +37,7 @@ if __name__ == "__main__":
         n = f"{p.mink:0.2f}-{p.maxk:0.2f}"
         print(n)
         model = PowerNoda2019(postprocess=p, recon=recon)
-        data = MockSDSSdr12PowerSpectrum(min_k=0.02, max_k=0.30, postprocess=p, recon=recon)
+        data = PowerSpectrum_SDSS_DR12_Z051_NGC(min_k=0.02, max_k=0.30, postprocess=p, recon=recon)
         fitter.add_model_and_dataset(model, data, name=n)
 
     sampler = EnsembleSampler(temp_dir=dir_name)
