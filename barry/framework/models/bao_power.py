@@ -11,8 +11,8 @@ import numpy as np
 
 # TODO: make h0 and omega_m more easily changable if we are not fitting them
 class PowerSpectrumFit(Model):
-    def __init__(self, smooth_type="hinton2017", name="Pk Basic", postprocess=None, fix_params=['om'], smooth=False):
-        super().__init__(name, postprocess=postprocess)
+    def __init__(self, smooth_type="hinton2017", name="Pk Basic", postprocess=None, fix_params=['om'], smooth=False, correction=None):
+        super().__init__(name, postprocess=postprocess, correction=correction)
         self.smooth_type = smooth_type.lower()
         if not validate_smooth_method(smooth_type):
             exit(0)
@@ -105,8 +105,9 @@ class PowerSpectrumFit(Model):
 
         # Compute the chi2
         diff = (d["pk"] - pk_model)
-        chi2 = diff.T @ d["icov"] @ diff
-        return -0.5 * chi2
+        num_mocks = d["num_mocks"]
+        num_params = len(self.get_active_params())
+        return self.get_chi2_likelihood(diff, d["icov"], num_mocks=num_mocks, num_params=num_params)
 
     def get_model(self, p, smooth=False):
         # Get the generic pk model

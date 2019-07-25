@@ -7,12 +7,12 @@ from barry.framework.models.bao_power import PowerSpectrumFit
 
 class PowerSeo2016(PowerSpectrumFit):
 
-    def __init__(self, fix_params=["om", "f"], smooth_type="hinton2017", recon=False, recon_smoothing_scale=21.21, name="Pk Seo 2016", postprocess=None, smooth=False):
+    def __init__(self, fix_params=["om", "f"], smooth_type="hinton2017", recon=False, name="Pk Seo 2016", postprocess=None, smooth=False, correction=None):
         self.recon = recon
-        self.recon_smoothing_scale = recon_smoothing_scale
+        self.recon_smoothing_scale = None
         self.fit_omega_m = fix_params is None or "om" not in fix_params
         self.fit_growth = fix_params is None or "f" not in fix_params
-        super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess, smooth=smooth)
+        super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess, smooth=smooth, correction=correction)
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)

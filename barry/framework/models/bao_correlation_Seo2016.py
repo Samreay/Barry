@@ -6,12 +6,12 @@ from barry.framework.models.bao_correlation import CorrelationPolynomial
 
 class CorrSeo2016(CorrelationPolynomial):
 
-    def __init__(self, recon=False, smooth_type="hinton2017", name="Corr Seo 2016", fix_params=['om', 'f'], smooth=False, recon_smoothing_scale=21.21):
+    def __init__(self, recon=False, smooth_type="hinton2017", name="Corr Seo 2016", fix_params=['om', 'f'], smooth=False, correction=None):
         self.recon = recon
-        self.recon_smoothing_scale = recon_smoothing_scale
+        self.recon_smoothing_scale = None
         self.fit_omega_m = fix_params is None or "om" not in fix_params
         self.fit_growth = fix_params is None or "f" not in fix_params
-        super().__init__(smooth_type, name, fix_params, smooth)
+        super().__init__(smooth_type, name, fix_params, smooth, correction=correction)
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)

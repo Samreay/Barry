@@ -8,10 +8,11 @@ from barry.framework.dataset import Dataset
 
 class MockPowerSpectrum(Dataset):
     def __init__(self, filename, realisation=None, name=None, min_k=0.02, max_k=0.30, step_size=None, recon=True,
-                 reduce_cov_factor=1, postprocess=None, apply_hartlap_correction=False,
+                 reduce_cov_factor=1, postprocess=None, apply_correction=None,
                  fake_diag=False):
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + f"/../../data/{filename}")
+        self.apply_correction = apply_correction
 
         with open(self.data_location, "rb") as f:
             self.data_obj = pickle.load(f)
@@ -46,12 +47,12 @@ class MockPowerSpectrum(Dataset):
         self._load_winfit()
         self._load_winpk_file()
         self.logger.debug(f"Computing cov")
-        self.set_cov(self._compute_cov(), apply_correction=apply_hartlap_correction, fake_diag=fake_diag)
+        self.set_cov(self._compute_cov(), fake_diag=fake_diag)
 
     def set_realisation(self, index):
         self.data = self.pks_all[index]
 
-    def set_cov(self, cov, apply_correction=False, fake_diag=False):
+    def set_cov(self, cov, apply_correction=None, fake_diag=False):
         self.logger.info(f"Computed cov {cov.shape}")
         if self.reduce_cov_factor != 1:
             self.logger.info(f"Reducing covariance by factor of {self.reduce_cov_factor}")
@@ -66,12 +67,7 @@ class MockPowerSpectrum(Dataset):
             self.logger.error(f"These should all be 1: {v}")
         d = np.sqrt(np.diag(self.cov))
         self.corr = self.cov / (d * np.atleast_2d(d).T)
-        if apply_correction:
-            self.correction_factor = (len(self.all_data) - self.corr.shape[0] - 2) / (len(self.all_data) - 1)
-            self.logger.info(f"icov correction factor is {self.correction_factor:0.5f}, from Hartlap 2007")
-        else:
-            self.correction_factor = 1
-        self.icov = np.linalg.inv(self.cov) * self.correction_factor
+        self.icov = np.linalg.inv(self.cov)
 
     def _compute_cov(self):
         pks = np.array(self.pks_all)
@@ -157,18 +153,19 @@ class MockPowerSpectrum(Dataset):
             "w_mask": self.w_mask,
             "corr": self.corr,
             "name": self.name,
-            "cosmology": self.cosmology
+            "cosmology": self.cosmology,
+            "num_mocks": len(self.all_data)
         }
 
 
 class PowerSpectrum_SDSS_DR12_Z051_NGC(MockPowerSpectrum):
-    def __init__(self, realisation=None, name=None, apply_hartlap_correction=False, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
-        super().__init__("sdss_dr12_ngc_pk_zbin0p51.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
+    def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
+        super().__init__("sdss_dr12_ngc_pk_zbin0p51.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
 
 
-class MockSDSSdr7PowerSpectrum(MockPowerSpectrum):
-    def __init__(self, realisation=None, name=None, apply_hartlap_correction=False, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=5, postprocess=None):
-        super().__init__("sdss_dr7_pk.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, apply_hartlap_correction=apply_hartlap_correction, fake_diag=fake_diag)
+class PowerSpectrum_SDSS_DR7_Z015(MockPowerSpectrum):
+    def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=5, postprocess=None):
+        super().__init__("sdss_dr7_pk.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
 
 
 if __name__ == "__main__":

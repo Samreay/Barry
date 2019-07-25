@@ -1,4 +1,4 @@
 from barry.framework.datasets.mock_correlation import MockSDSSdr7CorrelationFunction
-from barry.framework.datasets.mock_power import PowerSpectrum_SDSS_DR12_Z051_NGC, MockSDSSdr7PowerSpectrum
+from barry.framework.datasets.mock_power import PowerSpectrum_SDSS_DR12_Z051_NGC, PowerSpectrum_SDSS_DR7_Z015
 
-__all__ = [PowerSpectrum_SDSS_DR12_Z051_NGC, MockSDSSdr7PowerSpectrum, MockSDSSdr7CorrelationFunction]
+__all__ = [PowerSpectrum_SDSS_DR12_Z051_NGC, PowerSpectrum_SDSS_DR7_Z015, MockSDSSdr7CorrelationFunction]

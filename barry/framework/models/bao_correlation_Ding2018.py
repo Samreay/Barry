@@ -6,10 +6,10 @@ from barry.framework.models.bao_correlation import CorrelationPolynomial
 
 class CorrDing2018(CorrelationPolynomial):
 
-    def __init__(self, recon=False, smooth_type="hinton2017", name="Corr Ding 2018", fix_params=['om', 'f'], smooth=False, recon_smoothing_scale=21.21):
+    def __init__(self, recon=False, smooth_type="hinton2017", name="Corr Ding 2018", fix_params=['om', 'f'], smooth=False, correction=None):
         self.recon = recon
-        self.recon_smoothing_scale = recon_smoothing_scale
-        super().__init__(smooth_type, name, fix_params, smooth)
+        self.recon_smoothing_scale = None
+        super().__init__(smooth_type, name, fix_params, smooth, correction=correction)
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)

@@ -6,8 +6,8 @@ from barry.framework.models.bao_power import PowerSpectrumFit
 
 class PowerBeutler2017(PowerSpectrumFit):
 
-    def __init__(self, fix_params=["om"], smooth_type="hinton2017", recon=False, name="Pk Beutler 2017", postprocess=None, smooth=False):
-        super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess, smooth=smooth)
+    def __init__(self, fix_params=["om"], smooth_type="hinton2017", recon=False, name="Pk Beutler 2017", postprocess=None, smooth=False, correction=None):
+        super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess, smooth=smooth, correction=correction)
 
         self.recon = recon
 

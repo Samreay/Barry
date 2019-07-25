@@ -6,7 +6,7 @@ from barry.framework.models.bao_power import PowerSpectrumFit
 
 class PowerNoda2019(PowerSpectrumFit):
 
-    def __init__(self, fix_params=None, gammaval=None, smooth_type="hinton2017", recon=False, name="Pk Noda 2019", postprocess=None):
+    def __init__(self, fix_params=None, gammaval=None, smooth_type="hinton2017", recon=False, name="Pk Noda 2019", postprocess=None, correction=None):
         self.recon = recon
         if fix_params is None:
             if recon:
@@ -23,7 +23,7 @@ class PowerNoda2019(PowerSpectrumFit):
             else:
                 gammaval = 1.0
         self.gammaval = gammaval
-        super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess)
+        super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess, correction=correction)
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)

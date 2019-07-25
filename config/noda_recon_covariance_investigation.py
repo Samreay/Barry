@@ -27,8 +27,8 @@ if __name__ == "__main__":
     ]
 
     # Compute the pseudo-analytic cov from Noda and Nishimichi
-    data = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, min_k=0.0, max_k=0.32, apply_hartlap_correction=False)
-    data2 = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, min_k=0.0, max_k=0.32, apply_hartlap_correction=False, fake_diag=True)
+    data = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, min_k=0.0, max_k=0.32, apply_correction=False)
+    data2 = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, min_k=0.0, max_k=0.32, apply_correction=False, fake_diag=True)
     ks = data.ks
     pk = data.data
     pk_cov = data.cov

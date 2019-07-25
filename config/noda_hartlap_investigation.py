@@ -21,8 +21,8 @@ if __name__ == "__main__":
 
     for r in [True, False]:
         model = PowerNoda2019(postprocess=postprocess)
-        data1 = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess, apply_hartlap_correction=True)
-        data2 = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess, apply_hartlap_correction=False)
+        data1 = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess, apply_correction=True)
+        data2 = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess, apply_correction=False)
 
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"

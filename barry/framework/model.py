@@ -3,13 +3,21 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from numpy.random import uniform
 import numpy as np
+from scipy.special import loggamma
 from recordtype import recordtype
+from enum import Enum, unique
 
 Param = recordtype('Param', ['name', 'label', 'min', 'max', 'default'])
 
+@unique
+class Correction(Enum):
+    NONE = 0
+    HARTLAP = 1
+    SELLENTIN = 2
+
 
 class Model(ABC):
-    def __init__(self, name, postprocess=None):
+    def __init__(self, name, postprocess=None, correction=None):
         self.name = name
         self.logger = logging.getLogger("barry")
         self.data = None
@@ -17,6 +25,12 @@ class Model(ABC):
         self.fix_params = []
         self.param_dict = {}
         self.postprocess = postprocess
+        if correction is None:
+            correction = Correction.SELLENTIN
+        self.correction = correction
+        self.correction_data = {}
+        assert isinstance(self.correction, Correction), "Correction should be an enum of Correction"
+        self.logger.info(f"Created model {name} of {self.__class__.__name__} with correction {correction} and postprocess {postprocess}")
 
     def get_name(self):
         return self.name
@@ -64,6 +78,22 @@ class Model(ABC):
             if val < self.param_dict[pname].min or val > self.param_dict[pname].max:
                 return -np.inf
         return 0
+
+    def get_chi2_likelihood(self, diff, icov, num_mocks=None, num_params=None):
+        chi2 = diff.T @ icov @ diff
+
+        if self.correction is Correction.HARTLAP:  # From Hartlap 2007
+            chi2 *= (num_mocks - diff.shape - 2) / (num_mocks - 1)
+
+        if self.correction is Correction.SELLENTIN:  # From Sellentin 2016
+            key = f"{num_mocks}_{num_params}"
+            if key not in self.correction_data:
+                self.correction_data[key] = loggamma(num_mocks / 2).real - (num_params / 2) * np.log(np.pi * (num_mocks - 1)) - loggamma((num_mocks - num_params) * 0.5).real
+            c_p = self.correction_data[key]
+            log_likelihood = c_p - (num_mocks / 2) * np.log(1 + chi2 / (num_mocks - 1))
+            return log_likelihood
+        else:
+            return -0.5 * chi2
 
     @abstractmethod
     def get_likelihood(self, params):

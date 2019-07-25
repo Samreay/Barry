@@ -9,8 +9,8 @@ from barry.framework.model import Model
 
 
 class CorrelationPolynomial(Model):
-    def __init__(self, smooth_type="hinton2017", name="BAO Correlation Polynomial Fit", fix_params=['om'], smooth=False):
-        super().__init__(name)
+    def __init__(self, smooth_type="hinton2017", name="BAO Correlation Polynomial Fit", fix_params=['om'], smooth=False, correction=None):
+        super().__init__(name, correction=correction)
 
         self.smooth_type = smooth_type.lower()
         if not validate_smooth_method(smooth_type):
@@ -98,8 +98,9 @@ class CorrelationPolynomial(Model):
         xi_model = self.get_model(p, smooth=self.smooth)
 
         diff = (d["xi"] - xi_model)
-        chi2 = diff.T @ d["icov"] @ diff
-        return -0.5 * chi2
+        num_mocks = d["num_mocks"]
+        num_params = len(self.get_active_params())
+        return self.get_chi2_likelihood(diff, d["icov"], num_mocks=num_mocks, num_params=num_params)
 
     def plot(self, params, smooth_params=None):
         import matplotlib.pyplot as plt

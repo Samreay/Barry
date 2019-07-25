@@ -49,7 +49,8 @@ class MockAverageCorrelations(Dataset):
             "cov": self.cov,
             "icov": self.icov,
             "name": self.name,
-            "cosmology": self.cosmology
+            "cosmology": self.cosmology,
+            "num_mocks": len(self.all_data)
         }
 
 
