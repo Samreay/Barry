@@ -13,7 +13,7 @@ import numpy as np
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
     fitter = Fitter(dir_name, save_dims=2, remove_output=True)
-    
+
     c = CambGenerator()
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
         import logging
         logging.info("Creating plots")
-        
+
         res = {}
         for posterior, weight, chain, model, data, extra in fitter.load():
             n = extra["name"].split(",")[0]
@@ -71,13 +71,13 @@ if __name__ == "__main__":
             smooth = smooth_prerecon if "Prerecon" in label else smooth_recon
             values[:, -1] += smooth[:, -2]    
         ks = [l for l in res.keys() if "Smooth" not in l]
-        
+
         # Define colour scheme
         c2 = ["#225465", "#5FA45E"] # ["#581d7f", "#e05286"]
         c3 = ["#2C455A", "#258E71", "#C1C64D"] # ["#501b73", "#a73b8f", "#ee8695"]
         c4 = ["#262232","#116A71","#48AB75","#D1E05B"] #["#461765", "#7b2a95", "#d54d88", "#f19a9b"]
         c5 = ["#262232", "#1F4D5C", "#0E7A6E", "#5BA561", "#C1C64D"] # ["#3c1357", "#61208d", "#a73b8f", "#e8638b", "#f4aea3"]
-        cols = {"Beutler 2017": c4[0], "Seo 2016": c4[1], "Ding 2018": c4[2], "Noda 2019": c4[3]}
+        cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
         
         # chi2 comparison
         if False:
@@ -99,7 +99,7 @@ if __name__ == "__main__":
             fig.savefig(pfn + "_corr.pdf", bbox_inches="tight", dpi=300, transparent=True)
             
         # Make histogram comparison
-        if False:
+        if True:
             fig, axes = plt.subplots(nrows=2, figsize=(5, 6), sharex=True)
             bins = np.linspace(0.73, 1.15, 31)
             for label, means in res.items():
@@ -166,7 +166,7 @@ if __name__ == "__main__":
             bins = np.linspace(0.73, 1.15, 31)
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
             fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
-            labels = ["Beutler Recon", "Seo Recon", "Ding Recon", "Noda Recon"]
+            labels = ["Beutler 2017 Recon", "Seo 2016 Recon", "Ding 2018 Recon", "Noda 2019 Recon"]
             #labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
@@ -187,7 +187,7 @@ if __name__ == "__main__":
                         if j == 0:
                             ax.spines['left'].set_visible(False)
                         if j == 3:
-                            ax.set_xlabel(label2.split()[0], fontsize=12)
+                            ax.set_xlabel(label2, fontsize=12)
                             ax.set_xticks([0.9, 1.0, 1.1])
                     else:
                         print(label1, label2)
@@ -206,10 +206,10 @@ if __name__ == "__main__":
                             ax.set_yticklabels([])
                             ax.tick_params(axis='y', left=False)
                         else:
-                            ax.set_ylabel(label1.split()[0], fontsize=12)
+                            ax.set_ylabel(label1, fontsize=12)
                             ax.set_yticks([0.9, 1.0, 1.1])
                         if i == 3:
-                            ax.set_xlabel(label2.split()[0], fontsize=12)
+                            ax.set_xlabel(label2, fontsize=12)
                             ax.set_xticks([0.9, 1.0, 1.1])
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphacomp.png", bbox_inches="tight", dpi=300, transparent=True)
@@ -219,7 +219,7 @@ if __name__ == "__main__":
             bins = np.linspace(0.02, 0.17, 31)
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
             fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
-            labels = ["Beutler Recon", "Seo Recon", "Ding Recon", "Noda Recon"]
+            labels = ["Beutler 2017 Recon", "Seo 2016 Recon", "Ding 2018 Recon", "Noda 2019 Recon"]
             #labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
             v1, v2 = 0.01, 0.17
             for i, label1 in enumerate(labels):
@@ -239,7 +239,7 @@ if __name__ == "__main__":
                         if j == 0:
                             ax.spines['left'].set_visible(False)
                         if j == 3:
-                            ax.set_xlabel(label2.split()[0], fontsize=12)
+                            ax.set_xlabel(label2, fontsize=12)
                             #ax.set_xticks([0.9, 1.0, 1.1])
                     else:
                         print(label1, label2)
@@ -258,10 +258,10 @@ if __name__ == "__main__":
                             ax.set_yticklabels([])
                             ax.tick_params(axis='y', left=False)
                         else:
-                            ax.set_ylabel(label1.split()[0], fontsize=12)
+                            ax.set_ylabel(label1, fontsize=12)
                             #ax.set_yticks([0.9, 1.0, 1.1])
                         if i == 3:
-                            ax.set_xlabel(label2.split()[0], fontsize=12)
+                            ax.set_xlabel(label2, fontsize=12)
                             #ax.set_xticks([0.9, 1.0, 1.1])
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphaerrcomp.png", bbox_inches="tight", dpi=300, transparent=True)
