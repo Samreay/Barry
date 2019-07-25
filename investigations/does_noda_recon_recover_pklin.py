@@ -1,7 +1,7 @@
 import logging
 
 from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.models import PowerBeutler2017
+from barry.framework.models import PowerBeutler2017, PowerNoda2019
 from barry.framework.postprocessing import BAOExtractor
 
 if __name__ == "__main__":
@@ -14,11 +14,11 @@ if __name__ == "__main__":
 
     postprocess = BAOExtractor(r_s)
 
-    model1 = PowerBeutler2017(recon=recon, name=f"Noda2019, recon={recon}", postprocess=postprocess)
+    model1 = PowerNoda2019(recon=recon, name=f"Noda2019, recon={recon}", postprocess=postprocess)
 
     from barry.framework.datasets.mock_power import MockSDSSdr12PowerSpectrum
     from barry.framework.datasets.dummy_power import DummyPowerSpectrum
-    dataset1 = MockSDSSdr12PowerSpectrum(recon=recon,  postprocess=postprocess)
+    dataset1 = MockSDSSdr12PowerSpectrum(recon=recon,  postprocess=postprocess, min_k=0.03, max_k=0.25)
     dataset2 = DummyPowerSpectrum(name="Dummy data, real window fn", dummy_window=False, postprocess=postprocess)
     data1 = dataset1.get_data()
     data2 = dataset2.get_data()

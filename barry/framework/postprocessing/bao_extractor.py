@@ -73,7 +73,7 @@ class PureBAOExtractor(PkPostProcess):
 
 
 class BAOExtractor(PureBAOExtractor):
-    def __init__(self, r_s, plot=False, delta=0.6, mink=0.05, maxk=0.20, reorder=False, invert=False):
+    def __init__(self, r_s, plot=False, delta=0.6, mink=0.05, maxk=0.20, reorder=True, invert=False):
         super().__init__(r_s, plot=plot, delta=delta)
         self.mink = mink
         self.maxk = maxk

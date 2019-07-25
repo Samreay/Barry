@@ -52,6 +52,9 @@ class Model(ABC):
     def get_labels(self):
         return [x.label for x in self.get_active_params()]
 
+    def get_names(self):
+        return [x.name for x in self.get_active_params()]
+
     def get_extents(self):
         return [(x.min, x.max) for x in self.get_active_params()]
 

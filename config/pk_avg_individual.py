@@ -5,7 +5,7 @@ from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.postprocessing import BAOExtractor
 from barry.setup import setup
 from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
-from barry.framework.datasets import MockSDSSdr12PowerSpectrum
+from barry.framework.datasets import MockSDSSdr7PowerSpectrum
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
 import numpy as np
@@ -13,7 +13,7 @@ import numpy as np
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
     fitter = Fitter(dir_name, save_dims=2, remove_output=True)
-    '''
+    
     c = CambGenerator()
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
@@ -24,8 +24,8 @@ if __name__ == "__main__":
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
 
-        d = MockSDSSPowerSpectrum(recon=r, realisation=0)
-        de = MockSDSSPowerSpectrum(recon=r, postprocess=p, realisation=0)
+        d = MockSDSSdr7PowerSpectrum(recon=r, realisation=0)
+        de = MockSDSSdr7PowerSpectrum(recon=r, postprocess=p, realisation=0)
 
         smooth = PowerBeutler2017(recon=r, smooth=True)
         beutler = PowerBeutler2017(recon=r)
@@ -38,23 +38,23 @@ if __name__ == "__main__":
             de.set_realisation(i)
 
             fitter.add_model_and_dataset(smooth, d, name=f"Smooth {t}, mock number {i}", linestyle=ls, color="p")
-            fitter.add_model_and_dataset(beutler, d, name=f"Beutler {t}, mock number {i}", linestyle=ls, color="p")
-            fitter.add_model_and_dataset(seo, d, name=f"Seo {t}, mock number {i}", linestyle=ls, color="r")
-            fitter.add_model_and_dataset(ding, d, name=f"Ding {t}, mock number {i}", linestyle=ls, color="lb")
-            fitter.add_model_and_dataset(noda, de, name=f"Noda {t}, mock number {i}", linestyle=ls, color="o")
+            fitter.add_model_and_dataset(beutler, d, name=f"Beutler 2017 {t}, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(seo, d, name=f"Seo 2016 {t}, mock number {i}", linestyle=ls, color="r")
+            fitter.add_model_and_dataset(ding, d, name=f"Ding 2018 {t}, mock number {i}", linestyle=ls, color="lb")
+            fitter.add_model_and_dataset(noda, de, name=f"Noda 2019 {t}, mock number {i}", linestyle=ls, color="o")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
     fitter.set_num_cpu(400)
     if not fitter.should_plot():
-        fitter.fit(file)'''
+        fitter.fit(file)
 
     if fitter.should_plot():
         import matplotlib.pyplot as plt
 
         import logging
         logging.info("Creating plots")
-        '''
+        
         res = {}
         for posterior, weight, chain, model, data, extra in fitter.load():
             n = extra["name"].split(",")[0]
@@ -71,13 +71,13 @@ if __name__ == "__main__":
             smooth = smooth_prerecon if "Prerecon" in label else smooth_recon
             values[:, -1] += smooth[:, -2]    
         ks = [l for l in res.keys() if "Smooth" not in l]
-        '''
+        
         # Define colour scheme
         c2 = ["#225465", "#5FA45E"] # ["#581d7f", "#e05286"]
         c3 = ["#2C455A", "#258E71", "#C1C64D"] # ["#501b73", "#a73b8f", "#ee8695"]
         c4 = ["#262232","#116A71","#48AB75","#D1E05B"] #["#461765", "#7b2a95", "#d54d88", "#f19a9b"]
         c5 = ["#262232", "#1F4D5C", "#0E7A6E", "#5BA561", "#C1C64D"] # ["#3c1357", "#61208d", "#a73b8f", "#e8638b", "#f4aea3"]
-        cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
+        cols = {"Beutler 2017": c4[0], "Seo 2016": c4[1], "Ding 2018": c4[2], "Noda 2019": c4[3]}
         
         # chi2 comparison
         if False:
@@ -161,7 +161,7 @@ if __name__ == "__main__":
             return to_hex(0.5 * (a + b))
                 
         # Alpha-alpha comparison
-        if False:
+        if True:
             from scipy.interpolate import interp1d
             bins = np.linspace(0.73, 1.15, 31)
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
@@ -214,7 +214,7 @@ if __name__ == "__main__":
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphacomp.png", bbox_inches="tight", dpi=300, transparent=True)
 
-        if False:
+        if True:
             from scipy.interpolate import interp1d
             bins = np.linspace(0.02, 0.17, 31)
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}

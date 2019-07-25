@@ -2,8 +2,8 @@ import logging
 
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.datasets import MockSDSSdr12PowerSpectrum
-from barry.framework.models import PowerBeutler2017
-from barry.framework.postprocessing import BAOExtractor
+from barry.framework.models import PowerNoda2019
+from barry.framework.postprocessing import BAOExtractor, PureBAOExtractor
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
@@ -13,10 +13,11 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
 
     postprocess = BAOExtractor(r_s)
+    #postprocess = PureBAOExtractor(r_s)
 
     for recon in [True, False]:
 
-        model1 = PowerBeutler2017(recon=recon, name=f"Noda2019, recon={recon}", postprocess=postprocess)
+        model1 = PowerNoda2019(recon=recon, name=f"Noda2019, recon={recon}", postprocess=postprocess)
         dataset1 = MockSDSSdr12PowerSpectrum(recon=recon,  postprocess=postprocess)
         data1 = dataset1.get_data()
 
@@ -29,4 +30,4 @@ if __name__ == "__main__":
         model1.plot(p)
 
         # FINDINGS
-        # 1.0818916342450509 for Recon, 1.0213794445361926 for prerecon
+        # 2.0151 for Recon, 2.114255 for prerecon

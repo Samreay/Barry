@@ -18,14 +18,14 @@ if __name__ == "__main__":
 
     postprocess = BAOExtractor(r_s)
 
-    sampler = EnsembleSampler(temp_dir=dir_name, num_steps=2000)
+    sampler = EnsembleSampler(temp_dir=dir_name, num_steps=1000)
     fitter = Fitter(dir_name)
 
     for r in [True, False]:
         rt = "Recon" if r else "Prerecon"
         data = MockSDSSdr12PowerSpectrum(recon=r, postprocess=postprocess)
         n = PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"])
-        n.param_dict["b"].default = 1.0819 if r else 1.0214
+        n.param_dict["b"].default = 2.0151 if r else 2.114255
         fitter.add_model_and_dataset(n, data, name=f"Noda {rt} fixed om, f, gamma, b", linestyle="-" if r else "--", color="o")
         fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma"]), data, name=f"Noda {rt} fixed om, f, gamma", linestyle="-" if r else "--", color="r")
         fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f"],), data, name=f"Noda {rt} fixed om, f", linestyle="-" if r else "--", color="lb")
@@ -40,13 +40,14 @@ if __name__ == "__main__":
 
         c = ChainConsumer()
         for posterior, weight, chain, model, data, extra in fitter.load():
+            print(model.get_names())
+            print(chain.mean(axis=0))
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20, legend_artists=True)
+        c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
-        c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
-        with open(pfn + "_params.txt", "w") as f:
-            f.write(c.analysis.get_latex_table())
+        c.analysis.get_latex_table(filename=pfn + "_params.txt")
 
     # FINDINGS
     # So turns out that fixing all these parameters really helps get good constraints.
