@@ -25,10 +25,13 @@ class MockPowerSpectrum(Dataset):
         self.recon = recon
         self.realisation = realisation
         self.postprocess = postprocess
-        self.reduce_cov_factor = reduce_cov_factor
 
         self.cosmology = self.data_obj["cosmology"]
         self.all_data = self.data_obj["post-recon"] if recon else self.data_obj["pre-recon"]
+        self.reduce_cov_factor = reduce_cov_factor
+        if self.reduce_cov_factor == -1:
+            self.reduce_cov_factor = len(self.all_data)
+            self.logger.info(f"Setting reduce_cov_factor to {self.reduce_cov_factor}")
 
         if step_size is None:
             self.step_size = self.data_obj["winfit"].keys()[0]

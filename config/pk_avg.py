@@ -25,8 +25,8 @@ if __name__ == "__main__":
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
-        d = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, reduce_cov_factor=1000)
-        de = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, reduce_cov_factor=1000, postprocess=p)
+        d = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, reduce_cov_factor=-1)
+        de = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, reduce_cov_factor=-1, postprocess=p)
 
         fitter.add_model_and_dataset(PowerBeutler2017(recon=r), d, name=f"Beutler {t}", linestyle=ls, color=cs[0])
         fitter.add_model_and_dataset(PowerSeo2016(recon=r), d, name=f"Seo {t}", linestyle=ls, color=cs[1])
