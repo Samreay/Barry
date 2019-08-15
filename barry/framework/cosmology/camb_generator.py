@@ -15,7 +15,7 @@ def getCambGenerator(redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676
 
 
 class CambGenerator(object):
-    def __init__(self, redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97):
+    def __init__(self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97):
         """ 
         Precomputes CAMB for efficiency. Access ks via self.ks, and use get_data for an array
         of both the linear and non-linear power spectrum
@@ -28,7 +28,8 @@ class CambGenerator(object):
 
         self.data_dir = os.path.dirname(inspect.stack()[0][1]) + os.sep + "data/"
         hh = int(h0 * 10000)
-        self.filename = self.data_dir + f"cosmo_{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}.npy"
+        self.filename_unique = f"{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}"
+        self.filename = self.data_dir + f"cosmo_{self.filename_unique}.npy"
 
         self.k_min = 1e-4
         self.k_max = 5
@@ -70,7 +71,7 @@ class CambGenerator(object):
         import camb
 
         pars = camb.CAMBparams()
-        pars.set_dark_energy(w=-1.0, sound_speed=1.0, dark_energy_model='fluid')
+        pars.set_dark_energy(w=-1.0, dark_energy_model='fluid')
         pars.InitPower.set_params(As=2.130e-9, ns=self.ns)
         pars.set_matter_power(redshifts=[self.redshift], kmax=self.k_max)
         self.logger.info("Configured CAMB power and dark energy")
@@ -139,7 +140,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
-    c = {"om": 0.31, "h0": 0.67, "z": 0.15, "ob": 0.0491, "ns": 0.96, "reconscale": 21.21}
+    c = {"om": 0.31, "h0": 0.676, "z": 0.61, "ob": 0.04814, "ns": 0.97, "reconscale": 15}
 
     generator = CambGenerator(om_resolution=101, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"])
     generator.get_data()

@@ -24,7 +24,7 @@ def getCambGeneratorAndPT(redshift=0.51, om_resolution=101, h0_resolution=1, h0=
 # TODO: Expand to work for smoothing kernels other than Gaussian (perhaps the user can choose Gaussian, Tophat, CIC)
 # TODO: Add some basic checks of CAMBGenerator to make sure it is valid
 class PTGenerator(object):
-    def __init__(self, CAMBGenerator, smooth_type="hinton2017", recon_smoothing_scale=21.213, mpi_comm=None):
+    def __init__(self, CAMBGenerator, smooth_type="hinton2017", recon_smoothing_scale=15, mpi_comm=None):
         """ 
         Precomputes certain integrals over the camb power spectrum for efficiency given a list of smoothing scales. Access ks via self.ks, and use get_data for an array
         of all the Perturbation Theory integrals.
@@ -40,7 +40,7 @@ class PTGenerator(object):
         self.CAMBGenerator = CAMBGenerator
 
         self.data_dir = os.path.dirname(os.path.abspath(inspect.stack()[0][1])) + os.sep + "data/"
-        self.filename = self.data_dir + f"PT_{int(self.CAMBGenerator.redshift * 1000)}_{self.CAMBGenerator.om_resolution}_{self.CAMBGenerator.h0_resolution}_{self.smooth_type}_{int(self.recon_smoothing_scale * 100)}.pkl"
+        self.filename = self.data_dir + f"PT_{CAMBGenerator.filename_unique}_{self.smooth_type}_{int(self.recon_smoothing_scale * 100)}.pkl"
 
         self.data = None
         self.logger.info(f"Creating PT data with {self.CAMBGenerator.om_resolution} x {self.CAMBGenerator.h0_resolution}")
@@ -54,7 +54,7 @@ class PTGenerator(object):
                 self.data = pickle.load(f)
 
     @lru_cache(maxsize=512)
-    def get_data(self, om=0.31, h0=0.67):
+    def get_data(self, om=0.31, h0=0.676):
         """ Returns the PT integrals: Sigma, Sigma_dd, Sigma_ss, Sigma_dd,nl, Sigma_sd,nl, Sigma_ss,nl, Sigma_rs,
             R_1, R_2 and the SPT integrals"""
         if self.data is None:
@@ -68,7 +68,7 @@ class PTGenerator(object):
         os.makedirs(self.data_dir, exist_ok=True)
 
         # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
-        smoothing_kernel = np.exp(-self.CAMBGenerator.ks ** 2 * self.recon_smoothing_scale ** 2 / 4.0)
+        smoothing_kernel = np.exp(-self.CAMBGenerator.ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0)
 
         # Run CAMBGenerator.get_data once to ensure the data is loaded under CAMBGenerator.data
         _, _ = self.CAMBGenerator.get_data()
@@ -285,7 +285,7 @@ if __name__ == "__main__":
 
         from mpi4py import MPI
         mpi_comm = MPI.COMM_WORLD
-        generator = CambGenerator(om_resolution=args.om_resolution, h0_resolution=args.h0_resolution)
+        generator = CambGenerator(redshift=0.61, om_resolution=args.om_resolution, h0_resolution=args.h0_resolution)
         PT_generator = PTGenerator(generator, recon_smoothing_scale=args.recon_smoothing_scale, mpi_comm=mpi_comm)
         PT_generator._generate_data()
 
