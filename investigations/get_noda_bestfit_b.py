@@ -1,7 +1,7 @@
 import logging
 
 from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z051_NGC
+from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.framework.models import PowerNoda2019
 from barry.framework.postprocessing import BAOExtractor, PureBAOExtractor
 
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     for recon in [True, False]:
 
         model1 = PowerNoda2019(recon=recon, name=f"Noda2019, recon={recon}", postprocess=postprocess)
-        dataset1 = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=recon, postprocess=postprocess)
+        dataset1 = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=recon, postprocess=postprocess)
         data1 = dataset1.get_data()
 
         # First comparison - the actual recon data
@@ -30,4 +30,4 @@ if __name__ == "__main__":
         model1.plot(p)
 
         # FINDINGS
-        # 2.0151 for Recon, 2.114255 for prerecon
+        # 2.07376 for Recon, 2.19779 for prerecon

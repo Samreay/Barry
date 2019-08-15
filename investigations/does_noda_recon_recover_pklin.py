@@ -16,9 +16,9 @@ if __name__ == "__main__":
 
     model1 = PowerNoda2019(recon=recon, name=f"Noda2019, recon={recon}", postprocess=postprocess)
 
-    from barry.framework.datasets.mock_power import PowerSpectrum_SDSS_DR12_Z051_NGC
+    from barry.framework.datasets.mock_power import PowerSpectrum_SDSS_DR12_Z061_NGC
     from barry.framework.datasets.dummy_power import DummyPowerSpectrumSDSSDR12Z051NGC
-    dataset1 = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=recon, postprocess=postprocess, min_k=0.03, max_k=0.25)
+    dataset1 = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=recon, postprocess=postprocess, min_k=0.03, max_k=0.25)
     dataset2 = DummyPowerSpectrumSDSSDR12Z051NGC(name="Dummy data, real window fn", dummy_window=False, postprocess=postprocess)
     data1 = dataset1.get_data()
     data2 = dataset2.get_data()

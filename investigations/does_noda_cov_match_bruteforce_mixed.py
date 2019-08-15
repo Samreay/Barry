@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z051_NGC
+from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.framework.postprocessing import BAOExtractor, PureBAOExtractor
 
 
@@ -64,9 +64,9 @@ if __name__ == "__main__":
     step_size = 5
     mink = 0.02
     maxk = 0.3
-    data_raw = PowerSpectrum_SDSS_DR12_Z051_NGC(step_size=step_size, fake_diag=False, min_k=0.0, max_k=0.32)
-    data3 = PowerSpectrum_SDSS_DR12_Z051_NGC(step_size=step_size, fake_diag=True, min_k=mink, max_k=maxk)
-    data2 = PowerSpectrum_SDSS_DR12_Z051_NGC(postprocess=extractor, step_size=step_size, min_k=mink, max_k=maxk)
+    data_raw = PowerSpectrum_SDSS_DR12_Z061_NGC(step_size=step_size, fake_diag=False, min_k=0.0, max_k=0.32)
+    data3 = PowerSpectrum_SDSS_DR12_Z061_NGC(step_size=step_size, fake_diag=True, min_k=mink, max_k=maxk)
+    data2 = PowerSpectrum_SDSS_DR12_Z061_NGC(postprocess=extractor, step_size=step_size, min_k=mink, max_k=maxk)
 
     ks = data_raw.ks
     pk = data_raw.data
