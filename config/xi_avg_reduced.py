@@ -1,11 +1,11 @@
 import sys
 
 sys.path.append("..")
-from barry.framework.cosmology.camb_generator import CambGenerator, getCambGenerator
+from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.postprocessing import BAOExtractor
 from barry.setup import setup
-from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
-from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z051_NGC
+from barry.framework.models import CorrBeutler2017, CorrDing2018, CorrSeo2016
+from barry.framework.datasets import MockSDSSdr7CorrelationFunction
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
 import numpy as np
@@ -13,28 +13,24 @@ import numpy as np
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
-    c = getCambGenerator()
+    c = CambGenerator()
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
 
-    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100)
+    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100, num_burn=300, num_steps=1000)
     fitter = Fitter(dir_name)
 
     cs = ["#262232", "#116A71", "#48AB75", "#b7c742"]
-
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
-        d = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r)
-        de = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, postprocess=p)
-
-        fitter.add_model_and_dataset(PowerBeutler2017(recon=r), d, name=f"Beutler {t}", linestyle=ls, color=cs[0])
-        fitter.add_model_and_dataset(PowerSeo2016(recon=r), d, name=f"Seo {t}", linestyle=ls, color=cs[1])
-        fitter.add_model_and_dataset(PowerDing2018(recon=r), d, name=f"Ding {t}", linestyle=ls, color=cs[2])
-        fitter.add_model_and_dataset(PowerNoda2019(recon=r, postprocess=p), de, name=f"Noda {t}", linestyle=ls, color=cs[3])
+        d = MockSDSSdr7CorrelationFunction(recon=r, reduce_cov_factor=-1)
+        fitter.add_model_and_dataset(CorrBeutler2017(), d, name=f"Beutler 2017 {t}", linestyle=ls, color=cs[0])
+        fitter.add_model_and_dataset(CorrSeo2016(recon=r), d, name=f"Seo 2016 {t}", linestyle=ls, color=cs[1])
+        fitter.add_model_and_dataset(CorrDing2018(recon=r), d, name=f"Ding 2018 {t}", linestyle=ls, color=cs[2])
 
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(10)
+    fitter.set_num_walkers(30)
     fitter.fit(file)
 
     if fitter.should_plot():
@@ -44,10 +40,11 @@ if __name__ == "__main__":
         c = ChainConsumer()
         for posterior, weight, chain, model, data, extra in fitter.load():
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
+            print(extra["name"], chain.shape, weight.shape, posterior.shape)
         c.configure(shade=True, bins=30, legend_artists=True)
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
-        c.plotter.plot_summary(filename=pfn + "_summary2.png", extra_parameter_spacing=2.5, parameters=1, errorbar=True, truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
-        c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
+        c.plotter.plot_summary(filename=pfn + "_summary.png", extra_parameter_spacing=1.5, errorbar=True, truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
+        c.plotter.plot_summary(filename=pfn + "_summary2.png", extra_parameter_spacing=1.5, parameters=2, errorbar=True, truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
         # c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
         # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
 

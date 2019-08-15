@@ -18,7 +18,7 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
 
-    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100, num_steps=500, num_burn=300)
+    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100, num_steps=1000, num_burn=500)
 
     for r in [True]: #, False]:
         t = "Recon" if r else "Prerecon"
@@ -30,11 +30,11 @@ if __name__ == "__main__":
         beutler = PowerBeutler2017(recon=r)
         beutler_extracted = PowerBeutler2017(recon=r, postprocess=p)
 
-        for i in range(1000):
+        for i in range(999):
             d.set_realisation(i)
             de.set_realisation(i)
-            fitter.add_model_and_dataset(beutler, d, name=f"Beutler {t}, mock number {i}", linestyle=ls, color="p")
-            fitter.add_model_and_dataset(beutler_extracted, de, name=f"BeutlerExtracted {t}, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(beutler, d, name=f"Beutler 2017 {t}, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(beutler_extracted, de, name=f"Beutler 2017 + Extractor {t}, mock number {i}", linestyle=ls, color="p")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)

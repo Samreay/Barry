@@ -14,7 +14,6 @@ class MockAverageCorrelations(Dataset):
         self.min_dist = min_dist
         self.max_dist = max_dist
         self.recon = recon
-        self.reduce_cov_factor = reduce_cov_factor
 
         with open(self.data_location, "rb") as f:
             self.data_obj = pickle.load(f)
@@ -22,6 +21,11 @@ class MockAverageCorrelations(Dataset):
         self.cosmology = self.data_obj["cosmology"]
 
         self.all_data = self.data_obj["post-recon"] if recon else self.data_obj["pre-recon"]
+        self.reduce_cov_factor = reduce_cov_factor
+        if self.reduce_cov_factor == -1:
+            self.reduce_cov_factor = len(self.all_data)
+            self.logger.info(f"Setting reduce_cov_factor to {self.reduce_cov_factor}")
+
         self.cov, self.icov, self.data = None, None, None
         self.set_realisation(realisation)
         self._compute_cov()

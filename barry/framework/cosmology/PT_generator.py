@@ -9,7 +9,7 @@ from scipy import integrate, special, interpolate
 import sys
 import pickle
 sys.path.append("../../../")
-
+from barry.framework.cosmology.camb_generator import getCambGenerator
 from barry.framework.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
 
 
