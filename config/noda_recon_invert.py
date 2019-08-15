@@ -4,7 +4,7 @@ import sys
 sys.path.append("..")
 from barry.setup import setup
 from barry.framework.models import PowerNoda2019
-from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z051_NGC
+from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.framework.postprocessing import BAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
@@ -24,8 +24,8 @@ if __name__ == "__main__":
         model_inverted = PowerNoda2019(postprocess=postprocess_invert, recon=r)
         model = PowerNoda2019(postprocess=postprocess)
 
-        data_inverted = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess_invert)
-        data = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)
+        data_inverted = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess_invert)
+        data = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, min_k=0.03, max_k=0.30, postprocess=postprocess)
 
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"

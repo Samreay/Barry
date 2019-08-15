@@ -2,7 +2,7 @@ import sys
 sys.path.append("..")
 from barry.setup import setup
 from barry.framework.models import PowerNoda2019
-from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z051_NGC
+from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.framework.postprocessing import BAOExtractor
 from barry.framework.cosmology.camb_generator import getCambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     for r in [True, False]:
         rt = "Recon" if r else "Prerecon"
-        data = PowerSpectrum_SDSS_DR12_Z051_NGC(recon=r, postprocess=postprocess)
+        data = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=postprocess)
         n = PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"])
         n.param_dict["b"].default = 2.01516 if r else 2.11426
         fitter.add_model_and_dataset(n, data, name=f"Noda 2019 {rt} fixed $f$, $\\gamma$, $b$", linestyle="-" if r else "--", color="o")

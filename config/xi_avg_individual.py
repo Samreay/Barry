@@ -5,7 +5,7 @@ from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.postprocessing import BAOExtractor
 from barry.setup import setup
 from barry.framework.models import CorrBeutler2017, CorrDing2018, CorrSeo2016
-from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z051_NGC, MockSDSSdr7CorrelationFunction
+from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC, MockSDSSdr7CorrelationFunction
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
 import numpy as np
