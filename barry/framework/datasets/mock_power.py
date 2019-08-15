@@ -161,6 +161,11 @@ class MockPowerSpectrum(Dataset):
         }]
 
 
+class PowerSpectrum_SDSS_DR12_Z061_NGC(MockPowerSpectrum):
+    def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
+        super().__init__("sdss_dr12_ngc_pk_zbin0p61.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
+
+
 class PowerSpectrum_SDSS_DR12_Z051_NGC(MockPowerSpectrum):
     def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
         super().__init__("sdss_dr12_ngc_pk_zbin0p51.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
