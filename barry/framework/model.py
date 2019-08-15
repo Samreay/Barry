@@ -113,6 +113,13 @@ class Model(ABC):
     def get_posterior_scaled(self, scaled):
         return self.get_posterior(self.unscale(scaled))
 
+    def get_likelihood_nested(self, params):
+        ps = self.get_param_dict(params)
+        likelihood = 0
+        for d in self.data:
+            likelihood += self.get_likelihood(ps, d)
+        return likelihood
+
     def get_posterior(self, params):
         ps = self.get_param_dict(params)
         prior = self.get_prior(ps)

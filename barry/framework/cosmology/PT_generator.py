@@ -12,6 +12,14 @@ sys.path.append("../../../")
 
 from barry.framework.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
 
+
+@lru_cache(maxsize=32)
+def getCambGeneratorAndPT(redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, smooth_type="hinton2017", recon_smoothing_scale=15):
+    c = getCambGenerator(redshift=redshift, om_resolution=om_resolution, h0_resolution=h0_resolution, h0=h0, ob=ob, ns=ns)
+    pt = PTGenerator(c, smooth_type=smooth_type, recon_smoothing_scale=recon_smoothing_scale)
+    return c, pt
+
+
 # TODO: Add options for mnu, h0 default, omega_b, etc
 # TODO: Expand to work for smoothing kernels other than Gaussian (perhaps the user can choose Gaussian, Tophat, CIC)
 # TODO: Add some basic checks of CAMBGenerator to make sure it is valid
@@ -260,7 +268,7 @@ def test_rand():
 if __name__ == "__main__":
     import sys
     sys.path.append("../../..")
-    from barry.framework.cosmology.camb_generator import CambGenerator
+    from barry.framework.cosmology.camb_generator import CambGenerator, getCambGenerator
     import pandas as pd
 
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")

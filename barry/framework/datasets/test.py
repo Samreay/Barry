@@ -8,4 +8,5 @@ class TestDataset(Dataset):
         self.data = norm.rvs(loc=0.3, scale=1.0, size=2000)
 
     def get_data(self):
-        return self.data
+        return [{"data": self.data,
+                "name": "TestData"}]

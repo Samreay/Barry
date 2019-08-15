@@ -1,4 +1,6 @@
 import logging
+from functools import lru_cache
+
 import numpy as np
 from scipy.interpolate import splev, splrep
 from scipy import integrate
@@ -16,24 +18,30 @@ class PowerDing2018(PowerSpectrumFit):
         self.fit_growth = fix_params is None or "f" not in fix_params
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
-        self.omega_m, self.pt_data, self.damping_dd, self.damping_sd = None, None, None, None
-        self.damping_ss, self.damping, self.growth = None, None, None
         self.smoothing_kernel = None
+
+    @lru_cache(maxsize=32)
+    def get_pt_data(self, om):
+        return self.PT.get_data(om=om)
+
+    @lru_cache(maxsize=8192)
+    def get_damping_dd(self, growth, om):
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_dd_nl"])
+
+    @lru_cache(maxsize=8192)
+    def get_damping_sd(self, growth, om):
+        return np.exp(-np.outer(1.0 + growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_dd_nl"])
+
+    @lru_cache(maxsize=32)
+    def get_damping_ss(self, om):
+        return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pt_data(om)["sigma_ss_nl"])
+
+    @lru_cache(maxsize=8192)
+    def get_damping(self, growth, om):
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_nl"])
 
     def set_data(self, data):
         super().set_data(data)
-        self.omega_m = self.get_default("om")
-        if not self.fit_omega_m:
-            self.pt_data = self.PT.get_data(om=self.omega_m)
-            if not self.fit_growth:
-                self.growth = self.omega_m ** 0.55
-                if self.recon:
-                    self.damping_dd = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_dd_nl"])
-                    self.damping_sd = np.exp(-np.outer(1.0 + self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_dd_nl"])
-                    self.damping_ss = np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.pt_data["sigma_ss_nl"])
-                else:
-                    self.damping = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_nl"])
-
         # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
         if self.recon:
             self.smoothing_kernel = np.exp(-self.camb.ks ** 2 * self.recon_smoothing_scale ** 2 / 4.0)
@@ -68,33 +76,24 @@ class PowerDing2018(PowerSpectrumFit):
         # Get the basic power spectrum components
         ks = self.camb.ks
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
-        if self.fit_omega_m:
-            pt_data = self.PT.get_data(om=p["om"])
-        else:
-            pt_data = self.pt_data
 
         # Compute the growth rate depending on what we have left as free parameters
         if self.fit_growth:
             growth = p["f"]
         else:
-            if self.fit_omega_m:
-                growth = p["om"]**0.55
-            else:
-                growth = self.growth
+            growth = p["om"]**0.55
+
+        # Lets round some things for the sake of numerical speed
+        om = np.round(p["om"], decimals=5)
+        growth = np.round(growth, decimals=5)
 
         # Compute the BAO damping
         if self.recon:
-            if self.fit_growth or self.fit_omega_m:
-                damping_dd = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * pt_data["sigma_dd_nl"])
-                damping_sd = np.exp(-np.outer(1.0 + growth * self.mu ** 2, ks ** 2) * pt_data["sigma_dd_nl"])
-                damping_ss = np.exp(-np.tile(ks ** 2, (self.nmu, 1)) * pt_data["sigma_ss_nl"])
-            else:
-                damping_dd, damping_sd, damping_ss = self.damping_dd, self.damping_sd, self.damping_ss
+            damping_dd = self.get_damping_dd(growth, om)
+            damping_sd = self.get_damping_sd(growth, om)
+            damping_ss = self.get_damping_ss(om)
         else:
-            if self.fit_growth or self.fit_omega_m:
-                damping = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * pt_data["sigma_nl"])
-            else:
-                damping = self.damping
+            damping = self.get_damping(growth, om)
 
         # Compute the propagator
         if self.recon:
@@ -141,24 +140,24 @@ if __name__ == "__main__":
     data = dataset.get_data()
     model_pre.set_data(data)
     model_post.set_data(data)
-    p = {"om": 0.3, "alpha": 1.0, "sigma_s":10.0, "b": 1.6, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
+    p = {"om": 0.3, "alpha": 1.0, "sigma_s": 10.0, "b": 1.6, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
 
     import timeit
     n = 100
 
     def test():
-        model_post.get_likelihood(p)
+        model_post.get_likelihood(p, data[0])
 
     print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
     if True:
-        ks = data["ks"]
-        pk = data["pk"]
-        pk2 = model_pre.get_model(p)
+        ks = data[0]["ks"]
+        pk = data[0]["pk"]
+        pk2 = model_pre.get_model(p, data[0])
         model_pre.smooth_type = "eh1998"
-        pk3 = model_pre.get_model(p)
+        pk3 = model_pre.get_model(p, data[0])
         import matplotlib.pyplot as plt
-        plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k', label="Data")
+        plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data[0]["cov"])), fmt="o", c='k', label="Data")
         plt.plot(ks, pk2, '.', c='r', label="hinton2017")
         plt.plot(ks, pk3, '+', c='b', label="eh1998")
         plt.xlabel("k")
@@ -170,10 +169,10 @@ if __name__ == "__main__":
 
         model_pre.smooth_type = "hinton2017"
         pk_smooth_lin, _ = model_pre.compute_basic_power_spectrum(p["om"])
-        pk_smooth_interp = splev(data["ks_input"], splrep(model_pre.camb.ks, pk_smooth_lin))
-        pk_smooth_lin_windowed, mask = model_pre.adjust_model_window_effects(pk_smooth_interp)
-        pk2 = model_pre.get_model(p)
-        pk3 = model_post.get_model(p)
+        pk_smooth_interp = splev(data[0]["ks_input"], splrep(model_pre.camb.ks, pk_smooth_lin))
+        pk_smooth_lin_windowed, mask = model_pre.adjust_model_window_effects(pk_smooth_interp, data[0])
+        pk2 = model_pre.get_model(p, data[0])
+        pk3 = model_post.get_model(p, data[0])
         import matplotlib.pyplot as plt
         plt.plot(ks, pk2/pk_smooth_lin_windowed[mask], '.', c='r', label="pre-recon")
         plt.plot(ks, pk3/pk_smooth_lin_windowed[mask], '+', c='b', label="post-recon")

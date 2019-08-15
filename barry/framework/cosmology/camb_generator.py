@@ -8,6 +8,12 @@ import logging
 
 # TODO: Add options for mnu, h0 default, omega_b, etc
 # TODO: Calculate/Tabulate r_s alongside power spectra for different omega_m and hubble. We need this for eh98 smoothing of powerspectra
+
+@lru_cache(maxsize=32)
+def getCambGenerator(redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97):
+    return CambGenerator(redshift=redshift, om_resolution=om_resolution, h0_resolution=h0_resolution, h0=h0, ob=ob, ns=ns)
+
+
 class CambGenerator(object):
     def __init__(self, redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97):
         """ 

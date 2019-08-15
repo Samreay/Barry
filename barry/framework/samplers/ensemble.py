@@ -49,7 +49,7 @@ class EnsembleSampler(GenericSampler):
         self.save_interval = save_interval
         self.num_walkers = num_walkers
 
-    def fit(self, log_posterior, start, save_dims=None, uid=None):
+    def fit(self, log_posterior, start, prior_transform, save_dims=None, uid=None):
         """ Runs the sampler over the model and returns the flat chain of results
 
         Parameters

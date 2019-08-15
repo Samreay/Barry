@@ -2,7 +2,7 @@ from functools import lru_cache
 
 from scipy.interpolate import splev, splrep
 
-from barry.framework.cosmology.PT_generator import PTGenerator
+from barry.framework.cosmology.PT_generator import PTGenerator, getCambGeneratorAndPT
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
 from barry.framework.model import Model
@@ -32,8 +32,7 @@ class PowerSpectrumFit(Model):
         c = data[0]["cosmology"]
         if self.cosmology != c:
             self.recon_smoothing_scale = c["reconsmoothscale"]
-            self.camb = CambGenerator(h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"])
-            self.PT = PTGenerator(self.camb, smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
+            self.camb, self.PT = getCambGeneratorAndPT(h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
             self.set_default("om", c["om"])
 
     def declare_parameters(self):

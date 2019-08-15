@@ -4,7 +4,7 @@ import abc
 class GenericSampler(object):
     __metaclass__ = abc.ABCMeta
 
-    def fit(self, log_posterior, start, save_dims=None, uid=None):
+    def fit(self, log_posterior, start, prior_transform, save_dims=None, uid=None):
         """" Runs the sampler over the model and returns the flat chain of results
 
         Parameters
@@ -15,6 +15,9 @@ class GenericSampler(object):
         start : function|list|ndarray
             Either a starting position, or a function that can be called
             to generate a starting position
+        prior_transform : function
+            A function to transform from the unit hypercube to the parameter
+            region of interest.
         save_dims : int, optional
             Only return values for the first ``save_dims`` parameters.
             Useful to remove numerous marginalisation parameters if running

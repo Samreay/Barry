@@ -1,7 +1,7 @@
 from functools import lru_cache
 import numpy as np
 
-from barry.framework.cosmology.PT_generator import PTGenerator
+from barry.framework.cosmology.PT_generator import PTGenerator, getCambGeneratorAndPT
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.cosmology.pk2xi import PowerToCorrelationGauss
 from barry.framework.cosmology.power_spectrum_smoothing import validate_smooth_method, smooth
@@ -33,8 +33,7 @@ class CorrelationPolynomial(Model):
         c = data[0]["cosmology"]  # TODO: Update this for multiple datasets with diff cosmology
         if self.cosmology != c:
             self.recon_smoothing_scale = c["reconsmoothscale"]
-            self.camb = CambGenerator(h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"])
-            self.PT = PTGenerator(self.camb, smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
+            self.camb, self.PT = getCambGeneratorAndPT(h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
             self.pk2xi = PowerToCorrelationGauss(self.camb.ks)
             self.set_default("om", c["om"])
 

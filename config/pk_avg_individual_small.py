@@ -1,7 +1,7 @@
 import sys
 
 sys.path.append("..")
-from barry.framework.cosmology.camb_generator import CambGenerator
+from barry.framework.cosmology.camb_generator import getCambGenerator
 from barry.framework.postprocessing import BAOExtractor
 from barry.setup import setup
 from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
@@ -14,7 +14,7 @@ if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
     fitter = Fitter(dir_name, save_dims=2)
     
-    c = CambGenerator()
+    c = getCambGenerator()
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
 
@@ -24,8 +24,8 @@ if __name__ == "__main__":
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
 
-        d = PowerSpectrum_SDSS_DR12_Z051_NGC(name=f"SDSS {t}", recon=r, average=False, realisation=0)
-        de = PowerSpectrum_SDSS_DR12_Z051_NGC(name=f"SDSS {t}", recon=r, postprocess=p, average=False, realisation=0)
+        d = PowerSpectrum_SDSS_DR12_Z051_NGC(name=f"SDSS {t}", recon=r, realisation=0)
+        de = PowerSpectrum_SDSS_DR12_Z051_NGC(name=f"SDSS {t}", recon=r, postprocess=p, realisation=0)
 
         smooth = PowerBeutler2017(recon=r, smooth=True)
         beutler = PowerBeutler2017(recon=r)

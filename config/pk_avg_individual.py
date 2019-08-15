@@ -1,7 +1,7 @@
 import sys
 
 sys.path.append("..")
-from barry.framework.cosmology.camb_generator import CambGenerator
+from barry.framework.cosmology.camb_generator import CambGenerator, getCambGenerator
 from barry.framework.postprocessing import BAOExtractor
 from barry.setup import setup
 from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
@@ -14,7 +14,7 @@ if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
     fitter = Fitter(dir_name, save_dims=2, remove_output=True)
 
-    c = CambGenerator()
+    c = getCambGenerator()
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
 
