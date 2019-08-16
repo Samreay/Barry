@@ -127,7 +127,7 @@ if __name__ == "__main__":
 
     import timeit
     n = 200
-    p = {"om": 0.31, "alpha":1.0, "f": 1.0, "sigma_s": 5.0, "b_delta": 5.0, "b": 1.0, "a1": 0, "a2": 0, "a3": 0}
+    p = {"om": 0.31, "alpha": 1.0, "f": 1.0, "sigma_s": 5.0, "b_delta": 5.0, "b": 1.0, "a1": 0, "a2": 0, "a3": 0}
 
     def test():
         bao.get_likelihood(p, data[0])
