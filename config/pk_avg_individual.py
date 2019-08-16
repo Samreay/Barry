@@ -78,7 +78,9 @@ if __name__ == "__main__":
         c4 = ["#262232","#116A71","#48AB75","#D1E05B"] #["#461765", "#7b2a95", "#d54d88", "#f19a9b"]
         c5 = ["#262232", "#1F4D5C", "#0E7A6E", "#5BA561", "#C1C64D"] # ["#3c1357", "#61208d", "#a73b8f", "#e8638b", "#f4aea3"]
         cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
-        
+
+        plt.rc('text', usetex=True)
+        plt.rc('font', family='serif')
         # chi2 comparison
         if False:
             
@@ -100,8 +102,8 @@ if __name__ == "__main__":
             
         # Make histogram comparison
         if True:
-            fig, axes = plt.subplots(nrows=2, figsize=(5, 6), sharex=True)
-            bins = np.linspace(0.73, 1.15, 31)
+            fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
+            bins = np.linspace(0.8, 1.15, 31)
             for label, means in res.items():
                 if "Smooth" in label:
                     continue
@@ -110,25 +112,28 @@ if __name__ == "__main__":
                 else:
                     ax = axes[1]
                 c = cols[label.split()[0]]
-                ax.hist(means[:, 0], bins=bins, label=label, histtype="stepfilled", linewidth=2, alpha=0.3, color=c)
+                ax.hist(means[:, 0], bins=bins, label=" ".join(label.split()[:-1]), histtype="stepfilled", linewidth=2, alpha=0.3, color=c)
                 ax.hist(means[:, 0], bins=bins, histtype="step", linewidth=1.5, color=cols[label.split()[0]])
             axes[1].set_xlabel(r"$\langle \alpha \rangle$", fontsize=14)
             axes[0].set_yticklabels([])
             axes[1].set_yticklabels([])
             axes[0].axvline(1.0, color="k", lw=1, ls="--", alpha=0.6)
             axes[1].axvline(1.0, color="k", lw=1, ls="--", alpha=0.6)
-            leg1 = axes[0].legend(loc=2, frameon=False)
+            axes[0].annotate("Prerecon", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
+            axes[1].annotate("Recon", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
+            #leg1 = axes[0].legend(loc=2, frameon=False)
             leg2 = axes[1].legend(loc=2, frameon=False)
-            for lh in leg1.legendHandles + leg2.legendHandles: 
+            for lh in leg2.legendHandles:
                 lh.set_alpha(1)
             axes[0].tick_params(axis='y', left=False)
             axes[1].tick_params(axis='y', left=False)
             plt.subplots_adjust(hspace=0.0)
             fig.savefig(pfn + "_alphahist.png", bbox_inches="tight", dpi=300, transparent=True)
-        
+            fig.savefig(pfn + "_alphahist.pdf", bbox_inches="tight", dpi=300, transparent=True)
+
         # Make histogram comparison
         if True:
-            fig, axes = plt.subplots(nrows=2, figsize=(5, 6), sharex=True)
+            fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
             bins = np.linspace(0.01, 0.2, 31)
             for label, means in res.items():
                 if "Smooth" in label:
@@ -153,7 +158,8 @@ if __name__ == "__main__":
             #axes[1].tick_params(axis='y', left=False)
             plt.subplots_adjust(hspace=0.0)
             fig.savefig(pfn + "_alphaerrhist.png", bbox_inches="tight", dpi=300, transparent=True)
-        
+            fig.savefig(pfn + "_alphaerrhist.pdf", bbox_inches="tight", dpi=300, transparent=True)
+
         from matplotlib.colors import to_rgb, to_hex
         def blend_hex(hex1, hex2):
             a = np.array(to_rgb(hex1))
@@ -213,8 +219,9 @@ if __name__ == "__main__":
                             ax.set_xticks([0.9, 1.0, 1.1])
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphacomp.png", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_alphacomp.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
-        if True:
+        if False:
             from scipy.interpolate import interp1d
             bins = np.linspace(0.02, 0.17, 31)
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
@@ -265,3 +272,4 @@ if __name__ == "__main__":
                             #ax.set_xticks([0.9, 1.0, 1.1])
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphaerrcomp.png", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_alphaerrcomp.pdf", bbox_inches="tight", dpi=300, transparent=True)

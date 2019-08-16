@@ -17,7 +17,7 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
 
-    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100, num_burn=300, num_steps=1000)
+    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100, num_burn=500, num_steps=1000)
     fitter = Fitter(dir_name)
 
     cs = ["#262232", "#116A71", "#48AB75", "#b7c742"]

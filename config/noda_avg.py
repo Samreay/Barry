@@ -50,7 +50,7 @@ if __name__ == "__main__":
         c.configure(shade=True, bins=20, legend_artists=True)
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
-        c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"], truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0}, parameters=4, chains=names2)
+        c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"], truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0}, parameters=3, chains=names2, figsize="COLUMN")
         # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
 

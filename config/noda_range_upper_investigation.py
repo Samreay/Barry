@@ -57,8 +57,8 @@ if __name__ == "__main__":
         extents = None # {"$\\alpha$": (0.88, 1.18), "$A$": (0, 10), "$b$": (1.5, 1.8), r"$\gamma_{rec}$": (1, 8)}
         params = ["$\\alpha$", "$A$", "$b$"]
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
-        c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0}, extents=extents, parameters=params)
-        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0}, extents=extents, parameters=params)
+        c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0}, extents=extents, parameters=params)
+        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0}, extents=extents, parameters=params, figsize="COLUMN")
         # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0},
         #                      extents=extents)
 
