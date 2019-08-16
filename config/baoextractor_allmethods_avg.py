@@ -5,7 +5,7 @@ sys.path.append("..")
 from barry.setup import setup
 from barry.framework.models import PowerNoda2019, PowerSeo2016, PowerBeutler2017, PowerDing2018
 from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
-from barry.framework.postprocessing import BAOExtractor
+from barry.framework.postprocessing import PureBAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
 
     fitter = Fitter(dir_name)
-    p = BAOExtractor(r_s)
+    p = PureBAOExtractor(r_s)
     cs = ["#262232", "#116A71", "#48AB75", "#b7c742"]
 
     for r in [True]:
@@ -32,6 +32,7 @@ if __name__ == "__main__":
             fitter.add_model_and_dataset(PowerBeutler2017(postprocess=p, recon=r, fix_params=fix), d, name=f"Beutler 2017{n} {t}", linestyle=ls, color=cs[0])
             fitter.add_model_and_dataset(PowerSeo2016(postprocess=p, recon=r, fix_params=fix), d, name=f"Seo 2016{n} {t}", linestyle=ls, color=cs[1])
             fitter.add_model_and_dataset(PowerDing2018(postprocess=p, recon=r, fix_params=fix), d, name=f"Ding 2018{n} {t}", linestyle=ls, color=cs[2])
+            fitter.add_model_and_dataset(PowerNoda2019(postprocess=p, recon=r, fix_params=fix), d, name=f"Noda 2019{n} {t}", linestyle=ls, color=cs[3])
 
     sampler = EnsembleSampler(temp_dir=dir_name)
     fitter.set_sampler(sampler)
