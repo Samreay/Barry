@@ -37,12 +37,12 @@ if __name__ == "__main__":
             d_xi.set_realisation(i)
 
             fitter.add_model_and_dataset(beutler_pk, d_pk, name=f"Beutler 2017 P(k), mock number {i}", linestyle="-", color="p")
-            fitter.add_model_and_dataset(seo_pk, d_pk, name=f"Seo 2016 P(k), mock number {i}", linestyle="-", color="r")
-            fitter.add_model_and_dataset(ding_pk, d_pk, name=f"Ding 2018 P(k), mock number {i}", linestyle="-", color="lb")
+            # fitter.add_model_and_dataset(seo_pk, d_pk, name=f"Seo 2016 P(k), mock number {i}", linestyle="-", color="r")
+            # fitter.add_model_and_dataset(ding_pk, d_pk, name=f"Ding 2018 P(k), mock number {i}", linestyle="-", color="lb")
 
             fitter.add_model_and_dataset(beutler_xi, d_xi, name=f"Beutler 2017 corr, mock number {i}", linestyle=":", color="p")
-            fitter.add_model_and_dataset(seo_xi, d_xi, name=f"Seo 2016 corr, mock number {i}", linestyle=":", color="r")
-            fitter.add_model_and_dataset(ding_xi, d_xi, name=f"Ding 2018 corr, mock number {i}", linestyle=":", color="lb")
+            # fitter.add_model_and_dataset(seo_xi, d_xi, name=f"Seo 2016 corr, mock number {i}", linestyle=":", color="r")
+            # fitter.add_model_and_dataset(ding_xi, d_xi, name=f"Ding 2018 corr, mock number {i}", linestyle=":", color="lb")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
