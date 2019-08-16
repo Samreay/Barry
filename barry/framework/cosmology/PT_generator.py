@@ -47,6 +47,7 @@ class PTGenerator(object):
 
     def load_data(self):
         if not os.path.exists(self.filename):
+            self.logger.warning(f"Cannot find PT data at {self.filename}, generating it!")
             self.data = self._generate_data()
         else:
             self.logger.info("Loading existing PT data")

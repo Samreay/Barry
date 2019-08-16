@@ -69,7 +69,7 @@ class MockAverageCorrelations(Dataset):
             d.update({
                 "xi0": self.data[:, 1],
             })
-        return d
+        return [d]
 
 
 class CorrelationFunction_SDSS_DR7_Z015_MGS(MockAverageCorrelations):

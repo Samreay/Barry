@@ -29,8 +29,7 @@ class CorrelationPolynomial(Model):
 
     def set_data(self, data):
         super().set_data(data)
-
-        c = self.data[0]["cosmology"]  # TODO: Update this for multiple datasets with diff cosmology
+        c = data[0]["cosmology"]
         if self.cosmology != c:
             self.recon_smoothing_scale = c["reconsmoothscale"]
             self.camb, self.PT = getCambGeneratorAndPT(h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)

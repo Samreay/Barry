@@ -53,14 +53,14 @@ if __name__ == "__main__":
     bao.set_data(data)
 
     import timeit
-    n = 500
-    p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5.0, "b": 2.0, "a1": 0, "a2": 0, "a3": 0}
+    n = 200
+    p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5.0, "sigma_s": 5, "b": 2.0, "a1": 0, "a2": 0, "a3": 0}
 
     def test():
-        bao.get_likelihood(p)
+        bao.get_likelihood(p, data[0])
     print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
-    if True:
+    if False:
         ss = data["dist"]
         xi0 = data["xi0"]
         xi = bao.compute_correlation_function(ss, p)
