@@ -26,7 +26,7 @@ class MockAverageCorrelations(Dataset):
             self.reduce_cov_factor = len(self.all_data)
             self.logger.info(f"Setting reduce_cov_factor to {self.reduce_cov_factor}")
 
-        self.cov, self.icov, self.data = None, None, None
+        self.cov, self.icov, self.data, self.mask = None, None, None, None
         self.set_realisation(realisation)
         self._compute_cov()
 
@@ -35,14 +35,16 @@ class MockAverageCorrelations(Dataset):
             self.data = np.array(self.all_data).mean(axis=0)
         else:
             self.data = self.all_data[realisation]
+        self.mask = (self.data[:, 0] >= self.min_dist) & (self.data[:, 0] <= self.max_dist)
+        self.data = self.data[self.mask, :]
 
     def _compute_cov(self):
         # TODO: Generalise for other multipoles poles
         ad = np.array(self.all_data)
         if ad.shape[2] > 2:
-            x0 = ad[:, :, 2]
+            x0 = ad[:, self.mask, 2]
         else:
-            x0 = ad[:, :, 1]
+            x0 = ad[:, self.mask, 1]
         cov = np.cov(x0.T)
         self.cov = cov / self.reduce_cov_factor
         self.icov = np.linalg.inv(self.cov)

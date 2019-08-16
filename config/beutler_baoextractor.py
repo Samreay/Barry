@@ -33,8 +33,8 @@ if __name__ == "__main__":
         for i in range(999):
             d.set_realisation(i)
             de.set_realisation(i)
-            fitter.add_model_and_dataset(beutler, d, name=f"Beutler 2017 {t}, mock number {i}", linestyle=ls, color="p")
-            fitter.add_model_and_dataset(beutler_extracted, de, name=f"Beutler 2017 + Extractor {t}, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(beutler, d, name=f"B17, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(beutler_extracted, de, name=f"B17 + Extractor, mock number {i}", linestyle=ls, color="p")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
@@ -56,7 +56,6 @@ if __name__ == "__main__":
                 res[n] = []
             if rese.get(n) is None:
                 rese[n] = []
-            print(chain.shape)
             res[n].append(chain[:, 0].mean())
             rese[n].append(np.std(chain[:, 0]))
         
@@ -101,10 +100,10 @@ if __name__ == "__main__":
         # Alpha-alpha comparison
         if True:
             from scipy.interpolate import interp1d
-            bins = np.linspace(0.73, 1.15, 31)
-            cols = {"Beutler": c4[0], "BeutlerExtracted": c4[2]}
+            bins = np.linspace(0.94, 1.06, 31)
+            cols = {"B17": c4[0], "B17 + Extractor": c4[2]}
             fig, axes = plt.subplots(2, 2, figsize=(5, 5), sharex=True)
-            labels = ["Beutler Recon", "BeutlerExtracted Recon"]
+            labels = ["B17", "B17 + Extractor"]
             #labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
@@ -113,11 +112,11 @@ if __name__ == "__main__":
                         ax.axis('off')
                         continue
                     elif i == j:
-                        h, _, _ = ax.hist(res[label1], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
-                        ax.hist(res[label1], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
+                        h, _, _ = ax.hist(res[label1], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1])
+                        ax.hist(res[label1], bins=bins, histtype="step", linewidth=1.5, color=cols[label1])
                         ax.set_yticklabels([])
                         ax.tick_params(axis='y', left=False)
-                        ax.set_xlim(0.85, 1.16)
+                        ax.set_xlim(0.93, 1.07)
                         yval = interp1d(0.5 * (bins[:-1] + bins[1:]), h, kind="nearest")([1.0])[0]
                         ax.plot([1.0, 1.0], [0, yval], color="k", lw=1, ls="--", alpha=0.4)
                         ax.spines['right'].set_visible(False)
@@ -125,17 +124,17 @@ if __name__ == "__main__":
                         if j == 0:
                             ax.spines['left'].set_visible(False)
                         if j == 1:
-                            ax.set_xlabel(label2.split()[0], fontsize=12)
-                            ax.set_xticks([0.9, 1.0, 1.1])
+                            ax.set_xlabel(label2, fontsize=12)
+                            ax.set_xticks([0.95, 1.0, 1.05])
                     else:
                         print(label1, label2)
                         a1 = np.array(res[label1])
                         a2 = np.array(res[label2])
-                        c = blend_hex(cols[label1.split()[0]], cols[label2.split()[0]])
+                        # c = blend_hex(cols[label1], cols[label2])
                         c = np.abs(a1 - a2)
-                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.01, vmax=0.15)
-                        ax.set_xlim(0.85, 1.16)
-                        ax.set_ylim(0.85, 1.16)
+                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.01, vmax=0.05)
+                        ax.set_xlim(0.93, 1.07)
+                        ax.set_ylim(0.93, 1.07)
                         ax.plot([0.8, 1.2], [0.8, 1.2], c="k", lw=1, alpha=0.8, ls=":")
                         ax.axvline(1.0, color="k", lw=1, ls="--", alpha=0.4)
                         ax.axhline(1.0, color="k", lw=1, ls="--", alpha=0.4)
@@ -144,11 +143,12 @@ if __name__ == "__main__":
                             ax.set_yticklabels([])
                             ax.tick_params(axis='y', left=False)
                         else:
-                            ax.set_ylabel(label1.split()[0], fontsize=12)
-                            ax.set_yticks([0.9, 1.0, 1.1])
+                            ax.set_ylabel(label1, fontsize=12)
+                            ax.set_yticks([0.95, 1.0, 1.05])
                         if i == 1:
-                            ax.set_xlabel(label2.split()[0], fontsize=12)
-                            ax.set_xticks([0.9, 1.0, 1.1])
+                            ax.set_xlabel(label2, fontsize=12)
+                            ax.set_xticks([0.95, 1.0, 1.05])
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphacomp.png", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_alphacomp.pdf", bbox_inches="tight", dpi=300, transparent=True)
 

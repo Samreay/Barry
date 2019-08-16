@@ -26,10 +26,10 @@ if __name__ == "__main__":
         data = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=postprocess)
         n = PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"])
         n.param_dict["b"].default = 2.07376 if r else 2.19779
-        fitter.add_model_and_dataset(n, data, name=f"Noda 2019 {rt} fixed $f$, $\\gamma$, $b$", linestyle="-" if r else "--", color="o")
-        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma"]), data, name=f"Noda 2019 {rt} fixed $f$, $\\gamma$", linestyle="-" if r else "--", color="r")
-        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f"],), data, name=f"Noda 2019 {rt} fixed $f$", linestyle="-" if r else "--", color="lb")
-        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om"],), data, name=f"Noda 2019 {rt} fixed om", linestyle="-" if r else "--", color="p")
+        fitter.add_model_and_dataset(n, data, name=f"N19 {rt} fixed $f$, $\\gamma$, $b$", linestyle="-" if r else "--", color="o", shade_alpha=0.7)
+        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma"]), data, name=f"N19 {rt} fixed $f$, $\\gamma$", linestyle="-" if r else "--", color="r", shade_alpha=0.3)
+        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f"],), data, name=f"N19 {rt} fixed $f$", linestyle="-" if r else "--", color="p", shade_alpha=0.1)
+        fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om"],), data, name=f"N19 {rt}", linestyle="-" if r else "--", color="lb", shade_alpha=0.1)
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
@@ -39,13 +39,18 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         c = ChainConsumer()
+        names2 = []
         for posterior, weight, chain, model, data, extra in fitter.load():
             print(model.get_names())
             print(chain.mean(axis=0))
+            name = extra["name"]
+            if "fixed $f$" in name:
+                names2.append(name)
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20, legend_artists=True)
-        c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
-        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
+        c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
+        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
+        c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"], truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0}, parameters=4, chains=names2)
         # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
 

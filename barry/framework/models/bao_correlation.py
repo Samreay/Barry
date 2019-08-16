@@ -107,7 +107,7 @@ class CorrelationPolynomial(Model):
         ss = self.data[0]["dist"]
         xi = self.data[0]["xi0"]
         err = np.sqrt(np.diag(self.data[0]["cov"]))
-        xi2 = self.get_model(params, self.data)
+        xi2 = self.get_model(params, self.data[0])
 
         if smooth_params is not None:
             smooth = self.get_model(smooth_params, self.data[0], smooth=True)
@@ -135,7 +135,7 @@ class CorrelationPolynomial(Model):
         axes[0].annotate(string, (0.01, ypos), xycoords="axes fraction", horizontalalignment="left",
                          verticalalignment=va)
         axes[1].legend()
-        axes[1].set_xlabel("k")
+        axes[1].set_xlabel("s")
         if self.postprocess is None:
             axes[1].set_ylabel("xi(s) / xi_{smooth}(s)")
         else:

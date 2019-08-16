@@ -11,7 +11,7 @@ if __name__ == "__main__":
         model = CorrBeutler2017()
         model_smooth = CorrBeutler2017(smooth=True)
 
-        dataset1 = CorrelationFunction_SDSS_DR12_Z061_NGC(recon=recon, reduce_cov_factor=10)
+        dataset1 = CorrelationFunction_SDSS_DR12_Z061_NGC(recon=recon)
         data1 = dataset1.get_data()
 
         # First comparison - the actual recon data
