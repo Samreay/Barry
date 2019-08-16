@@ -135,15 +135,15 @@ if __name__ == "__main__":
     model_pre = PowerDing2018(recon=False)
     model_post = PowerDing2018(recon=True)
 
-    from barry.framework.datasets.mock_power import PowerSpectrum_SDSS_DR12_Z051_NGC
-    dataset = PowerSpectrum_SDSS_DR12_Z051_NGC()
+    from barry.framework.datasets.mock_power import PowerSpectrum_SDSS_DR12_Z061_NGC
+    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC()
     data = dataset.get_data()
     model_pre.set_data(data)
     model_post.set_data(data)
     p = {"om": 0.3, "alpha": 1.0, "sigma_s": 10.0, "b": 1.6, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
 
     import timeit
-    n = 100
+    n = 200
 
     def test():
         model_post.get_likelihood(p, data[0])

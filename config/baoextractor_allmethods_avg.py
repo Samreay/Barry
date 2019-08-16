@@ -18,15 +18,20 @@ if __name__ == "__main__":
 
     fitter = Fitter(dir_name)
     p = BAOExtractor(r_s)
-    for r in [True, False]:
-        fix = ["om", "f"]
+    cs = ["#262232", "#116A71", "#48AB75", "#b7c742"]
+
+    for r in [True]:
         t = "Recon" if r else "Prerecon"
-        ls = "-" if r else "--"
-        data = MockPowerSpectrum(name="BAOE mean", recon=r, min_k=0.03, max_k=0.30, postprocess=p)
-        fitter.add_model_and_dataset(PowerBeutler2017(postprocess=p, recon=r, fix_params=fix), data, name=f"Beutler {t}", linestyle=ls, color="b")
-        fitter.add_model_and_dataset(PowerSeo2016(postprocess=p, recon=r, fix_params=fix), data, name=f"Seo {t}", linestyle=ls, color="lg")
-        fitter.add_model_and_dataset(PowerDing2018(postprocess=p, recon=r, fix_params=fix), data, name=f"Ding {t}", linestyle=ls, color="o")
-        fitter.add_model_and_dataset(PowerNoda2019(postprocess=p, recon=r, fix_params=fix), data, name=f"Noda {t}", linestyle=ls, color="r")
+        datae = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, min_k=0.03, max_k=0.30, postprocess=p)
+        data = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, min_k=0.03, max_k=0.30)
+        for d, ls, n in zip([data, datae], ["-", ":"], ["", " Extracted"]):
+            if n:
+                fix = ["om", "f", "a1", "a2", "a3", "a4", "a5"]
+            else:
+                fix = ["om", "f"]
+            fitter.add_model_and_dataset(PowerBeutler2017(postprocess=p, recon=r, fix_params=fix), d, name=f"Beutler 2017{n} {t}", linestyle=ls, color=cs[0])
+            fitter.add_model_and_dataset(PowerSeo2016(postprocess=p, recon=r, fix_params=fix), d, name=f"Seo 2016{n} {t}", linestyle=ls, color=cs[1])
+            fitter.add_model_and_dataset(PowerDing2018(postprocess=p, recon=r, fix_params=fix), d, name=f"Ding 2018{n} {t}", linestyle=ls, color=cs[2])
 
     sampler = EnsembleSampler(temp_dir=dir_name)
     fitter.set_sampler(sampler)

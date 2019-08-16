@@ -72,25 +72,28 @@ if __name__ == "__main__":
     model1 = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}")
     model_smooth = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}", smooth=True)
 
-    from barry.framework.datasets.mock_power import MockPowerSpectrum
-    dataset1 = MockPowerSpectrum(name="Recon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=30, step_size=3)
+    from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
+    dataset1 = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=recon)
     data1 = dataset1.get_data()
     model1.set_data(data1)
 
     # First comparison - the actual recon data
-    p, minv = model1.optimize()
-    model_smooth.set_data(data1)
-    p2, minv2 = model_smooth.optimize()
-    print(p)
-    print(minv)
-    model1.plot(p, smooth_params=p2)
-
     if False:
+        p, minv = model1.optimize()
+        model_smooth.set_data(data1)
+        p2, minv2 = model_smooth.optimize()
+        print(p)
+        print(minv)
+        model1.plot(p, smooth_params=p2)
+
+    if True:
         import timeit
-        n = 100
+        n = 200
+        p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5, "sigma_s": 10.0, "b": 1.6, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
+
 
         def test():
-            model1.get_likelihood(p)
+            model1.get_likelihood(p, data1[0])
 
         print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
