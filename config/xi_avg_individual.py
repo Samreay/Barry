@@ -26,14 +26,14 @@ if __name__ == "__main__":
 
         d = CorrelationFunction_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
 
-        smooth = CorrBeutler2017(smooth=True)
+        # smooth = CorrBeutler2017(smooth=True)
         beutler = CorrBeutler2017()
         seo = CorrSeo2016(recon=r)
         ding = CorrDing2018(recon=r)
 
-        for i in range(1000):
+        for i in range(999):
             d.set_realisation(i)
-            fitter.add_model_and_dataset(smooth, d, name=f"Smooth {t}, mock number {i}", linestyle=ls, color="p")
+            # fitter.add_model_and_dataset(smooth, d, name=f"Smooth {t}, mock number {i}", linestyle=ls, color="p")
             fitter.add_model_and_dataset(beutler, d, name=f"Beutler {t}, mock number {i}", linestyle=ls, color="p")
             fitter.add_model_and_dataset(seo, d, name=f"Seo {t}, mock number {i}", linestyle=ls, color="r")
             fitter.add_model_and_dataset(ding, d, name=f"Ding {t}, mock number {i}", linestyle=ls, color="lb")
