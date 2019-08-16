@@ -38,29 +38,46 @@ class MockAverageCorrelations(Dataset):
 
     def _compute_cov(self):
         # TODO: Generalise for other multipoles poles
-        x0 = np.array(self.all_data)[:, :, 2]
+        ad = np.array(self.all_data)
+        if ad.shape[2] > 2:
+            x0 = ad[:, :, 2]
+        else:
+            x0 = ad[:, :, 1]
         cov = np.cov(x0.T)
         self.cov = cov / self.reduce_cov_factor
         self.icov = np.linalg.inv(self.cov)
 
     def get_data(self):
-        return [{
+        d = {
             "dist": self.data[:, 0],
-            "xi": self.data[:, 1],
-            "xi0": self.data[:, 2],
-            "xi2": self.data[:, 3],
-            "xi4": self.data[:, 4],
             "cov": self.cov,
             "icov": self.icov,
             "name": self.name,
             "cosmology": self.cosmology,
             "num_mocks": len(self.all_data)
-        }]
+        }
+        if self.data.shape[1] > 2:
+            d.update({
+                "xi": self.data[:, 1],
+                "xi0": self.data[:, 2],
+                "xi2": self.data[:, 3],
+                "xi4": self.data[:, 4],
+            })
+        else:
+            d.update({
+                "xi0": self.data[:, 1],
+            })
+        return d
 
 
-class MockSDSSdr7CorrelationFunction(MockAverageCorrelations):
+class CorrelationFunction_SDSS_DR7_Z015_MGS(MockAverageCorrelations):
     def __init__(self, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
         super().__init__("sdss_dr7_corr.pkl", min_dist, max_dist, recon, reduce_cov_factor, realisation)
+
+
+class CorrelationFunction_SDSS_DR12_Z061_NGC(MockAverageCorrelations):
+    def __init__(self, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
+        super().__init__("sdss_dr12_ngc_corr_zbin0p61.pkl", min_dist, max_dist, recon, reduce_cov_factor, realisation)
 
 
 if __name__ == "__main__":
@@ -68,7 +85,7 @@ if __name__ == "__main__":
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
     # Some basic checks for data we expect to be there
-    dataset = MockSDSSdr7CorrelationFunction()
+    dataset = CorrelationFunction_SDSS_DR7_Z015_MGS()
     data = dataset.get_data()
 
     import matplotlib.pyplot as plt

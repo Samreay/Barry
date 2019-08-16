@@ -36,6 +36,8 @@ class Model(ABC):
         return self.name
 
     def set_data(self, data):
+        if not isinstance(data, list):
+            data = [data]
         self.data = data
 
     def add_param(self, name, label, min, max, default):

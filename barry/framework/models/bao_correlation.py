@@ -30,7 +30,7 @@ class CorrelationPolynomial(Model):
     def set_data(self, data):
         super().set_data(data)
 
-        c = data[0]["cosmology"]  # TODO: Update this for multiple datasets with diff cosmology
+        c = self.data[0]["cosmology"]  # TODO: Update this for multiple datasets with diff cosmology
         if self.cosmology != c:
             self.recon_smoothing_scale = c["reconsmoothscale"]
             self.camb, self.PT = getCambGeneratorAndPT(h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
@@ -96,7 +96,7 @@ class CorrelationPolynomial(Model):
     def get_likelihood(self, p, d):
         xi_model = self.get_model(p, d, smooth=self.smooth)
 
-        diff = (d["xi"] - xi_model)
+        diff = (d["xi0"] - xi_model)
         num_mocks = d["num_mocks"]
         num_params = len(self.get_active_params())
         return self.get_chi2_likelihood(diff, d["icov"], num_mocks=num_mocks, num_params=num_params)
@@ -107,7 +107,7 @@ class CorrelationPolynomial(Model):
         ss = self.data[0]["dist"]
         xi = self.data[0]["xi0"]
         err = np.sqrt(np.diag(self.data[0]["cov"]))
-        xi2 = self.get_model(params)
+        xi2 = self.get_model(params, self.data)
 
         if smooth_params is not None:
             smooth = self.get_model(smooth_params, self.data[0], smooth=True)
