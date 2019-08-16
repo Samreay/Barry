@@ -8,6 +8,7 @@ from barry.framework.postprocessing import BAOExtractor, PureBAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
+import numpy as np
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
@@ -40,16 +41,42 @@ if __name__ == "__main__":
     cov_original = datas[0].cov
     cov_noda = calc_cov_noda_mixed(pk_cov, denoms, ks, pk, k_range, is_extracted)
     cov_noda_diag = calc_cov_noda_mixed(pk_cov_diag, denoms, ks, pk, k_range, is_extracted)
-    import numpy as np
+
+    # trim covariance to the same shape as the data
     mask = (ks >= mink) & (ks <= maxk)
     mask2d = mask[np.newaxis, :] & mask[:, np.newaxis]
+    cov_noda = cov_noda[mask2d].reshape((mask.sum(), mask.sum()))
+    cov_noda_diag = cov_noda_diag[mask2d].reshape((mask.sum(), mask.sum()))
+
+    # redorder cov matrix, pk goes first, then the extracted part
+    mask_extracted = postprocess.get_is_extracted(datas[0].ks)
+    index_sort = np.arange(mask_extracted.size).astype(np.int) + (1000 * mask_extracted)
+    a = np.argsort(index_sort)
+    cov_noda = cov_noda[:, a]
+    cov_noda = cov_noda[a, :]
+    cov_noda_diag = cov_noda_diag[:, a]
+    cov_noda_diag = cov_noda_diag[a, :]
+
+    # import matplotlib.pyplot as plt
+    # import seaborn as sb
+    # fig, axes = plt.subplots(ncols=3, figsize=(14, 4))
+    # axes[0].set_title("Mocks")
+    # axes[1].set_title("Nishimichi 2018, (Eq7)")
+    # axes[2].set_title("Nishimichi 2018, (Eq7), diagonal")
+    # # axes[3].set_title("norm diff first two, capped at unity")
+    # sb.heatmap(np.log(np.abs(datas[0].get_data()[0]["cov"])), ax=axes[0])
+    # sb.heatmap(np.log(np.abs(cov_noda)), ax=axes[1])
+    # sb.heatmap(np.log(np.abs(cov_noda_diag) + np.abs(datas[0].get_data()[0]["cov"]).min()), ax=axes[2])
+    # # sb.heatmap(la_cov_noda_diag, ax=axes[2])
+    # # sb.heatmap((cov_brute - cov_noda_diag) / cov_brute, ax=axes[3], vmin=-1, vmax=1)
+    # fig.subplots_adjust(hspace=0.0)
+    # plt.show()
+    # exit()
     # import seaborn as sb
     # sb.heatmap(mask2d.astype(np.int))
     # import matplotlib.pyplot as plt
     # plt.show()
 
-    cov_noda = cov_noda[mask2d].reshape((mask.sum(), mask.sum()))
-    cov_noda_diag = cov_noda_diag[mask2d].reshape((mask.sum(), mask.sum()))
 
     datas[1].set_cov(cov_noda)
     datas[2].set_cov(cov_noda_diag)

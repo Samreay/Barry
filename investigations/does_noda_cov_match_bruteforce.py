@@ -42,7 +42,7 @@ if __name__ == "__main__":
     extractor = PureBAOExtractor(r_s)
     mink = 0.02
 
-    step_size = 5
+    step_size = 1
     data_raw = PowerSpectrum_SDSS_DR12_Z061_NGC(step_size=step_size, min_k=0.0)
     data = PowerSpectrum_SDSS_DR12_Z061_NGC(step_size=step_size, min_k=mink)
     data2 = PowerSpectrum_SDSS_DR12_Z061_NGC(postprocess=extractor, step_size=step_size, min_k=mink)

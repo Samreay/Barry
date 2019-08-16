@@ -61,11 +61,10 @@ if __name__ == "__main__":
     extractor = BAOExtractor(r_s, reorder=False)
     extractor2 = PureBAOExtractor(r_s)
 
-    step_size = 5
+    step_size = 1
     mink = 0.02
     maxk = 0.3
     data_raw = PowerSpectrum_SDSS_DR12_Z061_NGC(step_size=step_size, fake_diag=False, min_k=0.0, max_k=0.32)
-    data3 = PowerSpectrum_SDSS_DR12_Z061_NGC(step_size=step_size, fake_diag=True, min_k=mink, max_k=maxk)
     data2 = PowerSpectrum_SDSS_DR12_Z061_NGC(postprocess=extractor, step_size=step_size, min_k=mink, max_k=maxk)
 
     ks = data_raw.ks
