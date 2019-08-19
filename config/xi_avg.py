@@ -25,7 +25,17 @@ if __name__ == "__main__":
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
         d = CorrelationFunction_SDSS_DR12_Z061_NGC(recon=r)
+
+        # Fix sigma_nl for one of the Beutler models
+        model = CorrBeutler2017()
+        model.set_data(d.get_data())
+        ps, minv = model.optimize()
+        sigma_nl = ps["sigma_nl"]
+        model.set_default("sigma_nl", sigma_nl)
+        model.set_fix_params(["om", "sigma_nl"])
+
         fitter.add_model_and_dataset(CorrBeutler2017(), d, name=f"Beutler 2017 {t}", linestyle=ls, color=cs[0])
+        fitter.add_model_and_dataset(model, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}", linestyle=ls, color=cs[0])
         fitter.add_model_and_dataset(CorrSeo2016(recon=r), d, name=f"Seo 2016 {t}", linestyle=ls, color=cs[1])
         fitter.add_model_and_dataset(CorrDing2018(recon=r), d, name=f"Ding 2018 {t}", linestyle=ls, color=cs[2])
 

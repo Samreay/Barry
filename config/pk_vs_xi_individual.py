@@ -36,11 +36,11 @@ if __name__ == "__main__":
             d_pk.set_realisation(i)
             d_xi.set_realisation(i)
 
-            fitter.add_model_and_dataset(beutler_pk, d_pk, name=f"Beutler 2017 P(k), mock number {i}", linestyle="-", color="p")
+            fitter.add_model_and_dataset(beutler_pk, d_pk, name=f"Beutler 2017 $P(k)$, mock number {i}", linestyle="-", color="p", realisation=i)
             # fitter.add_model_and_dataset(seo_pk, d_pk, name=f"Seo 2016 P(k), mock number {i}", linestyle="-", color="r")
             # fitter.add_model_and_dataset(ding_pk, d_pk, name=f"Ding 2018 P(k), mock number {i}", linestyle="-", color="lb")
 
-            fitter.add_model_and_dataset(beutler_xi, d_xi, name=f"Beutler 2017 corr, mock number {i}", linestyle=":", color="p")
+            fitter.add_model_and_dataset(beutler_xi, d_xi, name=f"Beutler 2017 $\\xi(s)$, mock number {i}", linestyle=":", color="p", realisation=i)
             # fitter.add_model_and_dataset(seo_xi, d_xi, name=f"Seo 2016 corr, mock number {i}", linestyle=":", color="r")
             # fitter.add_model_and_dataset(ding_xi, d_xi, name=f"Ding 2018 corr, mock number {i}", linestyle=":", color="lb")
 
@@ -59,6 +59,7 @@ if __name__ == "__main__":
         res = {}
         for posterior, weight, chain, model, data, extra in fitter.load():
             n = extra["name"].split(",")[0]
+            realisation = extra["realisation"]
             if res.get(n) is None:
                 res[n] = []
             i = posterior.argmax()
@@ -73,80 +74,21 @@ if __name__ == "__main__":
         c3 = ["#2C455A", "#258E71", "#C1C64D"] # ["#501b73", "#a73b8f", "#ee8695"]
         c4 = ["#262232","#116A71","#48AB75","#D1E05B"] #["#461765", "#7b2a95", "#d54d88", "#f19a9b"]
         c5 = ["#262232", "#1F4D5C", "#0E7A6E", "#5BA561", "#C1C64D"] # ["#3c1357", "#61208d", "#a73b8f", "#e8638b", "#f4aea3"]
-        cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
 
         plt.rc('text', usetex=True)
         plt.rc('font', family='serif')
+        bins_both = np.linspace(0.92, 1.08, 31)
+        bins = np.linspace(0.94, 1.06, 31)
+        ticks = [0.97, 1.0, 1.03]
+        lim = bins[0], bins[-1]
+        lim_both = bins_both[0], bins_both[-1]
 
-        # Make histogram comparison
-        if False:
-            fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
-            bins = np.linspace(0.8, 1.15, 31)
-            for label, means in res.items():
-                if "Prerecon" in label:
-                    ax = axes[0]
-                else:
-                    ax = axes[1]
-                c = cols[label.split()[0]]
-                ax.hist(means[:, 0], bins=bins, label=" ".join(label.split()[:-1]), histtype="stepfilled", linewidth=2, alpha=0.3, color=c)
-                ax.hist(means[:, 0], bins=bins, histtype="step", linewidth=1.5, color=cols[label.split()[0]])
-            axes[1].set_xlabel(r"$\langle \alpha \rangle$", fontsize=14)
-            axes[0].set_yticklabels([])
-            axes[1].set_yticklabels([])
-            axes[0].axvline(1.0, color="k", lw=1, ls="--", alpha=0.6)
-            axes[1].axvline(1.0, color="k", lw=1, ls="--", alpha=0.6)
-            axes[0].annotate("Prerecon", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
-            axes[1].annotate("Recon", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
-            #leg1 = axes[0].legend(loc=2, frameon=False)
-            leg2 = axes[1].legend(loc=2, frameon=False)
-            for lh in leg2.legendHandles:
-                lh.set_alpha(1)
-            axes[0].tick_params(axis='y', left=False)
-            axes[1].tick_params(axis='y', left=False)
-            plt.subplots_adjust(hspace=0.0)
-            fig.savefig(pfn + "_alphahist.png", bbox_inches="tight", dpi=300, transparent=True)
-            fig.savefig(pfn + "_alphahist.pdf", bbox_inches="tight", dpi=300, transparent=True)
-
-        # Make histogram comparison
-        if False:
-            fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
-            bins = np.linspace(0.01, 0.2, 31)
-            for label, means in res.items():
-                if "Prerecon" in label:
-                    ax = axes[0]
-                else:
-                    ax = axes[1]
-                c = cols[label.split()[0]]
-                ax.hist(means[:, 1], bins=bins, label=label, histtype="stepfilled", linewidth=2, alpha=0.3, color=c)
-                ax.hist(means[:, 1], bins=bins, histtype="step", linewidth=1.5, color=cols[label.split()[0]])
-            axes[1].set_xlabel(r"$\langle \alpha \rangle$", fontsize=14)
-            axes[0].set_yticklabels([])
-            axes[1].set_yticklabels([])
-            #axes[0].axvline(1.0, color="k", lw=1, ls="--", alpha=0.6)
-            #axes[1].axvline(1.0, color="k", lw=1, ls="--", alpha=0.6)
-            leg1 = axes[0].legend(loc=1, frameon=False)
-            leg2 = axes[1].legend(loc=1, frameon=False)
-            for lh in leg1.legendHandles + leg2.legendHandles: 
-                lh.set_alpha(1)
-            #axes[0].tick_params(axis='y', left=False)
-            #axes[1].tick_params(axis='y', left=False)
-            plt.subplots_adjust(hspace=0.0)
-            fig.savefig(pfn + "_alphaerrhist.png", bbox_inches="tight", dpi=300, transparent=True)
-            fig.savefig(pfn + "_alphaerrhist.pdf", bbox_inches="tight", dpi=300, transparent=True)
-
-        from matplotlib.colors import to_rgb, to_hex
-        def blend_hex(hex1, hex2):
-            a = np.array(to_rgb(hex1))
-            b = np.array(to_rgb(hex2))
-            return to_hex(0.5 * (a + b))
-                
         # Alpha-alpha comparison
         if True:
             from scipy.interpolate import interp1d
-            bins = np.linspace(0.73, 1.15, 31)
-            cols = {"Beutler 2017 P(k)": c2[0], "Beutler 2017 corr": c2[1]}
-            fig, axes = plt.subplots(2, 2, figsize=(10, 10), sharex=True)
-            labels = ["Beutler 2017 P(k)", "Beutler 2017 corr"]
+            cols = {"Beutler 2017 $P(k)$": c2[0], "Beutler 2017 $\\xi(s)$": c2[1]}
+            fig, axes = plt.subplots(2, 2, figsize=(6, 6), sharex=True)
+            labels = ["Beutler 2017 $P(k)$", "Beutler 2017 $\\xi(s)$"]
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
                     ax = axes[i, j]
@@ -158,7 +100,7 @@ if __name__ == "__main__":
                         ax.hist(res[label1][:, 0], bins=bins, histtype="step", linewidth=1.5, color=cols[label1])
                         ax.set_yticklabels([])
                         ax.tick_params(axis='y', left=False)
-                        ax.set_xlim(0.85, 1.16)
+                        ax.set_xlim(*lim)
                         yval = interp1d(0.5 * (bins[:-1] + bins[1:]), h, kind="nearest")([1.0])[0]
                         ax.plot([1.0, 1.0], [0, yval], color="k", lw=1, ls="--", alpha=0.4)
                         ax.spines['right'].set_visible(False)
@@ -167,16 +109,16 @@ if __name__ == "__main__":
                             ax.spines['left'].set_visible(False)
                         if j == 1:
                             ax.set_xlabel(label2, fontsize=12)
-                            ax.set_xticks([0.9, 1.0, 1.1])
+                            ax.set_xticks(ticks)
                     else:
                         print(label1, label2)
                         a1 = np.array(res[label2][:, 0])
                         a2 = np.array(res[label1][:, 0])
-                        c = blend_hex(cols[label1], cols[label2])
+                        print("Correlation is: ", np.corrcoef(a1, a2))
                         c = np.abs(a1 - a2)
-                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.01, vmax=0.15)
-                        ax.set_xlim(0.85, 1.16)
-                        ax.set_ylim(0.85, 1.16)
+                        ax.scatter(a1, a2, s=1, c=c, cmap="viridis_r", vmin=-0.005, vmax=0.04)
+                        ax.set_xlim(*lim)
+                        ax.set_ylim(*lim)
                         ax.plot([0.8, 1.2], [0.8, 1.2], c="k", lw=1, alpha=0.8, ls=":")
                         ax.axvline(1.0, color="k", lw=1, ls="--", alpha=0.4)
                         ax.axhline(1.0, color="k", lw=1, ls="--", alpha=0.4)
@@ -186,63 +128,10 @@ if __name__ == "__main__":
                             ax.tick_params(axis='y', left=False)
                         else:
                             ax.set_ylabel(label1, fontsize=12)
-                            ax.set_yticks([0.9, 1.0, 1.1])
+                            ax.set_yticks(ticks)
                         if i == 1:
                             ax.set_xlabel(label2, fontsize=12)
-                            ax.set_xticks([0.9, 1.0, 1.1])
+                            ax.set_xticks(ticks)
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphacomp.png", bbox_inches="tight", dpi=300, transparent=True)
             fig.savefig(pfn + "_alphacomp.pdf", bbox_inches="tight", dpi=300, transparent=True)
-
-        if False:
-            from scipy.interpolate import interp1d
-            bins = np.linspace(0.02, 0.17, 31)
-            cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
-            fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
-            labels = ["Beutler 2017 Recon", "Seo 2016 Recon", "Ding 2018 Recon", "Noda 2019 Recon"]
-            #labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
-            v1, v2 = 0.01, 0.17
-            for i, label1 in enumerate(labels):
-                for j, label2 in enumerate(labels):
-                    ax = axes[i, j]
-                    if i < j:
-                        ax.axis('off')
-                        continue
-                    elif i == j:
-                        h, _, _ = ax.hist(res[label1][:, 1], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
-                        ax.hist(res[label1][:, 1], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
-                        ax.set_yticklabels([])
-                        ax.tick_params(axis='y', left=False)
-                        ax.set_xlim(v1, v2)
-                        ax.spines['right'].set_visible(False)
-                        ax.spines['top'].set_visible(False)
-                        if j == 0:
-                            ax.spines['left'].set_visible(False)
-                        if j == 3:
-                            ax.set_xlabel(label2, fontsize=12)
-                            #ax.set_xticks([0.9, 1.0, 1.1])
-                    else:
-                        print(label1, label2)
-                        a1 = np.array(res[label2][:, 1])
-                        a2 = np.array(res[label1][:, 1])
-                        c = blend_hex(cols[label1.split()[0]], cols[label2.split()[0]])
-                        c = np.abs(a1 - a2)
-                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.01, vmax=0.15)
-                        ax.set_xlim(v1, v2)
-                        ax.set_ylim(v1, v2)
-                        ax.plot([v1, v2], [v1, v2], c="k", lw=1, alpha=0.8, ls=":")
-                        #ax.axvline(1.0, color="k", lw=1, ls="--", alpha=0.4)
-                        #ax.axhline(1.0, color="k", lw=1, ls="--", alpha=0.4)
-                        
-                        if j != 0:
-                            ax.set_yticklabels([])
-                            ax.tick_params(axis='y', left=False)
-                        else:
-                            ax.set_ylabel(label1, fontsize=12)
-                            #ax.set_yticks([0.9, 1.0, 1.1])
-                        if i == 3:
-                            ax.set_xlabel(label2, fontsize=12)
-                            #ax.set_xticks([0.9, 1.0, 1.1])
-            plt.subplots_adjust(hspace=0.0, wspace=0)
-            fig.savefig(pfn + "_alphaerrcomp.png", bbox_inches="tight", dpi=300, transparent=True)
-            fig.savefig(pfn + "_alphaerrcomp.pdf", bbox_inches="tight", dpi=300, transparent=True)

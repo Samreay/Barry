@@ -27,14 +27,14 @@ if __name__ == "__main__":
         d = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
         de = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=p, realisation=0)
 
-        beutler = PowerBeutler2017(recon=r)
-        beutler_extracted = PowerBeutler2017(recon=r, postprocess=p)
+        beutler = PowerDing2018(recon=r)
+        beutler_extracted = PowerDing2018(recon=r, postprocess=p)
 
         for i in range(999):
             d.set_realisation(i)
             de.set_realisation(i)
-            fitter.add_model_and_dataset(beutler, d, name=f"B17, mock number {i}", linestyle=ls, color="p")
-            fitter.add_model_and_dataset(beutler_extracted, de, name=f"B17 + Extractor, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(beutler, d, name=f"D18, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(beutler_extracted, de, name=f"D18 + Extractor, mock number {i}", linestyle=ls, color="p")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
