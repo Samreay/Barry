@@ -34,9 +34,9 @@ if __name__ == "__main__":
         for i in range(999):
             d.set_realisation(i)
             # fitter.add_model_and_dataset(smooth, d, name=f"Smooth {t}, mock number {i}", linestyle=ls, color="p")
-            fitter.add_model_and_dataset(beutler, d, name=f"Beutler {t}, mock number {i}", linestyle=ls, color="p")
-            fitter.add_model_and_dataset(seo, d, name=f"Seo {t}, mock number {i}", linestyle=ls, color="r")
-            fitter.add_model_and_dataset(ding, d, name=f"Ding {t}, mock number {i}", linestyle=ls, color="lb")
+            fitter.add_model_and_dataset(beutler, d, name=f"Beutler 2017 {t}, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(seo, d, name=f"Seo 2016 {t}, mock number {i}", linestyle=ls, color="r")
+            fitter.add_model_and_dataset(ding, d, name=f"Ding 2018 {t}, mock number {i}", linestyle=ls, color="lb")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
@@ -61,11 +61,6 @@ if __name__ == "__main__":
             res[n].append([chain[:, 0].mean(), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2])
         for label in res.keys():
             res[label] = np.array(res[label])
-        smooth_prerecon = res["Smooth Prerecon"]
-        smooth_recon = res["Smooth Recon"]
-        for label, values in res.items():
-            smooth = smooth_prerecon if "Prerecon" in label else smooth_recon
-            values[:, -1] += smooth[:, -2]
         ks = [l for l in res.keys() if "Smooth" not in l]
 
         # Define colour scheme
@@ -74,24 +69,13 @@ if __name__ == "__main__":
         c4 = ["#262232", "#116A71", "#48AB75", "#D1E05B"]  # ["#461765", "#7b2a95", "#d54d88", "#f19a9b"]
         c5 = ["#262232", "#1F4D5C", "#0E7A6E", "#5BA561",
               "#C1C64D"]  # ["#3c1357", "#61208d", "#a73b8f", "#e8638b", "#f4aea3"]
-        cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
-
-        # chi2 comparison
-        if False:
-
-            for k in ks:
-                plt.hist(res[k][:, -1], label=k, lw=2, histtype='step', bins=20)
-            plt.legend(loc=2)
-            plt.axvline(4)
-            plt.xlabel(r"$\Delta \chi^2$")
+        cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2]}
 
         # Make histogram comparison
         if True:
             fig, axes = plt.subplots(nrows=2, figsize=(5, 6), sharex=True)
             bins = np.linspace(0.73, 1.15, 31)
             for label, means in res.items():
-                if "Smooth" in label:
-                    continue
                 if "Prerecon" in label:
                     ax = axes[0]
                 else:
@@ -112,6 +96,7 @@ if __name__ == "__main__":
             axes[1].tick_params(axis='y', left=False)
             plt.subplots_adjust(hspace=0.0)
             fig.savefig(pfn + "_alphahist.png", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_alphahist.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
         from matplotlib.colors import to_rgb, to_hex
 
@@ -127,9 +112,9 @@ if __name__ == "__main__":
             from scipy.interpolate import interp1d
 
             bins = np.linspace(0.73, 1.15, 31)
-            cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
-            fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
-            labels = ["Beutler Recon", "Seo Recon", "Ding Recon", "Noda Recon"]
+            cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2]}
+            fig, axes = plt.subplots(3, 3, figsize=(10, 10), sharex=True)
+            labels = ["Beutler 2017 Recon", "Seo 2016 Recon", "Ding 2018 Recon"]
             # labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
@@ -151,7 +136,7 @@ if __name__ == "__main__":
                         ax.spines['top'].set_visible(False)
                         if j == 0:
                             ax.spines['left'].set_visible(False)
-                        if j == 3:
+                        if j == 2:
                             ax.set_xlabel(label2.split()[0], fontsize=12)
                             ax.set_xticks([0.9, 1.0, 1.1])
                     else:
@@ -173,9 +158,10 @@ if __name__ == "__main__":
                         else:
                             ax.set_ylabel(label1.split()[0], fontsize=12)
                             ax.set_yticks([0.9, 1.0, 1.1])
-                        if i == 3:
+                        if i == 2:
                             ax.set_xlabel(label2.split()[0], fontsize=12)
                             ax.set_xticks([0.9, 1.0, 1.1])
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphacomp.png", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_alphacomp.pdf", bbox_inches="tight", dpi=300, transparent=True)
 

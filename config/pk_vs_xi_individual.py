@@ -4,7 +4,7 @@ sys.path.append("..")
 from barry.framework.cosmology.camb_generator import getCambGenerator
 from barry.setup import setup
 from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, CorrBeutler2017, CorrSeo2016, CorrDing2018
-from barry.framework.datasets import PowerSpectrum_SDSS_DR7_Z015, CorrelationFunction_SDSS_DR12_Z061_NGC
+from barry.framework.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC, PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
 import numpy as np
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     for r in [True]:
         t = "Recon" if r else "Prerecon"
 
-        d_pk = PowerSpectrum_SDSS_DR7_Z015(recon=r, realisation=0)
+        d_pk = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
         d_xi = CorrelationFunction_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
 
         beutler_pk = PowerBeutler2017(recon=r)
@@ -66,11 +66,6 @@ if __name__ == "__main__":
             res[n].append([chain[:, 0].mean(), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2])
         for label in res.keys():
             res[label] = np.array(res[label])
-        smooth_prerecon = res["Smooth Prerecon"]
-        smooth_recon = res["Smooth Recon"]
-        for label, values in res.items():
-            smooth = smooth_prerecon if "Prerecon" in label else smooth_recon
-            values[:, -1] += smooth[:, -2]    
         ks = [l for l in res.keys() if "Smooth" not in l]
 
         # Define colour scheme
@@ -82,32 +77,12 @@ if __name__ == "__main__":
 
         plt.rc('text', usetex=True)
         plt.rc('font', family='serif')
-        # chi2 comparison
-        if False:
-            
-            for k in ks:
-                plt.hist(res[k][:, -1], label=k, lw=2, histtype='step', bins=20)
-            plt.legend(loc=2)
-            plt.axvline(4)
-            plt.xlabel(r"$\Delta \chi^2$")
-              
-        if False:
-            import pandas as pd
-            import seaborn as sb
-            alphas = np.vstack((res[k][:, 0] for k in ks))
-            df = pd.DataFrame(alphas.T, columns=ks)
-            fig, ax = plt.subplots(figsize=(6, 6))
-            sb.heatmap(df.corr(), annot=True, cmap="viridis", fmt="0.2f", square=True, ax=ax, cbar=False)
-            fig.savefig(pfn + "_corr.png", bbox_inches="tight", dpi=300, transparent=True)
-            fig.savefig(pfn + "_corr.pdf", bbox_inches="tight", dpi=300, transparent=True)
-            
+
         # Make histogram comparison
-        if True:
+        if False:
             fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
             bins = np.linspace(0.8, 1.15, 31)
             for label, means in res.items():
-                if "Smooth" in label:
-                    continue
                 if "Prerecon" in label:
                     ax = axes[0]
                 else:
@@ -133,12 +108,10 @@ if __name__ == "__main__":
             fig.savefig(pfn + "_alphahist.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
         # Make histogram comparison
-        if True:
+        if False:
             fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
             bins = np.linspace(0.01, 0.2, 31)
             for label, means in res.items():
-                if "Smooth" in label:
-                    continue
                 if "Prerecon" in label:
                     ax = axes[0]
                 else:
@@ -171,10 +144,9 @@ if __name__ == "__main__":
         if True:
             from scipy.interpolate import interp1d
             bins = np.linspace(0.73, 1.15, 31)
-            cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
-            fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
-            labels = ["Beutler 2017 Recon", "Seo 2016 Recon", "Ding 2018 Recon", "Noda 2019 Recon"]
-            #labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
+            cols = {"Beutler 2017 P(k)": c2[0], "Beutler 2017 corr": c2[1]}
+            fig, axes = plt.subplots(2, 2, figsize=(10, 10), sharex=True)
+            labels = ["Beutler 2017 P(k)", "Beutler 2017 corr"]
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
                     ax = axes[i, j]
@@ -182,8 +154,8 @@ if __name__ == "__main__":
                         ax.axis('off')
                         continue
                     elif i == j:
-                        h, _, _ = ax.hist(res[label1][:, 0], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
-                        ax.hist(res[label1][:, 0], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
+                        h, _, _ = ax.hist(res[label1][:, 0], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1])
+                        ax.hist(res[label1][:, 0], bins=bins, histtype="step", linewidth=1.5, color=cols[label1])
                         ax.set_yticklabels([])
                         ax.tick_params(axis='y', left=False)
                         ax.set_xlim(0.85, 1.16)
@@ -193,14 +165,14 @@ if __name__ == "__main__":
                         ax.spines['top'].set_visible(False)
                         if j == 0:
                             ax.spines['left'].set_visible(False)
-                        if j == 3:
+                        if j == 1:
                             ax.set_xlabel(label2, fontsize=12)
                             ax.set_xticks([0.9, 1.0, 1.1])
                     else:
                         print(label1, label2)
                         a1 = np.array(res[label2][:, 0])
                         a2 = np.array(res[label1][:, 0])
-                        c = blend_hex(cols[label1.split()[0]], cols[label2.split()[0]])
+                        c = blend_hex(cols[label1], cols[label2])
                         c = np.abs(a1 - a2)
                         ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.01, vmax=0.15)
                         ax.set_xlim(0.85, 1.16)
@@ -215,7 +187,7 @@ if __name__ == "__main__":
                         else:
                             ax.set_ylabel(label1, fontsize=12)
                             ax.set_yticks([0.9, 1.0, 1.1])
-                        if i == 3:
+                        if i == 1:
                             ax.set_xlabel(label2, fontsize=12)
                             ax.set_xticks([0.9, 1.0, 1.1])
             plt.subplots_adjust(hspace=0.0, wspace=0)
