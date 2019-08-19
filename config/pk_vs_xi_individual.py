@@ -24,23 +24,23 @@ if __name__ == "__main__":
         d_pk = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
         d_xi = CorrelationFunction_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
 
-        beutler_pk = PowerBeutler2017(recon=r)
+        # beutler_pk = PowerBeutler2017(recon=r)
         # seo_pk = PowerSeo2016(recon=r)
-        # ding_pk = PowerDing2018(recon=r)
+        ding_pk = PowerDing2018(recon=r)
 
-        beutler_xi = CorrBeutler2017()
+        # beutler_xi = CorrBeutler2017()
         # seo_xi = CorrSeo2016(recon=r)
-        # ding_xi = CorrDing2018(recon=r)
+        ding_xi = CorrDing2018(recon=r)
 
         for i in range(999):
             d_pk.set_realisation(i)
             d_xi.set_realisation(i)
 
-            fitter.add_model_and_dataset(beutler_pk, d_pk, name=f"Beutler 2017 $P(k)$, mock number {i}", linestyle="-", color="p", realisation=i)
+            fitter.add_model_and_dataset(ding_pk, d_pk, name=f"Ding 2018 $P(k)$, mock number {i}", linestyle="-", color="p", realisation=i)
             # fitter.add_model_and_dataset(seo_pk, d_pk, name=f"Seo 2016 P(k), mock number {i}", linestyle="-", color="r")
             # fitter.add_model_and_dataset(ding_pk, d_pk, name=f"Ding 2018 P(k), mock number {i}", linestyle="-", color="lb")
 
-            fitter.add_model_and_dataset(beutler_xi, d_xi, name=f"Beutler 2017 $\\xi(s)$, mock number {i}", linestyle=":", color="p", realisation=i)
+            fitter.add_model_and_dataset(ding_xi, d_xi, name=f"Ding 2018 $\\xi(s)$, mock number {i}", linestyle=":", color="p", realisation=i)
             # fitter.add_model_and_dataset(seo_xi, d_xi, name=f"Seo 2016 corr, mock number {i}", linestyle=":", color="r")
             # fitter.add_model_and_dataset(ding_xi, d_xi, name=f"Ding 2018 corr, mock number {i}", linestyle=":", color="lb")
 
@@ -86,9 +86,9 @@ if __name__ == "__main__":
         # Alpha-alpha comparison
         if True:
             from scipy.interpolate import interp1d
-            cols = {"Beutler 2017 $P(k)$": c2[0], "Beutler 2017 $\\xi(s)$": c2[1]}
+            cols = {"Ding 2018 $P(k)$": c2[0], "Ding 2018 $\\xi(s)$": c2[1]}
             fig, axes = plt.subplots(2, 2, figsize=(6, 6), sharex=True)
-            labels = ["Beutler 2017 $P(k)$", "Beutler 2017 $\\xi(s)$"]
+            labels = ["Ding 2018 $P(k)$", "Ding 2018 $\\xi(s)$"]
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
                     ax = axes[i, j]
