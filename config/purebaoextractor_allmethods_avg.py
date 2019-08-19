@@ -5,7 +5,7 @@ sys.path.append("..")
 from barry.setup import setup
 from barry.framework.models import PowerNoda2019, PowerSeo2016, PowerBeutler2017, PowerDing2018
 from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
-from barry.framework.postprocessing import BAOExtractor
+from barry.framework.postprocessing import PureBAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
 from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
 
     fitter = Fitter(dir_name)
-    p = BAOExtractor(r_s)
+    p = PureBAOExtractor(r_s)
     cs = ["#262232", "#116A71", "#48AB75", "#b7c742"]
 
     for r in [True]:

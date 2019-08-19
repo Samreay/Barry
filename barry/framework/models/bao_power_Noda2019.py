@@ -104,7 +104,7 @@ class PowerNoda2019(PowerSpectrumFit):
             kaiser_prefac = 1.0 + np.outer(growth / p["b"] * self.mu ** 2, 1.0-smoothing_kernel)
         else:
             kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T
-        propagator = kaiser_prefac**2*damping
+        propagator = damping
 
         # Compute the smooth model
         fog = np.exp(-p["A"]*ks**2)
@@ -115,9 +115,9 @@ class PowerNoda2019(PowerSpectrumFit):
 
         # Integrate over mu
         if smooth:
-            pk1d = integrate.simps(pk_smooth*(1.0 + 0.0 * pk_ratio*propagator + pk_spt), self.mu, axis=0)
+            pk1d = integrate.simps(pk_smooth*((1.0 + 0.0 * pk_ratio*propagator) * kaiser_prefac**2 + pk_spt), self.mu, axis=0)
         else:
-            pk1d = integrate.simps(pk_smooth*(1.0 + pk_ratio*propagator + pk_spt), self.mu, axis=0)
+            pk1d = integrate.simps(pk_smooth*((1.0 + pk_ratio*propagator) * kaiser_prefac**2 + pk_spt), self.mu, axis=0)
 
         pk_final = splev(k / p["alpha"], splrep(ks, pk1d))
 

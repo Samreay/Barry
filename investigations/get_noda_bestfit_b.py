@@ -30,4 +30,4 @@ if __name__ == "__main__":
         model1.plot(p)
 
         # FINDINGS
-        # 2.07376 for Recon, 2.19779 for prerecon
+        # 2.022 for Recon, 2.01238 for prerecon
