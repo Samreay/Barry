@@ -37,7 +37,7 @@ class CorrDing2018(CorrelationPolynomial):
 
         # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
         if self.recon:
-            self.smoothing_kernel = np.exp(-self.camb.ks ** 2 * self.recon_smoothing_scale ** 2 / 4.0)
+            self.smoothing_kernel = np.exp(-self.camb.ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0)
 
     def declare_parameters(self):
         # Define parameters

@@ -100,7 +100,7 @@ class PowerNoda2019(PowerSpectrumFit):
         # Compute the propagator
         if self.recon:
             # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
-            smoothing_kernel = np.exp(-ks ** 2 * self.recon_smoothing_scale ** 2 / 4.0)
+            smoothing_kernel = np.exp(-ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0)
             kaiser_prefac = 1.0 + np.outer(growth / p["b"] * self.mu ** 2, 1.0-smoothing_kernel)
         else:
             kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T
