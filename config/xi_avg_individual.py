@@ -71,18 +71,25 @@ if __name__ == "__main__":
               "#C1C64D"]  # ["#3c1357", "#61208d", "#a73b8f", "#e8638b", "#f4aea3"]
         cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2]}
 
+        plt.rc('text', usetex=True)
+        plt.rc('font', family='serif')
+
+        bins_both = np.linspace(0.92, 1.08, 31)
+        bins = np.linspace(0.95, 1.06, 31)
+        ticks = [0.97, 1.0, 1.03]
+        lim = bins[0], bins[-1]
+        lim_both = bins_both[0], bins_both[-1]
         # Make histogram comparison
         if True:
-            fig, axes = plt.subplots(nrows=2, figsize=(5, 6), sharex=True)
-            bins = np.linspace(0.73, 1.15, 31)
+            fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
             for label, means in res.items():
                 if "Prerecon" in label:
                     ax = axes[0]
                 else:
                     ax = axes[1]
                 c = cols[label.split()[0]]
-                ax.hist(means[:, 0], bins=bins, label=label, histtype="stepfilled", linewidth=2, alpha=0.3, color=c)
-                ax.hist(means[:, 0], bins=bins, histtype="step", linewidth=1.5, color=cols[label.split()[0]])
+                ax.hist(means[:, 0], bins=bins_both, label=" ".join(label.split()[:-1]), histtype="stepfilled", linewidth=2, alpha=0.3, color=c)
+                ax.hist(means[:, 0], bins=bins_both, histtype="step", linewidth=1.5, color=cols[label.split()[0]])
             axes[1].set_xlabel(r"$\langle \alpha \rangle$", fontsize=14)
             axes[0].set_yticklabels([])
             axes[1].set_yticklabels([])
@@ -95,6 +102,10 @@ if __name__ == "__main__":
             axes[0].tick_params(axis='y', left=False)
             axes[1].tick_params(axis='y', left=False)
             plt.subplots_adjust(hspace=0.0)
+            axes[0].set_xlim(*lim_both)
+            axes[1].set_xlim(*lim_both)
+            axes[0].annotate("Prerecon", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
+            axes[1].annotate("Recon", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
             fig.savefig(pfn + "_alphahist.png", bbox_inches="tight", dpi=300, transparent=True)
             fig.savefig(pfn + "_alphahist.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
@@ -111,9 +122,8 @@ if __name__ == "__main__":
         if True:
             from scipy.interpolate import interp1d
 
-            bins = np.linspace(0.73, 1.15, 31)
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2]}
-            fig, axes = plt.subplots(3, 3, figsize=(10, 10), sharex=True)
+            fig, axes = plt.subplots(3, 3, figsize=(6, 6), sharex=True)
             labels = ["Beutler 2017 Recon", "Seo 2016 Recon", "Ding 2018 Recon"]
             # labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
             for i, label1 in enumerate(labels):
@@ -129,7 +139,7 @@ if __name__ == "__main__":
                                 color=cols[label1.split()[0]])
                         ax.set_yticklabels([])
                         ax.tick_params(axis='y', left=False)
-                        ax.set_xlim(0.85, 1.16)
+                        ax.set_xlim(*lim)
                         yval = interp1d(0.5 * (bins[:-1] + bins[1:]), h, kind="nearest")([1.0])[0]
                         ax.plot([1.0, 1.0], [0, yval], color="k", lw=1, ls="--", alpha=0.4)
                         ax.spines['right'].set_visible(False)
@@ -137,17 +147,17 @@ if __name__ == "__main__":
                         if j == 0:
                             ax.spines['left'].set_visible(False)
                         if j == 2:
-                            ax.set_xlabel(label2.split()[0], fontsize=12)
-                            ax.set_xticks([0.9, 1.0, 1.1])
+                            ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
+                            ax.set_xticks(ticks)
                     else:
                         print(label1, label2)
                         a1 = np.array(res[label1][:, 0])
                         a2 = np.array(res[label2][:, 0])
                         c = blend_hex(cols[label1.split()[0]], cols[label2.split()[0]])
                         c = np.abs(a1 - a2)
-                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.01, vmax=0.15)
-                        ax.set_xlim(0.85, 1.16)
-                        ax.set_ylim(0.85, 1.16)
+                        ax.scatter(a1, a2, s=0.5, c=c, cmap="viridis_r", vmin=-0.0005, vmax=0.02)
+                        ax.set_xlim(*lim)
+                        ax.set_ylim(*lim)
                         ax.plot([0.8, 1.2], [0.8, 1.2], c="k", lw=1, alpha=0.8, ls=":")
                         ax.axvline(1.0, color="k", lw=1, ls="--", alpha=0.4)
                         ax.axhline(1.0, color="k", lw=1, ls="--", alpha=0.4)
@@ -156,12 +166,67 @@ if __name__ == "__main__":
                             ax.set_yticklabels([])
                             ax.tick_params(axis='y', left=False)
                         else:
-                            ax.set_ylabel(label1.split()[0], fontsize=12)
-                            ax.set_yticks([0.9, 1.0, 1.1])
+                            ax.set_ylabel(" ".join(label1.split()[:-1]), fontsize=12)
+                            ax.set_yticks(ticks)
                         if i == 2:
-                            ax.set_xlabel(label2.split()[0], fontsize=12)
-                            ax.set_xticks([0.9, 1.0, 1.1])
+                            ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
+                            ax.set_xticks(ticks)
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphacomp.png", bbox_inches="tight", dpi=300, transparent=True)
             fig.savefig(pfn + "_alphacomp.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
+        if True:
+            from scipy.interpolate import interp1d
+
+            cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2]}
+            fig, axes = plt.subplots(3, 3, figsize=(6, 6), sharex=True)
+            labels = ["Beutler 2017 Prerecon", "Seo 2016 Prerecon", "Ding 2018 Prerecon"]
+            # labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
+            for i, label1 in enumerate(labels):
+                for j, label2 in enumerate(labels):
+                    ax = axes[i, j]
+                    if i < j:
+                        ax.axis('off')
+                        continue
+                    elif i == j:
+                        h, _, _ = ax.hist(res[label1][:, 0], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3,
+                                          color=cols[label1.split()[0]])
+                        ax.hist(res[label1][:, 0], bins=bins, histtype="step", linewidth=1.5,
+                                color=cols[label1.split()[0]])
+                        ax.set_yticklabels([])
+                        ax.tick_params(axis='y', left=False)
+                        ax.set_xlim(*lim)
+                        yval = interp1d(0.5 * (bins[:-1] + bins[1:]), h, kind="nearest")([1.0])[0]
+                        ax.plot([1.0, 1.0], [0, yval], color="k", lw=1, ls="--", alpha=0.4)
+                        ax.spines['right'].set_visible(False)
+                        ax.spines['top'].set_visible(False)
+                        if j == 0:
+                            ax.spines['left'].set_visible(False)
+                        if j == 2:
+                            ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
+                            ax.set_xticks(ticks)
+                    else:
+                        print(label1, label2)
+                        a1 = np.array(res[label1][:, 0])
+                        a2 = np.array(res[label2][:, 0])
+                        c = blend_hex(cols[label1.split()[0]], cols[label2.split()[0]])
+                        c = np.abs(a1 - a2)
+                        ax.scatter(a1, a2, s=0.5, c=c, cmap="viridis_r", vmin=-0.0005, vmax=0.02)
+                        ax.set_xlim(*lim)
+                        ax.set_ylim(*lim)
+                        ax.plot([0.8, 1.2], [0.8, 1.2], c="k", lw=1, alpha=0.8, ls=":")
+                        ax.axvline(1.0, color="k", lw=1, ls="--", alpha=0.4)
+                        ax.axhline(1.0, color="k", lw=1, ls="--", alpha=0.4)
+
+                        if j != 0:
+                            ax.set_yticklabels([])
+                            ax.tick_params(axis='y', left=False)
+                        else:
+                            ax.set_ylabel(" ".join(label1.split()[:-1]), fontsize=12)
+                            ax.set_yticks(ticks)
+                        if i == 2:
+                            ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
+                            ax.set_xticks(ticks)
+            plt.subplots_adjust(hspace=0.0, wspace=0)
+            fig.savefig(pfn + "_alphacomp_prerecon.png", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_alphacomp_prerecon.pdf", bbox_inches="tight", dpi=300, transparent=True)

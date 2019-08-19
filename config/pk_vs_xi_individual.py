@@ -25,12 +25,12 @@ if __name__ == "__main__":
         d_xi = CorrelationFunction_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
 
         beutler_pk = PowerBeutler2017(recon=r)
-        seo_pk = PowerSeo2016(recon=r)
-        ding_pk = PowerDing2018(recon=r)
+        # seo_pk = PowerSeo2016(recon=r)
+        # ding_pk = PowerDing2018(recon=r)
 
         beutler_xi = CorrBeutler2017()
-        seo_xi = CorrSeo2016(recon=r)
-        ding_xi = CorrDing2018(recon=r)
+        # seo_xi = CorrSeo2016(recon=r)
+        # ding_xi = CorrDing2018(recon=r)
 
         for i in range(999):
             d_pk.set_realisation(i)
