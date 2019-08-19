@@ -27,8 +27,13 @@ if __name__ == "__main__":
         d = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
         de = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=p, realisation=0)
 
-        smooth = PowerBeutler2017(recon=r, smooth=True)
         beutler = PowerBeutler2017(recon=r)
+        beutler.set_data(d.get_data())
+        ps, minv = beutler.optimize()
+        sigma_nl = ps["sigma_nl"]
+        beutler.set_default("sigma_nl", sigma_nl)
+        beutler.set_fix_params(["om", "sigma_nl"])
+
         seo = PowerSeo2016(recon=r)
         ding = PowerDing2018(recon=r)
         noda = PowerNoda2019(recon=r, postprocess=p)
@@ -37,8 +42,7 @@ if __name__ == "__main__":
             d.set_realisation(i)
             de.set_realisation(i)
 
-            fitter.add_model_and_dataset(smooth, d, name=f"Smooth {t}, mock number {i}", linestyle=ls, color="p")
-            fitter.add_model_and_dataset(beutler, d, name=f"Beutler 2017 {t}, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(beutler, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}, mock number {i}", linestyle=ls, color="p")
             fitter.add_model_and_dataset(seo, d, name=f"Seo 2016 {t}, mock number {i}", linestyle=ls, color="r")
             fitter.add_model_and_dataset(ding, d, name=f"Ding 2018 {t}, mock number {i}", linestyle=ls, color="lb")
             fitter.add_model_and_dataset(noda, de, name=f"Noda 2019 {t}, mock number {i}", linestyle=ls, color="o")
