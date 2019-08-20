@@ -28,11 +28,11 @@ if __name__ == "__main__":
         de = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=p, realisation=0)
 
         beutler = PowerBeutler2017(recon=r)
-        # beutler.set_data(d.get_data())
-        # ps, minv = beutler.optimize()
-        # sigma_nl = ps["sigma_nl"]
-        # beutler.set_default("sigma_nl", sigma_nl)
-        # beutler.set_fix_params(["om", "sigma_nl"])
+        beutler.set_data(d.get_data())
+        ps, minv = beutler.optimize()
+        sigma_nl = ps["sigma_nl"]
+        beutler.set_default("sigma_nl", sigma_nl)
+        beutler.set_fix_params(["om", "sigma_nl"])
 
         seo = PowerSeo2016(recon=r)
         ding = PowerDing2018(recon=r)
