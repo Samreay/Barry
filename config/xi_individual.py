@@ -26,15 +26,20 @@ if __name__ == "__main__":
 
         d = CorrelationFunction_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
 
-        # smooth = CorrBeutler2017(smooth=True)
         beutler = CorrBeutler2017()
+        beutler.set_data(d.get_data())
+        ps, minv = beutler.optimize()
+        sigma_nl = ps["sigma_nl"]
+        beutler.set_default("sigma_nl", sigma_nl)
+        beutler.set_fix_params(["om", "sigma_nl"])
+
         seo = CorrSeo2016(recon=r)
         ding = CorrDing2018(recon=r)
 
         for i in range(999):
             d.set_realisation(i)
             # fitter.add_model_and_dataset(smooth, d, name=f"Smooth {t}, mock number {i}", linestyle=ls, color="p")
-            fitter.add_model_and_dataset(beutler, d, name=f"Beutler 2017 {t}, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(beutler, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}, mock number {i}", linestyle=ls, color="p")
             fitter.add_model_and_dataset(seo, d, name=f"Seo 2016 {t}, mock number {i}", linestyle=ls, color="r")
             fitter.add_model_and_dataset(ding, d, name=f"Ding 2018 {t}, mock number {i}", linestyle=ls, color="lb")
 

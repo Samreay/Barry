@@ -25,6 +25,8 @@ class PowerNoda2019(PowerSpectrumFit):
         self.gammaval = gammaval
         super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess, correction=correction)
 
+        self.set_default("gamma", self.gammaval)
+
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
         self.omega_m, self.pt_data, self.growth, self.damping = None, None, None, None
@@ -32,6 +34,8 @@ class PowerNoda2019(PowerSpectrumFit):
     def set_data(self, data):
         super().set_data(data)
         self.omega_m = self.get_default("om")
+        self.set_default("f", self.omega_m ** 0.55)
+
         if not self.fit_omega_m:
             self.pt_data = self.PT.get_data(om=self.omega_m)
             if not self.fit_growth:

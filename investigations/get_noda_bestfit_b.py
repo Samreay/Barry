@@ -12,13 +12,13 @@ if __name__ == "__main__":
     c = CambGenerator()
     r_s, _ = c.get_data()
 
-    postprocess = BAOExtractor(r_s)
+    postprocess = BAOExtractor(r_s, mink=0.15)
     #postprocess = PureBAOExtractor(r_s)
 
     for recon in [True, False]:
 
-        model1 = PowerNoda2019(recon=recon, name=f"Noda2019, recon={recon}", postprocess=postprocess)
-        dataset1 = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=recon, postprocess=postprocess)
+        model1 = PowerNoda2019(recon=recon, name=f"Noda2019, recon={recon}", postprocess=postprocess, fix_params=["om", "f", "gamma"])
+        dataset1 = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=recon, postprocess=postprocess, min_k=0.03, max_k=0.15)
         data1 = dataset1.get_data()
 
         # First comparison - the actual recon data
@@ -30,4 +30,4 @@ if __name__ == "__main__":
         model1.plot(p)
 
         # FINDINGS
-        # 2.022 for Recon, 2.01238 for prerecon
+        # 2.019 for Recon, 2.093 for prerecon
