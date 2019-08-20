@@ -69,7 +69,7 @@ if __name__ == "__main__":
         smooth_recon = res["Smooth Recon"]
         for label, values in res.items():
             smooth = smooth_prerecon if "Prerecon" in label else smooth_recon
-            values[:, -1] += smooth[:, -2]    
+            values[:, -1] += smooth[:, -2]
         ks = [l for l in res.keys() if "Smooth" not in l]
 
         # Define colour scheme

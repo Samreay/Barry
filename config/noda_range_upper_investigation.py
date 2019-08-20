@@ -53,7 +53,7 @@ if __name__ == "__main__":
         for posterior, weight, chain, model, data, extra in fitter.load():
             print(extra["name"])
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
-        c.configure(shade=True, bins=30, legend_artists=True, rainbow=True)
+        c.configure(shade=True, bins=30, legend_artists=True, cmap="plasma", )
         extents = None # {"$\\alpha$": (0.88, 1.18), "$A$": (0, 10), "$b$": (1.5, 1.8), r"$\gamma_{rec}$": (1, 8)}
         params = ["$\\alpha$", "$A$", "$b$"]
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
