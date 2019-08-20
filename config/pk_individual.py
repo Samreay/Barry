@@ -28,11 +28,11 @@ if __name__ == "__main__":
         de = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=p, realisation=0)
 
         beutler = PowerBeutler2017(recon=r)
-        beutler.set_data(d.get_data())
-        ps, minv = beutler.optimize()
-        sigma_nl = ps["sigma_nl"]
-        beutler.set_default("sigma_nl", sigma_nl)
-        beutler.set_fix_params(["om", "sigma_nl"])
+        # beutler.set_data(d.get_data())
+        # ps, minv = beutler.optimize()
+        # sigma_nl = ps["sigma_nl"]
+        # beutler.set_default("sigma_nl", sigma_nl)
+        # beutler.set_fix_params(["om", "sigma_nl"])
 
         seo = PowerSeo2016(recon=r)
         ding = PowerDing2018(recon=r)
@@ -42,10 +42,10 @@ if __name__ == "__main__":
             d.set_realisation(i)
             de.set_realisation(i)
 
-            fitter.add_model_and_dataset(beutler, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}, mock number {i}", linestyle=ls, color="p")
-            fitter.add_model_and_dataset(seo, d, name=f"Seo 2016 {t}, mock number {i}", linestyle=ls, color="r")
-            fitter.add_model_and_dataset(ding, d, name=f"Ding 2018 {t}, mock number {i}", linestyle=ls, color="lb")
-            fitter.add_model_and_dataset(noda, de, name=f"Noda 2019 {t}, mock number {i}", linestyle=ls, color="o")
+            fitter.add_model_and_dataset(beutler, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}, mock number {i}", linestyle=ls, color="p", realisation=i)
+            fitter.add_model_and_dataset(seo, d, name=f"Seo 2016 {t}, mock number {i}", linestyle=ls, color="r", realisation=i)
+            fitter.add_model_and_dataset(ding, d, name=f"Ding 2018 {t}, mock number {i}", linestyle=ls, color="lb", realisation=i)
+            fitter.add_model_and_dataset(noda, de, name=f"Noda 2019 {t}, mock number {i}", linestyle=ls, color="o", realisation=i)
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
@@ -69,11 +69,6 @@ if __name__ == "__main__":
             res[n].append([chain[:, 0].mean(), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2])
         for label in res.keys():
             res[label] = np.array(res[label])
-        smooth_prerecon = res["Smooth Prerecon"]
-        smooth_recon = res["Smooth Recon"]
-        for label, values in res.items():
-            smooth = smooth_prerecon if "Prerecon" in label else smooth_recon
-            values[:, -1] += smooth[:, -2]
         ks = [l for l in res.keys() if "Smooth" not in l]
 
         # Define colour scheme
@@ -85,7 +80,7 @@ if __name__ == "__main__":
 
         plt.rc('text', usetex=True)
         plt.rc('font', family='serif')
-        bins_both = np.linspace(0.92, 1.08, 31)
+        bins_both = np.linspace(0.91, 1.08, 31)
         bins = np.linspace(0.95, 1.06, 31)
         ticks = [0.97, 1.0, 1.03]
         lim = bins[0], bins[-1]
@@ -162,7 +157,8 @@ if __name__ == "__main__":
             from scipy.interpolate import interp1d
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
             fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
-            labels = ["Beutler 2017 Recon", "Seo 2016 Recon", "Ding 2018 Recon", "Noda 2019 Recon"]
+            labels = ["Beutler 2017 Fixed $\\Sigma_{nl}$ Recon", "Seo 2016 Recon", "Ding 2018 Recon", "Noda 2019 Recon"]
+            print(list(res.keys()))
             #labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
@@ -191,7 +187,7 @@ if __name__ == "__main__":
                         a2 = np.array(res[label1][:, 0])
                         c = blend_hex(cols[label1.split()[0]], cols[label2.split()[0]])
                         c = np.abs(a1 - a2)
-                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.01, vmax=0.15)
+                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0005, vmax=0.02)
                         ax.set_xlim(*lim)
                         ax.set_ylim(*lim)
                         ax.plot([0.8, 1.2], [0.8, 1.2], c="k", lw=1, alpha=0.8, ls=":")
