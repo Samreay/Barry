@@ -140,7 +140,7 @@ class Model(ABC):
         params = [p.min + s * (p.max - p.min) for s, p in zip(scaled, self.get_active_params())]
         return params
 
-    def optimize(self, close_default=3, maxiter=1000):
+    def optimize(self, close_default=3, niter=100, maxiter=1000):
         from scipy.optimize import basinhopping
 
         def minimise(scale_params):
@@ -154,7 +154,7 @@ class Model(ABC):
             if close_default:
                 start = [(s + p.default * close_default) / (1 + close_default) for s, p in zip(start, self.get_active_params())]
             bounds = [(0, 1) for p in self.get_active_params()]
-            res = basinhopping(minimise, self.scale(start), niter_success=10, stepsize=0.05, minimizer_kwargs={"method": m, "options": {"maxiter": maxiter}})
+            res = basinhopping(minimise, self.scale(start), niter_success=10, niter=niter, stepsize=0.05, minimizer_kwargs={"method": m, "options": {"maxiter": maxiter}})
             fs.append(res.fun)
             xs.append(res.x)
         fs = np.array(fs)
