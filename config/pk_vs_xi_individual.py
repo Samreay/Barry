@@ -39,12 +39,12 @@ if __name__ == "__main__":
             d_xi.set_realisation(i)
 
             fitter.add_model_and_dataset(ding_pk, d_pk, name=f"Ding 2018 $P(k)$, mock number {i}", linestyle="-", color="p", realisation=i)
-            fitter.add_model_and_dataset(ding_pk_smooth, d_pk, name=f"Ding 2018 $P(k)$, mock number {i}", linestyle="-", color="p", realisation=i)
+            fitter.add_model_and_dataset(ding_pk_smooth, d_pk, name=f"Ding 2018 $P(k)$ Smooth, mock number {i}", linestyle="-", color="p", realisation=i)
             # fitter.add_model_and_dataset(seo_pk, d_pk, name=f"Seo 2016 P(k), mock number {i}", linestyle="-", color="r")
             # fitter.add_model_and_dataset(ding_pk, d_pk, name=f"Ding 2018 P(k), mock number {i}", linestyle="-", color="lb")
 
             fitter.add_model_and_dataset(ding_xi, d_xi, name=f"Ding 2018 $\\xi(s)$, mock number {i}", linestyle=":", color="p", realisation=i)
-            fitter.add_model_and_dataset(ding_xi_smooth, d_xi, name=f"Ding 2018 $\\xi(s)$, mock number {i}", linestyle=":", color="p", realisation=i)
+            fitter.add_model_and_dataset(ding_xi_smooth, d_xi, name=f"Ding 2018 $\\xi(s)$ Smooth, mock number {i}", linestyle=":", color="p", realisation=i)
             # fitter.add_model_and_dataset(seo_xi, d_xi, name=f"Seo 2016 corr, mock number {i}", linestyle=":", color="r")
             # fitter.add_model_and_dataset(ding_xi, d_xi, name=f"Ding 2018 corr, mock number {i}", linestyle=":", color="lb")
 
@@ -67,10 +67,16 @@ if __name__ == "__main__":
             if res.get(n) is None:
                 res[n] = []
             i = posterior.argmax()
-            chi2 = - 2 * posterior[i]
+            chi2 = -2 * posterior[i]
             res[n].append([chain[:, 0].mean(), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2])
         for label in res.keys():
             res[label] = np.array(res[label])
+        for label in res.keys():
+            if "Smooth" not in label:
+                l2 = label + " Smooth"
+                assert l2 in res.keys()
+                smooth_chi2 = res[l2][:, 4]
+                res[label][:, 5] += smooth_chi2
         ks = [l for l in res.keys() if "Smooth" not in l]
 
         # Define colour scheme
@@ -82,7 +88,7 @@ if __name__ == "__main__":
         plt.rc('text', usetex=True)
         plt.rc('font', family='serif')
         bins_both = np.linspace(0.92, 1.08, 31)
-        bins = np.linspace(0.94, 1.06, 31)
+        bins = np.linspace(0.95, 1.06, 31)
         ticks = [0.97, 1.0, 1.03]
         lim = bins[0], bins[-1]
         lim_both = bins_both[0], bins_both[-1]
@@ -118,10 +124,22 @@ if __name__ == "__main__":
                         print(label1, label2)
                         a1 = np.array(res[label2][:, 0])
                         a2 = np.array(res[label1][:, 0])
-                        print("Correlation is: ", np.corrcoef(a1, a2))
-                        c = np.abs(a1 - a2)
-                        ax.scatter(a1, a2, s=1, c=c, cmap="viridis_r", vmin=-0.005, vmax=0.04)
-                        ax.set_xlim(*lim)
+                        c = np.sqrt(np.min(np.vstack((res[label2][:, 5] + res[label1][:, 0])), axis=1))
+                        print(c.shape)
+                        m_good = c > 3
+                        print("Correlation all: ", np.corrcoef(a1, a2))
+                        print("Correlation 3: ", np.corrcoef(a1[m_good], a2[m_good]))
+
+                        im = ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=2, vmax=7)
+
+                        from mpl_toolkits.axes_grid1 import make_axes_locatable
+                        divider = make_axes_locatable(ax)
+                        cax = divider.append_axes('right', size='3%', pad=0.0)
+                        # cax = fig.add_axes([0.27, 0.8, 0.5, 0.05])
+                        cbar = fig.colorbar(im, cax=cax, orientation='vertical', ticks=[3, 4, 5, 6])
+
+                        l2 = (lim[1] - lim[0]) * 1.03 + lim[0]
+                        ax.set_xlim(lim[0], l2)
                         ax.set_ylim(*lim)
                         ax.plot([0.8, 1.2], [0.8, 1.2], c="k", lw=1, alpha=0.8, ls=":")
                         ax.axvline(1.0, color="k", lw=1, ls="--", alpha=0.4)

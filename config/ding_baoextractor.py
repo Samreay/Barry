@@ -102,9 +102,9 @@ if __name__ == "__main__":
         if True:
             from scipy.interpolate import interp1d
             bins = np.linspace(0.94, 1.06, 31)
-            cols = {"B17": c4[0], "B17 + Extractor": c4[2]}
+            cols = {"D18": c4[0], "D18 + Extractor": c4[2]}
             fig, axes = plt.subplots(2, 2, figsize=(5, 5), sharex=True)
-            labels = ["B17", "B17 + Extractor"]
+            labels = ["D18", "D18 + Extractor"]
             #labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):

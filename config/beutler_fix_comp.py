@@ -29,11 +29,11 @@ if __name__ == "__main__":
         beutler = PowerBeutler2017(recon=r)
 
         beutler_fixed = PowerBeutler2017(recon=r)
-        beutler_fixed.set_data(dmean.get_data())
-        ps, minv = beutler_fixed.optimize()
-        sigma_nl = ps["sigma_nl"]
-        beutler_fixed.set_default("sigma_nl", sigma_nl)
-        beutler_fixed.set_fix_params(["om", "sigma_nl"])
+        # beutler_fixed.set_data(dmean.get_data())
+        # ps, minv = beutler_fixed.optimize()
+        # sigma_nl = ps["sigma_nl"]
+        # beutler_fixed.set_default("sigma_nl", sigma_nl)
+        # beutler_fixed.set_fix_params(["om", "sigma_nl"])
 
         d = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
         for i in range(999):
@@ -107,9 +107,9 @@ if __name__ == "__main__":
         if True:
             from scipy.interpolate import interp1d
             bins = np.linspace(0.94, 1.06, 31)
-            cols = {"B17": c4[0], "B17 + Extractor": c4[2]}
+            cols = {"B17": c4[0], "B17 Fixed $\\Sigma_{nl}$": c4[2]}
             fig, axes = plt.subplots(2, 2, figsize=(5, 5), sharex=True)
-            labels = ["B17", "B17 + Extractor"]
+            labels = ["B17", "B17 Fixed $\\Sigma_{nl}$"]
             #labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
@@ -122,7 +122,7 @@ if __name__ == "__main__":
                         ax.hist(res[label1], bins=bins, histtype="step", linewidth=1.5, color=cols[label1])
                         ax.set_yticklabels([])
                         ax.tick_params(axis='y', left=False)
-                        ax.set_xlim(0.93, 1.07)
+                        ax.set_xlim(0.95, 1.07)
                         yval = interp1d(0.5 * (bins[:-1] + bins[1:]), h, kind="nearest")([1.0])[0]
                         ax.plot([1.0, 1.0], [0, yval], color="k", lw=1, ls="--", alpha=0.4)
                         ax.spines['right'].set_visible(False)
@@ -138,9 +138,9 @@ if __name__ == "__main__":
                         a2 = np.array(res[label2])
                         # c = blend_hex(cols[label1], cols[label2])
                         c = np.abs(a1 - a2)
-                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.01, vmax=0.05)
-                        ax.set_xlim(0.93, 1.07)
-                        ax.set_ylim(0.93, 1.07)
+                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.005, vmax=0.03)
+                        ax.set_xlim(0.95, 1.07)
+                        ax.set_ylim(0.95, 1.07)
                         ax.plot([0.8, 1.2], [0.8, 1.2], c="k", lw=1, alpha=0.8, ls=":")
                         ax.axvline(1.0, color="k", lw=1, ls="--", alpha=0.4)
                         ax.axhline(1.0, color="k", lw=1, ls="--", alpha=0.4)

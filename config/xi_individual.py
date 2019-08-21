@@ -27,11 +27,11 @@ if __name__ == "__main__":
         d = CorrelationFunction_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
 
         beutler = CorrBeutler2017()
-        beutler.set_data(d.get_data())
-        ps, minv = beutler.optimize()
-        sigma_nl = ps["sigma_nl"]
-        beutler.set_default("sigma_nl", sigma_nl)
-        beutler.set_fix_params(["om", "sigma_nl"])
+        # beutler.set_data(d.get_data())
+        # ps, minv = beutler.optimize()
+        # sigma_nl = ps["sigma_nl"]
+        # beutler.set_default("sigma_nl", sigma_nl)
+        # beutler.set_fix_params(["om", "sigma_nl"])
 
         seo = CorrSeo2016(recon=r)
         ding = CorrDing2018(recon=r)
@@ -67,7 +67,7 @@ if __name__ == "__main__":
         for label in res.keys():
             res[label] = np.array(res[label])
         ks = [l for l in res.keys() if "Smooth" not in l]
-
+        argbad = 599
         # Define colour scheme
         c2 = ["#225465", "#5FA45E"]  # ["#581d7f", "#e05286"]
         c3 = ["#2C455A", "#258E71", "#C1C64D"]  # ["#501b73", "#a73b8f", "#ee8695"]
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         lim = bins[0], bins[-1]
         lim_both = bins_both[0], bins_both[-1]
         # Make histogram comparison
-        if True:
+        if False:
             fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
             for label, means in res.items():
                 if "Prerecon" in label:
@@ -129,7 +129,7 @@ if __name__ == "__main__":
 
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2]}
             fig, axes = plt.subplots(3, 3, figsize=(6, 6), sharex=True)
-            labels = ["Beutler 2017 Recon", "Seo 2016 Recon", "Ding 2018 Recon"]
+            labels = ["Beutler 2017 Fixed $\\Sigma_{nl}$ Recon", "Seo 2016 Recon", "Ding 2018 Recon"]
             # labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
@@ -160,6 +160,7 @@ if __name__ == "__main__":
                         a2 = np.array(res[label2][:, 0])
                         c = blend_hex(cols[label1.split()[0]], cols[label2.split()[0]])
                         c = np.abs(a1 - a2)
+                        ax.scatter([a1[argbad]], [a2[argbad]], s=2, c='r', zorder=10)
                         ax.scatter(a1, a2, s=0.5, c=c, cmap="viridis_r", vmin=-0.0005, vmax=0.02)
                         ax.set_xlim(*lim)
                         ax.set_ylim(*lim)
@@ -180,7 +181,7 @@ if __name__ == "__main__":
             fig.savefig(pfn + "_alphacomp.png", bbox_inches="tight", dpi=300, transparent=True)
             fig.savefig(pfn + "_alphacomp.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
-        if True:
+        if False:
             from scipy.interpolate import interp1d
 
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2]}
