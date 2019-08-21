@@ -38,7 +38,7 @@ if __name__ == "__main__":
         ding = PowerDing2018(recon=r)
         noda = PowerNoda2019(recon=r, postprocess=p)
 
-        for i in range(500):
+        for i in range(200):
             d.set_realisation(i)
             de.set_realisation(i)
 
@@ -66,20 +66,20 @@ if __name__ == "__main__":
                 res[n] = []
             i = posterior.argmax()
             chi2 = - 2 * posterior[i]
-            res[n].append([chain[:, 0].mean(), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
+            res[n].append([np.average(chain[:, 0], weights=weight), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
         for label in res.keys():
             res[label] = np.array(res[label])
         ks = [l for l in res.keys() if "Smooth" not in l]
 
-        all = np.vstack(tuple([d[:, 0] for label, d in res.items() if "Recon" in label and "Noda" not in label]))
-        print(all.shape)
-        stds = np.std(all, axis=0)
-        args = stds.argsort()
-        argbad = args[-10]
-        print(argbad)
-
-        for l, d in res.items():
-            print(l, d[argbad, 0])
+        # all = np.vstack(tuple([d[:, 0] for label, d in res.items() if "Recon" in label and "Noda" not in label]))
+        # print(all.shape)
+        # stds = np.std(all, axis=0)
+        # args = stds.argsort()
+        # argbad = args[-10]
+        # print(argbad)
+        #
+        # for l, d in res.items():
+        #     print(l, d[argbad, 0])
 
         # Define colour scheme
         c2 = ["#225465", "#5FA45E"] # ["#581d7f", "#e05286"]
@@ -196,7 +196,7 @@ if __name__ == "__main__":
                         a1 = np.array(res[label2][:, 0])
                         a2 = np.array(res[label1][:, 0])
                         c = np.abs(a1 - a2)
-                        ax.scatter([a1[argbad]], [a2[argbad]], s=2, c='r', zorder=10)
+                        # ax.scatter([a1[argbad]], [a2[argbad]], s=2, c='r', zorder=10)
 
                         ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0005, vmax=0.02)
                         ax.set_xlim(*lim)
