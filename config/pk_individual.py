@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     sampler = DynestySampler(temp_dir=dir_name)
 
-    for r in [True]:
+    for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
 
