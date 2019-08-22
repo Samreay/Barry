@@ -107,7 +107,8 @@ class Model(ABC):
         return start_random
 
     def get_start(self, num_walkers=1):
-
+        self.logger.info("Getting start position")
+        
         def minimise(scale_params):
             return -self.get_posterior(self.unscale(scale_params))
 
@@ -171,6 +172,7 @@ class Model(ABC):
         return params
 
     def optimize(self, close_default=3, niter=100, maxiter=1000):
+        self.logger.info("Beginning optimisation!")
 
         def minimise(scale_params):
             return -self.get_posterior(self.unscale(scale_params))
@@ -182,7 +184,6 @@ class Model(ABC):
             start = np.array(self.get_raw_start())
             if close_default:
                 start = [(s + p.default * close_default) / (1 + close_default) for s, p in zip(start, self.get_active_params())]
-            bounds = [(0, 1) for p in self.get_active_params()]
             res = basinhopping(minimise, self.scale(start), niter_success=10, niter=niter, stepsize=0.05, minimizer_kwargs={"method": m, "options": {"maxiter": maxiter}})
             fs.append(res.fun)
             xs.append(res.x)
