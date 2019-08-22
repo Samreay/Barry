@@ -1,4 +1,5 @@
 import sys
+from collections import OrderedDict
 
 sys.path.append("..")
 from barry.framework.cosmology.camb_generator import getCambGenerator
@@ -9,6 +10,7 @@ from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.framework.samplers.dynesty_sampler import DynestySampler
 from barry.framework.fitter import Fitter
 import numpy as np
+import pandas as pd
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
@@ -66,20 +68,28 @@ if __name__ == "__main__":
                 res[n] = []
             i = posterior.argmax()
             chi2 = - 2 * posterior[i]
-            res[n].append([chain[:, 0].mean(), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
+            res[n].append([np.average(chain[:, 0], weights=weight), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
         for label in res.keys():
-            res[label] = np.array(res[label])
-        ks = [l for l in res.keys() if "Smooth" not in l]
+            res[label] = pd.DataFrame(res[label], columns=["avg", "std", "max", "posterior", "chi2", "Dchi2", "realisation"])
 
-        all = np.vstack(tuple([d[:, 0] for label, d in res.items() if "Recon" in label and "Noda" not in label]))
-        print(all.shape)
-        stds = np.std(all, axis=0)
-        args = stds.argsort()
-        argbad = args[-10]
-        print(argbad)
+        ks = list(res.keys())
+        all_ids = pd.concat(tuple([res[l][['realisation']] for l in ks]))
+        counts = all_ids.groupby("realisation").size().reset_index()
+        max_count = counts.values[:, 1].max()
+        good_ids = all_ids.loc[counts.values[:, 1] == max_count, ["realisation"]]
 
-        for l, d in res.items():
-            print(l, d[argbad, 0])
+        for label, df in res.items():
+            res[label] = pd.merge(good_ids, df, how="left", on="realisation")
+        #
+        # all = np.vstack(tuple([df[:, 0] for label, df in res.items() if "Recon" in label and "Noda" not in label]))
+        # print(all.shape)
+        # stds = np.std(all, axis=0)
+        # args = stds.argsort()
+        # argbad = args[-10]
+        # print(argbad)
+
+        # for l, d in res.items():
+        #     print(l, d[argbad, 0])
 
         # Define colour scheme
         c2 = ["#225465", "#5FA45E"] # ["#581d7f", "#e05286"]
@@ -164,6 +174,7 @@ if __name__ == "__main__":
 
         # Alpha-alpha comparison
         if True:
+            v = "avg"
             from scipy.interpolate import interp1d
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
             fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
@@ -177,8 +188,8 @@ if __name__ == "__main__":
                         ax.axis('off')
                         continue
                     elif i == j:
-                        h, _, _ = ax.hist(res[label1][:, 0], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
-                        ax.hist(res[label1][:, 0], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
+                        h, _, _ = ax.hist(res[label1][v].values, bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
+                        ax.hist(res[label1][v], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
                         ax.set_yticklabels([])
                         ax.tick_params(axis='y', left=False)
                         ax.set_xlim(*lim)
@@ -193,10 +204,10 @@ if __name__ == "__main__":
                             ax.set_xticks(ticks)
                     else:
                         print(label1, label2)
-                        a1 = np.array(res[label2][:, 0])
-                        a2 = np.array(res[label1][:, 0])
+                        a1 = res[label2][v].values
+                        a2 = res[label1][v].values
                         c = np.abs(a1 - a2)
-                        ax.scatter([a1[argbad]], [a2[argbad]], s=2, c='r', zorder=10)
+                        # ax.scatter([a1[argbad]], [a2[argbad]], s=2, c='r', zorder=10)
 
                         ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0005, vmax=0.02)
                         ax.set_xlim(*lim)
