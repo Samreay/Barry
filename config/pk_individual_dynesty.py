@@ -40,7 +40,7 @@ if __name__ == "__main__":
         ding = PowerDing2018(recon=r)
         noda = PowerNoda2019(recon=r, postprocess=p)
 
-        for i in range(200):
+        for i in range(400):
             d.set_realisation(i)
             de.set_realisation(i)
 
