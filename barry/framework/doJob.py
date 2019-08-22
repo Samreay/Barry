@@ -14,6 +14,9 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_cpu=24,
     if name is None:
         name = executable[:-3]
     output_dir = directory + os.sep + "out_files"
+    q_dir = directory + os.sep + "job_files"
+    if not os.path.exists(q_dir):
+        os.makedirs(q_dir, exist_ok=True)
     if delete and os.path.exists(output_dir):
         logging.debug("Deleting %s" % output_dir)
         shutil.rmtree(output_dir)
@@ -46,7 +49,7 @@ sleep $((RANDOM % 5))
 $executable $PROG $PARAMS
 '''
 
-    n = "%s/%s.q" % (directory, executable[:executable.index(".py")])
+    n = "%s/%s.q" % (q_dir, executable[:executable.index(".py")])
     with open(n, 'w') as f:
         f.write(template)
     logging.info("SLURM Jobscript at %s" % n)
