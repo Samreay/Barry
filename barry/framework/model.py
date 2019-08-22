@@ -102,17 +102,21 @@ class Model(ABC):
     def get_likelihood(self, params, data):
         raise NotImplementedError("You need to set your likelihood")
 
+    def get_raw_start(self):
+        start_random = np.array([uniform(x.min, x.max) for x in self.get_active_params()])
+        return start_random
+
     def get_start(self, num_walkers=1):
 
         def minimise(scale_params):
             return -self.get_posterior(self.unscale(scale_params))
 
-        close_default = 5
-        start_random = np.array([uniform(x.min, x.max) for x in self.get_active_params()])
+        close_default = 3
+        start_random = self.get_raw_start()
         start_close = [(s + p.default * close_default) / (1 + close_default) for s, p in zip(start_random, self.get_active_params())]
 
         self.logger.info("Starting basin hopping to find a good starting point")
-        res = basinhopping(minimise, self.scale(start_close), niter_success=3, niter=10, stepsize=0.05, minimizer_kwargs={"method": 'Nelder-Mead', "options": {"maxiter": 300}})
+        res = basinhopping(minimise, self.scale(start_close), niter_success=3, niter=30, stepsize=0.05, minimizer_kwargs={"method": 'Nelder-Mead', "options": {"maxiter": 600}})
 
         scaled_start = res.x
         ratio = 0.05  # 5% of the unit hypercube
@@ -120,7 +124,7 @@ class Model(ABC):
         mins = np.clip(scaled_start - ratio, 0, 1)
         maxes = np.clip(scaled_start + ratio, 0, 1)
 
-        samples = np.random.uniform(mins, maxes, size=num_walkers)
+        samples = np.random.uniform(mins, maxes, size=(num_walkers, len(maxes)))
 
         unscaled_samples = np.array([self.unscale(s) for s in samples])
         self.logger.debug(f"Start samples have shape {unscaled_samples.shape}")
@@ -175,7 +179,7 @@ class Model(ABC):
         xs = []
         methods = ['Nelder-Mead']
         for m in methods:
-            start = np.array(self.get_start())
+            start = np.array(self.get_raw_start())
             if close_default:
                 start = [(s + p.default * close_default) / (1 + close_default) for s, p in zip(start, self.get_active_params())]
             bounds = [(0, 1) for p in self.get_active_params()]
