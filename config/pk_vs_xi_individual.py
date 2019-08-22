@@ -5,7 +5,7 @@ from barry.framework.cosmology.camb_generator import getCambGenerator
 from barry.setup import setup
 from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, CorrBeutler2017, CorrSeo2016, CorrDing2018
 from barry.framework.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC, PowerSpectrum_SDSS_DR12_Z061_NGC
-from barry.framework.samplers.ensemble import EnsembleSampler
+from barry.framework.samplers import DynestySampler
 from barry.framework.fitter import Fitter
 import numpy as np
 
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     c = getCambGenerator()
     r_s, _ = c.get_data()
 
-    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100, num_steps=500, num_burn=300)
+    sampler = DynestySampler(temp_dir=dir_name)
 
     for r in [True]:
         t = "Recon" if r else "Prerecon"

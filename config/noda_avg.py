@@ -5,7 +5,7 @@ from barry.framework.models import PowerNoda2019
 from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.framework.postprocessing import BAOExtractor
 from barry.framework.cosmology.camb_generator import getCambGenerator
-from barry.framework.samplers.ensemble import EnsembleSampler
+from barry.framework.samplers import DynestySampler
 from barry.framework.fitter import Fitter
 import numpy as np
 
@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     postprocess = BAOExtractor(r_s)
 
-    sampler = EnsembleSampler(temp_dir=dir_name, num_steps=1000)
+    sampler = DynestySampler(temp_dir=dir_name)
     fitter = Fitter(dir_name)
 
     for r in [True, False]:

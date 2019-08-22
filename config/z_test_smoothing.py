@@ -3,7 +3,7 @@ sys.path.append("..")
 from barry.setup import setup
 from barry.framework.models import PowerBeutler2017
 from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
-from barry.framework.samplers.ensemble import EnsembleSampler
+from barry.framework.samplers import DynestySampler
 from barry.framework.fitter import Fitter
 
 if __name__ == "__main__":
@@ -15,7 +15,7 @@ if __name__ == "__main__":
         PowerBeutler2017(recon=r, smooth_type="eh1998", name="EH1998")
     ]
     data = PowerSpectrum_SDSS_DR12_Z061_NGC(name="Recon mean", recon=r, min_k=0.02, max_k=0.30)
-    sampler = EnsembleSampler(temp_dir=dir_name)
+    sampler = DynestySampler(temp_dir=dir_name)
 
     fitter = Fitter(dir_name)
     fitter.add_model_and_dataset(models[0], data, name="Hinton2017")

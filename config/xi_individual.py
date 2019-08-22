@@ -6,7 +6,7 @@ from barry.framework.postprocessing import BAOExtractor
 from barry.setup import setup
 from barry.framework.models import CorrBeutler2017, CorrDing2018, CorrSeo2016
 from barry.framework.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
-from barry.framework.samplers.ensemble import EnsembleSampler
+from barry.framework.samplers import DynestySampler
 from barry.framework.fitter import Fitter
 import numpy as np
 
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
 
-    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100, num_steps=700, num_burn=600)
+    sampler = DynestySampler(temp_dir=dir_name)
 
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"

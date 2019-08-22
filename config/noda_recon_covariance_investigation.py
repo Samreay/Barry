@@ -6,7 +6,7 @@ from barry.framework.models import PowerNoda2019
 from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.framework.postprocessing import BAOExtractor, PureBAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.samplers.ensemble import EnsembleSampler
+from barry.framework.samplers import DynestySampler
 from barry.framework.fitter import Fitter
 import numpy as np
 
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     #     if ax == axes[1]:
     #         ax.errorbar(d["ks"][ii], d["pk"][ii], yerr=np.sqrt(np.diag(cov_noda))[ii])
     # plt.show()
-    sampler = EnsembleSampler(temp_dir=dir_name)
+    sampler = DynestySampler(temp_dir=dir_name)
     fitter = Fitter(dir_name)
     fitter.add_model_and_dataset(model, datas[0], name="Mock-computed")
     fitter.add_model_and_dataset(model, datas[1], name="Nishimichi 2018, full")

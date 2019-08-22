@@ -1,12 +1,13 @@
 import sys
 
+
 sys.path.append("..")
+from barry.framework.samplers import DynestySampler
 from barry.framework.cosmology.camb_generator import getCambGenerator
 from barry.framework.postprocessing import BAOExtractor
 from barry.setup import setup
 from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
 from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
-from barry.framework.samplers.ensemble import EnsembleSampler
 from barry.framework.fitter import Fitter
 import numpy as np
 
@@ -18,7 +19,7 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
 
-    sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100, num_steps=500, num_burn=300)
+    sampler = DynestySampler(temp_dir=dir_name)
 
     for r in [True]:
         t = "Recon" if r else "Prerecon"
@@ -40,7 +41,7 @@ if __name__ == "__main__":
         ding = PowerDing2018(recon=r)
         noda = PowerNoda2019(recon=r, postprocess=p)
 
-        for i in range(100):
+        for i in range(999):
             d.set_realisation(i)
             de.set_realisation(i)
 
@@ -170,8 +171,8 @@ if __name__ == "__main__":
         if True:
             from scipy.interpolate import interp1d
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
-            fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
-            labels = ["Beutler 2017 Fixed $\\Sigma_{nl}$ Recon", "Seo 2016 Recon", "Ding 2018 Recon", "Noda 2019 Recon"]
+            fig, axes = plt.subplots(5, 5, figsize=(10, 10), sharex=True)
+            labels = ["Beutler 2017 Recon", "Beutler 2017 Fixed $\\Sigma_{nl}$ Recon", "Seo 2016 Recon", "Ding 2018 Recon", "Noda 2019 Recon"]
             print(list(res.keys()))
             #labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
             for i, label1 in enumerate(labels):
@@ -192,7 +193,7 @@ if __name__ == "__main__":
                         ax.spines['top'].set_visible(False)
                         if j == 0:
                             ax.spines['left'].set_visible(False)
-                        if j == 3:
+                        if j == 4:
                             ax.set_xlabel(label2, fontsize=12)
                             ax.set_xticks(ticks)
                     else:
@@ -215,7 +216,7 @@ if __name__ == "__main__":
                         else:
                             ax.set_ylabel(label1, fontsize=12)
                             ax.set_yticks(ticks)
-                        if i == 3:
+                        if i == 4:
                             ax.set_xlabel(label2, fontsize=12)
                             ax.set_xticks(ticks)
             plt.subplots_adjust(hspace=0.0, wspace=0)

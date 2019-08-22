@@ -7,7 +7,7 @@ from barry.framework.models import PowerNoda2019, PowerSeo2016, PowerBeutler2017
 from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.framework.postprocessing import BAOExtractor
 from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.samplers.ensemble import EnsembleSampler
+from barry.framework.samplers import DynestySampler
 from barry.framework.fitter import Fitter
 
 if __name__ == "__main__":
@@ -33,7 +33,7 @@ if __name__ == "__main__":
             fitter.add_model_and_dataset(PowerDing2018(postprocess=p, recon=r, fix_params=fix), datae, name=f"Ding 2018{n}", linestyle=ls, color=cs[2])
         fitter.add_model_and_dataset(PowerNoda2019(postprocess=p, recon=r), datae, name=f"Noda 2019", color=cs[3])
 
-    sampler = EnsembleSampler(temp_dir=dir_name)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=300)
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
     fitter.fit(file)
