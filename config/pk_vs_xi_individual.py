@@ -16,7 +16,7 @@ if __name__ == "__main__":
     c = getCambGenerator()
     r_s, _ = c.get_data()
 
-    sampler = DynestySampler(temp_dir=dir_name)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=200)
 
     for r in [True]:
         t = "Recon" if r else "Prerecon"

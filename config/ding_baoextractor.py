@@ -18,7 +18,7 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
 
-    sampler = DynestySampler(temp_dir=dir_name)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=200)
 
     for r in [True]: #, False]:
         t = "Recon" if r else "Prerecon"

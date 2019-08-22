@@ -18,7 +18,7 @@ if __name__ == "__main__":
     r_s, _ = c.get_data()
     p = BAOExtractor(r_s)
 
-    sampler = DynestySampler(temp_dir=dir_name)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=200)
 
     for r in [True]: #, False]:
         t = "Recon" if r else "Prerecon"
@@ -29,11 +29,11 @@ if __name__ == "__main__":
         beutler = PowerBeutler2017(recon=r)
 
         beutler_fixed = PowerBeutler2017(recon=r)
-        # beutler_fixed.set_data(dmean.get_data())
-        # ps, minv = beutler_fixed.optimize()
-        # sigma_nl = ps["sigma_nl"]
-        # beutler_fixed.set_default("sigma_nl", sigma_nl)
-        # beutler_fixed.set_fix_params(["om", "sigma_nl"])
+        beutler_fixed.set_data(dmean.get_data())
+        ps, minv = beutler_fixed.optimize()
+        sigma_nl = ps["sigma_nl"]
+        beutler_fixed.set_default("sigma_nl", sigma_nl)
+        beutler_fixed.set_fix_params(["om", "sigma_nl"])
 
         d = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
         for i in range(999):
