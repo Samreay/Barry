@@ -6,7 +6,7 @@ from barry.framework.samplers.sampler import GenericSampler
 
 class DynestySampler(GenericSampler):
 
-    def __init__(self, temp_dir=None, max_iter=None, nlive=100):
+    def __init__(self, temp_dir=None, max_iter=None, nlive=150):
 
         self.logger = logging.getLogger("barry")
         self.max_iter = max_iter
@@ -19,8 +19,7 @@ class DynestySampler(GenericSampler):
     def get_filename(self, uid):
         return os.path.join(self.temp_dir, f"{uid}_chain.npy")
 
-
-    def fit(self, log_likelihood, start, prior_transform, save_dims=None, uid=None):
+    def fit(self, log_likelihood, start, num_dim, prior_transform, save_dims=None, uid=None):
 
         import dynesty
 
@@ -30,10 +29,6 @@ class DynestySampler(GenericSampler):
             return self.load_file(filename)
         self.logger.info("Sampling posterior now")
 
-        if callable(start):
-            num_dim = np.array(start()).size
-        else:
-            num_dim = np.array(start.size)
         if save_dims is None:
             save_dims = num_dim
         self.logger.debug("Fitting framework with %d dimensions" % num_dim)
@@ -47,9 +42,12 @@ class DynestySampler(GenericSampler):
         dresults = sampler.results
         chain = dresults["samples"]
         weights = np.exp(dresults['logwt'] - dresults['logz'][-1])
+        max_weight = weights.max()
+        trim = max_weight / 1e6
+        mask = weights > trim
         likelihood = dresults["logl"]
-        self._save(chain, weights, likelihood, filename, save_dims)
-        return {"chain": chain, "weights": weights, "posterior": likelihood}
+        self._save(chain[mask, :], weights[mask], likelihood[mask], filename, save_dims)
+        return {"chain": chain[mask, :], "weights": weights[mask], "posterior": likelihood[mask]}
 
     def _save(self, chain, weights, likelihood, filename, save_dims):
         res = np.vstack((likelihood, weights, chain[:, :save_dims].T)).T

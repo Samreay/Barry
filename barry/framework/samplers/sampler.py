@@ -4,7 +4,7 @@ import abc
 class GenericSampler(object):
     __metaclass__ = abc.ABCMeta
 
-    def fit(self, log_posterior, start, prior_transform, save_dims=None, uid=None):
+    def fit(self, log_posterior, start, num_dim, prior_transform, save_dims=None, uid=None):
         """" Runs the sampler over the model and returns the flat chain of results
 
         Parameters

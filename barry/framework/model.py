@@ -4,6 +4,7 @@ from collections import OrderedDict
 from numpy.random import uniform
 import numpy as np
 from scipy.special import loggamma
+from scipy.optimize import basinhopping
 from recordtype import recordtype
 from enum import Enum, unique
 
@@ -101,8 +102,33 @@ class Model(ABC):
     def get_likelihood(self, params, data):
         raise NotImplementedError("You need to set your likelihood")
 
-    def get_start(self):
-        return [uniform(x.min, x.max) for x in self.get_active_params()]
+    def get_start(self, num_walkers=1):
+
+        def minimise(scale_params):
+            return -self.get_posterior(self.unscale(scale_params))
+
+        close_default = 5
+        start_random = np.array([uniform(x.min, x.max) for x in self.get_active_params()])
+        start_close = [(s + p.default * close_default) / (1 + close_default) for s, p in zip(start_random, self.get_active_params())]
+
+        self.logger.info("Starting basin hopping to find a good starting point")
+        res = basinhopping(minimise, self.scale(start_close), niter_success=3, niter=10, stepsize=0.05, minimizer_kwargs={"method": 'Nelder-Mead', "options": {"maxiter": 300}})
+
+        scaled_start = res.x
+        ratio = 0.05  # 5% of the unit hypercube
+
+        mins = np.clip(scaled_start - ratio, 0, 1)
+        maxes = np.clip(scaled_start + ratio, 0, 1)
+
+        samples = np.random.uniform(mins, maxes, size=num_walkers)
+
+        unscaled_samples = np.array([self.unscale(s) for s in samples])
+        self.logger.debug(f"Start samples have shape {unscaled_samples.shape}")
+
+        return unscaled_samples
+
+    def get_num_dim(self):
+        return len(self.get_active_params())
 
     def get_start_scaled(self):
         return self.scale(self.get_start())
@@ -141,7 +167,6 @@ class Model(ABC):
         return params
 
     def optimize(self, close_default=3, niter=100, maxiter=1000):
-        from scipy.optimize import basinhopping
 
         def minimise(scale_params):
             return -self.get_posterior(self.unscale(scale_params))

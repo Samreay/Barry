@@ -49,7 +49,7 @@ class EnsembleSampler(GenericSampler):
         self.save_interval = save_interval
         self.num_walkers = num_walkers
 
-    def fit(self, log_posterior, start, prior_transform, save_dims=None, uid=None):
+    def fit(self, log_posterior, start, num_dim, prior_transform, save_dims=None, uid=None):
         """ Runs the sampler over the model and returns the flat chain of results
 
         Parameters
@@ -79,10 +79,6 @@ class EnsembleSampler(GenericSampler):
         assert start is not None
         import emcee
 
-        if callable(start):
-            num_dim = np.array(start()).size
-        else:
-            num_dim = np.array(start.size)
         if self.num_walkers is None:
             self.num_walkers = num_dim * 8
             self.num_walkers = max(self.num_walkers, 50)

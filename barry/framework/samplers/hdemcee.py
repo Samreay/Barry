@@ -38,7 +38,7 @@ class EmceeWrapper(object):
             raise ValueError("You need to have either a starting function or existing chains")
 
         if pos is None:
-            pos = np.array([start() for i in range(num_walkers)])
+            pos = start(num_walkers=num_walkers)
 
         step = 0
         self.chain = np.zeros((num_walkers, num_steps, save_dim))

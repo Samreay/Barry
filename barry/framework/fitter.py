@@ -73,7 +73,7 @@ class Fitter(object):
         self.logger.info("Running fitting job, saving to %s" % self.temp_dir)
         self.logger.info(f"Model is {model}")
         self.logger.info(f"Data is {' '.join([d['name'] for d in self.model_datasets[model_index][1]])}")
-        sampler.fit(model.get_posterior, model.get_start, model.unscale, uid=uid, save_dims=self.save_dims)
+        sampler.fit(model.get_posterior, model.get_start, model.get_num_dim(), model.unscale, uid=uid, save_dims=self.save_dims)
         # Perform the fitting here
         # Save results out
 
