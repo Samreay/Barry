@@ -20,13 +20,14 @@ if __name__ == "__main__":
 
     sampler = EnsembleSampler(temp_dir=dir_name, num_walkers=100, num_steps=500, num_burn=300)
 
-    for r in [True, False]:
+    for r in [True]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
 
         d = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
         de = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=p, realisation=0)
 
+        beutler_not_fixed = PowerBeutler2017(recon=r)
         beutler = PowerBeutler2017(recon=r)
         beutler.set_data(d.get_data())
         ps, minv = beutler.optimize()
@@ -39,10 +40,11 @@ if __name__ == "__main__":
         ding = PowerDing2018(recon=r)
         noda = PowerNoda2019(recon=r, postprocess=p)
 
-        for i in range(999):
+        for i in range(100):
             d.set_realisation(i)
             de.set_realisation(i)
 
+            fitter.add_model_and_dataset(beutler_not_fixed, d, name=f"Beutler 2017 {t}, mock number {i}", linestyle=ls, color="p", realisation=i)
             fitter.add_model_and_dataset(beutler, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}, mock number {i}", linestyle=ls, color="p", realisation=i)
             fitter.add_model_and_dataset(seo, d, name=f"Seo 2016 {t}, mock number {i}", linestyle=ls, color="r", realisation=i)
             fitter.add_model_and_dataset(ding, d, name=f"Ding 2018 {t}, mock number {i}", linestyle=ls, color="lb", realisation=i)

@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     sampler = DynestySampler(temp_dir=dir_name, )
 
-    for r in [True, False]:
+    for r in [True]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
         ding = PowerDing2018(recon=r)
         noda = PowerNoda2019(recon=r, postprocess=p)
 
-        for i in range(1000):
+        for i in range(100):
             d.set_realisation(i)
             de.set_realisation(i)
 
