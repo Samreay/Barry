@@ -12,6 +12,7 @@ class DynestySampler(GenericSampler):
         self.max_iter = max_iter
         self.nlive = nlive
         import dynesty
+        # dynesty.utils.merge_runs()
         self.temp_dir = temp_dir
         if temp_dir is not None and not os.path.exists(temp_dir):
             os.makedirs(temp_dir, exist_ok=True)
@@ -43,7 +44,7 @@ class DynestySampler(GenericSampler):
         chain = dresults["samples"]
         weights = np.exp(dresults['logwt'] - dresults['logz'][-1])
         max_weight = weights.max()
-        trim = max_weight / 1e6
+        trim = max_weight / 1e5
         mask = weights > trim
         likelihood = dresults["logl"]
         self._save(chain[mask, :], weights[mask], likelihood[mask], filename, save_dims)
