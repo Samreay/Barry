@@ -44,10 +44,15 @@ class PTGenerator(object):
         self.data = None
         self.logger.info(f"Creating PT data with {self.CAMBGenerator.om_resolution} x {self.CAMBGenerator.h0_resolution}")
 
-    def load_data(self):
+    def load_data(self, can_generate=False):
         if not os.path.exists(self.filename):
-            self.logger.warning(f"Cannot find PT data at {self.filename}, generating it!")
-            self.data = self._generate_data()
+            if not can_generate:
+                msg = "Data does not exist and this isn't the time to generate it!"
+                self.logger.error(msg)
+                raise ValueError(msg)
+            else:
+                self.logger.warning(f"Cannot find PT data at {self.filename}, generating it!")
+                self.data = self._generate_data()
         else:
             self.logger.info("Loading existing PT data")
             with open(self.filename, "rb") as f:
@@ -290,7 +295,7 @@ if __name__ == "__main__":
 
     else:
         generator = CambGenerator(om_resolution=101)
-        PT_generator = PTGenerator(generator, recon_smoothing_scale=21.21)
+        PT_generator = PTGenerator(generator, recon_smoothing_scale=15)
         PT_generator.get_data()
 
         # import timeit

@@ -47,9 +47,14 @@ class CambGenerator(object):
         self.data = None
         self.logger.info(f"Creating CAMB data with {self.om_resolution} x {self.h0_resolution}")
 
-    def load_data(self):
+    def load_data(self, can_generate=False):
         if not os.path.exists(self.filename):
-            self.data = self._generate_data()
+            if not can_generate:
+                msg = "Data does not exist and this isn't the time to generate it!"
+                self.logger.error(msg)
+                raise ValueError(msg)
+            else:
+                self.data = self._generate_data()
         else:
             self.logger.info("Loading existing CAMB data")
             self.data = np.load(self.filename)
@@ -143,7 +148,7 @@ if __name__ == "__main__":
     c = {"om": 0.31, "h0": 0.676, "z": 0.61, "ob": 0.04814, "ns": 0.97, "reconscale": 15}
 
     generator = CambGenerator(om_resolution=101, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"])
-    generator.get_data()
+    generator.load_data(can_generate=True)
     # generator = CambGenerator()
     # generator = CambGenerator(om_resolution=50, h0_resolution=1)
     # generator = CambGenerator(om_resolution=10, h0_resolution=10)
