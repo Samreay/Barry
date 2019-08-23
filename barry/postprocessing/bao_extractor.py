@@ -3,7 +3,12 @@ from barry.postprocessing.postprocessor import PkPostProcess
 
 
 class PureBAOExtractor(PkPostProcess):
-    """
+    """ The pure BAO extractor detailed in Noda 2017 (1705.01475), Nishimishi 2018 (1708.00375), Noda 2019 (1901.06854)
+
+    See https://ui.adsabs.harvard.edu/abs/2017JCAP...08..007N
+    See https://ui.adsabs.harvard.edu/abs/2018JCAP...01..035N
+    See https://ui.adsabs.harvard.edu/abs/2019arXiv190106854N
+
     Parameters
     ----------
     r_s : float
@@ -20,6 +25,7 @@ class PureBAOExtractor(PkPostProcess):
         self.delta = delta
 
     def get_krange(self):
+        r""" Returns $k_s \Delta$ as defined in Eq 6 of Nishimishi 2018"""
         k_s = 2 * np.pi / self.r_s  # BAO Wavenumber
         k_range = self.delta * k_s  # Range of k to sum over
         return k_range
@@ -27,7 +33,7 @@ class PureBAOExtractor(PkPostProcess):
     def postprocess(self, ks, pk, mask, return_denominator=False, plot=False):
         """ Runs the BAO Extractor method and returns the extracted BAO signal.
 
-        Warning that this is the estimator given in Eq5 Nishimichi et al 2018 (1708.00375)
+        Warning that this is the estimator given in Eq5 Nishimichi 2018
 
         As such, make sure your k values are finely sampled and linearly spaced. Alas for
         our data, this isn't always possible to do because the window function wrecks us.
@@ -57,6 +63,7 @@ class PureBAOExtractor(PkPostProcess):
             result.append(res)
         result = np.array(result)
 
+        # Plots for debugging purposes to make sure everything looks good
         if self.plot:
             import matplotlib.pyplot as plt
             fig, axes = plt.subplots(nrows=2, figsize=(5, 7))
@@ -67,12 +74,19 @@ class PureBAOExtractor(PkPostProcess):
         if mask is None:
             mask = np.ones(result.shape).astype(np.bool)
 
+        # Optionally return the denominator instead
+        # Used for manually verifying the correctness of the covariance
+        # described in Eq7 (and Noda2019 eq 21,22,23)
         if return_denominator:
             return np.array(denoms)[mask]
         return result[mask]
 
 
 class BAOExtractor(PureBAOExtractor):
+    """ Implements the mix of BAO extractor and power spectrum as defined in Noda 2019, with
+    index mixing taken from page 9, paragraph 1.
+
+    """
     def __init__(self, r_s, plot=False, delta=0.6, mink=0.05, maxk=0.20, reorder=True, invert=False):
         super().__init__(r_s, plot=plot, delta=delta)
         self.mink = mink
@@ -90,6 +104,18 @@ class BAOExtractor(PureBAOExtractor):
             return mask_bao
 
     def postprocess(self, ks, pk, mask):
+        """ Process the power spectrum to get a mix of extracted BAO and P(k)
+
+        Parameters
+        ----------
+        ks : np.ndarray
+            Wavenumbers
+        pk : np.ndarray
+            Power at wavenumber
+        mask : np.ndarray (bool mask), optional
+            Which k values to return at the end. Used to remove k values below / above certain values.
+            I pass them in here because if we reorder the k values the masking cannot be done outside this function.
+        """
         if mask is None:
             mask = np.ones(pk.shape).astype(np.bool)
         extracted_pk = super().postprocess(ks, pk, None)

@@ -10,7 +10,7 @@ import sys
 import pickle
 sys.path.append("../../../")
 from barry.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
-
+from barry.cosmology.camb_generator import getCambGenerator
 
 @lru_cache(maxsize=32)
 def getCambGeneratorAndPT(redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, smooth_type="hinton2017", recon_smoothing_scale=15):

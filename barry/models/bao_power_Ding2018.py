@@ -8,6 +8,11 @@ from barry.models.bao_power import PowerSpectrumFit
 
 
 class PowerDing2018(PowerSpectrumFit):
+    """ Model from Ding 2018.
+
+    See https://ui.adsabs.harvard.edu/abs/2018MNRAS.479.1021D for details.
+
+    """
 
     def __init__(self, fix_params=["om", "f"], smooth_type="hinton2017", recon=False, name="Pk Ding 2018", postprocess=None, smooth=False, correction=None):
         self.recon = recon

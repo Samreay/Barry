@@ -5,6 +5,11 @@ from barry.models.bao_power import PowerSpectrumFit
 
 
 class PowerNoda2019(PowerSpectrumFit):
+    """ Model from Noda 2019.
+
+    See https://ui.adsabs.harvard.edu/abs/2019arXiv190106854N for details.
+
+    """
 
     def __init__(self, fix_params=None, gammaval=None, smooth_type="hinton2017", recon=False, name="Pk Noda 2019", postprocess=None, correction=None):
         self.recon = recon

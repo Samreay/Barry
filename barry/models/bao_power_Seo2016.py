@@ -6,6 +6,10 @@ from barry.models.bao_power import PowerSpectrumFit
 
 
 class PowerSeo2016(PowerSpectrumFit):
+    """ Model from Seo 2016.
+
+    See https://ui.adsabs.harvard.edu/abs/2016MNRAS.460.2453S for details.
+    """
 
     def __init__(self, fix_params=["om", "f"], smooth_type="hinton2017", recon=False, name="Pk Seo 2016", postprocess=None, smooth=False, correction=None):
         self.recon = recon

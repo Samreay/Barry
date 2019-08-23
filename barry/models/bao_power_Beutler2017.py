@@ -5,6 +5,11 @@ from barry.models.bao_power import PowerSpectrumFit
 
 
 class PowerBeutler2017(PowerSpectrumFit):
+    """ Model from Beutler 2017.
+
+    See https://ui.adsabs.harvard.edu/abs/2017MNRAS.464.3409B for details.
+
+    """
 
     def __init__(self, fix_params=["om"], smooth_type="hinton2017", recon=False, name="Pk Beutler 2017", postprocess=None, smooth=False, correction=None):
         super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess, smooth=smooth, correction=correction)
