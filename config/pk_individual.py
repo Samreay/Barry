@@ -31,10 +31,7 @@ if __name__ == "__main__":
 
         beutler_not_fixed = PowerBeutler2017(recon=r)
         beutler = PowerBeutler2017(recon=r)
-        beutler.set_data(d.get_data())
-        ps, minv = beutler.optimize()
-        sigma_nl = ps["sigma_nl"]
-        print(r, "sigma_nl ", sigma_nl)
+        sigma_nl = 6.0 if r else 9.3
         beutler.set_default("sigma_nl", sigma_nl)
         beutler.set_fix_params(["om", "sigma_nl"])
 

@@ -28,9 +28,7 @@ if __name__ == "__main__":
 
         beutler_not_fixed = CorrBeutler2017()
         beutler = CorrBeutler2017()
-        beutler.set_data(d.get_data())
-        ps, minv = beutler.optimize()
-        sigma_nl = ps["sigma_nl"]
+        sigma_nl = 5.0 if r else 8.0
         beutler.set_default("sigma_nl", sigma_nl)
         beutler.set_fix_params(["om", "sigma_nl"])
 
