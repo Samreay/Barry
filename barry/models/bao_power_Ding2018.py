@@ -134,7 +134,7 @@ class PowerDing2018(PowerSpectrumFit):
 
 if __name__ == "__main__":
     import sys
-    sys.path.append("../../..")
+    sys.path.append("../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
     model_pre = PowerDing2018(recon=False)
