@@ -8,9 +8,26 @@ from barry.models.model import Model
 import numpy as np
 
 
-# TODO: make h0 and omega_m more easily changable if we are not fitting them
 class PowerSpectrumFit(Model):
-    def __init__(self, smooth_type="hinton2017", name="Pk Basic", postprocess=None, fix_params=['om'], smooth=False, correction=None):
+    """ Generic power spectrum model """
+    def __init__(self,name="Pk Basic",  smooth_type="hinton2017",  fix_params=['om'], postprocess=None, smooth=False, correction=None):
+        """ Generic power spectrum function model
+
+        Parameters
+        ----------
+        name : str, optional
+            Name of the model
+        smooth_type : str, optional
+            The sort of smoothing to use. Either 'hinton2017' or 'eh1998'
+        fix_params : list[str], optional
+            Parameter names to fix to their defaults. Defaults to just `[om]`.
+        postprocess : `Postprocess` object
+            The class to postprocess model predictions. Defaults to none.
+        smooth : bool, optional
+            Whether to generate a smooth model without the BAO feature. Defaults to `false`.
+        correction : `Correction` enum.
+            Defaults to `Correction.SELLENTIN
+        """
         super().__init__(name, postprocess=postprocess, correction=correction)
         self.smooth_type = smooth_type.lower()
         if not validate_smooth_method(smooth_type):
@@ -27,6 +44,16 @@ class PowerSpectrumFit(Model):
         self.cosmology = None
 
     def set_data(self, data):
+        """ Sets the models data, including fetching the right cosmology and PT generator.
+
+        Note that if you pass in multiple datas (ie a list with more than one element),
+        they need to have the same cosmology.
+
+        Parameters
+        ----------
+        data : list[dict]
+            A list of datas to use
+        """
         super().set_data(data)
         c = data[0]["cosmology"]
         if self.cosmology != c:
@@ -35,14 +62,14 @@ class PowerSpectrumFit(Model):
             self.set_default("om", c["om"])
 
     def declare_parameters(self):
-        # Define parameters
+        """ Defines model parameters, their bounds and default value. """
         self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.31)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch
         self.add_param("b", r"$b$", 0.1, 12.5, 1.73)  # bias
 
     @lru_cache(maxsize=1024)
     def compute_basic_power_spectrum(self, om):
-        """ Computes the smoothed, linear power spectrum and the wiggle ratio
+        """ Computes the smoothed linear power spectrum and the wiggle ratio
 
         Parameters
         ----------
@@ -51,10 +78,10 @@ class PowerSpectrumFit(Model):
 
         Returns
         -------
-        array
-            pk_smooth - The power spectrum smoothed out
-        array
-            pk_ratio_dewiggled - the ratio pk_lin / pk_smooth, transitioned using sigma_nl
+        pk_smooth_lin : np.ndarray
+            The power spectrum smoothed out
+        pk_ratio : np.ndarray
+            the ratio pk_lin / pk_smooth, transitioned using sigma_nl
 
         """
         # Get base linear power spectrum from camb
@@ -76,8 +103,8 @@ class PowerSpectrumFit(Model):
 
         Returns
         -------
-        array
-            pk_final - the ratio (pk_lin / pk_smooth - 1.0),  interpolated to k/alpha.
+        pk_final : np.ndarray
+            the ratio (pk_lin / pk_smooth - 1.0),  interpolated to k/alpha.
 
         """
         ks = self.camb.ks
@@ -89,6 +116,27 @@ class PowerSpectrumFit(Model):
         return pk_final
 
     def adjust_model_window_effects(self, pk_generated, data):
+        """ Take the window effects into account.
+
+        Parameters
+        ----------
+        pk_generated : np.ndarray
+            The p(k) values generated at the window function input ks
+        data : dict
+            The data dictionary containing the window scale `w_scale`,
+            transformation matrix `w_transform`, integral constraint `w_pk`
+            and mask `w_mask`
+
+        Returns
+        -------
+        pk_normalised : np.ndarray
+            The transformed, corrected power spectrum
+        mask : np.ndarray
+            A boolean mask used for selecting the final data out of pk_normalised.
+            Mask is not applied in this function because for the BAO extractor
+            post processing we want to take the powers outside the mask into account
+            and *then* mask.
+        """
         p0 = np.sum(data["w_scale"] * pk_generated)
         integral_constraint = data["w_pk"] * p0
 
@@ -98,6 +146,21 @@ class PowerSpectrumFit(Model):
         return pk_normalised, data["w_mask"]
 
     def get_likelihood(self, p, d):
+        """ Uses the stated likelihood correction and `get_model` to compute the likelihood
+
+        Parameters
+        ----------
+        p : dict
+            A dictionary of parameter names to parameter values
+        d : dict
+            A specific set of data to compute the model for. For correlation functions, this needs to
+            have a key of 'dist' which contains the Mpc/h value of distances to compute.
+
+        Returns
+        -------
+        log_likelihood : float
+            The corrected log likelihood
+        """
         pk_model = self.get_model(p, d, smooth=self.smooth)
 
         # Compute the chi2
@@ -107,6 +170,24 @@ class PowerSpectrumFit(Model):
         return self.get_chi2_likelihood(diff, d["icov"], num_mocks=num_mocks, num_params=num_params)
 
     def get_model(self, p, d, smooth=False):
+        """ Gets the model prediction using the data passed in and parameter location specified
+
+        Parameters
+        ----------
+        p : dict
+            A dictionary of parameter names to parameter values
+        data : dict
+            A specific set of data to compute the model for. For correlation functions, this needs to
+            have a key of 'dist' which contains the Mpc/h value of distances to compute.
+        smooth : bool, optional
+            Whether to only generate a smooth model without the BAO feature
+
+        Returns
+        -------
+        pk_model : np.ndarray
+            The p(k) predictions given p and data, k values correspond to d['ks_output']
+
+        """
         # Get the generic pk model
         pk_generated = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth)
         # Morph it into a model representative of our survey and its selection/window/binning effects
