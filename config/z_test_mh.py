@@ -1,9 +1,9 @@
 import sys
 sys.path.append("..")
-from barry.setup import setup
-from barry.framework.fitter import Fitter
-from barry.framework.models.test import TestModel
-from barry.framework.datasets.test import TestDataset
+from barry.config import setup
+from barry.fitter import Fitter
+from barry.models.test import TestModel
+from barry.datasets.test import TestDataset
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
@@ -12,8 +12,7 @@ if __name__ == "__main__":
     data = TestDataset()
 
     fitter = Fitter(dir_name)
-    fitter.set_models(model)
-    fitter.set_data(data)
+    fitter.add_model_and_dataset(model, data)
     fitter.set_num_walkers(2)
     fitter.fit(file)
 

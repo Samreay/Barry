@@ -1,10 +1,10 @@
 import sys
 sys.path.append("..")
-from barry.setup import setup
-from barry.framework.fitter import Fitter
-from barry.framework.models.test import TestModel
-from barry.framework.datasets.test import TestDataset
-from barry.framework.samplers.ensemble import EnsembleSampler
+from barry.config import setup
+from barry.fitter import Fitter
+from barry.models.test import TestModel
+from barry.datasets.test import TestDataset
+from barry.samplers import EnsembleSampler
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
@@ -15,8 +15,7 @@ if __name__ == "__main__":
     sampler = EnsembleSampler(num_walkers=10, num_steps=1000, num_burn=300, temp_dir=dir_name)
 
     fitter = Fitter(dir_name)
-    fitter.set_models(model)
-    fitter.set_data(data)
+    fitter.add_model_and_dataset(model, data)
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(2)
     fitter.fit(file)

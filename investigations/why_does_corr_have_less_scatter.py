@@ -1,8 +1,8 @@
 import logging
 
-from barry.framework.cosmology.pk2xi import PowerToCorrelationGauss
-from barry.framework.models import CorrBeutler2017, CorrDing2018, CorrSeo2016, PowerBeutler2017, PowerDing2018, PowerSeo2016
-from barry.framework.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC, PowerSpectrum_SDSS_DR12_Z061_NGC
+from barry.cosmology.pk2xi import PowerToCorrelationGauss
+from barry.models import PowerBeutler2017, PowerDing2018, PowerSeo2016
+from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC, PowerSpectrum_SDSS_DR12_Z061_NGC
 import matplotlib.pyplot as plt
 
 

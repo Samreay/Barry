@@ -1,12 +1,12 @@
 import sys
 
 sys.path.append("..")
-from barry.framework.cosmology.camb_generator import getCambGenerator
-from barry.setup import setup
-from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, CorrBeutler2017, CorrSeo2016, CorrDing2018
-from barry.framework.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC, PowerSpectrum_SDSS_DR12_Z061_NGC
-from barry.framework.samplers import DynestySampler
-from barry.framework.fitter import Fitter
+from barry.cosmology.camb_generator import getCambGenerator
+from barry.config import setup
+from barry.models import PowerDing2018, CorrDing2018
+from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC, PowerSpectrum_SDSS_DR12_Z061_NGC
+from barry.samplers import DynestySampler
+from barry.fitter import Fitter
 import numpy as np
 
 if __name__ == "__main__":

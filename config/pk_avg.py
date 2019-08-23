@@ -1,14 +1,13 @@
 import sys
 
 sys.path.append("..")
-from barry.framework.cosmology.camb_generator import getCambGenerator
-from barry.framework.postprocessing import BAOExtractor
-from barry.setup import setup
-from barry.framework.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
-from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
-from barry.framework.samplers import DynestySampler
-from barry.framework.fitter import Fitter
-import numpy as np
+from barry.cosmology.camb_generator import getCambGenerator
+from barry.postprocessing import BAOExtractor
+from barry.config import setup
+from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
+from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
+from barry.samplers import DynestySampler
+from barry.fitter import Fitter
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)

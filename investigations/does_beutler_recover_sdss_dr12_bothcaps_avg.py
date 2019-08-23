@@ -1,11 +1,11 @@
 import logging
 
-from barry.framework.models import PowerBeutler2017
+from barry.models import PowerBeutler2017
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
-    from barry.framework.datasets.mock_power import PowerSpectrum_SDSS_DR12_Z051
+    from barry.datasets import PowerSpectrum_SDSS_DR12_Z051
 
     for recon in [True, False]:
         model = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}")

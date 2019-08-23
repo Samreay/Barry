@@ -1,8 +1,8 @@
-from barry.setup import setup
-from barry.framework.fitter import Fitter
-from barry.framework.models.test import TestModel
-from barry.framework.datasets.test import TestDataset
-from barry.framework.samplers.dynesty_sampler import DynestySampler
+from barry.config import setup
+from barry.fitter import Fitter
+from barry.models.test import TestModel
+from barry.datasets.test import TestDataset
+from barry.samplers import DynestySampler
 
 if __name__ == "__main__":
     import sys

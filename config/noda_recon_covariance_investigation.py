@@ -1,19 +1,19 @@
 import sys
 sys.path.append("..")
 from investigations.does_noda_cov_match_bruteforce_mixed import calc_cov_noda_mixed
-from barry.setup import setup
-from barry.framework.models import PowerNoda2019
-from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
-from barry.framework.postprocessing import BAOExtractor, PureBAOExtractor
-from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.samplers import DynestySampler
-from barry.framework.fitter import Fitter
+from barry.config import setup
+from barry.models import PowerNoda2019
+from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
+from barry.postprocessing import BAOExtractor, PureBAOExtractor
+from barry.cosmology.camb_generator import getCambGenerator
+from barry.samplers import DynestySampler
+from barry.fitter import Fitter
 import numpy as np
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
-    c = CambGenerator()
+    c = getCambGenerator()
     r_s, _ = c.get_data()
 
     postprocess = BAOExtractor(r_s)

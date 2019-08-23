@@ -1,8 +1,8 @@
 import numpy as np
 import logging
-from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
-from barry.framework.postprocessing import PureBAOExtractor
+from barry.cosmology.camb_generator import getCambGenerator
+from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
+from barry.postprocessing import PureBAOExtractor
 
 
 def calc_cov_noda(pk_cov, denoms, ks, pks, delta_k, assume_diag=False):
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
-    camb = CambGenerator()
+    camb = getCambGenerator()
     r_s, _ = camb.get_data()
     extractor = PureBAOExtractor(r_s)
     mink = 0.02

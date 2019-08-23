@@ -1,19 +1,18 @@
 import logging
 
-from barry.framework.cosmology.camb_generator import CambGenerator
-from barry.framework.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
-from barry.framework.models import PowerNoda2019
-from barry.framework.postprocessing import BAOExtractor, PureBAOExtractor
+from barry.cosmology.camb_generator import getCambGenerator
+from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
+from barry.models import PowerNoda2019
+from barry.postprocessing import BAOExtractor
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
-    c = CambGenerator()
+    c = getCambGenerator()
     r_s, _ = c.get_data()
 
     postprocess = BAOExtractor(r_s, mink=0.15)
-    #postprocess = PureBAOExtractor(r_s)
 
     for recon in [True, False]:
 

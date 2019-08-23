@@ -1,11 +1,11 @@
 import logging
 
-from barry.framework.models import CorrSeo2016
+from barry.models import CorrSeo2016
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
-    from barry.framework.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
+    from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
 
     for recon in [True, False]:
         model = CorrSeo2016(recon=recon)
