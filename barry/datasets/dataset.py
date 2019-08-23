@@ -3,6 +3,20 @@ import logging
 
 
 class Dataset(ABC):
+    """ Abstract Dataset class.
+
+    Concrete implementations need to implement the `get_data` method, which
+    should return a length 1 array with the sole element being a dictionary
+    of data.
+
+    Attributes
+    ----------
+    name : str
+        The name of the dataset
+    logger : `logging.logger`
+        Class logger
+
+    """
     def __init__(self, name):
         self.name = name
         self.logger = logging.getLogger("barry")
@@ -11,13 +25,35 @@ class Dataset(ABC):
         return self.name
 
     def get_data(self):
+        """ Return a list of data dictionaries
+
+        Returns
+        -------
+        datas : list
+            A list of dictionaries. For a single data source, this will a list one element long.
+        """
         raise NotImplementedError("Please implement get_data")
 
 
 class MultiDataset(Dataset):
+    """ Dataset wrapping multiple datasets. Used for combining *independent* datasets.
+
+    Attributes
+    ----------
+    datas : list
+        List of `Dataset` objects.
+
+    """
     def __init__(self, name, datasets):
         super().__init__(name)
         self.datasets = datasets
 
     def get_data(self):
+        """ Returns a flattened list of data from each child dataset.
+
+        Returns
+        -------
+        datasets : list
+            A list of datasets
+        """
         return [i for d in self.datasets for i in d.get_data()]

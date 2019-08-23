@@ -2,6 +2,7 @@ import os
 import pickle
 import logging
 import inspect
+import numpy as np
 
 from barry.datasets.dataset import Dataset
 
@@ -57,7 +58,7 @@ class MockAverageCorrelations(Dataset):
             "cosmology": self.cosmology,
             "num_mocks": len(self.all_data)
         }
-        if self.data.shape[1] > 2:
+        if self.data.shape[1] > 2:  # Some data has xi, xi0, xi2, xi4, some only has xi0
             d.update({
                 "xi": self.data[:, 1],
                 "xi0": self.data[:, 2],

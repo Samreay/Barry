@@ -8,6 +8,9 @@ from barry.models.model import Model
 
 
 class CorrelationPolynomial(Model):
+    """
+
+    """
     def __init__(self, smooth_type="hinton2017", name="BAO Correlation Polynomial Fit", fix_params=['om'], smooth=False, correction=None):
         super().__init__(name, correction=correction)
 

@@ -2,6 +2,8 @@ import os
 import logging
 import inspect
 import pickle
+import numpy as np
+
 from barry.datasets.dataset import Dataset, MultiDataset
 
 

@@ -9,6 +9,8 @@ from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
 from barry.samplers import DynestySampler
 from barry.fitter import Fitter
 import numpy as np
+import pandas as pd
+
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
@@ -19,6 +21,7 @@ if __name__ == "__main__":
     p = BAOExtractor(r_s)
 
     sampler = DynestySampler(temp_dir=dir_name, nlive=200)
+    c4 = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
@@ -37,10 +40,10 @@ if __name__ == "__main__":
 
         for i in range(999):
             d.set_realisation(i)
-            fitter.add_model_and_dataset(beutler_not_fixed, d, name=f"Beutler 2017 {t}, mock number {i}", linestyle=ls, color="p", realisation=i)
-            fitter.add_model_and_dataset(beutler, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}, mock number {i}", linestyle=ls, color="p", realisation=i)
-            fitter.add_model_and_dataset(seo, d, name=f"Seo 2016 {t}, mock number {i}", linestyle=ls, color="r", realisation=i)
-            fitter.add_model_and_dataset(ding, d, name=f"Ding 2018 {t}, mock number {i}", linestyle=ls, color="lb", realisation=i)
+            fitter.add_model_and_dataset(beutler_not_fixed, d, name=f"Beutler 2017 {t}, mock number {i}", linestyle=ls, color=c4[0], realisation=i)
+            fitter.add_model_and_dataset(beutler, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}, mock number {i}", linestyle=ls, color=c4[0], realisation=i)
+            fitter.add_model_and_dataset(seo, d, name=f"Seo 2016 {t}, mock number {i}", linestyle=ls, color=c4[1], realisation=i)
+            fitter.add_model_and_dataset(ding, d, name=f"Ding 2018 {t}, mock number {i}", linestyle=ls, color=c4[2], realisation=i)
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
@@ -78,7 +81,6 @@ if __name__ == "__main__":
         # Define colour scheme
         c2 = ["#225465", "#5FA45E"] # ["#581d7f", "#e05286"]
         c3 = ["#2C455A", "#258E71", "#C1C64D"] # ["#501b73", "#a73b8f", "#ee8695"]
-        c4 = ["#262232","#116A71","#48AB75","#D1E05B"] #["#461765", "#7b2a95", "#d54d88", "#f19a9b"]
         c5 = ["#262232", "#1F4D5C", "#0E7A6E", "#5BA561", "#C1C64D"] # ["#3c1357", "#61208d", "#a73b8f", "#e8638b", "#f4aea3"]
         cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
 
