@@ -4,7 +4,7 @@ sys.path.append("..")
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
 from barry.config import setup
-from barry.models import PowerDing2018
+from barry.models import PowerDing2018, PowerBeutler2017
 from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.samplers import DynestySampler
 from barry.fitter import Fitter
@@ -27,18 +27,28 @@ if __name__ == "__main__":
         d = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
         de = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=p, realisation=0)
 
-        beutler = PowerDing2018(recon=r)
-        beutler_extracted = PowerDing2018(recon=r, postprocess=p)
+        ding = PowerDing2018(recon=r)
+        beutler = PowerBeutler2017(recon=r)
+        sigma_nl = 6.0
+        beutler.set_default("sigma_nl", sigma_nl)
+        beutler.set_fix_params(["om", "sigma_nl"])
+
+        beutler_extracted = PowerBeutler2017(recon=r, postprocess=p)
+        beutler_extracted.set_default("sigma_nl", sigma_nl)
+        beutler_extracted.set_fix_params(["om", "sigma_nl"])
+        ding_extracted = PowerDing2018(recon=r, postprocess=p)
 
         for i in range(999):
             d.set_realisation(i)
             de.set_realisation(i)
-            fitter.add_model_and_dataset(beutler, d, name=f"D18, mock number {i}", linestyle=ls, color="p")
-            fitter.add_model_and_dataset(beutler_extracted, de, name=f"D18 + Extractor, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(ding, d, name=f"D18, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(beutler, d, name=f"B17, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(ding_extracted, de, name=f"D18 + Extractor, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(beutler_extracted, de, name=f"B17 + Extractor, mock number {i}", linestyle=ls, color="p")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
-    fitter.set_num_cpu(300)
+    fitter.set_num_cpu(700)
     if not fitter.should_plot():
         fitter.fit(file)
 
