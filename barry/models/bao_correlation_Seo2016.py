@@ -11,7 +11,7 @@ class CorrSeo2016(CorrelationPolynomial):
         self.recon_smoothing_scale = None
         self.fit_omega_m = fix_params is None or "om" not in fix_params
         self.fit_growth = fix_params is None or "f" not in fix_params
-        super().__init__(smooth_type, name, fix_params, smooth, correction=correction)
+        super().__init__(name, smooth_type, fix_params, smooth, correction=correction)
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)

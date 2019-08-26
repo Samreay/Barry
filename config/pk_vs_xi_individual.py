@@ -8,6 +8,7 @@ from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC, PowerSpectrum
 from barry.samplers import DynestySampler
 from barry.fitter import Fitter
 import numpy as np
+import pandas as pd
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
@@ -67,17 +68,23 @@ if __name__ == "__main__":
             if res.get(n) is None:
                 res[n] = []
             i = posterior.argmax()
-            chi2 = -2 * posterior[i]
-            res[n].append([chain[:, 0].mean(), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2])
+            chi2 = - 2 * posterior[i]
+            res[n].append([np.average(chain[:, 0], weights=weight), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
         for label in res.keys():
-            res[label] = np.array(res[label])
-        for label in res.keys():
+            res[label] = pd.DataFrame(res[label], columns=["avg", "std", "max", "posterior", "chi2", "Dchi2", "realisation"])
+
+        for label, df in res.items():
             if "Smooth" not in label:
                 l2 = label + " Smooth"
-                assert l2 in res.keys()
-                smooth_chi2 = res[l2][:, 4]
-                res[label][:, 5] += smooth_chi2
+                res[label] = pd.merge(df, res[l2], how="inner", on="realisation", suffixes=("", "_"))
+                res[label]['Dchi2'] += res[label]["chi2_"]
+                print(label, res[label]["Dchi2"].max(), res[label]["Dchi2"].mean())
+
         ks = [l for l in res.keys() if "Smooth" not in l]
+        all_ids = pd.concat(tuple([res[l][['realisation']] for l in ks]))
+        counts = all_ids.groupby("realisation").size().reset_index()
+        max_count = counts.values[:, 1].max()
+        good_ids = all_ids.loc[counts.values[:, 1] == max_count, ["realisation"]]
 
         # Define colour scheme
         c2 = ["#225465", "#5FA45E"] # ["#581d7f", "#e05286"]
@@ -97,8 +104,9 @@ if __name__ == "__main__":
         if True:
             from scipy.interpolate import interp1d
             cols = {"Ding 2018 $P(k)$": c2[0], "Ding 2018 $\\xi(s)$": c2[1]}
-            fig, axes = plt.subplots(2, 2, figsize=(6, 6), sharex=True)
+            fig, axes = plt.subplots(2, 2, figsize=(5, 5), sharex=True)
             labels = ["Ding 2018 $P(k)$", "Ding 2018 $\\xi(s)$"]
+            k = "avg"
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
                     ax = axes[i, j]
@@ -106,8 +114,8 @@ if __name__ == "__main__":
                         ax.axis('off')
                         continue
                     elif i == j:
-                        h, _, _ = ax.hist(res[label1][:, 0], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1])
-                        ax.hist(res[label1][:, 0], bins=bins, histtype="step", linewidth=1.5, color=cols[label1])
+                        h, _, _ = ax.hist(res[label1][k], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1])
+                        ax.hist(res[label1][k], bins=bins, histtype="step", linewidth=1.5, color=cols[label1])
                         ax.set_yticklabels([])
                         ax.tick_params(axis='y', left=False)
                         ax.set_xlim(*lim)
@@ -122,21 +130,22 @@ if __name__ == "__main__":
                             ax.set_xticks(ticks)
                     else:
                         print(label1, label2)
-                        a1 = np.array(res[label2][:, 0])
-                        a2 = np.array(res[label1][:, 0])
-                        c = np.sqrt(np.min(np.vstack((res[label2][:, 5] + res[label1][:, 0])), axis=1))
-                        print(c.shape)
-                        m_good = c > 3
+                        a1 = res[label2][k].values
+                        a2 = res[label1][k].values
+                        c = np.sqrt(np.min(np.vstack((res[label2]["Dchi2"].values, res[label1]["Dchi2"].values)), axis=0))
+                        c[np.isnan(c)] = 0
+                        print(c.shape, c.min(), c.max(), c.mean())
+                        m_good = c > 5
                         print("Correlation all: ", np.corrcoef(a1, a2))
                         print("Correlation 3: ", np.corrcoef(a1[m_good], a2[m_good]))
 
-                        im = ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=2, vmax=7)
+                        im = ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=2, vmax=9)
 
                         from mpl_toolkits.axes_grid1 import make_axes_locatable
                         divider = make_axes_locatable(ax)
                         cax = divider.append_axes('right', size='3%', pad=0.0)
                         # cax = fig.add_axes([0.27, 0.8, 0.5, 0.05])
-                        cbar = fig.colorbar(im, cax=cax, orientation='vertical', ticks=[3, 4, 5, 6])
+                        cbar = fig.colorbar(im, cax=cax, orientation='vertical', ticks=[3, 5, 7, 9])
 
                         l2 = (lim[1] - lim[0]) * 1.03 + lim[0]
                         ax.set_xlim(lim[0], l2)

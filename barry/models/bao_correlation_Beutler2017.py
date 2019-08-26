@@ -5,8 +5,8 @@ from barry.models.bao_correlation import CorrelationPolynomial
 
 class CorrBeutler2017(CorrelationPolynomial):
 
-    def __init__(self, smooth_type="hinton2017", name="Corr Beutler 2017", fix_params=['om'], smooth=False, correction=None):
-        super().__init__(smooth_type, name, fix_params, smooth, correction=correction)
+    def __init__(self, name="Corr Beutler 2017", smooth_type="hinton2017", fix_params=['om'], smooth=False, correction=None):
+        super().__init__(name, smooth_type, fix_params, smooth, correction=correction)
 
     def declare_parameters(self):
         # Define parameters
