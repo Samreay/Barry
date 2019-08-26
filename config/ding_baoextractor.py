@@ -12,7 +12,7 @@ import numpy as np
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
-    fitter = Fitter(dir_name)
+    fitter = Fitter(dir_name, remove_output=False)
     
     c = getCambGenerator()
     r_s, _ = c.get_data()
