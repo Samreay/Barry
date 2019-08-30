@@ -55,6 +55,7 @@ if __name__ == "__main__":
         c.plotter.plot_summary(filename=[pfn + "_summary2.png", pfn + "_summary2.pdf"], extra_parameter_spacing=1.5, parameters=1, errorbar=True, truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
         c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0}, parameters=2)
+        c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"], truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
         # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
 
 

@@ -57,9 +57,11 @@ if __name__ == "__main__":
                        truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0}, figsize="COLUMN", extents=extents)
         # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
+        with open(pfn + "_corr.txt", "w") as f:
+            f.write(c.analysis.get_correlation_table(chain="N19 Recon fixed $f$, $\\gamma$"))
+
 
     # FINDINGS
     # So turns out that fixing all these parameters really helps get good constraints.
     # Both the choice of b and gamma entirely determine where alpha will fit.
-    # Fixing gamma, f and b gives constraints 4 times better than letting them free
     # Really fixing b is what is driving down uncertainty.

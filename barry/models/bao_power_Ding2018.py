@@ -105,15 +105,15 @@ class PowerDing2018(PowerSpectrumFit):
             smooth_prefac = np.tile(self.smoothing_kernel/p["b"], (self.nmu, 1))
             bdelta_prefac = np.tile(0.5*p["b_delta"]/p["b"]*ks**2, (self.nmu, 1))
             kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth/p["b"]*self.mu**2, 1.0-self.smoothing_kernel) + bdelta_prefac
-            propagator = (kaiser_prefac**2 - bdelta_prefac**2)*damping_dd + 2.0*kaiser_prefac*smooth_prefac*damping_sd + smooth_prefac**2*damping_ss
+            propagator = (1**2 - (bdelta_prefac/kaiser_prefac)**2)*damping_dd + 2.0*smooth_prefac*damping_sd/kaiser_prefac + smooth_prefac**2*damping_ss/kaiser_prefac**2
         else:
             bdelta_prefac = np.tile(0.5*p["b_delta"]/p["b"]*ks**2, (self.nmu, 1))
             kaiser_prefac = 1.0 + np.tile(growth/p["b"]*self.mu**2, (len(ks), 1)).T + bdelta_prefac
-            propagator = (kaiser_prefac**2 - bdelta_prefac**2)*damping
+            propagator = (1**2 - (bdelta_prefac/kaiser_prefac)**2)*damping
 
         # Compute the smooth model
         fog = 1.0/(1.0 + np.outer(self.mu**2, ks**2*p["sigma_s"]**2/2.0))**2
-        pk_smooth = p["b"]**2*pk_smooth_lin*fog
+        pk_smooth = kaiser_prefac**2 *p["b"]**2*pk_smooth_lin*fog
 
         # Polynomial shape
         if self.recon:
