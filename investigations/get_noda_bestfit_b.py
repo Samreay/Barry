@@ -30,3 +30,5 @@ if __name__ == "__main__":
 
         # FINDINGS
         # 2.019 for Recon, 2.093 for prerecon
+
+        # Private communiucation with the team means for the mock means they found 1.86996 for recon and 1.89131 for prerecon

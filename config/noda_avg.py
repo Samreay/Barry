@@ -23,9 +23,11 @@ if __name__ == "__main__":
         rt = "Recon" if r else "Prerecon"
         data = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=postprocess)
         n = PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"])
+        n2 = PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"])
         n.param_dict["b"].default = 2.022 if r else 2.01238
-        fitter.add_model_and_dataset(n, data, name=f"N19 {rt} fixed $f$, $\\gamma$, $b$",
-                                     linestyle="-" if r else "--", color="o", shade_alpha=0.7, zorder=10)
+        n2.param_dict["b"].default = 1.86996 if r else 1.89131
+        fitter.add_model_and_dataset(n, data, name=f"N19 {rt} fixed $f$, $\\gamma$, $b$ (our values)", linestyle="-" if r else "--", color="o", shade_alpha=0.7, zorder=10)
+        fitter.add_model_and_dataset(n2, data, name=f"N19 {rt} fixed $f$, $\\gamma$, $b$ (N19 values)", linestyle=":", color="o", shade_alpha=0.0, zorder=10)
         fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma"]), data, name=f"N19 {rt} fixed $f$, $\\gamma$",
                                      linestyle="-" if r else "--", color="r", shade_alpha=0.2)
         fitter.add_model_and_dataset(PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f"],), data, name=f"N19 {rt} fixed $f$",

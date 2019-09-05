@@ -19,20 +19,19 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name)
 
     ps = [
-        BAOExtractor(r_s, mink=0.05, maxk=0.13),
-        BAOExtractor(r_s, mink=0.05, maxk=0.15),
-        BAOExtractor(r_s, mink=0.05, maxk=0.17),
-        BAOExtractor(r_s, mink=0.05, maxk=0.19),
-        BAOExtractor(r_s, mink=0.05, maxk=0.21),
-        BAOExtractor(r_s, mink=0.05, maxk=0.23),
-        BAOExtractor(r_s, mink=0.05, maxk=0.25),
-        BAOExtractor(r_s, mink=0.05, maxk=0.27),
-        BAOExtractor(r_s, mink=0.05, maxk=0.29),
+        BAOExtractor(r_s, extra_ks=(0.095, 0.10)),
+        BAOExtractor(r_s, extra_ks=(0.095, 0.12)),
+        BAOExtractor(r_s, extra_ks=(0.095, 0.14)),
+        BAOExtractor(r_s, extra_ks=(0.095, 0.16)),
+        BAOExtractor(r_s, extra_ks=(0.095, 0.18)),
+        BAOExtractor(r_s, extra_ks=(0.095, 0.20)),
+        BAOExtractor(r_s, extra_ks=(0.095, 0.22)),
+        BAOExtractor(r_s, extra_ks=(0.095, 0.24)),
     ]
 
     recon = True
     for p in ps:
-        n = f"{p.mink:0.2f}-{p.maxk:0.2f}"
+        n = f"Anchor: $k = {p.extra_ks[1]} h/\\text{{Mpc}}$"
         print(n)
         model = PowerNoda2019(postprocess=p, recon=recon)
         data = PowerSpectrum_SDSS_DR12_Z061_NGC(min_k=0.02, max_k=0.30, postprocess=p, recon=recon)
