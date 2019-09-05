@@ -19,7 +19,9 @@ if __name__ == "__main__":
         model1 = PowerNoda2019(recon=recon, name=f"Noda2019, recon={recon}", postprocess=postprocess, fix_params=["om", "f", "gamma"])
         dataset1 = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=recon, postprocess=postprocess, min_k=0.03, max_k=0.15)
         data1 = dataset1.get_data()
-
+        print(list(data1[0].keys()))
+        print(data1[0]["ks_output"])
+        exit()
         # First comparison - the actual recon data
         model1.set_data(data1)
         p, minv = model1.optimize()

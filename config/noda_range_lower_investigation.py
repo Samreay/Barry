@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     recon = True
     for p in ps:
-        n = f"$k = {p.extra_ks[1]:0.2f}\, h / {{\\rm Mpc}}$"
+        n = f"$k = {p.mink:0.2f}\, h / {{\\rm Mpc}}$"
         model = PowerNoda2019(postprocess=p, recon=recon)
         data = PowerSpectrum_SDSS_DR12_Z061_NGC(min_k=0.02, max_k=0.30, postprocess=p, recon=recon)
         fitter.add_model_and_dataset(model, data, name=n)

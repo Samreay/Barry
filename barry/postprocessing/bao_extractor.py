@@ -90,7 +90,7 @@ class BAOExtractor(PureBAOExtractor):
     rho_i = {4,5,6,8,9,10,11,12,13,14,16,17,18,19,20,21,22,23,24,25}
 
     """
-    def __init__(self, r_s, plot=False, delta=0.6, mink=0.06, extra_ks=(0.095, 0.175), reorder=True, invert=False):
+    def __init__(self, r_s, plot=False, delta=0.6, mink=0.06, extra_ks=(0.0925, 0.1775), reorder=True, invert=False):
         super().__init__(r_s, plot=plot, delta=delta)
         self.mink = mink
         self.extra_ks = extra_ks

@@ -37,13 +37,13 @@ if __name__ == "__main__":
     for p in ps:
         n = f"$k = {p.extra_ks[1]:0.2f}\, h / {{\\rm Mpc}}$"
         model = PowerNoda2019(postprocess=p, recon=recon)
-        data = PowerSpectrum_SDSS_DR12_Z061_NGC(min_k=0.02, max_k=0.30, postprocess=p, recon=recon)
+        data = PowerSpectrum_SDSS_DR12_Z061_NGC(min_k=0.02, max_k=0.30, postprocess=p, recon=recon, realisation=0)
         fitter.add_model_and_dataset(model, data, name=n)
 
-    sampler = DynestySampler(temp_dir=dir_name)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
 
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(30)
+    fitter.set_num_walkers(10)
     fitter.fit(file)
 
     if fitter.should_plot():
