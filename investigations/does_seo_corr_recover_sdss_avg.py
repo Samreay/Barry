@@ -1,5 +1,4 @@
 import logging
-
 from barry.models import CorrSeo2016
 
 if __name__ == "__main__":

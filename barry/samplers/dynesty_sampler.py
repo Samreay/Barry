@@ -5,7 +5,6 @@ from barry.samplers.sampler import GenericSampler
 
 
 class DynestySampler(GenericSampler):
-
     def __init__(self, temp_dir=None, max_iter=None, nlive=500):
 
         self.logger = logging.getLogger("barry")
@@ -41,7 +40,7 @@ class DynestySampler(GenericSampler):
 
         dresults = sampler.results
         chain = dresults["samples"]
-        weights = np.exp(dresults['logwt'] - dresults['logz'][-1])
+        weights = np.exp(dresults["logwt"] - dresults["logz"][-1])
         max_weight = weights.max()
         trim = max_weight / 1e5
         mask = weights > trim

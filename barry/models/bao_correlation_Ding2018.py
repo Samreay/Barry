@@ -5,8 +5,7 @@ from barry.models.bao_correlation import CorrelationFunctionFit
 
 
 class CorrDing2018(CorrelationFunctionFit):
-
-    def __init__(self, recon=False, smooth_type="hinton2017", name="Corr Ding 2018", fix_params=['om', 'f'], smooth=False, correction=None):
+    def __init__(self, recon=False, smooth_type="hinton2017", name="Corr Ding 2018", fix_params=("om", "f"), smooth=False, correction=None):
         self.recon = recon
         self.recon_smoothing_scale = None
         super().__init__(name, smooth_type, fix_params, smooth, correction=correction)
@@ -82,14 +81,16 @@ class CorrDing2018(CorrelationFunctionFit):
 
         # Compute the propagator
         if self.recon:
-            smooth_prefac = np.tile(self.smoothing_kernel/p["b"], (self.nmu, 1))
-            bdelta_prefac = np.tile(0.5*p["b_delta"]/p["b"]*ks**2, (self.nmu, 1))
-            kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth/p["b"]*self.mu**2, 1.0-self.smoothing_kernel) + bdelta_prefac
-            propagator = (kaiser_prefac**2 - bdelta_prefac**2)*damping_dd + 2.0*kaiser_prefac*smooth_prefac*damping_sd + smooth_prefac**2*damping_ss
+            smooth_prefac = np.tile(self.smoothing_kernel / p["b"], (self.nmu, 1))
+            bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
+            kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.smoothing_kernel) + bdelta_prefac
+            propagator = (
+                (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping_dd + 2.0 * kaiser_prefac * smooth_prefac * damping_sd + smooth_prefac ** 2 * damping_ss
+            )
         else:
-            bdelta_prefac = np.tile(0.5*p["b_delta"]/p["b"]*ks**2, (self.nmu, 1))
-            kaiser_prefac = 1.0 + np.tile(growth/p["b"]*self.mu**2, (len(ks), 1)).T + bdelta_prefac
-            propagator = (kaiser_prefac**2 - bdelta_prefac**2)*damping
+            bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
+            kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T + bdelta_prefac
+            propagator = (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping
 
         # Compute the smooth model
         fog = 1.0 / (1.0 + np.outer(self.mu ** 2, ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
@@ -114,6 +115,7 @@ class CorrDing2018(CorrelationFunctionFit):
 
 if __name__ == "__main__":
     import sys
+
     sys.path.append("../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
@@ -121,16 +123,19 @@ if __name__ == "__main__":
     bao = CorrDing2018()
 
     from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
+
     dataset = CorrelationFunction_SDSS_DR12_Z061_NGC()
     data = dataset.get_data()
     bao.set_data(data)
 
     import timeit
+
     n = 200
     p = {"om": 0.31, "alpha": 1.0, "f": 1.0, "sigma_s": 5.0, "b_delta": 5.0, "b": 1.0, "a1": 0, "a2": 0, "a3": 0}
 
     def test():
         bao.get_likelihood(p, data[0])
+
     print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
     if False:
@@ -140,6 +145,7 @@ if __name__ == "__main__":
         print(xi0)
         print(xi)
         import matplotlib.pyplot as plt
-        plt.errorbar(ss, ss * ss * xi, yerr=ss * ss * np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
-        plt.plot(ss, ss * ss * xi0, c='r')
+
+        plt.errorbar(ss, ss * ss * xi, yerr=ss * ss * np.sqrt(np.diag(data["cov"])), fmt="o", c="k")
+        plt.plot(ss, ss * ss * xi0, c="r")
         plt.show()

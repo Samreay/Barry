@@ -45,7 +45,11 @@ class PowerNoda2019(PowerSpectrumFit):
             self.pt_data = self.PT.get_data(om=self.omega_m)
             if not self.fit_growth:
                 self.growth = self.omega_m ** 0.55
-                self.damping = -np.outer((1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2) * self.pt_data["sigma_dd_rs"] + (self.growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * self.pt_data["sigma_ss_rs"], self.camb.ks ** 2)
+                self.damping = -np.outer(
+                    (1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2) * self.pt_data["sigma_dd_rs"]
+                    + (self.growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * self.pt_data["sigma_ss_rs"],
+                    self.camb.ks ** 2,
+                )
                 if not self.fit_gamma:
                     self.damping /= self.gammaval
 
@@ -87,21 +91,24 @@ class PowerNoda2019(PowerSpectrumFit):
             growth = p["f"]
         else:
             if self.fit_omega_m:
-                growth = p["om"]**0.55
+                growth = p["om"] ** 0.55
             else:
                 growth = self.growth
 
         # Compute the BAO damping
         if self.fit_growth or self.fit_omega_m:
-            damping = -np.outer((1.0 + (2.0 + growth) * growth * self.mu ** 2) * pt_data["sigma_dd_rs"] + (
-                        growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * pt_data["sigma_ss_rs"], ks ** 2)
+            damping = -np.outer(
+                (1.0 + (2.0 + growth) * growth * self.mu ** 2) * pt_data["sigma_dd_rs"]
+                + (growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * pt_data["sigma_ss_rs"],
+                ks ** 2,
+            )
             if self.fit_gamma:
                 damping /= p["gamma"]
             else:
                 damping /= self.gammaval
         else:
             if self.fit_gamma:
-                damping = self.damping/p["gamma"]
+                damping = self.damping / p["gamma"]
             else:
                 damping = self.damping
         damping = np.exp(damping)
@@ -110,23 +117,28 @@ class PowerNoda2019(PowerSpectrumFit):
         if self.recon:
             # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
             smoothing_kernel = np.exp(-ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0)
-            kaiser_prefac = 1.0 + np.outer(growth / p["b"] * self.mu ** 2, 1.0-smoothing_kernel)
+            kaiser_prefac = 1.0 + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - smoothing_kernel)
         else:
             kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T
         propagator = damping
 
         # Compute the smooth model
-        fog = np.exp(-p["A"]*ks**2)
-        pk_smooth = p["b"]**2*pk_smooth_lin*fog
+        fog = np.exp(-p["A"] * ks ** 2)
+        pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
 
         # Compute the non-linear SPT correction to the smooth power spectrum
-        pk_spt = pt_data["I00"] + pt_data["J00"] + 2.0*np.outer(growth/p["b"]*self.mu**2, pt_data["I01"] + pt_data["J01"]) + np.outer((growth/p["b"]*self.mu**2)**2, pt_data["I11"] + pt_data["J11"])
+        pk_spt = (
+            pt_data["I00"]
+            + pt_data["J00"]
+            + 2.0 * np.outer(growth / p["b"] * self.mu ** 2, pt_data["I01"] + pt_data["J01"])
+            + np.outer((growth / p["b"] * self.mu ** 2) ** 2, pt_data["I11"] + pt_data["J11"])
+        )
 
         # Integrate over mu
         if smooth:
-            pk1d = integrate.simps(pk_smooth*((1.0 + 0.0 * pk_ratio*propagator) * kaiser_prefac**2 + pk_spt), self.mu, axis=0)
+            pk1d = integrate.simps(pk_smooth * ((1.0 + 0.0 * pk_ratio * propagator) * kaiser_prefac ** 2 + pk_spt), self.mu, axis=0)
         else:
-            pk1d = integrate.simps(pk_smooth*((1.0 + pk_ratio*propagator) * kaiser_prefac**2 + pk_spt), self.mu, axis=0)
+            pk1d = integrate.simps(pk_smooth * ((1.0 + pk_ratio * propagator) * kaiser_prefac ** 2 + pk_spt), self.mu, axis=0)
 
         pk_final = splev(k / p["alpha"], splrep(ks, pk1d))
 
@@ -135,6 +147,7 @@ class PowerNoda2019(PowerSpectrumFit):
 
 if __name__ == "__main__":
     import sys
+
     sys.path.append("../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
@@ -142,6 +155,7 @@ if __name__ == "__main__":
     model_post = PowerNoda2019(recon=True, gammaval=4.0)
 
     from barry.datasets.mock_power import MockTaipanPowerSpectrum
+
     dataset = MockTaipanPowerSpectrum()
     data = dataset.get_data()
     model_pre.set_data(data)
@@ -153,6 +167,7 @@ if __name__ == "__main__":
         print(v, model_post.get_likelihood(p))
 
     import timeit
+
     n = 100
 
     def test():
@@ -167,32 +182,39 @@ if __name__ == "__main__":
         model_pre.smooth_type = "eh1998"
         pk3 = model_pre.get_model(p)
         import matplotlib.pyplot as plt
-        plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k', label="Data")
-        plt.plot(ks, pk2, '.', c='r', label="hinton2017")
-        plt.plot(ks, pk3, '+', c='b', label="eh1998")
+
+        plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c="k", label="Data")
+        plt.plot(ks, pk2, ".", c="r", label="hinton2017")
+        plt.plot(ks, pk3, "+", c="b", label="eh1998")
         plt.xlabel("k")
         plt.ylabel("P(k)")
-        plt.xscale('log')
-        plt.yscale('log')
+        plt.xscale("log")
+        plt.yscale("log")
         plt.legend()
         plt.show()
 
         model_pre.smooth_type = "hinton2017"
         pk_smooth_lin, _ = model_pre.compute_basic_power_spectrum(p["om"])
-        growth = p["om"]**0.55
+        growth = p["om"] ** 0.55
         pt_data = model_pre.PT.get_data(om=p["om"])
-        pk_spt = pt_data["I00"] + pt_data["J00"] + 2.0/3.0*growth/p["b"]*(pt_data["I01"] + pt_data["J01"]) + 1.0/5.0*(growth/p["b"])**2*(pt_data["I11"] + pt_data["J11"])
-        pk_smooth_interp = splev(data["ks_input"], splrep(model_pre.camb.ks, pk_smooth_lin*(1.0+pk_spt)))
+        pk_spt = (
+            pt_data["I00"]
+            + pt_data["J00"]
+            + 2.0 / 3.0 * growth / p["b"] * (pt_data["I01"] + pt_data["J01"])
+            + 1.0 / 5.0 * (growth / p["b"]) ** 2 * (pt_data["I11"] + pt_data["J11"])
+        )
+        pk_smooth_interp = splev(data["ks_input"], splrep(model_pre.camb.ks, pk_smooth_lin * (1.0 + pk_spt)))
         pk_smooth_lin_windowed, mask = model_pre.adjust_model_window_effects(pk_smooth_interp)
         pk2 = model_pre.get_model(p)
         pk3 = model_post.get_model(p)
         import matplotlib.pyplot as plt
-        plt.plot(ks, pk2/pk_smooth_lin_windowed[mask], '.', c='r', label="pre-recon")
-        plt.plot(ks, pk3/pk_smooth_lin_windowed[mask], '+', c='b', label="post-recon")
+
+        plt.plot(ks, pk2 / pk_smooth_lin_windowed[mask], ".", c="r", label="pre-recon")
+        plt.plot(ks, pk3 / pk_smooth_lin_windowed[mask], "+", c="b", label="post-recon")
         plt.xlabel("k")
         plt.ylabel(r"$P(k)/P_{sm}(k)$")
-        plt.xscale('log')
-        plt.yscale('log')
+        plt.xscale("log")
+        plt.yscale("log")
         plt.ylim(0.4, 3.0)
         plt.legend()
         plt.show()

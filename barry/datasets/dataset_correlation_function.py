@@ -23,7 +23,8 @@ if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
     import numpy as np
-    plt.errorbar(data["dist"], data["dist"]**2 * data["xi0"], yerr=data["dist"]**2 * np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
+
+    plt.errorbar(data["dist"], data["dist"] ** 2 * data["xi0"], yerr=data["dist"] ** 2 * np.sqrt(np.diag(data["cov"])), fmt="o", c="k")
     plt.show()
 
     # MockAverageCorrelations(min_dist=50, max_dist=170)

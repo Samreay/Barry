@@ -4,12 +4,8 @@ from barry.datasets.dataset_power_spectrum_abc import PowerSpectrum
 
 
 class PowerSpectrum_SDSS_DR12_Z061_NGC(PowerSpectrum):
-    def __init__(self, realisation=None, name=None, fake_diag=False, recon=True,
-                 min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
-        super().__init__("sdss_dr12_ngc_pk_zbin0p61.pkl", name=name, min_k=min_k,
-                         max_k=max_k, step_size=step_size, recon=recon,
-                         reduce_cov_factor=reduce_cov_factor, postprocess=postprocess,
-                         realisation=realisation, fake_diag=fake_diag)
+    def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
+        super().__init__("sdss_dr12_ngc_pk_zbin0p61.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
 
 
 class PowerSpectrum_SDSS_DR12_Z051_NGC(PowerSpectrum):
@@ -45,9 +41,9 @@ if __name__ == "__main__":
     #
     import matplotlib.pyplot as plt
     import numpy as np
-    plt.errorbar(data["ks"], data["ks"]*data["pk"], yerr=data["ks"]*np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
-    plt.show()
 
+    plt.errorbar(data["ks"], data["ks"] * data["pk"], yerr=data["ks"] * np.sqrt(np.diag(data["cov"])), fmt="o", c="k")
+    plt.show()
 
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30)
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30, step_size=1)

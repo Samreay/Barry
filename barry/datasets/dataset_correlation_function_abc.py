@@ -55,25 +55,11 @@ class CorrelationFunction(Dataset, ABC):
         self.set_cov(cov)
 
     def get_data(self):
-        d = {
-            "dist": self.data[:, 0],
-            "cov": self.cov,
-            "icov": self.icov,
-            "name": self.name,
-            "cosmology": self.cosmology,
-            "num_mocks": len(self.all_data)
-        }
+        d = {"dist": self.data[:, 0], "cov": self.cov, "icov": self.icov, "name": self.name, "cosmology": self.cosmology, "num_mocks": len(self.all_data)}
         if self.data.shape[1] > 2:  # Some data has xi, xi0, xi2, xi4, some only has xi0
-            d.update({
-                "xi": self.data[:, 1],
-                "xi0": self.data[:, 2],
-                "xi2": self.data[:, 3],
-                "xi4": self.data[:, 4],
-            })
+            d.update({"xi": self.data[:, 1], "xi0": self.data[:, 2], "xi2": self.data[:, 3], "xi4": self.data[:, 4]})
         else:
-            d.update({
-                "xi0": self.data[:, 1],
-            })
+            d.update({"xi0": self.data[:, 1]})
         return [d]
 
 
@@ -97,7 +83,8 @@ if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
     import numpy as np
-    plt.errorbar(data["dist"], data["dist"]**2 * data["xi0"], yerr=data["dist"]**2 * np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
+
+    plt.errorbar(data["dist"], data["dist"] ** 2 * data["xi0"], yerr=data["dist"] ** 2 * np.sqrt(np.diag(data["cov"])), fmt="o", c="k")
     plt.show()
 
     # MockAverageCorrelations(min_dist=50, max_dist=170)

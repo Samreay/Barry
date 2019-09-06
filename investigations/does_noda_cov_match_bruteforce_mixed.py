@@ -16,10 +16,7 @@ def get_rs_rs_index(pk_cov, denoms, ks, pks, delta_k, i, j):
     sum = 0
     for m in valid_m:
         for n in valid_n:
-            sum += pks[m] * pks[n] * pk_cov[i, j] \
-                   - pks[m] * pks[j] * pk_cov[i, n] \
-                   - pks[i] * pks[n] * pk_cov[m, j] \
-                   + pks[i] * pks[j] * pk_cov[m, n]
+            sum += pks[m] * pks[n] * pk_cov[i, j] - pks[m] * pks[j] * pk_cov[i, n] - pks[i] * pks[n] * pk_cov[m, j] + pks[i] * pks[j] * pk_cov[m, n]
     return sum * prefactor
 
 
@@ -53,8 +50,9 @@ def calc_cov_noda_mixed(pk_cov, denoms, ks, pks, delta_k, is_extracted):
 if __name__ == "__main__":
     import seaborn as sb
     import matplotlib.pyplot as plt
+
     logging.basicConfig(level=logging.INFO, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
-    logging.getLogger('matplotlib').setLevel(logging.WARNING)
+    logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
     camb = getCambGenerator()
     r_s, _ = camb.get_data()
@@ -107,6 +105,7 @@ if __name__ == "__main__":
 
     output = "plots"
     import os
+
     filename = os.path.join(output, "covariance_mixed.png")
     os.makedirs(output, exist_ok=True)
     plt.show()

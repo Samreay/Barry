@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("..")
 from barry.config import setup
 from barry.models import PowerBeutler2017
@@ -10,10 +11,7 @@ if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
     r = True
-    models = [
-        PowerBeutler2017(recon=r, smooth_type="hinton2017", name="Hinton2017"),
-        PowerBeutler2017(recon=r, smooth_type="eh1998", name="EH1998")
-    ]
+    models = [PowerBeutler2017(recon=r, smooth_type="hinton2017", name="Hinton2017"), PowerBeutler2017(recon=r, smooth_type="eh1998", name="EH1998")]
     data = PowerSpectrum_SDSS_DR12_Z061_NGC(name="Recon mean", recon=r, min_k=0.02, max_k=0.30)
     sampler = DynestySampler(temp_dir=dir_name)
 
@@ -39,9 +37,6 @@ if __name__ == "__main__":
             # pks[key] = model.get_model(datas[0].get_data(), params)
 
         c.configure(shade=True, bins=0.7)
-        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
+        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
         with open(pfn + "_params.txt", "w") as f:
             f.write(c.analysis.get_latex_table(transpose=True))
-
-
-

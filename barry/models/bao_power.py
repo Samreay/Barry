@@ -10,7 +10,8 @@ import numpy as np
 
 class PowerSpectrumFit(Model):
     """ Generic power spectrum model """
-    def __init__(self, name="Pk Basic", smooth_type="hinton2017", fix_params=['om'], postprocess=None, smooth=False, correction=None):
+
+    def __init__(self, name="Pk Basic", smooth_type="hinton2017", fix_params=("om"), postprocess=None, smooth=False, correction=None):
         """ Generic power spectrum function model
 
         Parameters
@@ -58,7 +59,9 @@ class PowerSpectrumFit(Model):
         c = data[0]["cosmology"]
         if self.cosmology != c:
             self.recon_smoothing_scale = c["reconsmoothscale"]
-            self.camb, self.PT = getCambGeneratorAndPT(h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
+            self.camb, self.PT = getCambGeneratorAndPT(
+                h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale
+            )
             self.set_default("om", c["om"])
 
     def declare_parameters(self):
@@ -87,7 +90,7 @@ class PowerSpectrumFit(Model):
         # Get base linear power spectrum from camb
         r_s, pk_lin = self.camb.get_data(om=om, h0=self.camb.h0)
         pk_smooth_lin = smooth(self.camb.ks, pk_lin, method=self.smooth_type, om=om, h0=self.camb.h0)  # Get the smoothed power spectrum
-        pk_ratio = (pk_lin / pk_smooth_lin - 1.0)  # Get the ratio
+        pk_ratio = pk_lin / pk_smooth_lin - 1.0  # Get the ratio
         return pk_smooth_lin, pk_ratio
 
     def compute_power_spectrum(self, k, p, smooth=False):
@@ -164,7 +167,7 @@ class PowerSpectrumFit(Model):
         pk_model = self.get_model(p, d, smooth=self.smooth)
 
         # Compute the chi2
-        diff = (d["pk"] - pk_model)
+        diff = d["pk"] - pk_model
         num_mocks = d["num_mocks"]
         num_params = len(self.get_active_params())
         return self.get_chi2_likelihood(diff, d["icov"], num_mocks=num_mocks, num_params=num_params)
@@ -223,13 +226,13 @@ class PowerSpectrumFit(Model):
 
         fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
 
-        axes[0].errorbar(ks, ks*pk, yerr=ks*err, fmt="o", c='k', ms=4, label=self.data[0]["name"])
-        axes[1].errorbar(ks, adj(pk), yerr=adj(err, err=True), fmt="o", c='k', ms=4, label=self.data[0]["name"])
+        axes[0].errorbar(ks, ks * pk, yerr=ks * err, fmt="o", c="k", ms=4, label=self.data[0]["name"])
+        axes[1].errorbar(ks, adj(pk), yerr=adj(err, err=True), fmt="o", c="k", ms=4, label=self.data[0]["name"])
 
         # pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(params["om"])
         # axes[1].plot(ks * params["alpha"], 1 + splev(ks, splrep(self.camb.ks, pk_ratio)), label="pkratio", c="r", ls="--")
 
-        axes[0].plot(ks, ks*pk2, label=self.get_name())
+        axes[0].plot(ks, ks * pk2, label=self.get_name())
         axes[1].plot(ks, adj(pk2), label=self.get_name())
 
         string = f"Likelihood: {self.get_likelihood(params, self.data[0]):0.2f}\n"
@@ -249,16 +252,19 @@ class PowerSpectrumFit(Model):
 
 if __name__ == "__main__":
     import logging
+
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     model = PowerSpectrumFit()
 
     from barry.datasets.mock_power import MockPowerSpectrum
+
     dataset = MockPowerSpectrum(step_size=2)
     data = dataset.get_data()
     model.set_data(data)
     p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5, "b": 0, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
 
     import timeit
+
     n = 500
 
     def test():
@@ -279,4 +285,3 @@ if __name__ == "__main__":
     #     plt.xlabel("k")
     #     plt.ylabel("P(k)")
     #     plt.show()
-

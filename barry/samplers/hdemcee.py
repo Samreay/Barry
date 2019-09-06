@@ -11,8 +11,7 @@ class EmceeWrapper(object):
         self.chain = None
         self.posterior = None
 
-    def run_chain(self, num_steps, num_burn, num_walkers, num_dim, start=None, save_interval=300,
-                  save_dim=None, temp_dir=None, uid="ensemble"):
+    def run_chain(self, num_steps, num_burn, num_walkers, num_dim, start=None, save_interval=300, save_dim=None, temp_dir=None, uid="ensemble"):
         assert num_steps > num_burn, "num_steps has to be larger than num_burn"
         if save_dim is not None:
             assert save_dim <= num_dim, "You cannot save more dimensions than you actually have"
@@ -58,8 +57,7 @@ class EmceeWrapper(object):
             self.logger.debug("Returning serialised data from %s" % temp_dir)
             return self.get_results(num_burn)
         else:
-            self.logger.debug("Starting sampling. Saving to %s ever %d seconds"
-                              % (temp_dir, save_interval))
+            self.logger.debug("Starting sampling. Saving to %s ever %d seconds" % (temp_dir, save_interval))
 
         for result in self.sampler.sample(pos, iterations=num, storechain=False):
             self.chain[:, step, :] = result[0][:, :save_dim]
@@ -67,8 +65,7 @@ class EmceeWrapper(object):
             step += 1
             if step == 1 or temp_dir is not None and save_interval is not None:
                 t2 = time()
-                if temp_dir is not None and \
-                        (step == 1 or t2 - t > save_interval or step == num_steps):
+                if temp_dir is not None and (step == 1 or t2 - t > save_interval or step == num_steps):
                     t = t2
                     position = result[0]
                     np.save(position_file, position)

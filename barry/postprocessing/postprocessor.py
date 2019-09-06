@@ -16,6 +16,7 @@ class PkPostProcess(PostProcess):
 
     Requires that implementations pass in k values, p(k) values and a boolean mask.
     """
+
     def __call__(self, **inputs):
         return self.postprocess(inputs["ks"], inputs["pk"], inputs["mask"])
 
@@ -33,6 +34,7 @@ class XiPostProcess(PostProcess):
 
     As the BAO extractor is a Pk model only this class is not used... but it could be.
     """
+
     def __call__(self, **inputs):
         return self.postprocess(inputs["dist"], inputs["xi"], inputs["mask"])
 

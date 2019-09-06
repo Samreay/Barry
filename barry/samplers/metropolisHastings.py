@@ -42,10 +42,19 @@ class MetropolisHastings(GenericSampler):
     IND_S = 1
     IND_W = 2
 
-    def __init__(self, num_burn=3000, num_steps=10000,
-                 sigma_adjust=100, covariance_adjust=1000, temp_dir=None,
-                 save_interval=300, accept_ratio=0.234, callback=None,
-                 plot_covariance=False, num_start=100):
+    def __init__(
+        self,
+        num_burn=3000,
+        num_steps=10000,
+        sigma_adjust=100,
+        covariance_adjust=1000,
+        temp_dir=None,
+        save_interval=300,
+        accept_ratio=0.234,
+        callback=None,
+        plot_covariance=False,
+        num_start=100,
+    ):
         self.temp_dir = temp_dir
         if temp_dir is not None and not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
@@ -59,7 +68,7 @@ class MetropolisHastings(GenericSampler):
 
         self.num_burn = num_burn
         self.num_steps = num_steps
-        self.sigma_adjust = sigma_adjust # Also should be at least 5 x num_dim
+        self.sigma_adjust = sigma_adjust  # Also should be at least 5 x num_dim
         self.covariance_adjust = covariance_adjust
         self.save_interval = save_interval
         self.accept_ratio = accept_ratio
@@ -152,18 +161,13 @@ class MetropolisHastings(GenericSampler):
                 burnin[step - 1, self.IND_S] = 1.0
 
             # Get next step
-            burnin[step, :], weight = self._get_next_step(burnin[step - 1, :],
-                                                          covariance, burnin=True)
+            burnin[step, :], weight = self._get_next_step(burnin[step - 1, :], covariance, burnin=True)
             burnin[step - 1, self.IND_W] = weight
             if self.callback is not None:
-                self.callback(burnin[step - 1, self.IND_P],
-                              burnin[step - 1, self.space:self.space + self.save_dims],
-                              weight=burnin[step - 1, self.IND_W])
+                self.callback(burnin[step - 1, self.IND_P], burnin[step - 1, self.space : self.space + self.save_dims], weight=burnin[step - 1, self.IND_W])
             step += 1
-            if step == self.num_burn or \
-                    (self._do_save and (time() - last_save_time) > self.save_interval):
-                self._save(burnin[step - 1, :], burnin[:step, :],
-                           None, covariance)
+            if step == self.num_burn or (self._do_save and (time() - last_save_time) > self.save_interval):
+                self._save(burnin[step - 1, :], burnin[:step, :], None, covariance)
                 last_save_time = time()
 
         return burnin[-1, :], covariance, burnin
@@ -188,14 +192,12 @@ class MetropolisHastings(GenericSampler):
             chain[current_step, :] = position[:size]
             chain[current_step - 1, self.IND_W] = weight
             if self.callback is not None:
-                self.callback(chain[current_step - 1, self.IND_P], chain[current_step - 1, self.space:],
-                              weight=chain[current_step - 1, self.IND_W])
+                self.callback(chain[current_step - 1, self.IND_P], chain[current_step - 1, self.space :], weight=chain[current_step - 1, self.IND_W])
             current_step += 1
-            if current_step == self.num_steps or \
-                    (self._do_save and (time() - last_save_time) > self.save_interval):
+            if current_step == self.num_steps or (self._do_save and (time() - last_save_time) > self.save_interval):
                 self._save(position, None, chain[:current_step, :], None)
                 last_save_time = time()
-        return chain[:, self.space:], chain[:, self.IND_W], chain[:, self.IND_P]
+        return chain[:, self.space :], chain[:, self.IND_W], chain[:, self.IND_P]
 
     def _update_temp_files(self, uid):
         if self.temp_dir is not None:
@@ -228,7 +230,7 @@ class MetropolisHastings(GenericSampler):
         return position
 
     def _adjust_sigma_ratio(self, burnin, index):
-        subsection = burnin[index - self.sigma_adjust:index, :]
+        subsection = burnin[index - self.sigma_adjust : index, :]
         actual_ratio = 1 / np.average(subsection[:, self.IND_W])
 
         sigma_ratio = burnin[index - 1, self.IND_S]
@@ -240,16 +242,15 @@ class MetropolisHastings(GenericSampler):
         #     sigma_ratio *= 0.9
         # else:
         #     sigma_ratio /= 0.9
-        self.logger.debug("Adjusting sigma: Want %0.3f, got %0.3f. "
-                          "Updating ratio to %0.5f" % (self.accept_ratio, actual_ratio, sigma_ratio))
+        self.logger.debug("Adjusting sigma: Want %0.3f, got %0.3f. " "Updating ratio to %0.5f" % (self.accept_ratio, actual_ratio, sigma_ratio))
         return sigma_ratio
 
     def _adjust_covariance(self, burnin, index, return_cov=False):
         params = burnin.shape[1] - self.space
         if params == 1:
             return np.ones((1, 1))
-        subset = burnin[int(np.floor(index/2)):index, :]
-        covariance = np.cov(subset[:, self.space:].T, fweights=subset[:, self.IND_W])
+        subset = burnin[int(np.floor(index / 2)) : index, :]
+        covariance = np.cov(subset[:, self.space :].T, fweights=subset[:, self.IND_W])
 
         # import matplotlib.pyplot as plt
         # plt.imshow(covariance, cmap="viridis")
@@ -261,7 +262,7 @@ class MetropolisHastings(GenericSampler):
         return res
 
     def _propose_point(self, position, covariance):
-        p = position[self.space:]
+        p = position[self.space :]
         eta = np.random.normal(size=p.size)
         step = np.dot(covariance, eta) * position[self.IND_S]
         return p + step
@@ -287,7 +288,7 @@ class MetropolisHastings(GenericSampler):
         result = np.load(filename)
         posterior = result[:, MetropolisHastings.IND_P]
         weight = result[:, MetropolisHastings.IND_W]
-        chain = result[:, MetropolisHastings.space:]
+        chain = result[:, MetropolisHastings.space :]
         return {"posterior": posterior, "weights": weight, "chain": chain}
 
     def _load(self):
@@ -321,19 +322,20 @@ class MetropolisHastings(GenericSampler):
         if self.covariance_plot is None:
             return
         import matplotlib.pyplot as plt
+
         covariance = self._adjust_covariance(burnin, burnin.shape[0], return_cov=True)
         fig, ax = plt.subplots(1, 2, figsize=(14, 7))
-        h = ax[0].imshow(covariance, cmap='viridis', interpolation='none')
-        #div1 = make_axes_locatable(ax[0])
-        #cax1 = div1.append_axes("right", size="5%", pad=0.05)
-        #plt.colorbar(h, cax=cax1)
+        h = ax[0].imshow(covariance, cmap="viridis", interpolation="none")
+        # div1 = make_axes_locatable(ax[0])
+        # cax1 = div1.append_axes("right", size="5%", pad=0.05)
+        # plt.colorbar(h, cax=cax1)
 
         diag = np.diag(1 / np.sqrt(np.diag(covariance)))
         cor = np.dot(np.dot(diag, covariance), diag)
-        h2 = ax[1].imshow(cor, cmap='viridis', interpolation='none')
-        #div2 = make_axes_locatable(ax[1])
-        #cax2 = div2.append_axes("right", size="5%", pad=0.05)
-        #plt.colorbar(h2, cax=cax2)
+        h2 = ax[1].imshow(cor, cmap="viridis", interpolation="none")
+        # div2 = make_axes_locatable(ax[1])
+        # cax2 = div2.append_axes("right", size="5%", pad=0.05)
+        # plt.colorbar(h2, cax=cax2)
         fig.gca().set_frame_on(False)
         ax[0].set_axis_off()
         ax[1].set_axis_off()
@@ -341,5 +343,5 @@ class MetropolisHastings(GenericSampler):
         fig.savefig(self.covariance_plot, bbox_inches="tight", dpi=300)
         plt.close(fig)
         import gc
-        gc.collect(2)
 
+        gc.collect(2)

@@ -18,6 +18,7 @@ class PureBAOExtractor(PkPostProcess):
     delta : float, optional
         The window (in units of `r_s` to smooth)
     """
+
     def __init__(self, r_s, plot=False, delta=0.6):
         super().__init__()
         self.r_s = r_s
@@ -66,6 +67,7 @@ class PureBAOExtractor(PkPostProcess):
         # Plots for debugging purposes to make sure everything looks good
         if self.plot:
             import matplotlib.pyplot as plt
+
             fig, axes = plt.subplots(nrows=2, figsize=(5, 7))
             axes[0].plot(ks, pk, label="Input")
             axes[1].plot(ks, result, label="Output")
@@ -90,6 +92,7 @@ class BAOExtractor(PureBAOExtractor):
     rho_i = {4,5,6,8,9,10,11,12,13,14,16,17,18,19,20,21,22,23,24,25}
 
     """
+
     def __init__(self, r_s, plot=False, delta=0.6, mink=0.06, extra_ks=(0.0925, 0.1775), reorder=True, invert=False):
         super().__init__(r_s, plot=plot, delta=delta)
         self.mink = mink
@@ -147,9 +150,10 @@ if __name__ == "__main__":
     r_s, pk_lin = camb.get_data(0.3, 0.70)
 
     from scipy.interpolate import splev, splrep
+
     rep = splrep(ks, pk_lin)
     # ks2 = np.linspace(ks.min(), 1, 1000)
-    ks2 = np.linspace(0, 0.398, 100) # Matching the winfit_2 data binning
+    ks2 = np.linspace(0, 0.398, 100)  # Matching the winfit_2 data binning
     pk_lin2 = splev(ks2, rep)
 
     print("Got pklin")
@@ -158,6 +162,7 @@ if __name__ == "__main__":
     print("Got pk_extract")
 
     import matplotlib.pyplot as plt
+
     fig, axes = plt.subplots(nrows=2, figsize=(5, 9), sharex=True)
     axes[0].plot(ks2, pk_lin2)
     axes[0].set_title("pk_lin")
@@ -166,8 +171,10 @@ if __name__ == "__main__":
     plt.show()
 
     from barry.datasets.mock_power import MockPowerSpectrum
+
     dataset = MockPowerSpectrum(name="Recon mean", recon=True, min_k=0.02, step_size=2, postprocess=b)
     data = dataset.get_data()
     import seaborn as sb
+
     sb.heatmap(data["corr"])
     plt.show()

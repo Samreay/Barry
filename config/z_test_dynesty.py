@@ -6,6 +6,7 @@ from barry.samplers import DynestySampler
 
 if __name__ == "__main__":
     import sys
+
     sys.path.append("..")
 
     pfn, dir_name, file = setup(__file__)
@@ -23,12 +24,14 @@ if __name__ == "__main__":
 
     if fitter.is_laptop():  # As I'm not sure if the cluster has matplotlib
         from chainconsumer import ChainConsumer
+
         res, = fitter.load()
 
         posterior, weight, chain, model, data, extra = res
         print(chain.shape, weight.shape)
         print(weight.max())
         import matplotlib.pyplot as plt
+
         plt.plot(weight)
         plt.show()
         c = ChainConsumer()

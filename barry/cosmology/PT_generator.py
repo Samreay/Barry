@@ -81,12 +81,30 @@ class PTGenerator(object):
         # Generate a grid of values for R1, R2, Imn and Jmn
         nx = 200
         xs = np.linspace(-0.999, 0.999, nx)
-        r = np.outer(1.0/self.CAMBGenerator.ks, self.CAMBGenerator.ks)
-        R1 = -(1.0 + r**2)/(24.0*r**2)*(3.0 - 14.0*r**2 + 3.0*r**4) + (r**2-1.0)**4/(16.0*r**3)*np.log(np.fabs((1.0+r)/(1.0-r)))
-        R2 =  (1.0 - r**2)/(24.0*r**2)*(3.0 -  2.0*r**2 + 3.0*r**4) + (r**2-1.0)**3*(1.0+r**2)/(16.0*r**3)*np.log(np.fabs((1.0+r)/(1.0-r)))
-        J00 = (12.0/r**2 - 158.0 + 100.0*r**2 - 42.0*r**4 + 3.0*(r**2-1.0)**3*(2.0+7.0*r**2)/r**3*np.log(np.fabs((1.0+r)/(1.0-r))))/3024.0
-        J01 = (24.0/r**2 - 202.0 +  56.0*r**2 - 30.0*r**4 + 3.0*(r**2-1.0)**3*(4.0+5.0*r**2)/r**3*np.log(np.fabs((1.0+r)/(1.0-r))))/3024.0
-        J11 = (12.0/r**2 -  82.0 +   4.0*r**2 -  6.0*r**4 + 3.0*(r**2-1.0)**3*(2.0+    r**2)/r**3*np.log(np.fabs((1.0+r)/(1.0-r))))/1008.0
+        r = np.outer(1.0 / self.CAMBGenerator.ks, self.CAMBGenerator.ks)
+        R1 = -(1.0 + r ** 2) / (24.0 * r ** 2) * (3.0 - 14.0 * r ** 2 + 3.0 * r ** 4) + (r ** 2 - 1.0) ** 4 / (16.0 * r ** 3) * np.log(
+            np.fabs((1.0 + r) / (1.0 - r))
+        )
+        R2 = (1.0 - r ** 2) / (24.0 * r ** 2) * (3.0 - 2.0 * r ** 2 + 3.0 * r ** 4) + (r ** 2 - 1.0) ** 3 * (1.0 + r ** 2) / (16.0 * r ** 3) * np.log(
+            np.fabs((1.0 + r) / (1.0 - r))
+        )
+        J00 = (
+            12.0 / r ** 2
+            - 158.0
+            + 100.0 * r ** 2
+            - 42.0 * r ** 4
+            + 3.0 * (r ** 2 - 1.0) ** 3 * (2.0 + 7.0 * r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
+        ) / 3024.0
+        J01 = (
+            24.0 / r ** 2
+            - 202.0
+            + 56.0 * r ** 2
+            - 30.0 * r ** 4
+            + 3.0 * (r ** 2 - 1.0) ** 3 * (4.0 + 5.0 * r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
+        ) / 3024.0
+        J11 = (
+            12.0 / r ** 2 - 82.0 + 4.0 * r ** 2 - 6.0 * r ** 4 + 3.0 * (r ** 2 - 1.0) ** 3 * (2.0 + r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
+        ) / 1008.0
 
         # We get NaNs in R1, R2 etc., when r = 1.0 (diagonals). We manually set these to the correct values.
         # We also get numerical issues for large/small r, so we set these manually to asymptotic limits
@@ -111,8 +129,7 @@ class PTGenerator(object):
         rank = 0 if self.mpi_comm is None else mpi_comm.Get_rank()
 
         data = {}
-        for key in ["sigma", "sigma_dd", "sigma_ss", "sigma_nl", "sigma_dd_nl", "sigma_sd_nl", "sigma_ss_nl",
-                    "sigma_dd_rs", "sigma_ss_rs"]:
+        for key in ["sigma", "sigma_dd", "sigma_ss", "sigma_nl", "sigma_dd_nl", "sigma_sd_nl", "sigma_ss_nl", "sigma_dd_rs", "sigma_ss_rs"]:
             data[key] = np.zeros((self.CAMBGenerator.om_resolution, self.CAMBGenerator.h0_resolution))
         for key in ["R1", "R2", "J00", "J01", "J11", "I00", "I01", "I11"]:
             data[key] = np.zeros((self.CAMBGenerator.om_resolution, self.CAMBGenerator.h0_resolution, self.CAMBGenerator.k_num))
@@ -127,58 +144,61 @@ class PTGenerator(object):
             r_drag, pk_lin = self.CAMBGenerator.data[i, j, 0], self.CAMBGenerator.data[i, j, 1:]
 
             # Get the spherical bessel functions
-            j0 = special.jn(0, r_drag*self.CAMBGenerator.ks)
-            j2 = special.jn(2, r_drag*self.CAMBGenerator.ks)
+            j0 = special.jn(0, r_drag * self.CAMBGenerator.ks)
+            j2 = special.jn(2, r_drag * self.CAMBGenerator.ks)
 
             # Get the smoothed linear power spectrum which we need to calculate the
             # BAO damping and SPT integrals used in the Noda2017 model
-            om = omch2/(h0 * h0) + self.CAMBGenerator.omega_b
+            om = omch2 / (h0 * h0) + self.CAMBGenerator.omega_b
             pk_smooth_lin = smooth(self.CAMBGenerator.ks, pk_lin, method=self.smooth_type, om=om, h0=h0)
             pk_smooth_spline = interpolate.splrep(self.CAMBGenerator.ks, pk_smooth_lin)
 
             # Sigma^2
-            data["sigma"][i, j] = integrate.simps(pk_lin, self.CAMBGenerator.ks)/(6.0*np.pi**2)
+            data["sigma"][i, j] = integrate.simps(pk_lin, self.CAMBGenerator.ks) / (6.0 * np.pi ** 2)
 
             # Sigma^2_dd, Sigma^2_ss   (Seo2016-LPT model)
-            data["sigma_dd"][i, j] = integrate.simps(pk_lin*(1.0 - smoothing_kernel)**2, self.CAMBGenerator.ks)/(6.0*np.pi**2)
-            data["sigma_ss"][i, j] = integrate.simps(pk_lin*smoothing_kernel**2, self.CAMBGenerator.ks)/(6.0*np.pi**2)
+            data["sigma_dd"][i, j] = integrate.simps(pk_lin * (1.0 - smoothing_kernel) ** 2, self.CAMBGenerator.ks) / (6.0 * np.pi ** 2)
+            data["sigma_ss"][i, j] = integrate.simps(pk_lin * smoothing_kernel ** 2, self.CAMBGenerator.ks) / (6.0 * np.pi ** 2)
 
             # Sigma^2_nl, Sigma^2_dd,nl, Sigma^2_sd,nl Sigma^2_ss,nl (Ding2018-EFT model)
-            data["sigma_nl"][i, j] = integrate.simps(pk_lin*(1.0 - j0),self.CAMBGenerator.ks)/(6.0*np.pi**2)
-            data["sigma_dd_nl"][i, j] = integrate.simps(pk_lin*(1.0 - smoothing_kernel)**2*(1.0 - j0),self.CAMBGenerator.ks)/(6.0*np.pi**2)
-            data["sigma_sd_nl"][i, j] = integrate.simps(pk_lin*(0.5*(smoothing_kernel**2-(1.0 - smoothing_kernel)**2) - j0*smoothing_kernel*(1.0 - smoothing_kernel)),self.CAMBGenerator.ks)/(6.0*np.pi**2)
-            data["sigma_ss_nl"][i, j] = integrate.simps(pk_lin*smoothing_kernel**2*(1.0 - j0),self.CAMBGenerator.ks)/(6.0*np.pi**2)
+            data["sigma_nl"][i, j] = integrate.simps(pk_lin * (1.0 - j0), self.CAMBGenerator.ks) / (6.0 * np.pi ** 2)
+            data["sigma_dd_nl"][i, j] = integrate.simps(pk_lin * (1.0 - smoothing_kernel) ** 2 * (1.0 - j0), self.CAMBGenerator.ks) / (6.0 * np.pi ** 2)
+            data["sigma_sd_nl"][i, j] = integrate.simps(
+                pk_lin * (0.5 * (smoothing_kernel ** 2 - (1.0 - smoothing_kernel) ** 2) - j0 * smoothing_kernel * (1.0 - smoothing_kernel)),
+                self.CAMBGenerator.ks,
+            ) / (6.0 * np.pi ** 2)
+            data["sigma_ss_nl"][i, j] = integrate.simps(pk_lin * smoothing_kernel ** 2 * (1.0 - j0), self.CAMBGenerator.ks) / (6.0 * np.pi ** 2)
 
             # Sigma^2_dd,rs, Sigma^2_ss,rs (Noda2017 model)
-            data["sigma_dd_rs"][i, j] = integrate.simps(pk_smooth_lin*(1.0 - j0 + 2.0*j2),self.CAMBGenerator.ks)/(6.0*np.pi**2)
-            data["sigma_ss_rs"][i, j] = integrate.simps(pk_smooth_lin*j2,self.CAMBGenerator.ks)/(2.0*np.pi**2)
+            data["sigma_dd_rs"][i, j] = integrate.simps(pk_smooth_lin * (1.0 - j0 + 2.0 * j2), self.CAMBGenerator.ks) / (6.0 * np.pi ** 2)
+            data["sigma_ss_rs"][i, j] = integrate.simps(pk_smooth_lin * j2, self.CAMBGenerator.ks) / (2.0 * np.pi ** 2)
 
             # R_1/P_lin, R_2/P_lin
-            data["R1"][i, j, :] = self.CAMBGenerator.ks**2*integrate.simps(pk_lin*R1, self.CAMBGenerator.ks, axis=1)/(4.0*np.pi**2)
-            data["R2"][i, j, :] = self.CAMBGenerator.ks**2*integrate.simps(pk_lin*R2, self.CAMBGenerator.ks, axis=1)/(4.0*np.pi**2)
+            data["R1"][i, j, :] = self.CAMBGenerator.ks ** 2 * integrate.simps(pk_lin * R1, self.CAMBGenerator.ks, axis=1) / (4.0 * np.pi ** 2)
+            data["R2"][i, j, :] = self.CAMBGenerator.ks ** 2 * integrate.simps(pk_lin * R2, self.CAMBGenerator.ks, axis=1) / (4.0 * np.pi ** 2)
 
             # J_00, J_01, J_11
-            data["J00"][i, j, :] = 3.0*self.CAMBGenerator.ks**2*integrate.simps(pk_smooth_lin*J00, self.CAMBGenerator.ks, axis=1)/(np.pi**2)
-            data["J01"][i, j, :] = 3.0*self.CAMBGenerator.ks**2*integrate.simps(pk_smooth_lin*J01, self.CAMBGenerator.ks, axis=1)/(np.pi**2)
-            data["J11"][i, j, :] = 3.0*self.CAMBGenerator.ks**2*integrate.simps(pk_smooth_lin*J11, self.CAMBGenerator.ks, axis=1)/(np.pi**2)
+            data["J00"][i, j, :] = 3.0 * self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J00, self.CAMBGenerator.ks, axis=1) / (np.pi ** 2)
+            data["J01"][i, j, :] = 3.0 * self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J01, self.CAMBGenerator.ks, axis=1) / (np.pi ** 2)
+            data["J11"][i, j, :] = 3.0 * self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J11, self.CAMBGenerator.ks, axis=1) / (np.pi ** 2)
 
             # I_00/P_sm,lin, I_01/P_sm,lin, I_02/P_sm,lin
             for k, kval in enumerate(self.CAMBGenerator.ks):
                 rvals = r[k, 0:]
                 rx = np.outer(rvals, xs)
-                y = kval * np.sqrt(-2.0*rx.T + 1.0 + rvals**2)
+                y = kval * np.sqrt(-2.0 * rx.T + 1.0 + rvals ** 2)
                 pk_smooth_interp = interpolate.splev(y, pk_smooth_spline)
-                index = np.where(np.logical_and(y<self.CAMBGenerator.k_min,y>self.CAMBGenerator.k_max))
+                index = np.where(np.logical_and(y < self.CAMBGenerator.k_min, y > self.CAMBGenerator.k_max))
                 pk_smooth_interp[index] = 0.0
                 r2pk = rvals ** 2 * pk_smooth_lin
-                IP0 = kval**2*((-10.0*rx*xs + 7.0*xs).T + 3.0*rvals) / (14.0 * rvals * y**2)
-                IP1 = kval**2*((- 6.0*rx*xs + 7.0*xs).T - rvals) / (14.0 * rvals * y**2)
-                data["I00"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP0*IP0, xs, axis=0), rvals)
-                data["I01"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP0*IP1, xs, axis=0), rvals)
-                data["I11"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp*IP1*IP1, xs, axis=0), rvals)
-            data["I00"][i, j, :] *= self.CAMBGenerator.ks**3/(2.0*np.pi**2)/pk_smooth_lin
-            data["I01"][i, j, :] *= self.CAMBGenerator.ks**3/(2.0*np.pi**2)/pk_smooth_lin
-            data["I11"][i, j, :] *= self.CAMBGenerator.ks**3/(2.0*np.pi**2)/pk_smooth_lin
+                IP0 = kval ** 2 * ((-10.0 * rx * xs + 7.0 * xs).T + 3.0 * rvals) / (14.0 * rvals * y ** 2)
+                IP1 = kval ** 2 * ((-6.0 * rx * xs + 7.0 * xs).T - rvals) / (14.0 * rvals * y ** 2)
+                data["I00"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp * IP0 * IP0, xs, axis=0), rvals)
+                data["I01"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp * IP0 * IP1, xs, axis=0), rvals)
+                data["I11"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp * IP1 * IP1, xs, axis=0), rvals)
+            data["I00"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (2.0 * np.pi ** 2) / pk_smooth_lin
+            data["I01"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (2.0 * np.pi ** 2) / pk_smooth_lin
+            data["I11"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (2.0 * np.pi ** 2) / pk_smooth_lin
         return data
 
     def _generate_data(self):
@@ -225,12 +245,19 @@ class PTGenerator(object):
 
     def _interpolate(self, omch2, h0):
         """ Performs bilinear interpolation on the entire pk array """
-        omch2_index = 1.0 * (self.CAMBGenerator.om_resolution - 1) * (omch2 - self.CAMBGenerator.omch2s[0]) / (self.CAMBGenerator.omch2s[-1] - self.CAMBGenerator.omch2s[0])
+        omch2_index = (
+            1.0
+            * (self.CAMBGenerator.om_resolution - 1)
+            * (omch2 - self.CAMBGenerator.omch2s[0])
+            / (self.CAMBGenerator.omch2s[-1] - self.CAMBGenerator.omch2s[0])
+        )
 
         if self.CAMBGenerator.h0_resolution == 1:
             h0_index = 0
         else:
-            h0_index = 1.0 * (self.CAMBGenerator.h0_resolution - 1) * (h0 - self.CAMBGenerator.h0s[0]) / (self.CAMBGenerator.h0s[-1] - self.CAMBGenerator.h0s[0])
+            h0_index = (
+                1.0 * (self.CAMBGenerator.h0_resolution - 1) * (h0 - self.CAMBGenerator.h0s[0]) / (self.CAMBGenerator.h0s[-1] - self.CAMBGenerator.h0s[0])
+            )
 
         x = omch2_index - np.floor(omch2_index)
         y = h0_index - np.floor(h0_index)
@@ -240,7 +267,7 @@ class PTGenerator(object):
         for key in data.keys():
 
             v1 = data[key][int(np.floor(omch2_index)), int(np.floor(h0_index))]  # 00
-            v2 = data[key][int(np.ceil(omch2_index)), int(np.floor(h0_index))]   # 01
+            v2 = data[key][int(np.ceil(omch2_index)), int(np.floor(h0_index))]  # 01
 
             if self.CAMBGenerator.h0_resolution == 1:
                 result[key] = v1 * (1 - x) * (1 - y) + v2 * x * (1 - y)
@@ -258,6 +285,7 @@ def test_rand_h0const():
 
     def fn():
         g.get_data(np.random.uniform(0.1, 0.2))
+
     return fn
 
 
@@ -267,19 +295,22 @@ def test_rand():
 
     def fn():
         g.get_data(np.random.uniform(0.1, 0.2), h0=np.random.uniform(60, 80))
+
     return fn
 
 
 if __name__ == "__main__":
     import sys
+
     sys.path.append("../..")
     from barry.cosmology import CambGenerator, getCambGenerator
 
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
-    logging.getLogger('matplotlib').setLevel(logging.WARNING)
+    logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
     if "centos" in platform.platform():
         import argparse
+
         # Set up command line arguments
         parser = argparse.ArgumentParser()
         parser.add_argument("--om_resolution", type=int, default=101, help="Num of Omch2s to generate")
@@ -288,6 +319,7 @@ if __name__ == "__main__":
         args = parser.parse_args()
 
         from mpi4py import MPI
+
         mpi_comm = MPI.COMM_WORLD
         generator = CambGenerator(redshift=0.61, om_resolution=args.om_resolution, h0_resolution=args.h0_resolution)
         PT_generator = PTGenerator(generator, recon_smoothing_scale=args.recon_smoothing_scale, mpi_comm=mpi_comm)

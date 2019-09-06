@@ -1,5 +1,4 @@
 import logging
-
 from barry.cosmology.pk2xi import PowerToCorrelationGauss
 from barry.models import PowerBeutler2017, PowerDing2018, PowerSeo2016
 from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC, PowerSpectrum_SDSS_DR12_Z061_NGC
@@ -53,3 +52,5 @@ if __name__ == "__main__":
         axes[1].plot(ss, ss ** 2 * xi)
     axes[0].legend()
     plt.show()
+
+    # Findings: Its not about the similarity of the model in xi(s), its just the data ranges used

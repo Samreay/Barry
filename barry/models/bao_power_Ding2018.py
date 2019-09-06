@@ -14,7 +14,7 @@ class PowerDing2018(PowerSpectrumFit):
 
     """
 
-    def __init__(self, fix_params=["om", "f"], smooth_type="hinton2017", recon=False, name="Pk Ding 2018", postprocess=None, smooth=False, correction=None):
+    def __init__(self, fix_params=("om", "f"), smooth_type="hinton2017", recon=False, name="Pk Ding 2018", postprocess=None, smooth=False, correction=None):
         self.recon = recon
         self.recon_smoothing_scale = None
         super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess, smooth=smooth, correction=correction)
@@ -86,7 +86,7 @@ class PowerDing2018(PowerSpectrumFit):
         if self.fit_growth:
             growth = p["f"]
         else:
-            growth = p["om"]**0.55
+            growth = p["om"] ** 0.55
 
         # Lets round some things for the sake of numerical speed
         om = np.round(p["om"], decimals=5)
@@ -102,29 +102,31 @@ class PowerDing2018(PowerSpectrumFit):
 
         # Compute the propagator
         if self.recon:
-            smooth_prefac = np.tile(self.smoothing_kernel/p["b"], (self.nmu, 1))
-            bdelta_prefac = np.tile(0.5*p["b_delta"]/p["b"]*ks**2, (self.nmu, 1))
-            kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth/p["b"]*self.mu**2, 1.0-self.smoothing_kernel) + bdelta_prefac
-            propagator = (kaiser_prefac**2 - bdelta_prefac**2)*damping_dd + 2.0*kaiser_prefac*smooth_prefac*damping_sd + smooth_prefac**2*damping_ss
+            smooth_prefac = np.tile(self.smoothing_kernel / p["b"], (self.nmu, 1))
+            bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
+            kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.smoothing_kernel) + bdelta_prefac
+            propagator = (
+                (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping_dd + 2.0 * kaiser_prefac * smooth_prefac * damping_sd + smooth_prefac ** 2 * damping_ss
+            )
         else:
-            bdelta_prefac = np.tile(0.5*p["b_delta"]/p["b"]*ks**2, (self.nmu, 1))
-            kaiser_prefac = 1.0 + np.tile(growth/p["b"]*self.mu**2, (len(ks), 1)).T + bdelta_prefac
-            propagator = (kaiser_prefac**2 - bdelta_prefac**2)*damping
+            bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
+            kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T + bdelta_prefac
+            propagator = (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping
 
         # Compute the smooth model
-        fog = 1.0/(1.0 + np.outer(self.mu**2, ks**2*p["sigma_s"]**2/2.0))**2
-        pk_smooth = p["b"]**2*pk_smooth_lin*fog
+        fog = 1.0 / (1.0 + np.outer(self.mu ** 2, ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
+        pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
         # Polynomial shape
         if self.recon:
-            shape = p["a1"] * ks**2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
+            shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
         else:
             shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
 
         # Integrate over mu
         if smooth:
-            pk1d = integrate.simps((pk_smooth + shape)*(1.0 + 0.0 * pk_ratio*propagator), self.mu, axis=0)
+            pk1d = integrate.simps((pk_smooth + shape) * (1.0 + 0.0 * pk_ratio * propagator), self.mu, axis=0)
         else:
-            pk1d = integrate.simps((pk_smooth + shape)*(1.0 + pk_ratio*propagator), self.mu, axis=0)
+            pk1d = integrate.simps((pk_smooth + shape) * (1.0 + pk_ratio * propagator), self.mu, axis=0)
 
         pk_final = splev(k / p["alpha"], splrep(ks, pk1d))
 
@@ -133,6 +135,7 @@ class PowerDing2018(PowerSpectrumFit):
 
 if __name__ == "__main__":
     import sys
+
     sys.path.append("../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
@@ -140,6 +143,7 @@ if __name__ == "__main__":
     model_post = PowerDing2018(recon=True)
 
     from barry.datasets.mock_power import PowerSpectrum_SDSS_DR12_Z061_NGC
+
     dataset = PowerSpectrum_SDSS_DR12_Z061_NGC()
     data = dataset.get_data()
     model_pre.set_data(data)
@@ -147,6 +151,7 @@ if __name__ == "__main__":
     p = {"om": 0.3, "alpha": 1.0, "sigma_s": 10.0, "b": 1.6, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
 
     import timeit
+
     n = 200
 
     def test():
@@ -161,13 +166,14 @@ if __name__ == "__main__":
         model_pre.smooth_type = "eh1998"
         pk3 = model_pre.get_model(p, data[0])
         import matplotlib.pyplot as plt
-        plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data[0]["cov"])), fmt="o", c='k', label="Data")
-        plt.plot(ks, pk2, '.', c='r', label="hinton2017")
-        plt.plot(ks, pk3, '+', c='b', label="eh1998")
+
+        plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data[0]["cov"])), fmt="o", c="k", label="Data")
+        plt.plot(ks, pk2, ".", c="r", label="hinton2017")
+        plt.plot(ks, pk3, "+", c="b", label="eh1998")
         plt.xlabel("k")
         plt.ylabel("P(k)")
-        plt.xscale('log')
-        plt.yscale('log')
+        plt.xscale("log")
+        plt.yscale("log")
         plt.legend()
         plt.show()
 
@@ -178,12 +184,13 @@ if __name__ == "__main__":
         pk2 = model_pre.get_model(p, data[0])
         pk3 = model_post.get_model(p, data[0])
         import matplotlib.pyplot as plt
-        plt.plot(ks, pk2/pk_smooth_lin_windowed[mask], '.', c='r', label="pre-recon")
-        plt.plot(ks, pk3/pk_smooth_lin_windowed[mask], '+', c='b', label="post-recon")
+
+        plt.plot(ks, pk2 / pk_smooth_lin_windowed[mask], ".", c="r", label="pre-recon")
+        plt.plot(ks, pk3 / pk_smooth_lin_windowed[mask], "+", c="b", label="post-recon")
         plt.xlabel("k")
         plt.ylabel(r"$P(k)/P_{sm}(k)$")
-        plt.xscale('log')
-        plt.yscale('log')
+        plt.xscale("log")
+        plt.yscale("log")
         plt.ylim(0.4, 3.0)
         plt.legend()
         plt.show()

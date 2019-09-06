@@ -10,9 +10,20 @@ from barry.datasets.dataset import Dataset, MultiDataset
 
 
 class PowerSpectrum(Dataset, ABC):
-    def __init__(self, filename, realisation=None, name=None, min_k=0.02, max_k=0.30, step_size=None, recon=True,
-                 reduce_cov_factor=1, postprocess=None, apply_correction=None,
-                 fake_diag=False):
+    def __init__(
+        self,
+        filename,
+        realisation=None,
+        name=None,
+        min_k=0.02,
+        max_k=0.30,
+        step_size=None,
+        recon=True,
+        reduce_cov_factor=1,
+        postprocess=None,
+        apply_correction=None,
+        fake_diag=False,
+    ):
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + f"/../data/{filename}")
         self.apply_correction = apply_correction
@@ -146,49 +157,113 @@ class PowerSpectrum(Dataset, ABC):
         self.logger.info(f"Loaded winpk with shape {self.w_pk.shape}")
 
     def get_data(self):
-        return [{
-            "ks_output": self.w_ks_output,
-            "ks": self.ks,
-            "pk": self.data,
-            "cov": self.cov,
-            "icov": self.icov,
-            "ks_input": self.w_ks_input,
-            "w_scale": self.w_k0_scale,
-            "w_transform": self.w_transform,
-            "w_pk": self.w_pk,
-            "w_mask": self.w_mask,
-            "corr": self.corr,
-            "name": self.name,
-            "cosmology": self.cosmology,
-            "num_mocks": len(self.all_data)
-        }]
+        return [
+            {
+                "ks_output": self.w_ks_output,
+                "ks": self.ks,
+                "pk": self.data,
+                "cov": self.cov,
+                "icov": self.icov,
+                "ks_input": self.w_ks_input,
+                "w_scale": self.w_k0_scale,
+                "w_transform": self.w_transform,
+                "w_pk": self.w_pk,
+                "w_mask": self.w_mask,
+                "corr": self.corr,
+                "name": self.name,
+                "cosmology": self.cosmology,
+                "num_mocks": len(self.all_data),
+            }
+        ]
 
 
 class PowerSpectrum_SDSS_DR12_Z061_NGC(PowerSpectrum):
     def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
-        super().__init__("sdss_dr12_ngc_pk_zbin0p61.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
+        super().__init__(
+            "sdss_dr12_ngc_pk_zbin0p61.pkl",
+            name=name,
+            min_k=min_k,
+            max_k=max_k,
+            step_size=step_size,
+            recon=recon,
+            reduce_cov_factor=reduce_cov_factor,
+            postprocess=postprocess,
+            realisation=realisation,
+            fake_diag=fake_diag,
+        )
 
 
 class PowerSpectrum_SDSS_DR12_Z051_NGC(PowerSpectrum):
     def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
-        super().__init__("sdss_dr12_ngc_pk_zbin0p51.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
+        super().__init__(
+            "sdss_dr12_ngc_pk_zbin0p51.pkl",
+            name=name,
+            min_k=min_k,
+            max_k=max_k,
+            step_size=step_size,
+            recon=recon,
+            reduce_cov_factor=reduce_cov_factor,
+            postprocess=postprocess,
+            realisation=realisation,
+            fake_diag=fake_diag,
+        )
 
 
 class PowerSpectrum_SDSS_DR12_Z051_SGC(PowerSpectrum):
     def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
-        super().__init__("sdss_dr12_sgc_pk_zbin0p51.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
+        super().__init__(
+            "sdss_dr12_sgc_pk_zbin0p51.pkl",
+            name=name,
+            min_k=min_k,
+            max_k=max_k,
+            step_size=step_size,
+            recon=recon,
+            reduce_cov_factor=reduce_cov_factor,
+            postprocess=postprocess,
+            realisation=realisation,
+            fake_diag=fake_diag,
+        )
 
 
 class PowerSpectrum_SDSS_DR12_Z051(MultiDataset):
     def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
-        ngc = PowerSpectrum_SDSS_DR12_Z051_NGC(min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
-        sgc = PowerSpectrum_SDSS_DR12_Z051_NGC(min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
+        ngc = PowerSpectrum_SDSS_DR12_Z051_NGC(
+            min_k=min_k,
+            max_k=max_k,
+            step_size=step_size,
+            recon=recon,
+            reduce_cov_factor=reduce_cov_factor,
+            postprocess=postprocess,
+            realisation=realisation,
+            fake_diag=fake_diag,
+        )
+        sgc = PowerSpectrum_SDSS_DR12_Z051_NGC(
+            min_k=min_k,
+            max_k=max_k,
+            step_size=step_size,
+            recon=recon,
+            reduce_cov_factor=reduce_cov_factor,
+            postprocess=postprocess,
+            realisation=realisation,
+            fake_diag=fake_diag,
+        )
         super().__init__(name, [ngc, sgc])
 
 
 class PowerSpectrum_SDSS_DR7_Z015(PowerSpectrum):
     def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=5, postprocess=None):
-        super().__init__("sdss_dr7_pk.pkl", name=name, min_k=min_k, max_k=max_k, step_size=step_size, recon=recon, reduce_cov_factor=reduce_cov_factor, postprocess=postprocess, realisation=realisation, fake_diag=fake_diag)
+        super().__init__(
+            "sdss_dr7_pk.pkl",
+            name=name,
+            min_k=min_k,
+            max_k=max_k,
+            step_size=step_size,
+            recon=recon,
+            reduce_cov_factor=reduce_cov_factor,
+            postprocess=postprocess,
+            realisation=realisation,
+            fake_diag=fake_diag,
+        )
 
 
 if __name__ == "__main__":
@@ -202,9 +277,9 @@ if __name__ == "__main__":
     #
     import matplotlib.pyplot as plt
     import numpy as np
-    plt.errorbar(data["ks"], data["ks"]*data["pk"], yerr=data["ks"]*np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
-    plt.show()
 
+    plt.errorbar(data["ks"], data["ks"] * data["pk"], yerr=data["ks"] * np.sqrt(np.diag(data["cov"])), fmt="o", c="k")
+    plt.show()
 
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30)
     # MockAveragePowerSpectrum(min_k=0.02, max_k=0.30, step_size=1)

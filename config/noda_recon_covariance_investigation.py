@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("..")
 from investigations.does_noda_cov_match_bruteforce_mixed import calc_cov_noda_mixed
 from barry.config import setup
@@ -77,7 +78,6 @@ if __name__ == "__main__":
     # import matplotlib.pyplot as plt
     # plt.show()
 
-
     datas[1].set_cov(cov_noda)
     datas[2].set_cov(cov_noda_diag)
 
@@ -131,11 +131,13 @@ if __name__ == "__main__":
         for posterior, weight, chain, model, data, extra in fitter.load():
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20)
-        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
-        c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"], parameters=2, truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
-        c.plotter.plot_summary(filename=pfn + "_summary.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0}, errorbar=True)
-        c.plotter.plot_summary(filename=pfn + "_summary2.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0}, errorbar=True, parameters=1, extra_parameter_spacing=0.5)
-        c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
+        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
+        c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"], parameters=2, truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
+        c.plotter.plot_summary(filename=pfn + "_summary.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0}, errorbar=True)
+        c.plotter.plot_summary(
+            filename=pfn + "_summary2.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0}, errorbar=True, parameters=1, extra_parameter_spacing=0.5
+        )
+        c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
         with open(pfn + "_params.txt", "w") as f:
             f.write(c.analysis.get_latex_table(transpose=True))
 

@@ -1,5 +1,4 @@
 import logging
-
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.models import PowerNoda2019

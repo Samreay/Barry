@@ -1,4 +1,3 @@
-
 import logging
 import os
 import numpy as np
@@ -7,9 +6,7 @@ from barry.samplers.sampler import GenericSampler
 
 
 class EnsembleSampler(GenericSampler):
-
-    def __init__(self, num_walkers=None, num_steps=1000, num_burn=300,
-                 temp_dir=None, save_interval=300):
+    def __init__(self, num_walkers=None, num_steps=1000, num_burn=300, temp_dir=None, save_interval=300):
         """ Uses ``emcee`` and the `EnsembleSampler
         <http://dan.iel.fm/emcee/current/api/#emcee.EnsembleSampler>`_ to fit the supplied
         model.
@@ -84,17 +81,20 @@ class EnsembleSampler(GenericSampler):
         self.logger.debug("Fitting framework with %d dimensions" % num_dim)
 
         self.logger.info("Using Ensemble Sampler")
-        sampler = emcee.EnsembleSampler(self.num_walkers, num_dim,
-                                        log_posterior, live_dangerously=True)
+        sampler = emcee.EnsembleSampler(self.num_walkers, num_dim, log_posterior, live_dangerously=True)
 
         emcee_wrapper = EmceeWrapper(sampler)
-        flat_chain = emcee_wrapper.run_chain(self.num_steps, self.num_burn,
-                                             self.num_walkers, num_dim,
-                                             start=start,
-                                             save_dim=save_dims,
-                                             temp_dir=self.temp_dir,
-                                             uid=uid,
-                                             save_interval=self.save_interval)
+        flat_chain = emcee_wrapper.run_chain(
+            self.num_steps,
+            self.num_burn,
+            self.num_walkers,
+            num_dim,
+            start=start,
+            save_dim=save_dims,
+            temp_dir=self.temp_dir,
+            uid=uid,
+            save_interval=self.save_interval,
+        )
         self.logger.debug("Fit finished")
         if self.pool is not None:  # pragma: no cover
             self.pool.close()
@@ -104,6 +104,6 @@ class EnsembleSampler(GenericSampler):
     def load_file(self, filename):
         results = np.load(filename)
         posterior = np.load(filename.replace("chain.npy", "prob.npy"))
-        flat_chain = results[:, self.num_burn:, :].reshape((-1, results.shape[2]))
-        flat_posterior = posterior[:, self.num_burn:].reshape((-1, 1))
+        flat_chain = results[:, self.num_burn :, :].reshape((-1, results.shape[2]))
+        flat_posterior = posterior[:, self.num_burn :].reshape((-1, 1))
         return {"chain": flat_chain, "posterior": flat_posterior}

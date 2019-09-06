@@ -50,22 +50,22 @@ class PowerBeutler2017(PowerSpectrumFit):
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
 
         # Compute the propagator
-        C = np.exp(-0.5*ks**2*p["sigma_nl"]**2)
+        C = np.exp(-0.5 * ks ** 2 * p["sigma_nl"] ** 2)
 
         # Compute the smooth model
-        fog = 1.0/(1.0 + ks**2*p["sigma_s"]**2/2.0)**2
-        pk_smooth = p["b"]**2*pk_smooth_lin*fog
+        fog = 1.0 / (1.0 + ks ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
+        pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
 
         # Polynomial shape
         if self.recon:
-            shape = p["a1"] * ks**2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
+            shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
         else:
             shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
 
         if smooth:
             pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth + shape))
         else:
-            pk_final = splev(k / p["alpha"], splrep(ks, (pk_smooth + shape)*(1.0 + pk_ratio*C)))
+            pk_final = splev(k / p["alpha"], splrep(ks, (pk_smooth + shape) * (1.0 + pk_ratio * C)))
 
         return pk_final
 
@@ -78,6 +78,7 @@ if __name__ == "__main__":
     model_smooth = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}", smooth=True)
 
     from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
+
     dataset1 = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=recon)
     data1 = dataset1.get_data()
     model1.set_data(data1)
@@ -93,9 +94,9 @@ if __name__ == "__main__":
 
     if True:
         import timeit
+
         n = 200
         p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5, "sigma_s": 10.0, "b": 1.6, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
-
 
         def test():
             model1.get_likelihood(p, data1[0])
@@ -109,13 +110,14 @@ if __name__ == "__main__":
         model.smooth_type = "eh1998"
         pk3 = model.get_model(data, p)
         import matplotlib.pyplot as plt
-        plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k', label="Data")
-        plt.plot(ks, pk2, '.', c='r', label="hinton2017")
-        plt.plot(ks, pk3, '+', c='b', label="eh1998")
+
+        plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c="k", label="Data")
+        plt.plot(ks, pk2, ".", c="r", label="hinton2017")
+        plt.plot(ks, pk3, "+", c="b", label="eh1998")
         plt.xlabel("k")
         plt.ylabel("P(k)")
-        plt.xscale('log')
-        plt.yscale('log')
+        plt.xscale("log")
+        plt.yscale("log")
         plt.legend()
         plt.show()
 
@@ -125,11 +127,12 @@ if __name__ == "__main__":
         pk_smooth_lin_windowed, mask = model.adjust_model_window_effects(pk_smooth_interp)
         pk2 = model.get_model(data, p)
         import matplotlib.pyplot as plt
-        plt.plot(ks, pk2/pk_smooth_lin_windowed[mask], '.', c='r', label="pre-recon")
+
+        plt.plot(ks, pk2 / pk_smooth_lin_windowed[mask], ".", c="r", label="pre-recon")
         plt.xlabel("k")
         plt.ylabel(r"$P(k)/P_{sm}(k)$")
-        plt.xscale('log')
-        plt.yscale('log')
+        plt.xscale("log")
+        plt.yscale("log")
         plt.ylim(0.4, 3.0)
         plt.legend()
         plt.show()

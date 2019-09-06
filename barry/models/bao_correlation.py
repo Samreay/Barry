@@ -9,7 +9,8 @@ from barry.models.model import Model
 
 class CorrelationFunctionFit(Model):
     """ A generic model for computing correlation functions."""
-    def __init__(self, name="BAO Correlation Polynomial Fit", smooth_type="hinton2017", fix_params=['om'], smooth=False, correction=None):
+
+    def __init__(self, name="BAO Correlation Polynomial Fit", smooth_type="hinton2017", fix_params=["om"], smooth=False, correction=None):
         """ Generic correlation function model
 
         Parameters
@@ -56,7 +57,9 @@ class CorrelationFunctionFit(Model):
         c = data[0]["cosmology"]
         if self.cosmology != c:
             self.recon_smoothing_scale = c["reconsmoothscale"]
-            self.camb, self.PT = getCambGeneratorAndPT(h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale)
+            self.camb, self.PT = getCambGeneratorAndPT(
+                h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale
+            )
             self.pk2xi = PowerToCorrelationGauss(self.camb.ks)
             self.set_default("om", c["om"])
 
@@ -88,7 +91,7 @@ class CorrelationFunctionFit(Model):
         # Get base linear power spectrum from camb
         r_s, pk_lin = self.camb.get_data(om=om, h0=self.camb.h0)
         pk_smooth_lin = smooth(self.camb.ks, pk_lin, method=self.smooth_type, om=om, h0=self.camb.h0)  # Get the smoothed power spectrum
-        pk_ratio = (pk_lin / pk_smooth_lin - 1.0)  # Get the ratio
+        pk_ratio = pk_lin / pk_smooth_lin - 1.0  # Get the ratio
         return pk_smooth_lin, pk_ratio
 
     def compute_correlation_function(self, dist, p, smooth=False):
@@ -99,7 +102,7 @@ class CorrelationFunctionFit(Model):
         dist : array
             Array of distances in the correlation function to compute
         params : dict
-            dictionary of parameter name to float value pairs
+            dictionary of parameter name to float value pairs 
 
         Returns
         -------
@@ -156,7 +159,7 @@ class CorrelationFunctionFit(Model):
 
         xi_model = self.get_model(p, d, smooth=self.smooth)
 
-        diff = (d["xi0"] - xi_model)
+        diff = d["xi0"] - xi_model
         num_mocks = d["num_mocks"]
         num_params = len(self.get_active_params())
         return self.get_chi2_likelihood(diff, d["icov"], num_mocks=num_mocks, num_params=num_params)
@@ -182,8 +185,8 @@ class CorrelationFunctionFit(Model):
 
         fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
 
-        axes[0].errorbar(ss, ss * ss * xi, yerr=ss * ss * err, fmt="o", c='k', ms=4, label=self.data[0]["name"])
-        axes[1].errorbar(ss, adj(xi), yerr=adj(err, err=True), fmt="o", c='k', ms=4, label=self.data[0]["name"])
+        axes[0].errorbar(ss, ss * ss * xi, yerr=ss * ss * err, fmt="o", c="k", ms=4, label=self.data[0]["name"])
+        axes[1].errorbar(ss, adj(xi), yerr=adj(err, err=True), fmt="o", c="k", ms=4, label=self.data[0]["name"])
 
         axes[0].plot(ss, ss * ss * xi2, label=self.get_name())
         axes[1].plot(ss, adj(xi2), label=self.get_name())
@@ -192,8 +195,7 @@ class CorrelationFunctionFit(Model):
         string += "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params.items()])
         va = "bottom"
         ypos = 0.02
-        axes[0].annotate(string, (0.01, ypos), xycoords="axes fraction", horizontalalignment="left",
-                         verticalalignment=va)
+        axes[0].annotate(string, (0.01, ypos), xycoords="axes fraction", horizontalalignment="left", verticalalignment=va)
         axes[1].legend()
         axes[1].set_xlabel("s")
         if self.postprocess is None:

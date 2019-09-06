@@ -5,7 +5,6 @@ from barry.models.model import Model
 
 
 class TestModel(Model):
-
     def __init__(self):
         super().__init__("TestModel")
         self.add_param("om", r"$\Omega_m$", 0.1, 0.6, 0.3)
@@ -16,6 +15,7 @@ class TestModel(Model):
 
     def plot(self, params, smooth_params=None):
         pass
+
 
 if __name__ == "__main__":
     bao = TestModel()

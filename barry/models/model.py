@@ -28,6 +28,7 @@ class Correction(Enum):
     SELLENTIN implements the correction from Sellentin 2016
 
     """
+
     NONE = 0
     HARTLAP = 1
     SELLENTIN = 2
@@ -39,6 +40,7 @@ class Model(ABC):
     Implement a version of this that overwrites the `plot` and get_likelihood` methods.
 
     """
+
     def __init__(self, name, postprocess=None, correction=None):
         """ Create a new model.
 
@@ -158,7 +160,9 @@ class Model(ABC):
         if self.correction is Correction.SELLENTIN:  # From Sellentin 2016
             key = f"{num_mocks}_{num_params}"
             if key not in self.correction_data:
-                self.correction_data[key] = loggamma(num_mocks / 2).real - (num_params / 2) * np.log(np.pi * (num_mocks - 1)) - loggamma((num_mocks - num_params) * 0.5).real
+                self.correction_data[key] = (
+                    loggamma(num_mocks / 2).real - (num_params / 2) * np.log(np.pi * (num_mocks - 1)) - loggamma((num_mocks - num_params) * 0.5).real
+                )
             c_p = self.correction_data[key]
             log_likelihood = c_p - (num_mocks / 2) * np.log(1 + chi2 / (num_mocks - 1))
             return log_likelihood
@@ -186,7 +190,9 @@ class Model(ABC):
         start_close = [(s + p.default * close_default) / (1 + close_default) for s, p in zip(start_random, self.get_active_params())]
 
         self.logger.info("Starting basin hopping to find a good starting point")
-        res = basinhopping(minimise, self.scale(start_close), niter_success=3, niter=30, stepsize=0.05, minimizer_kwargs={"method": 'Nelder-Mead', "options": {"maxiter": 600}})
+        res = basinhopping(
+            minimise, self.scale(start_close), niter_success=3, niter=30, stepsize=0.05, minimizer_kwargs={"method": "Nelder-Mead", "options": {"maxiter": 600}}
+        )
 
         scaled_start = res.x
         ratio = 0.05  # 5% of the unit hypercube
@@ -267,12 +273,14 @@ class Model(ABC):
 
         fs = []
         xs = []
-        methods = ['Nelder-Mead']
+        methods = ["Nelder-Mead"]
         for m in methods:
             start = np.array(self.get_raw_start())
             if close_default:
                 start = [(s + p.default * close_default) / (1 + close_default) for s, p in zip(start, self.get_active_params())]
-            res = basinhopping(minimise, self.scale(start), niter_success=10, niter=niter, stepsize=0.05, minimizer_kwargs={"method": m, "options": {"maxiter": maxiter}})
+            res = basinhopping(
+                minimise, self.scale(start), niter_success=10, niter=niter, stepsize=0.05, minimizer_kwargs={"method": m, "options": {"maxiter": maxiter}}
+            )
             fs.append(res.fun)
             xs.append(res.x)
         fs = np.array(fs)

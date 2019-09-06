@@ -9,6 +9,7 @@ import logging
 # TODO: Add options for mnu, h0 default, omega_b, etc
 # TODO: Calculate/Tabulate r_s alongside power spectra for different omega_m and hubble. We need this for eh98 smoothing of powerspectra
 
+
 @lru_cache(maxsize=32)
 def getCambGenerator(redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97):
     return CambGenerator(redshift=redshift, om_resolution=om_resolution, h0_resolution=h0_resolution, h0=h0, ob=ob, ns=ns)
@@ -76,7 +77,7 @@ class CambGenerator(object):
         import camb
 
         pars = camb.CAMBparams()
-        pars.set_dark_energy(w=-1.0, dark_energy_model='fluid')
+        pars.set_dark_energy(w=-1.0, dark_energy_model="fluid")
         pars.InitPower.set_params(As=2.130e-9, ns=self.ns)
         pars.set_matter_power(redshifts=[self.redshift], kmax=self.k_max)
         self.logger.info("Configured CAMB power and dark energy")
@@ -85,8 +86,16 @@ class CambGenerator(object):
         for i, omch2 in enumerate(self.omch2s):
             for j, h0 in enumerate(self.h0s):
                 self.logger.debug("Generating %d:%d  %0.3f  %0.3f" % (i, j, omch2, h0))
-                pars.set_cosmology(H0=h0 * 100, omch2=omch2, mnu=0.0, ombh2=self.omega_b*h0*h0, omk=0.0, tau=0.063,
-                                   neutrino_hierarchy='degenerate', num_massive_neutrinos=1)
+                pars.set_cosmology(
+                    H0=h0 * 100,
+                    omch2=omch2,
+                    mnu=0.0,
+                    ombh2=self.omega_b * h0 * h0,
+                    omk=0.0,
+                    tau=0.063,
+                    neutrino_hierarchy="degenerate",
+                    num_massive_neutrinos=1,
+                )
                 pars.NonLinear = camb.model.NonLinear_none
                 results = camb.get_results(pars)
                 params = results.get_derived_params()
@@ -112,7 +121,7 @@ class CambGenerator(object):
 
         data = self.data
         v1 = data[int(np.floor(omch2_index)), int(np.floor(h0_index))]  # 00
-        v2 = data[int(np.ceil(omch2_index)), int(np.floor(h0_index))]   # 01
+        v2 = data[int(np.ceil(omch2_index)), int(np.floor(h0_index))]  # 01
 
         if self.h0_resolution == 1:
             final = v1 * (1 - x) * (1 - y) + v2 * x * (1 - y)
@@ -129,6 +138,7 @@ def test_rand_h0const():
 
     def fn():
         g.get_data(np.random.uniform(0.1, 0.2))
+
     return fn
 
 
@@ -138,12 +148,13 @@ def test_rand():
 
     def fn():
         g.get_data(np.random.uniform(0.1, 0.2), h0=np.random.uniform(60, 80))
+
     return fn
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
-    logging.getLogger('matplotlib').setLevel(logging.WARNING)
+    logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
     c = {"om": 0.31, "h0": 0.676, "z": 0.61, "ob": 0.04814, "ns": 0.97, "reconscale": 15}
 

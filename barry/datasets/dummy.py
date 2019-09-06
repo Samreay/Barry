@@ -68,7 +68,8 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import seaborn as sb
     import numpy as np
-    plt.errorbar(data["ks"], data["ks"]*data["pk"], yerr=data["ks"]*np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
+
+    plt.errorbar(data["ks"], data["ks"] * data["pk"], yerr=data["ks"] * np.sqrt(np.diag(data["cov"])), fmt="o", c="k")
     plt.show()
 
     sb.heatmap(data["cov"])

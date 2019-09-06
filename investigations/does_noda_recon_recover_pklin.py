@@ -1,5 +1,4 @@
 import logging
-
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.models import PowerNoda2019
 from barry.postprocessing import BAOExtractor
@@ -18,6 +17,7 @@ if __name__ == "__main__":
 
     from barry.datasets.mock_power import PowerSpectrum_SDSS_DR12_Z061_NGC
     from barry.datasets.dummy import DummyPowerSpectrum_SDSS_DR12_Z061_NGC
+
     dataset1 = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=recon, postprocess=postprocess, min_k=0.03, max_k=0.25)
     dataset2 = DummyPowerSpectrum_SDSS_DR12_Z061_NGC(name="Dummy data, real window fn", dummy_window=False, postprocess=postprocess)
     data1 = dataset1.get_data()

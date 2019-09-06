@@ -14,7 +14,7 @@ def calc_cov_noda(pk_cov, denoms, ks, pks, delta_k, assume_diag=False):
     cov = np.zeros((num, num))
     for i in range(num):
         for j in range(num):
-            prefactor = 1.0 / (denoms[i] * denoms[j] * (pks[i] * pks[j])**2)
+            prefactor = 1.0 / (denoms[i] * denoms[j] * (pks[i] * pks[j]) ** 2)
 
             # Here is our first issue. The paper 1901.06854 does not define m or n,
             # however, from 1708.00375v3 we have that it is the values within k_range
@@ -23,10 +23,7 @@ def calc_cov_noda(pk_cov, denoms, ks, pks, delta_k, assume_diag=False):
             sum = 0
             for m in valid_m:
                 for n in valid_n:
-                    sum += pks[m] * pks[n] * pk_cov[i, j] \
-                           - pks[m] * pks[j] * pk_cov[i, n] \
-                           - pks[i] * pks[n] * pk_cov[m, j] \
-                           + pks[i] * pks[j] * pk_cov[m, n]
+                    sum += pks[m] * pks[n] * pk_cov[i, j] - pks[m] * pks[j] * pk_cov[i, n] - pks[i] * pks[n] * pk_cov[m, j] + pks[i] * pks[j] * pk_cov[m, n]
             cov[i, j] = prefactor * sum
     return np.array(cov)
 
@@ -34,8 +31,9 @@ def calc_cov_noda(pk_cov, denoms, ks, pks, delta_k, assume_diag=False):
 if __name__ == "__main__":
     import seaborn as sb
     import matplotlib.pyplot as plt
+
     logging.basicConfig(level=logging.INFO, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
-    logging.getLogger('matplotlib').setLevel(logging.WARNING)
+    logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
     camb = getCambGenerator()
     r_s, _ = camb.get_data()

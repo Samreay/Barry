@@ -11,6 +11,7 @@ if __name__ == "__main__":
 
     from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
     from barry.datasets import DummyPowerSpectrum_SDSS_DR12_Z061_NGC
+
     dataset1 = PowerSpectrum_SDSS_DR12_Z061_NGC(name="Recon mean", recon=recon, min_k=0.02, max_k=0.3, reduce_cov_factor=31.62, step_size=5)
     dataset2 = DummyPowerSpectrum_SDSS_DR12_Z061_NGC(name="Dummy data, real window fn", min_k=0.02, max_k=0.25, step_size=5, dummy_window=False)
     dataset3 = DummyPowerSpectrum_SDSS_DR12_Z061_NGC(name="DummyWindowFnToo", min_k=0.02, max_k=0.25, step_size=5, dummy_window=True)

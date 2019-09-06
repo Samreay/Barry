@@ -1,12 +1,10 @@
 import os
 import shutil
 import logging
-
 from barry.config import get_config
 
 
-def write_jobscript_slurm(filename, name=None, num_tasks=24, num_cpu=24,
-                          delete=False, partition="smp"):
+def write_jobscript_slurm(filename, name=None, num_tasks=24, num_cpu=24, delete=False, partition="smp"):
     config = get_config()
     conda_env = config["conda_env"]
     directory = os.path.dirname(os.path.abspath(filename))
@@ -23,7 +21,7 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_cpu=24,
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
 
-    template = f'''#!/bin/bash -l
+    template = f"""#!/bin/bash -l
 #SBATCH -p {partition}
 #SBATCH -J {name}
 #SBATCH --array=1-{num_tasks}%{num_cpu}
@@ -47,10 +45,10 @@ PARAMS=`expr ${{SLURM_ARRAY_TASK_ID}} - 1`
 cd $IDIR
 sleep $((RANDOM % 5))
 $executable $PROG $PARAMS
-'''
+"""
 
-    n = "%s/%s.q" % (q_dir, executable[:executable.index(".py")])
-    with open(n, 'w') as f:
+    n = "%s/%s.q" % (q_dir, executable[: executable.index(".py")])
+    with open(n, "w") as f:
         f.write(template)
     logging.info("SLURM Jobscript at %s" % n)
     return n

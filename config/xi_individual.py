@@ -56,6 +56,7 @@ if __name__ == "__main__":
         import matplotlib.pyplot as plt
 
         import logging
+
         logging.info("Creating plots")
 
         res = {}
@@ -64,13 +65,13 @@ if __name__ == "__main__":
             if res.get(n) is None:
                 res[n] = []
             i = posterior.argmax()
-            chi2 = - 2 * posterior[i]
+            chi2 = -2 * posterior[i]
             res[n].append([np.average(chain[:, 0], weights=weight), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
         for label in res.keys():
             res[label] = pd.DataFrame(res[label], columns=["avg", "std", "max", "posterior", "chi2", "Dchi2", "realisation"])
 
         ks = list(res.keys())
-        all_ids = pd.concat(tuple([res[l][['realisation']] for l in ks]))
+        all_ids = pd.concat(tuple([res[l][["realisation"]] for l in ks]))
         counts = all_ids.groupby("realisation").size().reset_index()
         max_count = counts.values[:, 1].max()
         good_ids = all_ids.loc[counts.values[:, 1] == max_count, ["realisation"]]
@@ -79,13 +80,13 @@ if __name__ == "__main__":
             res[label] = pd.merge(good_ids, df, how="left", on="realisation")
 
         # Define colour scheme
-        c2 = ["#225465", "#5FA45E"] # ["#581d7f", "#e05286"]
-        c3 = ["#2C455A", "#258E71", "#C1C64D"] # ["#501b73", "#a73b8f", "#ee8695"]
-        c5 = ["#262232", "#1F4D5C", "#0E7A6E", "#5BA561", "#C1C64D"] # ["#3c1357", "#61208d", "#a73b8f", "#e8638b", "#f4aea3"]
+        c2 = ["#225465", "#5FA45E"]  # ["#581d7f", "#e05286"]
+        c3 = ["#2C455A", "#258E71", "#C1C64D"]  # ["#501b73", "#a73b8f", "#ee8695"]
+        c5 = ["#262232", "#1F4D5C", "#0E7A6E", "#5BA561", "#C1C64D"]  # ["#3c1357", "#61208d", "#a73b8f", "#e8638b", "#f4aea3"]
         cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
 
-        plt.rc('text', usetex=True)
-        plt.rc('font', family='serif')
+        plt.rc("text", usetex=True)
+        plt.rc("font", family="serif")
         bins_both = np.linspace(0.91, 1.08, 31)
         bins = np.linspace(0.95, 1.06, 31)
         ticks = [0.97, 1.0, 1.03]
@@ -112,8 +113,8 @@ if __name__ == "__main__":
             leg2 = axes[1].legend(loc=2, frameon=False)
             for lh in leg1.legendHandles + leg2.legendHandles:
                 lh.set_alpha(1)
-            axes[0].tick_params(axis='y', left=False)
-            axes[1].tick_params(axis='y', left=False)
+            axes[0].tick_params(axis="y", left=False)
+            axes[1].tick_params(axis="y", left=False)
             plt.subplots_adjust(hspace=0.0)
             axes[0].set_xlim(*lim_both)
             axes[1].set_xlim(*lim_both)
@@ -124,12 +125,10 @@ if __name__ == "__main__":
 
         from matplotlib.colors import to_rgb, to_hex
 
-
         def blend_hex(hex1, hex2):
             a = np.array(to_rgb(hex1))
             b = np.array(to_rgb(hex2))
             return to_hex(0.5 * (a + b))
-
 
         # Alpha-alpha comparison
         if True:
@@ -143,20 +142,20 @@ if __name__ == "__main__":
                 for j, label2 in enumerate(labels):
                     ax = axes[i, j]
                     if i < j:
-                        ax.axis('off')
+                        ax.axis("off")
                         continue
                     elif i == j:
                         h, _, _ = ax.hist(res[label1][k], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
                         ax.hist(res[label1][k], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
                         ax.set_yticklabels([])
-                        ax.tick_params(axis='y', left=False)
+                        ax.tick_params(axis="y", left=False)
                         ax.set_xlim(*lim)
                         yval = interp1d(0.5 * (bins[:-1] + bins[1:]), h, kind="nearest")([1.0])[0]
                         ax.plot([1.0, 1.0], [0, yval], color="k", lw=1, ls="--", alpha=0.4)
-                        ax.spines['right'].set_visible(False)
-                        ax.spines['top'].set_visible(False)
+                        ax.spines["right"].set_visible(False)
+                        ax.spines["top"].set_visible(False)
                         if j == 0:
-                            ax.spines['left'].set_visible(False)
+                            ax.spines["left"].set_visible(False)
                         if j == 3:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
                             ax.set_xticks(ticks)
@@ -176,7 +175,7 @@ if __name__ == "__main__":
 
                         if j != 0:
                             ax.set_yticklabels([])
-                            ax.tick_params(axis='y', left=False)
+                            ax.tick_params(axis="y", left=False)
                         else:
                             ax.set_ylabel(" ".join(label1.split()[:-1]), fontsize=12)
                             ax.set_yticks(ticks)
@@ -198,22 +197,20 @@ if __name__ == "__main__":
                 for j, label2 in enumerate(labels):
                     ax = axes[i, j]
                     if i < j:
-                        ax.axis('off')
+                        ax.axis("off")
                         continue
                     elif i == j:
-                        h, _, _ = ax.hist(res[label1][k], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3,
-                                          color=cols[label1.split()[0]])
-                        ax.hist(res[label1][k], bins=bins, histtype="step", linewidth=1.5,
-                                color=cols[label1.split()[0]])
+                        h, _, _ = ax.hist(res[label1][k], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
+                        ax.hist(res[label1][k], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
                         ax.set_yticklabels([])
-                        ax.tick_params(axis='y', left=False)
+                        ax.tick_params(axis="y", left=False)
                         ax.set_xlim(*lim)
                         yval = interp1d(0.5 * (bins[:-1] + bins[1:]), h, kind="nearest")([1.0])[0]
                         ax.plot([1.0, 1.0], [0, yval], color="k", lw=1, ls="--", alpha=0.4)
-                        ax.spines['right'].set_visible(False)
-                        ax.spines['top'].set_visible(False)
+                        ax.spines["right"].set_visible(False)
+                        ax.spines["top"].set_visible(False)
                         if j == 0:
-                            ax.spines['left'].set_visible(False)
+                            ax.spines["left"].set_visible(False)
                         if j == 2:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
                             ax.set_xticks(ticks)
@@ -232,7 +229,7 @@ if __name__ == "__main__":
 
                         if j != 0:
                             ax.set_yticklabels([])
-                            ax.tick_params(axis='y', left=False)
+                            ax.tick_params(axis="y", left=False)
                         else:
                             ax.set_ylabel(" ".join(label1.split()[:-1]), fontsize=12)
                             ax.set_yticks(ticks)

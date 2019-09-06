@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("..")
 from barry.config import setup
 from barry.fitter import Fitter
@@ -22,6 +23,7 @@ if __name__ == "__main__":
 
     if fitter.is_laptop():  # As I'm not sure if the cluster has matplotlib
         from chainconsumer import ChainConsumer
+
         res, = fitter.load()
 
         posterior, weight, chain, model, data = res

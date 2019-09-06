@@ -4,9 +4,7 @@ import shutil
 import socket
 import sys
 import platform
-
 import numpy as np
-
 from barry.doJob import write_jobscript_slurm
 from barry.samplers import DynestySampler
 
@@ -90,8 +88,7 @@ class Fitter(object):
 
         num_jobs = self.get_num_jobs()
         num_models = len(self.model_datasets)
-        self.logger.info(f"With {num_models} models+datasets and {self.num_walkers} walkers, "
-                         f"have {num_jobs} jobs")
+        self.logger.info(f"With {num_models} models+datasets and {self.num_walkers} walkers, " f"have {num_jobs} jobs")
 
         if self.is_laptop():
             self.logger.info("Running locally on the 0th index.")
@@ -104,9 +101,9 @@ class Fitter(object):
                     if self.remove_output:
                         self.logger.info("Deleting %s" % self.temp_dir)
                         shutil.rmtree(self.temp_dir)
-                filename = write_jobscript_slurm(file, name=os.path.basename(file),
-                                                 num_tasks=self.get_num_jobs(), num_cpu=self.get_num_cpu(),
-                                                 delete=False, partition=partition)
+                filename = write_jobscript_slurm(
+                    file, name=os.path.basename(file), num_tasks=self.get_num_jobs(), num_cpu=self.get_num_cpu(), delete=False, partition=partition
+                )
                 self.logger.info("Running batch job at %s" % filename)
                 os.system("sbatch %s" % filename)
             else:

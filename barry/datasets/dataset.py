@@ -17,6 +17,7 @@ class Dataset(ABC):
         Class logger
 
     """
+
     def __init__(self, name):
         self.name = name
         self.logger = logging.getLogger("barry")
@@ -44,6 +45,7 @@ class MultiDataset(Dataset, ABC):
         List of `Dataset` objects.
 
     """
+
     def __init__(self, name, datasets):
         super().__init__(name)
         self.datasets = datasets

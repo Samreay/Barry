@@ -5,8 +5,7 @@ from barry.models.bao_correlation import CorrelationFunctionFit
 
 
 class CorrSeo2016(CorrelationFunctionFit):
-
-    def __init__(self, recon=False, smooth_type="hinton2017", name="Corr Seo 2016", fix_params=['om', 'f'], smooth=False, correction=None):
+    def __init__(self, recon=False, smooth_type="hinton2017", name="Corr Seo 2016", fix_params=("om", "f"), smooth=False, correction=None):
         self.recon = recon
         self.recon_smoothing_scale = None
         self.fit_omega_m = fix_params is None or "om" not in fix_params
@@ -27,7 +26,9 @@ class CorrSeo2016(CorrelationFunctionFit):
             if not self.fit_growth:
                 self.growth = self.omega_m ** 0.55
                 if self.recon:
-                    self.damping_dd = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_dd"] / 2.0)
+                    self.damping_dd = np.exp(
+                        -np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_dd"] / 2.0
+                    )
                     self.damping_ss = np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.pt_data["sigma_ss"] / 2.0)
                 else:
                     self.damping = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma"] / 2.0)
@@ -83,7 +84,9 @@ class CorrSeo2016(CorrelationFunctionFit):
             propagator = (kaiser * damping_dd + smooth_prefac * (damping_ss - damping_dd)) ** 2
         else:
             prefac_k = 1.0 + np.tile(3.0 / 7.0 * (pt_data["R1"] * (1.0 - 4.0 / (9.0 * p["b"])) + pt_data["R2"]), (self.nmu, 1))
-            prefac_mu = np.outer(self.mu ** 2, growth / p["b"] + 3.0 / 7.0 * growth * pt_data["R1"] * (2.0 - 1.0 / (3.0 * p["b"])) + 6.0 / 7.0 * growth * pt_data["R2"])
+            prefac_mu = np.outer(
+                self.mu ** 2, growth / p["b"] + 3.0 / 7.0 * growth * pt_data["R1"] * (2.0 - 1.0 / (3.0 * p["b"])) + 6.0 / 7.0 * growth * pt_data["R2"]
+            )
             propagator = ((prefac_k + prefac_mu) * damping) ** 2
 
         # Compute the smooth model
@@ -109,6 +112,7 @@ class CorrSeo2016(CorrelationFunctionFit):
 
 if __name__ == "__main__":
     import sys
+
     sys.path.append("../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
@@ -116,16 +120,19 @@ if __name__ == "__main__":
     bao = CorrSeo2016()
 
     from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
+
     dataset = CorrelationFunction_SDSS_DR12_Z061_NGC()
     data = dataset.get_data()
     bao.set_data(data)
 
     import timeit
+
     n = 500
-    p = {"om":0.3, "alpha":1.0, "f": 1.0, "sigma_s": 5.0, "b": 1.0, "a1": 0, "a2": 0, "a3": 0}
+    p = {"om": 0.3, "alpha": 1.0, "f": 1.0, "sigma_s": 5.0, "b": 1.0, "a1": 0, "a2": 0, "a3": 0}
 
     def test():
         bao.get_likelihood(p)
+
     print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
 
     if True:
@@ -135,6 +142,7 @@ if __name__ == "__main__":
         print(xi0)
         print(xi)
         import matplotlib.pyplot as plt
-        plt.errorbar(ss, ss * ss * xi, yerr=ss * ss * np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
-        plt.plot(ss, ss * ss * xi0, c='r')
+
+        plt.errorbar(ss, ss * ss * xi, yerr=ss * ss * np.sqrt(np.diag(data["cov"])), fmt="o", c="k")
+        plt.plot(ss, ss * ss * xi0, c="r")
         plt.show()

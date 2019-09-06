@@ -1,5 +1,4 @@
 import logging
-
 from barry.models import CorrBeutler2017
 
 if __name__ == "__main__":
