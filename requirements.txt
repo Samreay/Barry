@@ -6,5 +6,3 @@ hankel
 chainconsumer
 emcee
 recordtype
-sklearn
-pandas
