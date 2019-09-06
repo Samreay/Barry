@@ -1,0 +1,13 @@
+\begin{table}
+    \centering
+    \caption{Parameter Correlations}
+    \label{tab:parameter_correlations}
+    \begin{tabular}{c|ccc}
+         & $\alpha$ & $b$ & $A$\\ 
+        \hline
+        $\alpha$ &  1.00 & -0.80 &  0.51 \\ 
+             $b$ & -0.80 &  1.00 & -0.02 \\ 
+             $A$ &  0.51 & -0.02 &  1.00 \\ 
+        \hline
+    \end{tabular}
+\end{table}

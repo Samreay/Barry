@@ -2,6 +2,7 @@ import logging
 import os
 import random
 import time
+import numpy as np
 
 
 def get_config():
@@ -24,3 +25,14 @@ def setup(filename):
     except Exception:
         pass
     return pfn, dir_name, file
+
+
+def weighted_avg_and_std(values, weights):
+    """
+    Return the weighted average and standard deviation.
+
+    values, weights -- Numpy ndarrays with the same shape.
+    """
+    average = np.average(values, weights=weights)
+    variance = np.average((values-average)**2, weights=weights)
+    return average, np.sqrt(variance)

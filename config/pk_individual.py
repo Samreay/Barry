@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
-    fitter.set_num_cpu(700)
+    fitter.set_num_cpu(500)
 
     if not fitter.should_plot():
         fitter.fit(file)
@@ -98,7 +98,7 @@ if __name__ == "__main__":
         lim_both = bins_both[0], bins_both[-1]
 
         # Make histogram comparison
-        if False:
+        if True:
             fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
             for label, means in res.items():
                 if "Prerecon" in label:
@@ -106,8 +106,8 @@ if __name__ == "__main__":
                 else:
                     ax = axes[1]
                 c = cols[label.split()[0]]
-                ax.hist(means[:, 0], bins=bins_both, label=" ".join(label.split()[:-1]), histtype="stepfilled", linewidth=2, alpha=0.3, color=c)
-                ax.hist(means[:, 0], bins=bins_both, histtype="step", linewidth=1.5, color=cols[label.split()[0]])
+                ax.hist(means["avg"], bins=bins_both, label=" ".join(label.split()[:-1]), histtype="stepfilled", linewidth=2, alpha=0.3, color=c)
+                ax.hist(means["avg"], bins=bins_both, histtype="step", linewidth=1.5, color=cols[label.split()[0]])
             axes[1].set_xlabel(r"$\langle \alpha \rangle$", fontsize=14)
             axes[0].set_yticklabels([])
             axes[1].set_yticklabels([])

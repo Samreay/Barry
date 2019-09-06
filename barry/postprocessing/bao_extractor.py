@@ -84,24 +84,34 @@ class PureBAOExtractor(PkPostProcess):
 
 class BAOExtractor(PureBAOExtractor):
     """ Implements the mix of BAO extractor and power spectrum as defined in Noda 2019, with
-    index mixing taken from page 9, paragraph 1.
+    index mixing taken from page 9, paragraph 1 and confirmed via private communication:
+
+    pi_i = {1, 2, 3, 7, 15}
+    rho_i = {4,5,6,8,9,10,11,12,13,14,16,17,18,19,20,21,22,23,24,25}
 
     """
-    def __init__(self, r_s, plot=False, delta=0.6, mink=0.05, maxk=0.20, reorder=True, invert=False):
+    def __init__(self, r_s, plot=False, delta=0.6, mink=0.06, extra_ks=(0.0925, 0.1775), reorder=True, invert=False):
         super().__init__(r_s, plot=plot, delta=delta)
         self.mink = mink
-        self.maxk = maxk
+        self.extra_ks = extra_ks
         self.reorder = reorder
         self.invert = invert
 
     def get_is_extracted(self, ks):
         # Use indexes to blend the two together
         indices = np.array(list(range(ks.size)))
-        mask_bao = ((ks > self.mink) & (indices % 2 == 1)) | (ks > self.maxk)
+        extra = None
+        for e in self.extra_ks:
+            ind = np.argmin(np.abs(ks - e))
+            if extra is None:
+                extra = indices == ind
+            else:
+                extra |= indices == ind
+        mask_power = (ks < self.mink) | extra
         if self.invert:
-            return ~mask_bao
+            return mask_power
         else:
-            return mask_bao
+            return ~mask_power
 
     def postprocess(self, ks, pk, mask):
         """ Process the power spectrum to get a mix of extracted BAO and P(k)

@@ -3,16 +3,17 @@ import sys
 sys.path.append("..")
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
-from barry.config import setup
-from barry.models import PowerDing2018
+from barry.config import setup, weighted_avg_and_std
+from barry.models import PowerDing2018, PowerBeutler2017
 from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.samplers import DynestySampler
 from barry.fitter import Fitter
 import numpy as np
+import pandas as pd
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
-    fitter = Fitter(dir_name)
+    fitter = Fitter(dir_name, remove_output=False)
     
     c = getCambGenerator()
     r_s, _ = c.get_data()
@@ -27,18 +28,28 @@ if __name__ == "__main__":
         d = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
         de = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=p, realisation=0)
 
-        beutler = PowerDing2018(recon=r)
-        beutler_extracted = PowerDing2018(recon=r, postprocess=p)
+        ding = PowerDing2018(recon=r)
+        beutler = PowerBeutler2017(recon=r)
+        sigma_nl = 6.0
+        beutler.set_default("sigma_nl", sigma_nl)
+        beutler.set_fix_params(["om", "sigma_nl"])
+
+        beutler_extracted = PowerBeutler2017(recon=r, postprocess=p)
+        beutler_extracted.set_default("sigma_nl", sigma_nl)
+        beutler_extracted.set_fix_params(["om", "sigma_nl"])
+        ding_extracted = PowerDing2018(recon=r, postprocess=p)
 
         for i in range(999):
             d.set_realisation(i)
             de.set_realisation(i)
-            fitter.add_model_and_dataset(beutler, d, name=f"D18, mock number {i}", linestyle=ls, color="p")
-            fitter.add_model_and_dataset(beutler_extracted, de, name=f"D18 + Extractor, mock number {i}", linestyle=ls, color="p")
+            fitter.add_model_and_dataset(ding, d, name=f"D18, mock number {i}", linestyle=ls, color="p", realisation=i)
+            fitter.add_model_and_dataset(beutler, d, name=f"B17, mock number {i}", linestyle=ls, color="p", realisation=i)
+            fitter.add_model_and_dataset(ding_extracted, de, name=f"D18 + Extractor, mock number {i}", linestyle=ls, color="p", realisation=i)
+            fitter.add_model_and_dataset(beutler_extracted, de, name=f"B17 + Extractor, mock number {i}", linestyle=ls, color="p", realisation=i)
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
-    fitter.set_num_cpu(300)
+    fitter.set_num_cpu(700)
     if not fitter.should_plot():
         fitter.fit(file)
 
@@ -54,11 +65,26 @@ if __name__ == "__main__":
             n = extra["name"].split(",")[0]
             if res.get(n) is None:
                 res[n] = []
-            if rese.get(n) is None:
-                rese[n] = []
-            res[n].append(chain[:, 0].mean())
-            rese[n].append(np.std(chain[:, 0]))
-        
+            i = posterior.argmax()
+            chi2 = - 2 * posterior[i]
+            a, s = weighted_avg_and_std(chain[:, 0], weights=weight)
+            res[n].append([a, s, chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
+
+        for label in res.keys():
+            res[label] = pd.DataFrame(res[label], columns=["avg", "std", "max", "posterior", "chi2", "Dchi2", "realisation"])
+
+        ks = [l for l in res.keys() if "Smooth" not in l]
+
+        all_ids = pd.concat(tuple([res[l][['realisation']] for l in ks]))
+        counts = all_ids.groupby("realisation").size().reset_index()
+        max_count = counts.values[:, 1].max()
+        good_ids = all_ids.loc[counts.values[:, 1] == max_count, ["realisation"]]
+
+        print("Model  ", "Mean mean  ", "Mean std  " , "Std mean")
+        for label, df in res.items():
+            res[label] = pd.merge(good_ids, df, how="left", on="realisation")
+            print(label, np.mean(res[label]["avg"]), np.mean(res[label]["std"]), np.std(res[label]["avg"]))
+
         # Define colour scheme
         c2 = ["#225465", "#5FA45E"] # ["#581d7f", "#e05286"]
         c3 = ["#2C455A", "#258E71", "#C1C64D"] # ["#501b73", "#a73b8f", "#ee8695"]
@@ -101,10 +127,18 @@ if __name__ == "__main__":
         # Alpha-alpha comparison
         if True:
             from scipy.interpolate import interp1d
-            bins = np.linspace(0.94, 1.06, 31)
-            cols = {"D18": c4[0], "D18 + Extractor": c4[2]}
-            fig, axes = plt.subplots(2, 2, figsize=(5, 5), sharex=True)
-            labels = ["D18", "D18 + Extractor"]
+
+            bins_both = np.linspace(0.92, 1.08, 31)
+            bins = np.linspace(0.95, 1.06, 31)
+            ticks = [0.97, 1.0, 1.03]
+            lim = bins[0], bins[-1]
+            lim_both = bins_both[0], bins_both[-1]
+
+            cols = {"B17": c4[0], "B17 + Extractor": c4[0], "D18": c4[2], "D18 + Extractor": c4[2]}
+            fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
+            labels = ["B17", "B17 + Extractor", "D18", "D18 + Extractor"]
+            k = "avg"
+
             #labels = ["Beutler Prerecon", "Seo Prerecon", "Ding Prerecon", "Noda Prerecon"]
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
@@ -113,43 +147,50 @@ if __name__ == "__main__":
                         ax.axis('off')
                         continue
                     elif i == j:
-                        h, _, _ = ax.hist(res[label1], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1])
-                        ax.hist(res[label1], bins=bins, histtype="step", linewidth=1.5, color=cols[label1])
+                        h, _, _ = ax.hist(res[label1][k], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1])
+                        ax.hist(res[label1][k], bins=bins, histtype="step", linewidth=1.5, color=cols[label1])
                         ax.set_yticklabels([])
                         ax.tick_params(axis='y', left=False)
-                        ax.set_xlim(0.93, 1.07)
+                        ax.set_xlim(*lim)
                         yval = interp1d(0.5 * (bins[:-1] + bins[1:]), h, kind="nearest")([1.0])[0]
                         ax.plot([1.0, 1.0], [0, yval], color="k", lw=1, ls="--", alpha=0.4)
                         ax.spines['right'].set_visible(False)
                         ax.spines['top'].set_visible(False)
                         if j == 0:
                             ax.spines['left'].set_visible(False)
-                        if j == 1:
+                        if j == 3:
                             ax.set_xlabel(label2, fontsize=12)
-                            ax.set_xticks([0.95, 1.0, 1.05])
+                            ax.set_xticks(ticks)
                     else:
                         print(label1, label2)
-                        a1 = np.array(res[label1])
-                        a2 = np.array(res[label2])
-                        # c = blend_hex(cols[label1], cols[label2])
+                        a1 = np.array(res[label2][k])
+                        a2 = np.array(res[label1][k])
                         c = np.abs(a1 - a2)
-                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.01, vmax=0.05)
-                        ax.set_xlim(0.93, 1.07)
-                        ax.set_ylim(0.93, 1.07)
+                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0002, vmax=0.01)
+                        ax.set_xlim(lim[0], lim[1])
+                        ax.set_ylim(*lim)
                         ax.plot([0.8, 1.2], [0.8, 1.2], c="k", lw=1, alpha=0.8, ls=":")
                         ax.axvline(1.0, color="k", lw=1, ls="--", alpha=0.4)
                         ax.axhline(1.0, color="k", lw=1, ls="--", alpha=0.4)
-                        
+
+                        if "Extractor" in label1 or "Extractor" in label2:
+                            if"Extractor" in label1 and "Extractor" in label2:
+                                print("DARK")
+                                ax.set_facecolor('#d9d9d9')
+                            else:
+                                print("LIGHT")
+                                ax.set_facecolor('#f0f0f0')
+
                         if j != 0:
                             ax.set_yticklabels([])
                             ax.tick_params(axis='y', left=False)
                         else:
                             ax.set_ylabel(label1, fontsize=12)
-                            ax.set_yticks([0.95, 1.0, 1.05])
-                        if i == 1:
+                            ax.set_yticks(ticks)
+                        if i == 3:
                             ax.set_xlabel(label2, fontsize=12)
-                            ax.set_xticks([0.95, 1.0, 1.05])
+                            ax.set_xticks(ticks)
             plt.subplots_adjust(hspace=0.0, wspace=0)
-            fig.savefig(pfn + "_alphacomp.png", bbox_inches="tight", dpi=300, transparent=True)
-            fig.savefig(pfn + "_alphacomp.pdf", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_alphacomp.png", bbox_inches="tight", dpi=300)
+            fig.savefig(pfn + "_alphacomp.pdf", bbox_inches="tight", dpi=300)
 

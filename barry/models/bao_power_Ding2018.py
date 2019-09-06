@@ -114,7 +114,6 @@ class PowerDing2018(PowerSpectrumFit):
         # Compute the smooth model
         fog = 1.0/(1.0 + np.outer(self.mu**2, ks**2*p["sigma_s"]**2/2.0))**2
         pk_smooth = p["b"]**2*pk_smooth_lin*fog
-
         # Polynomial shape
         if self.recon:
             shape = p["a1"] * ks**2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
