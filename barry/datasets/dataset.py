@@ -35,7 +35,7 @@ class Dataset(ABC):
         raise NotImplementedError("Please implement get_data")
 
 
-class MultiDataset(Dataset):
+class MultiDataset(Dataset, ABC):
     """ Dataset wrapping multiple datasets. Used for combining *independent* datasets.
 
     Attributes

@@ -1,14 +1,14 @@
 import logging
 
-from barry.datasets.dataset_correlation_function_abc import MockAverageCorrelations
+from barry.datasets.dataset_correlation_function_abc import CorrelationFunction
 
 
-class CorrelationFunction_SDSS_DR7_Z015_MGS(MockAverageCorrelations):
+class CorrelationFunction_SDSS_DR7_Z015_MGS(CorrelationFunction):
     def __init__(self, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
         super().__init__("sdss_dr7_corr.pkl", min_dist, max_dist, recon, reduce_cov_factor, realisation)
 
 
-class CorrelationFunction_SDSS_DR12_Z061_NGC(MockAverageCorrelations):
+class CorrelationFunction_SDSS_DR12_Z061_NGC(CorrelationFunction):
     def __init__(self, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
         super().__init__("sdss_dr12_ngc_corr_zbin0p61.pkl", min_dist, max_dist, recon, reduce_cov_factor, realisation)
 

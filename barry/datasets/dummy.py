@@ -1,16 +1,15 @@
 import logging
 from scipy.interpolate import splev, splrep
+import numpy as np
 
+from barry.cosmology import pk2xi
 from barry.cosmology.camb_generator import getCambGenerator
-from barry.datasets import PowerSpectrum_SDSS_DR12_Z051_NGC
+from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC, CorrelationFunction_SDSS_DR12_Z061_NGC
 
 
-class DummyPowerSpectrum_SDSS_DR12_Z051_NGC(PowerSpectrum_SDSS_DR12_Z051_NGC):
-    def __init__(self, min_k=0.02, max_k=0.30, step_size=1, uncert=0.01,
-                 reduce_cov_factor=1, name="DummyPowerSpectrum", postprocess=None,
-                 fake_diag=False, dummy_window=False):
-        super().__init__(min_k=min_k, max_k=max_k, step_size=step_size, recon=True,
-                         reduce_cov_factor=reduce_cov_factor, name=name, postprocess=postprocess, fake_diag=fake_diag)
+class DummyPowerSpectrum_SDSS_DR12_Z061_NGC(PowerSpectrum_SDSS_DR12_Z061_NGC):
+    def __init__(self, name="DummyPowerSpectrum", min_k=0.02, max_k=0.30, postprocess=None, dummy_window=False, uncert=0.01):
+        super().__init__(name=name, postprocess=postprocess, min_k=min_k, max_k=max_k)
 
         # Set data to camb generated power spectrum
         c = getCambGenerator()
@@ -40,10 +39,28 @@ class DummyPowerSpectrum_SDSS_DR12_Z051_NGC(PowerSpectrum_SDSS_DR12_Z051_NGC):
         self.set_cov(cov)
 
 
+class DummyCorrelationFunction_SDSS_DR12_Z061_NGC(CorrelationFunction_SDSS_DR12_Z061_NGC):
+    def __init__(self, uncert=0.01):
+        super().__init__()
+
+        # Set data to camb generated power spectrum
+        c = getCambGenerator()
+        r_s, pk_lin = c.get_data()
+        ks = c.ks
+        dist = self.data[:, 0]
+        xi = pk2xi.PowerToCorrelationGauss(ks).pk2xi(ks, pk_lin, dist)
+
+        # Set covariance to something nice and simple to sample from
+        # 1% diagonal uncertainty seems pretty good.
+        cov = np.diag((uncert * xi) ** 2)
+        self.data = np.vstack((dist, xi)).T
+        self.set_cov(cov)
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
 
-    dataset = DummyPowerSpectrum_SDSS_DR12_Z051_NGC()
+    dataset = DummyPowerSpectrum_SDSS_DR12_Z061_NGC()
     data = dataset.get_data()
     print(data["ks"])
     print(data["pk"])

@@ -13,3 +13,5 @@ Requirements to run fits:
     2. If you run on a cluster (checks for cluster if the OS is centos, let me know if yours isn't), it will create a slurm job script and send out all needed runs
     3. Once all jobs have finished, copy the output from the plots folder ie `barry.config.plots.mocks` to your local computer
     4. Run the same python script and it will load in the data and create the plots.
+    
+Tests are included in the tests directory. Run them using pytest, `pytest -v .` in the top level directory (where this readme is).

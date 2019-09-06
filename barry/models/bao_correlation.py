@@ -7,7 +7,7 @@ from barry.cosmology.power_spectrum_smoothing import validate_smooth_method, smo
 from barry.models.model import Model
 
 
-class CorrelationPolynomial(Model):
+class CorrelationFunctionFit(Model):
     """ A generic model for computing correlation functions."""
     def __init__(self, name="BAO Correlation Polynomial Fit", smooth_type="hinton2017", fix_params=['om'], smooth=False, correction=None):
         """ Generic correlation function model
@@ -49,7 +49,7 @@ class CorrelationPolynomial(Model):
 
         Parameters
         ----------
-        data : list[dict]
+        data : dict, list[dict]
             A list of datas to use
         """
         super().set_data(data)

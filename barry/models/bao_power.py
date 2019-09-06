@@ -10,7 +10,7 @@ import numpy as np
 
 class PowerSpectrumFit(Model):
     """ Generic power spectrum model """
-    def __init__(self,name="Pk Basic",  smooth_type="hinton2017",  fix_params=['om'], postprocess=None, smooth=False, correction=None):
+    def __init__(self, name="Pk Basic", smooth_type="hinton2017", fix_params=['om'], postprocess=None, smooth=False, correction=None):
         """ Generic power spectrum function model
 
         Parameters
@@ -51,7 +51,7 @@ class PowerSpectrumFit(Model):
 
         Parameters
         ----------
-        data : list[dict]
+        data : dict, list[dict]
             A list of datas to use
         """
         super().set_data(data)

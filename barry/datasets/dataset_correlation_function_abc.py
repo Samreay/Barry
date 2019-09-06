@@ -2,12 +2,14 @@ import os
 import pickle
 import logging
 import inspect
+from abc import ABC
+
 import numpy as np
 
 from barry.datasets.dataset import Dataset
 
 
-class MockAverageCorrelations(Dataset):
+class CorrelationFunction(Dataset, ABC):
     def __init__(self, filename, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + f"/../data/{filename}")
@@ -38,6 +40,10 @@ class MockAverageCorrelations(Dataset):
         self.mask = (self.data[:, 0] >= self.min_dist) & (self.data[:, 0] <= self.max_dist)
         self.data = self.data[self.mask, :]
 
+    def set_cov(self, cov):
+        self.cov = cov / self.reduce_cov_factor
+        self.icov = np.linalg.inv(self.cov)
+
     def _compute_cov(self):
         # TODO: Generalise for other multipoles poles
         ad = np.array(self.all_data)
@@ -46,8 +52,7 @@ class MockAverageCorrelations(Dataset):
         else:
             x0 = ad[:, self.mask, 1]
         cov = np.cov(x0.T)
-        self.cov = cov / self.reduce_cov_factor
-        self.icov = np.linalg.inv(self.cov)
+        self.set_cov(cov)
 
     def get_data(self):
         d = {
@@ -72,12 +77,12 @@ class MockAverageCorrelations(Dataset):
         return [d]
 
 
-class CorrelationFunction_SDSS_DR7_Z015_MGS(MockAverageCorrelations):
+class CorrelationFunction_SDSS_DR7_Z015_MGS(CorrelationFunction):
     def __init__(self, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
         super().__init__("sdss_dr7_corr.pkl", min_dist, max_dist, recon, reduce_cov_factor, realisation)
 
 
-class CorrelationFunction_SDSS_DR12_Z061_NGC(MockAverageCorrelations):
+class CorrelationFunction_SDSS_DR12_Z061_NGC(CorrelationFunction):
     def __init__(self, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
         super().__init__("sdss_dr12_ngc_corr_zbin0p61.pkl", min_dist, max_dist, recon, reduce_cov_factor, realisation)
 

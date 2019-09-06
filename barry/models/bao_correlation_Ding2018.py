@@ -1,10 +1,10 @@
 import logging
 import numpy as np
 from scipy import integrate
-from barry.models.bao_correlation import CorrelationPolynomial
+from barry.models.bao_correlation import CorrelationFunctionFit
 
 
-class CorrDing2018(CorrelationPolynomial):
+class CorrDing2018(CorrelationFunctionFit):
 
     def __init__(self, recon=False, smooth_type="hinton2017", name="Corr Ding 2018", fix_params=['om', 'f'], smooth=False, correction=None):
         self.recon = recon

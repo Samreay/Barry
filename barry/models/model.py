@@ -5,10 +5,19 @@ from numpy.random import uniform
 import numpy as np
 from scipy.special import loggamma
 from scipy.optimize import basinhopping
-from recordtype import recordtype
 from enum import Enum, unique
+from dataclasses import dataclass
 
-Param = recordtype('Param', ['name', 'label', 'min', 'max', 'default'])
+
+@dataclass
+class Param:
+    name: str
+    label: str
+    min: float
+    max: float
+    default: float
+    active: bool
+
 
 @unique
 class Correction(Enum):
@@ -65,7 +74,7 @@ class Model(ABC):
         self.data = data
 
     def add_param(self, name, label, min, max, default):
-        p = Param(name, label, min, max, default)
+        p = Param(name, label, min, max, default, name not in self.fix_params)
         self.params.append(p)
         self.param_dict[name] = p
 
@@ -73,17 +82,19 @@ class Model(ABC):
         if params is None:
             params = []
         self.fix_params = params
+        for p in self.params:
+            p.active = p.name not in params
 
     def get_param(self, dic, name):
         return dic.get(name, self.get_default(name))
 
     def get_active_params(self):
         """ Returns a list of the active (non-fixed) parameters """
-        return [p for p in self.params if p.name not in self.fix_params]
+        return [p for p in self.params if p.active]
 
     def get_inactive_params(self):
         """ Returns a list of the inactive (fixed) parameters"""
-        return [p for p in self.params if p.name in self.fix_params]
+        return [p for p in self.params if not p.active]
 
     def get_default(self, name):
         """ Returns the default value of a given parameter name """
@@ -92,6 +103,10 @@ class Model(ABC):
     def set_default(self, name, default):
         """ Sets the default value for a parameter """
         self.param_dict[name].default = default
+
+    def get_defaults(self):
+        """ Returns a list of default values for all active parameters """
+        return [x.default for x in self.get_active_params()]
 
     def get_labels(self):
         """ Gets a list of the label for all active parameters """

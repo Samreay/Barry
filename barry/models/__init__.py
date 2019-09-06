@@ -7,5 +7,12 @@ from barry.models.bao_power_Noda2019 import PowerNoda2019
 from barry.models.bao_power_Seo2016 import PowerSeo2016
 from barry.models.model import Model
 
-__all__ = [Model, PowerDing2018, PowerBeutler2017, PowerSeo2016, PowerNoda2019,
-           CorrBeutler2017, CorrDing2018, CorrSeo2016]
+__all__ = [
+    "PowerDing2018",
+    "PowerBeutler2017",
+    "PowerSeo2016",
+    "PowerNoda2019",
+    "CorrBeutler2017",
+    "CorrDing2018",
+    "CorrSeo2016",
+]
