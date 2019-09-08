@@ -10,11 +10,38 @@ from barry.samplers import DynestySampler
 
 
 class Fitter(object):
+    """ This class manages all the model fitting you'll be doing.
+
+    You simply declare pairs of models and datasets that you want to fit,
+    optionally tell it which sampler to use and then tell it do its job.
+
+    Hopefully minimal fuss involved.
+    
+    """
+
     def __init__(self, temp_dir, save_dims=None, remove_output=True):
+        """
+
+        Parameters
+        ----------
+        temp_dir : str
+            The directory into which plots and output chains will be stored
+        save_dims : int, optional
+            To reduce filesize if needed, you can an arbitrary amount
+            of dimensions when putting chains to disk. So a two here would
+            save the first two chains and not the rest. By default, saves
+            everything.
+        remove_output : bool, optional
+            Whether or not to remove old output when running this on a cluster
+            computer. By default, this is true, such that you can rerun files
+            without worrying about getting files mixed up. But if, for example,
+            you hit a walltime limit and one of your thousand jobs gets killed,
+            set this to false and rerun, and it will only run the failed job.
+        """
         self.logger = logging.getLogger("barry")
         self.model_datasets = []
         self.num_walkers = 10
-        self.num_cpu = None
+        self.num_concurrent = None
         self.temp_dir = temp_dir
         self.sampler = None
         self.save_dims = save_dims
@@ -24,28 +51,67 @@ class Fitter(object):
             self.logger.warning("OUTPUT IS NOT BEING REMOVED, BE WARNED IF THIS IS SUPPOSED TO BE A FRESH RUN")
 
     def add_model_and_dataset(self, model, dataset, **extra_args):
+        """ Adds a model-dataset pair to fit.
+
+        Parameters
+        ----------
+        model : `barry.models.Model`
+            The model class to fit.
+        dataset : `barry.datasets.Dataset`
+            The dataset to fit.
+        extra_args : kwargs, optional
+            Any extra information you want returned with the chains from model fitting.
+            I often use this to name my pairs to make it convenient to load into `ChainConsumer`.
+
+        """
         self.model_datasets.append((model, dataset.get_data(), extra_args))
-        return self
 
-    def set_num_cpu(self, num_cpu=None):
-        if num_cpu is None:
-            num_cpu = len(self.model_datasets) * self.num_walkers
-        self.num_cpu = num_cpu
+    def set_num_concurrent(self, num_concurrent=None):
+        """ Set the number of jobs allowed to run in the job array at once.
 
-    def get_num_cpu(self):
-        if self.num_cpu is None:
-            self.set_num_cpu()
-        return self.num_cpu
+        Parameters
+        ----------
+        num_concurrent : int, optional
+            The maximum number of concurrent jobs to have. Defaults to *all of them*.
+            Not changing this and submitting a huge job array may make your sysadmin angry.
+        """
+        self.num_concurrent = num_concurrent
+
+    def get_num_concurrent(self):
+        """ Gets the number of current jobs limit.
+
+        Returns
+        -------
+        num_concurrent : int
+        """
+        if self.num_concurrent is None:
+            return len(self.model_datasets) * self.num_walkers
+        return self.num_concurrent
 
     def set_num_walkers(self, num_walkers):
+        """ Sets the number of walks for each model-dataset pair.
+
+        Ie, how many different runs we should do for each pair to ensure convergence
+        and good statistics. Setting this to 10 for the MH sampling for example would
+        say to start ten independent walks and combine them all at the end.
+
+        Parameters
+        ----------
+        num_walkers : int
+        """
         self.num_walkers = num_walkers
-        return self
 
     def get_num_jobs(self):
+        """ Gets the total number of jobs that wil be submitted.
+
+        Returns
+        -------
+        num_jobs : int
+        """
         num_jobs = len(self.model_datasets) * self.num_walkers
         return num_jobs
 
-    def get_indexes_from_index(self, index):
+    def _get_indexes_from_index(self, index):
         model_index = index // self.num_walkers
         walker_index = index % self.num_walkers
         return model_index, walker_index
@@ -83,8 +149,8 @@ class Fitter(object):
         return self.is_laptop() or (len(sys.argv) == 2 and int(sys.argv[1]) == -1)
 
     def fit(self, file):
-        if self.num_cpu is None:
-            self.set_num_cpu()
+        if self.num_concurrent is None:
+            self.set_num_concurrent()
 
         num_jobs = self.get_num_jobs()
         num_models = len(self.model_datasets)
@@ -102,14 +168,19 @@ class Fitter(object):
                         self.logger.info("Deleting %s" % self.temp_dir)
                         shutil.rmtree(self.temp_dir)
                 filename = write_jobscript_slurm(
-                    file, name=os.path.basename(file), num_tasks=self.get_num_jobs(), num_cpu=self.get_num_cpu(), delete=False, partition=partition
+                    file,
+                    name=os.path.basename(file),
+                    num_tasks=self.get_num_jobs(),
+                    num_concurrent=self.get_num_concurrent(),
+                    delete=False,
+                    partition=partition,
                 )
                 self.logger.info("Running batch job at %s" % filename)
                 os.system("sbatch %s" % filename)
             else:
                 index = int(sys.argv[1])
                 if index != -1:
-                    mi, wi = self.get_indexes_from_index(index)
+                    mi, wi = self._get_indexes_from_index(index)
                     self.logger.info("Running model_dataset %d, walker number %d" % (mi, wi))
                     self.run_fit(mi, wi)
 

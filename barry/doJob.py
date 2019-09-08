@@ -4,7 +4,7 @@ import logging
 from barry.config import get_config
 
 
-def write_jobscript_slurm(filename, name=None, num_tasks=24, num_cpu=24, delete=False, partition="smp"):
+def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, delete=False, partition="smp"):
     config = get_config()
     conda_env = config["conda_env"]
     directory = os.path.dirname(os.path.abspath(filename))
@@ -24,7 +24,7 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_cpu=24, delete=
     template = f"""#!/bin/bash -l
 #SBATCH -p {partition}
 #SBATCH -J {name}
-#SBATCH --array=1-{num_tasks}%{num_cpu}
+#SBATCH --array=1-{num_tasks}%{num_concurrent}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --nodes=1

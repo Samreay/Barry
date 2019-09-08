@@ -115,7 +115,7 @@ class CorrelationFunctionFit(Model):
         pk_smooth, pk_ratio_dewiggled = self.compute_basic_power_spectrum(p["om"])
 
         # Convert to real space from Fourier space
-        xi = self.pk2xi.pk2xi(ks, pk_smooth * (1 + pk_ratio_dewiggled), dist * p["alpha"])
+        xi = self.pk2xi.__call__(ks, pk_smooth * (1 + pk_ratio_dewiggled), dist * p["alpha"])
         return xi * p["b"]
 
     def get_model(self, p, data, smooth=False):

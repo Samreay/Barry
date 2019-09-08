@@ -48,7 +48,7 @@ class DummyCorrelationFunction_SDSS_DR12_Z061_NGC(CorrelationFunction_SDSS_DR12_
         r_s, pk_lin = c.get_data()
         ks = c.ks
         dist = self.data[:, 0]
-        xi = pk2xi.PowerToCorrelationGauss(ks).pk2xi(ks, pk_lin, dist)
+        xi = pk2xi.PowerToCorrelationGauss(ks).__call__(ks, pk_lin, dist)
 
         # Set covariance to something nice and simple to sample from
         # 1% diagonal uncertainty seems pretty good.

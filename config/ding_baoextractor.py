@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
-    fitter.set_num_cpu(700)
+    fitter.set_num_concurrent(700)
     if not fitter.should_plot():
         fitter.fit(file)
 

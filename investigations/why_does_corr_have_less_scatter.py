@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
         pk2xi = PowerToCorrelationGauss(ks)
         ss = data_xi[0]["dist"]
-        xi = pk2xi.pk2xi(ks, pks_2, ss)
+        xi = pk2xi.__call__(ks, pks_2, ss)
 
         m = (ks >= 0.03) & (ks <= 0.3)
         axes[0].plot(ks[m], ks[m] * pks_1[m], label=l)

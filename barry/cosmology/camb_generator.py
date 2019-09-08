@@ -16,6 +16,11 @@ def getCambGenerator(redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676
 
 
 class CambGenerator(object):
+    """ An object to generate power spectra using camb and save them to file.
+
+    Useful because computing them in a likelihood step is insanely slow.
+    """
+
     def __init__(self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97):
         """ 
         Precomputes CAMB for efficiency. Access ks via self.ks, and use get_data for an array

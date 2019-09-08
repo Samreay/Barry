@@ -28,7 +28,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
             pk_dewiggled = (pk_linear_weight * (1 + pk_ratio_dewiggled) + (1 - pk_linear_weight)) * pk_smooth
 
         # Convert to correlation function and take alpha into account
-        xi = self.pk2xi.pk2xi(ks, pk_dewiggled, d * p["alpha"])
+        xi = self.pk2xi.__call__(ks, pk_dewiggled, d * p["alpha"])
 
         # Polynomial shape
         shape = p["a1"] / (d ** 2) + p["a2"] / d + p["a3"]

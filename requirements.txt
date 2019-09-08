@@ -6,3 +6,4 @@ hankel
 chainconsumer
 emcee
 namedlist
+numpydoc

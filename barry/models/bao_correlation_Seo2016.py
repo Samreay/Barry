@@ -100,7 +100,7 @@ class CorrSeo2016(CorrelationFunctionFit):
             pk1d = integrate.simps(pk_smooth * (1.0 + pk_ratio * propagator), self.mu, axis=0)
 
         # Convert to correlation function and take alpha into account
-        xi = self.pk2xi.pk2xi(ks, pk1d, d * p["alpha"])
+        xi = self.pk2xi.__call__(ks, pk1d, d * p["alpha"])
 
         # Polynomial shape
         shape = p["a1"] / (d ** 2) + p["a2"] / d + p["a3"]
