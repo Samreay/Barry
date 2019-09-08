@@ -7,3 +7,4 @@ chainconsumer
 emcee
 namedlist
 numpydoc
+pyyaml

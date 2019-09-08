@@ -2,10 +2,10 @@ import logging
 import os
 import numpy as np
 from barry.samplers.hdemcee import EmceeWrapper
-from barry.samplers.sampler import GenericSampler
+from barry.samplers.sampler import Sampler
 
 
-class EnsembleSampler(GenericSampler):
+class EnsembleSampler(Sampler):
     def __init__(self, num_walkers=None, num_steps=1000, num_burn=300, temp_dir=None, save_interval=300):
         """ Uses ``emcee`` and the `EnsembleSampler
         <http://dan.iel.fm/emcee/current/api/#emcee.EnsembleSampler>`_ to fit the supplied

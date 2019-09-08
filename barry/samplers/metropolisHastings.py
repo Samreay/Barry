@@ -3,10 +3,10 @@ import numpy as np
 from time import time
 import logging
 
-from barry.samplers.sampler import GenericSampler
+from barry.samplers.sampler import Sampler
 
 
-class MetropolisHastings(GenericSampler):
+class MetropolisHastings(Sampler):
     """ Self tuning Metropolis Hastings Sampler
 
     Parameters

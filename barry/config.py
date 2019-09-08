@@ -2,11 +2,19 @@ import logging
 import os
 import random
 import time
+from functools import lru_cache
+import inspect
 import numpy as np
+import yaml
 
 
+@lru_cache(maxsize=1)
 def get_config():
-    return {"conda_env": "Barry"}
+    config_path = os.path.join(os.path.dirname(inspect.stack()[0][1]), "config.yml")
+    assert os.path.exists(config_path), f"File {config_path} cannot be found."
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+    return config
 
 
 def setup(filename):

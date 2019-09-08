@@ -1,7 +1,7 @@
 import abc
 
 
-class GenericSampler(object):
+class Sampler(object):
     __metaclass__ = abc.ABCMeta
 
     def fit(self, log_posterior, start, num_dim, prior_transform, save_dims=None, uid=None):

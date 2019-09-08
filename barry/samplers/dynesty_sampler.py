@@ -1,10 +1,10 @@
 import logging
 import os
 import numpy as np
-from barry.samplers.sampler import GenericSampler
+from barry.samplers.sampler import Sampler
 
 
-class DynestySampler(GenericSampler):
+class DynestySampler(Sampler):
     def __init__(self, temp_dir=None, max_iter=None, nlive=500):
 
         self.logger = logging.getLogger("barry")

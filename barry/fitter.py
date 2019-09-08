@@ -117,74 +117,86 @@ class Fitter(object):
         return model_index, walker_index
 
     def set_sampler(self, sampler):
+        """ Sets the sampler
+
+        Parameters
+        ----------
+        sampler : `barry.samplers.sampler.Sampler`
+
+        """
         self.sampler = sampler
 
-    def get_sampler(self, full=True):
+    def get_sampler(self):
+        """ Returns the sampler. If not set, creates a DynestySampler
+
+        Returns
+        -------
+        sampler : `barry.samplers.sampler.Sampler`
+        """
         if self.sampler is None:
             self.sampler = DynestySampler(temp_dir=self.temp_dir, nlive=100)
         return self.sampler
 
-    def run_fit(self, model_index, walker_index, full=True):
+    def _run_fit(self, model_index, walker_index):
+
         model = self.model_datasets[model_index][0]
         data = self.model_datasets[model_index][1]
 
         model.set_data(data)
         uid = f"chain_{model_index}_{walker_index}"
 
-        sampler = self.get_sampler(full=full)
+        sampler = self.get_sampler()
 
         self.logger.info("Running fitting job, saving to %s" % self.temp_dir)
-        self.logger.info(f"Model is {model}")
-        self.logger.info(f"Data is {' '.join([d['name'] for d in self.model_datasets[model_index][1]])}")
+        self.logger.info(f"\tModel is {model}")
+        self.logger.info(f"\tData is {' '.join([d['name'] for d in self.model_datasets[model_index][1]])}")
         sampler.fit(model.get_posterior, model.get_start, model.get_num_dim(), model.unscale, uid=uid, save_dims=self.save_dims)
-        # Perform the fitting here
-        # Save results out
-
         self.logger.info("Finished sampling")
 
     def is_laptop(self):
+        # TODO: Make this more robust
         return "centos" not in platform.platform()
 
     def should_plot(self):
+        # Plot if we're running on the laptop, or we've passed a -1 as the only argument
+        # to the python script on the HPC
         return self.is_laptop() or (len(sys.argv) == 2 and int(sys.argv[1]) == -1)
 
     def fit(self, file):
-        if self.num_concurrent is None:
-            self.set_num_concurrent()
+        num_concurrent = self.get_num_concurrent()
 
         num_jobs = self.get_num_jobs()
         num_models = len(self.model_datasets)
         self.logger.info(f"With {num_models} models+datasets and {self.num_walkers} walkers, " f"have {num_jobs} jobs")
 
         if self.is_laptop():
+            # Only do the first model+dataset on a local computer as a test
             self.logger.info("Running locally on the 0th index.")
-            self.run_fit(0, 0, full=False)
+            self._run_fit(0, 0)
         else:
             if len(sys.argv) == 1:
+                # if launching the job for the first time
                 h = socket.gethostname()
+                # TODO: Move this into a config file
                 partition = "regular" if "edison" in h else "smp"
                 if os.path.exists(self.temp_dir):
                     if self.remove_output:
                         self.logger.info("Deleting %s" % self.temp_dir)
                         shutil.rmtree(self.temp_dir)
                 filename = write_jobscript_slurm(
-                    file,
-                    name=os.path.basename(file),
-                    num_tasks=self.get_num_jobs(),
-                    num_concurrent=self.get_num_concurrent(),
-                    delete=False,
-                    partition=partition,
+                    file, name=os.path.basename(file), num_tasks=self.get_num_jobs(), num_concurrent=num_concurrent, delete=False, partition=partition
                 )
                 self.logger.info("Running batch job at %s" % filename)
                 os.system("sbatch %s" % filename)
             else:
+                # or if running a specific fit to a model+dataset pair
                 index = int(sys.argv[1])
                 if index != -1:
                     mi, wi = self._get_indexes_from_index(index)
                     self.logger.info("Running model_dataset %d, walker number %d" % (mi, wi))
-                    self.run_fit(mi, wi)
+                    self._run_fit(mi, wi)
 
-    def load_file(self, file):
+    def _load_file(self, file):
         d = self.get_sampler().load_file(file)
         chain = d["chain"]
         weights = d.get("weights")
@@ -201,13 +213,35 @@ class Fitter(object):
         return result
 
     def load(self, split_models=True, split_walkers=False):
+        """ Load in all the chains and fitting results
+
+        Parameters
+        ----------
+        split_models : bool, optional
+            Keep the models split and separate. Set this to false to combine the chains (very specific user
+            case for this, think hard if you feel like you want to set it to `False`).
+        split_walkers : bool, optional
+            Split up each walker to make things like convergence diagnostics easier. Defaults to `False`
+
+        Returns
+        -------
+            fits : list
+                A list of each model+dataset pair (assuming `split_models` is `True`).
+                Each element contains, in order:
+                    - log_posterior[steps]
+                    - weights[steps] (not log)
+                    - chain[steps:dimensions]
+                    - the model
+                    - the dataset
+                    - dict containing any `extra` information passed in.
+        """
         self.logger.info("Loading chains")
         files = [f for f in os.listdir(self.temp_dir) if f.endswith("chain.npy")]
         files.sort(key=lambda s: [int(s.split("_")[1]), int(s.split("_")[2])])
         filenames = [self.temp_dir + "/" + f for f in files]
         model_indexes = [int(f.split("_")[1]) for f in files]
         walker_indexes = [int(f.split("_")[2]) for f in files]
-        chains = [self.load_file(f) for f in filenames]
+        chains = [self._load_file(f) for f in filenames]
 
         results = []
         results_models = []
