@@ -1,5 +1,7 @@
 # Barry
 
+[Documentation online here](https://barry.readthedocs.io/en/latest/)
+
 Modular BAO fitting code.
 
 Requirements to run fits:
