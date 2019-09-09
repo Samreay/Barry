@@ -4,7 +4,7 @@ import logging
 from barry.config import get_config
 
 
-def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, delete=False, partition="smp"):
+def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, delete=False):
     config = get_config()
     conda_env = config["conda_env"]
     directory = os.path.dirname(os.path.abspath(filename))
