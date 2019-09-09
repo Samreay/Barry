@@ -1,4 +1,4 @@
-hpc_determining_command: "squeue"
+hpc_determining_command: "squeue"  # If this command is found, treat machine as HPC
 
 # Determine job run time and resources
 job_partition: "smp"

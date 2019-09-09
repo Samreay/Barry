@@ -5,6 +5,8 @@ import socket
 import sys
 import platform
 import numpy as np
+
+from barry.config import get_config
 from barry.doJob import write_jobscript_slurm
 from barry.samplers import DynestySampler
 
@@ -153,14 +155,13 @@ class Fitter(object):
         sampler.fit(model.get_posterior, model.get_start, model.get_num_dim(), model.unscale, uid=uid, save_dims=self.save_dims)
         self.logger.info("Finished sampling")
 
-    def is_laptop(self):
-        # TODO: Make this more robust
-        return "centos" not in platform.platform()
+    def is_local(self):
+        return get_config()["hpc_determining_command"] is None
 
     def should_plot(self):
         # Plot if we're running on the laptop, or we've passed a -1 as the only argument
         # to the python script on the HPC
-        return self.is_laptop() or (len(sys.argv) == 2 and int(sys.argv[1]) == -1)
+        return self.is_local() or (len(sys.argv) == 2 and int(sys.argv[1]) == -1)
 
     def fit(self, file):
         num_concurrent = self.get_num_concurrent()
@@ -169,7 +170,7 @@ class Fitter(object):
         num_models = len(self.model_datasets)
         self.logger.info(f"With {num_models} models+datasets and {self.num_walkers} walkers, " f"have {num_jobs} jobs")
 
-        if self.is_laptop():
+        if self.is_local():
             # Only do the first model+dataset on a local computer as a test
             self.logger.info("Running locally on the 0th index.")
             self._run_fit(0, 0)
