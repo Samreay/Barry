@@ -22,14 +22,14 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, 
         os.makedirs(output_dir, exist_ok=True)
 
     template = f"""#!/bin/bash -l
-#SBATCH -p {partition}
 #SBATCH -J {name}
+#SBATCH -p {config['job_partition']}
 #SBATCH --array=1-{num_tasks}%{num_concurrent}
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task={config['job_cpus_per_task']}
 #SBATCH --nodes=1
-#SBATCH --mem=6G
-#SBATCH -t 24:00:00
+#SBATCH --mem={config['job_memory']}
+#SBATCH -t {config['job_walltime_limit']}
 #SBATCH -o {output_dir}/{name}.o%j
 
 IDIR={directory}
