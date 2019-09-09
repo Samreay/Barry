@@ -8,6 +8,12 @@ from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC, CorrelationFunction
 
 
 class DummyPowerSpectrum_SDSS_DR12_Z061_NGC(PowerSpectrum_SDSS_DR12_Z061_NGC):
+    """ Dummy power spectrum.
+
+    Uses CAMB's linear power spectrum and faked uncertainty. Utilised the SDSS DR12 window function, with option
+    to make a dummy window function too.
+    """
+
     def __init__(self, name="DummyPowerSpectrum", min_k=0.02, max_k=0.30, postprocess=None, dummy_window=False, uncert=0.01):
         super().__init__(name=name, postprocess=postprocess, min_k=min_k, max_k=max_k)
 
@@ -40,6 +46,11 @@ class DummyPowerSpectrum_SDSS_DR12_Z061_NGC(PowerSpectrum_SDSS_DR12_Z061_NGC):
 
 
 class DummyCorrelationFunction_SDSS_DR12_Z061_NGC(CorrelationFunction_SDSS_DR12_Z061_NGC):
+    """ Dummy correlation function.
+
+    Uses CAMB's linear power spectrum and faked uncertainty.
+    """
+
     def __init__(self, uncert=0.01):
         super().__init__()
 
@@ -62,8 +73,6 @@ if __name__ == "__main__":
 
     dataset = DummyPowerSpectrum_SDSS_DR12_Z061_NGC()
     data = dataset.get_data()
-    print(data["ks"])
-    print(data["pk"])
 
     import matplotlib.pyplot as plt
     import seaborn as sb

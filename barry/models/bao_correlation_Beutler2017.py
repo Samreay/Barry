@@ -4,6 +4,9 @@ from barry.models.bao_correlation import CorrelationFunctionFit
 
 
 class CorrBeutler2017(CorrelationFunctionFit):
+    """  xi(s) model inspired from Beutler 2017 and Ross 2015.
+    """
+
     def __init__(self, name="Corr Beutler 2017", smooth_type="hinton2017", fix_params=["om"], smooth=False, correction=None):
         super().__init__(name, smooth_type, fix_params, smooth, correction=correction)
 

@@ -5,6 +5,8 @@ matplotlib
 hankel
 chainconsumer
 emcee
-namedlist
+dynesty
 numpydoc
 pyyaml
+sphinx
+sphinx_rtd_theme

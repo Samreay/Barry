@@ -6,7 +6,7 @@ from barry.models.bao_power import PowerSpectrumFit
 
 
 class PowerSeo2016(PowerSpectrumFit):
-    """ Model from Seo 2016.
+    """ P(k) model inspired from Seo 2016.
 
     See https://ui.adsabs.harvard.edu/abs/2016MNRAS.460.2453S for details.
     """

@@ -8,7 +8,7 @@ from barry.models.bao_power import PowerSpectrumFit
 
 
 class PowerDing2018(PowerSpectrumFit):
-    """ Model from Ding 2018.
+    """ P(k) model inspired from Ding 2018.
 
     See https://ui.adsabs.harvard.edu/abs/2018MNRAS.479.1021D for details.
 

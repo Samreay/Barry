@@ -5,6 +5,10 @@ from barry.models.bao_correlation import CorrelationFunctionFit
 
 
 class CorrSeo2016(CorrelationFunctionFit):
+    """ xi(s) model inspired from Seo 2016.
+
+    """
+
     def __init__(self, name="Corr Seo 2016", recon=False, smooth_type="hinton2017", fix_params=("om", "f"), smooth=False, correction=None):
         self.recon = recon
         self.recon_smoothing_scale = None

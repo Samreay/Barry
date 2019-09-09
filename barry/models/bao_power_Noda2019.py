@@ -5,7 +5,7 @@ from barry.models.bao_power import PowerSpectrumFit
 
 
 class PowerNoda2019(PowerSpectrumFit):
-    """ Model from Noda 2019.
+    """ P(k) model inspired from Noda 2019.
 
     See https://ui.adsabs.harvard.edu/abs/2019arXiv190106854N for details.
 

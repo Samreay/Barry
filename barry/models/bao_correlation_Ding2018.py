@@ -5,6 +5,8 @@ from barry.models.bao_correlation import CorrelationFunctionFit
 
 
 class CorrDing2018(CorrelationFunctionFit):
+    """ xi(s) model inspired from Ding 2018. """
+
     def __init__(self, name="Corr Ding 2018", recon=False, smooth_type="hinton2017", fix_params=("om", "f"), smooth=False, correction=None):
         self.recon = recon
         self.recon_smoothing_scale = None

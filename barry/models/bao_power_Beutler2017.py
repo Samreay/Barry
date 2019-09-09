@@ -5,7 +5,7 @@ from barry.models.bao_power import PowerSpectrumFit
 
 
 class PowerBeutler2017(PowerSpectrumFit):
-    """ Model from Beutler 2017.
+    """ P(k) model inspired from Beutler 2017.
 
     See https://ui.adsabs.harvard.edu/abs/2017MNRAS.464.3409B for details.
 
