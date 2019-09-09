@@ -6,4 +6,7 @@ hankel
 chainconsumer
 emcee
 dynesty
+numpydoc
 pyyaml
+sphinx
+sphinx_rtd_theme
