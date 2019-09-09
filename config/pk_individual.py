@@ -78,7 +78,7 @@ if __name__ == "__main__":
         all_ids = pd.concat(tuple([res[l][["realisation"]] for l in ks]))
         counts = all_ids.groupby("realisation").size().reset_index()
         max_count = counts.values[:, 1].max()
-        good_ids = all_ids.loc[counts.values[:, 1] == max_count, ["realisation"]]
+        good_ids = counts.loc[counts.values[:, 1] == max_count, ["realisation"]]
 
         for label, df in res.items():
             res[label] = pd.merge(good_ids, df, how="left", on="realisation")
