@@ -1,11 +1,3 @@
-numpy
-scipy
-camb
-matplotlib
-hankel
-chainconsumer
-emcee
-dynesty
 numpydoc
 pyyaml
 sphinx
