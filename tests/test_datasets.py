@@ -41,7 +41,7 @@ class TestDataset:
             if isinstance(c, CorrelationFunction):
                 datas = c.get_data()
                 for data in datas:
-                    required_keys = ["name", "dist", "xi", "xi0", "xi2", "xi4"]
+                    required_keys = ["name", "dist", "xi0"]  # "xi", "xi2", "xi4" would be good to have in the future
                     computed_keys = ["num_mocks", "icov", "cov"]
                     for r in required_keys:
                         assert r in data.keys(), f"Power spectrum data needs to have key {r}"
