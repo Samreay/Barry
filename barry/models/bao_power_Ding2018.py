@@ -14,10 +14,10 @@ class PowerDing2018(PowerSpectrumFit):
 
     """
 
-    def __init__(self, fix_params=("om", "f"), smooth_type="hinton2017", recon=False, name="Pk Ding 2018", postprocess=None, smooth=False, correction=None):
+    def __init__(self, name="Pk Ding 2018", fix_params=("om", "f"), smooth_type="hinton2017", recon=False, postprocess=None, smooth=False, correction=None):
         self.recon = recon
         self.recon_smoothing_scale = None
-        super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess, smooth=smooth, correction=correction)
+        super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction)
 
         self.fit_omega_m = fix_params is None or "om" not in fix_params
         self.fit_growth = fix_params is None or "f" not in fix_params

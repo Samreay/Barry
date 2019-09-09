@@ -11,7 +11,7 @@ class PowerNoda2019(PowerSpectrumFit):
 
     """
 
-    def __init__(self, fix_params=None, gammaval=None, smooth_type="hinton2017", recon=False, name="Pk Noda 2019", postprocess=None, correction=None):
+    def __init__(self, name="Pk Noda 2019", fix_params=None, gammaval=None, smooth_type="hinton2017", recon=False, postprocess=None, correction=None):
         self.recon = recon
         if fix_params is None:
             if recon:
@@ -28,7 +28,7 @@ class PowerNoda2019(PowerSpectrumFit):
             else:
                 gammaval = 1.0
         self.gammaval = gammaval
-        super().__init__(fix_params=fix_params, smooth_type=smooth_type, name=name, postprocess=postprocess, correction=correction)
+        super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, correction=correction)
 
         self.set_default("gamma", self.gammaval)
 

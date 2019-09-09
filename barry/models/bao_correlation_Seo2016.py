@@ -5,7 +5,7 @@ from barry.models.bao_correlation import CorrelationFunctionFit
 
 
 class CorrSeo2016(CorrelationFunctionFit):
-    def __init__(self, recon=False, smooth_type="hinton2017", name="Corr Seo 2016", fix_params=("om", "f"), smooth=False, correction=None):
+    def __init__(self, name="Corr Seo 2016", recon=False, smooth_type="hinton2017", fix_params=("om", "f"), smooth=False, correction=None):
         self.recon = recon
         self.recon_smoothing_scale = None
         self.fit_omega_m = fix_params is None or "om" not in fix_params
