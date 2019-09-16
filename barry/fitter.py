@@ -184,9 +184,7 @@ class Fitter(object):
                     if self.remove_output:
                         self.logger.info("Deleting %s" % self.temp_dir)
                         shutil.rmtree(self.temp_dir)
-                filename = write_jobscript_slurm(
-                    file, name=os.path.basename(file), num_tasks=self.get_num_jobs(), num_concurrent=num_concurrent, delete=False, partition=partition
-                )
+                filename = write_jobscript_slurm(file, name=os.path.basename(file), num_tasks=self.get_num_jobs(), num_concurrent=num_concurrent, delete=False)
                 self.logger.info("Running batch job at %s" % filename)
                 os.system("sbatch %s" % filename)
             else:
