@@ -156,7 +156,7 @@ class Fitter(object):
         self.logger.info("Finished sampling")
 
     def is_local(self):
-        return get_config()["hpc_determining_command"] is None
+        return shutil.which(get_config()["hpc_determining_command"]) is None
 
     def should_plot(self):
         # Plot if we're running on the laptop, or we've passed a -1 as the only argument

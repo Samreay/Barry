@@ -25,10 +25,9 @@ if __name__ == "__main__":
         data = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=postprocess)
         n = PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"])
         # n2 = PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"])
-        n.param_dict["b"].default = 2.022 if r else 2.01238
-        # n2.param_dict["b"].default = 1.86996 if r else 1.89131
+        n.param_dict["b"].default = 2.022 if r else 2.092
         fitter.add_model_and_dataset(
-            n, data, name=f"N19 {rt} fixed $f$, $\\gamma_{{rec}}$, $b$ (our values)", linestyle="-" if r else "--", color="o", shade_alpha=0.7, zorder=10
+            n, data, name=f"N19 {rt} fixed $f$, $\\gamma_{{rec}}$, $b$", linestyle="-" if r else "--", color="o", shade_alpha=0.7, zorder=10
         )
         # fitter.add_model_and_dataset(n2, data, name=f"N19 {rt} fixed $f$, $\\gamma$, $b$ (N19 values)", linestyle=":", color="g", shade_alpha=0.0, zorder=10)
         fitter.add_model_and_dataset(
@@ -66,11 +65,13 @@ if __name__ == "__main__":
         c = ChainConsumer()
         names2 = []
         for posterior, weight, chain, model, data, extra in fitter.load():
-            print(model.get_names())
-            print(chain.mean(axis=0))
+            # print(model.get_names())
+            # print(chain.mean(axis=0))
             name = extra["name"]
             if "fixed $f$" in name:
                 names2.append(name)
+            i = posterior.argmax()
+            print(name, model.get_names(), chain[i, :])
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
         # extents = {"$\\alpha$": (0.963, 1.06)}
@@ -88,7 +89,7 @@ if __name__ == "__main__":
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
         with open(pfn + "_corr.txt", "w") as f:
-            f.write(c.analysis.get_correlation_table(chain="N19 Recon fixed $f$, $\\gamma$"))
+            f.write(c.analysis.get_correlation_table(chain="N19 Recon fixed $f$, $\\gamma_{rec}$"))
 
     # FINDINGS
     # So turns out that fixing all these parameters really helps get good constraints.

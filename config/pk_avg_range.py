@@ -24,8 +24,8 @@ if __name__ == "__main__":
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
-        d = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, min_k=0.3, max_k=0.25)
-        de = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=p, min_k=0.3, max_k=0.25)
+        d = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, min_k=0.03, max_k=0.21)
+        de = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=p, min_k=0.03, max_k=0.21)
 
         # Fix sigma_nl for one of the Beutler models
         model = PowerBeutler2017(recon=r)
