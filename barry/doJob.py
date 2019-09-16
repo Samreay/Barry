@@ -6,7 +6,6 @@ from barry.config import get_config
 
 def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, delete=False):
     config = get_config()
-    conda_env = config["conda_env"]
     directory = os.path.dirname(os.path.abspath(filename))
     executable = os.path.basename(filename)
     if name is None:
@@ -34,7 +33,7 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, 
 
 IDIR={directory}
 conda deactivate
-conda activate {conda_env}
+conda activate {config["job_conda_env"]}
 echo $PATH
 echo "Activated python"
 executable=$(which python)
