@@ -1,0 +1,17 @@
+\begin{table}
+    \centering
+    \caption{}
+    \label{tab:model_params}
+    \begin{tabular}{cc}
+        \hline
+		Parameter & PolyCorrelation (NoOm) MockAvgRecon30-200 \\ 
+		\hline
+		$\alpha$ & $0.990^{+0.025}_{-0.034}$ \\ 
+		$\Sigma_{NL}$ & $9.3^{+3.6}_{-3.5}$ \\ 
+		$b$ & $2.20^{+1.18}_{-0.58}$ \\ 
+		$a_1$ & $-8^{+42}_{-44}$ \\ 
+		$a_2$ & $0.20^{+0.61}_{-0.69}$ \\ 
+		$a_3$ & $\left( -0.8^{+2.4}_{-2.3} \right) \times 10^{-3}$ \\ 
+		\hline
+    \end{tabular}
+\end{table}
