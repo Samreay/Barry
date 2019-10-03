@@ -5,6 +5,7 @@ import numpy as np
 from scipy.interpolate import splev, splrep
 from scipy import integrate
 from barry.models.bao_power import PowerSpectrumFit
+from barry.cosmology.camb_generator import Omega_m_z
 
 
 class PowerDing2018(PowerSpectrumFit):
@@ -24,6 +25,10 @@ class PowerDing2018(PowerSpectrumFit):
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
         self.smoothing_kernel = None
+
+    @lru_cache(maxsize=32)
+    def get_growth(self, om):
+        return Omega_m_z(om, self.camb.redshift) ** 0.55
 
     @lru_cache(maxsize=32)
     def get_pt_data(self, om):
@@ -86,7 +91,7 @@ class PowerDing2018(PowerSpectrumFit):
         if self.fit_growth:
             growth = p["f"]
         else:
-            growth = p["om"] ** 0.55
+            growth = self.get_growth(p["om"])
 
         # Lets round some things for the sake of numerical speed
         om = np.round(p["om"], decimals=5)
