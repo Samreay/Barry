@@ -93,14 +93,14 @@ class CambGenerator(object):
 
     @lru_cache(maxsize=512)
     def get_data(self, om=0.31, h0=None):
-        """ Returns the sound horizon the linear power spectrum"""
+        """ Returns the sound horizon, the linear power spectrum, and the halofit power spectrum at redshifts 0 and self.redshift"""
         if h0 is None:
             h0 = self.h0
         if self.data is None:
             self.load_data()
         omch2 = (om - self.omega_b) * h0 * h0
         data = self._interpolate(omch2, h0)
-        return data[0], data[1:1+self.k_num]
+        return data[0], data[1:1+self.k_num], data[1+self.k_num:1+2*self.k_num], data[1+2*self.k_num:]
 
     def _generate_data(self):
         self.logger.info(f"Generating CAMB data with {self.om_resolution} x {self.h0_resolution}")
@@ -188,6 +188,10 @@ def test_rand():
 
 
 if __name__ == "__main__":
+
+    import timeit
+    import matplotlib.pyplot as plt
+
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
@@ -195,17 +199,15 @@ if __name__ == "__main__":
 
     generator = CambGenerator(om_resolution=101, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"])
     generator.load_data(can_generate=True)
-    # generator = CambGenerator()
-    # generator = CambGenerator(om_resolution=50, h0_resolution=1)
-    # generator = CambGenerator(om_resolution=10, h0_resolution=10)
-    # generator = CambGenerator(om_resolution=50, h0_resolution=50)
-    #
-    # import timeit
-    # n = 10000
-    # print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
-    # import matplotlib.pyplot as plt
-    # plt.plot(generator.ks, generator.get_data(0.3)[1])
-    # plt.plot(generator.ks, generator.get_data(0.2)[1])
-    # plt.xscale("log")
-    # plt.yscale("log")
-    # plt.show()
+
+    n = 10000
+    print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
+
+    plt.plot(generator.ks, generator.get_data(0.2)[1], color='b', linestyle='-', label=r"$\mathrm{Linear}\,\Omega_{m}=0.2$")
+    plt.plot(generator.ks, generator.get_data(0.3)[1], color='r', linestyle='-', label=r"$\mathrm{Linear}\,\Omega_{m}=0.3$")
+    plt.plot(generator.ks, generator.get_data(0.2)[3], color='b', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
+    plt.plot(generator.ks, generator.get_data(0.3)[3], color='r', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.legend()
+    plt.show()
