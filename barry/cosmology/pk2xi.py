@@ -89,7 +89,7 @@ if __name__ == "__main__":
     # camb = CambGenerator(h0=70.0)
     camb = CambGenerator(om_resolution=10, h0_resolution=1)
     ks = camb.ks
-    r_s, pklin = camb.get_data(0.3, 0.70)
+    r_s, pklin, _, _ = camb.get_data(0.3, 0.70)
 
     ss = np.linspace(30, 200, 85)
 

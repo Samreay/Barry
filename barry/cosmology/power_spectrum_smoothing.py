@@ -161,7 +161,7 @@ if __name__ == "__main__":
 
     camb = CambGenerator(h0=h0)
     ks = camb.ks
-    r_s, pk_lin = camb.get_data(om=om)
+    r_s, pk_lin, _, _ = camb.get_data(om=om)
 
     if True:  # Do timing tests
         import timeit

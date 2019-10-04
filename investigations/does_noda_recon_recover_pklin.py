@@ -9,7 +9,7 @@ if __name__ == "__main__":
     recon = True
 
     c = getCambGenerator()
-    r_s, _ = c.get_data()
+    r_s, _, _, _ = c.get_data()
 
     postprocess = BAOExtractor(r_s)
 

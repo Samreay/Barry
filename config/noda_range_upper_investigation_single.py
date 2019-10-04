@@ -14,8 +14,7 @@ if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
     c = CambGenerator()
-    r_s, _ = c.get_data()
-
+    r_s, _, _, _ = c.get_data()
     fitter = Fitter(dir_name)
 
     ps = [

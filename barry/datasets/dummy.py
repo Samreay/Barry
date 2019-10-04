@@ -19,7 +19,7 @@ class DummyPowerSpectrum_SDSS_DR12_Z061_NGC(PowerSpectrum_SDSS_DR12_Z061_NGC):
 
         # Set data to camb generated power spectrum
         c = getCambGenerator()
-        r_s, pk_lin = c.get_data()
+        r_s, pk_lin, _, _ = c.get_data()
         ks = c.ks
 
         # Apply window function identically as it was applied to data
@@ -56,7 +56,7 @@ class DummyCorrelationFunction_SDSS_DR12_Z061_NGC(CorrelationFunction_SDSS_DR12_
 
         # Set data to camb generated power spectrum
         c = getCambGenerator()
-        r_s, pk_lin = c.get_data()
+        r_s, pk_lin, _, _ = c.get_data()
         ks = c.ks
         dist = self.data[:, 0]
         xi = pk2xi.PowerToCorrelationGauss(ks).__call__(ks, pk_lin, dist)

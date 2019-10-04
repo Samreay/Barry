@@ -6,10 +6,9 @@ import inspect
 import os
 import logging
 from scipy import integrate, special, interpolate
-import sys
 import pickle
-from barry.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
 from barry.cosmology.camb_generator import getCambGenerator
+from barry.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
 
 
 @lru_cache(maxsize=32)
@@ -76,7 +75,7 @@ class PTGenerator(object):
         smoothing_kernel = np.exp(-self.CAMBGenerator.ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0)
 
         # Run CAMBGenerator.get_data once to ensure the data is loaded under CAMBGenerator.data
-        _, _ = self.CAMBGenerator.get_data()
+        _, _, _, _ = self.CAMBGenerator.get_data()
 
         # Generate a grid of values for R1, R2, Imn and Jmn
         nx = 200
@@ -131,7 +130,7 @@ class PTGenerator(object):
         data = {}
         for key in ["sigma", "sigma_dd", "sigma_ss", "sigma_nl", "sigma_dd_nl", "sigma_sd_nl", "sigma_ss_nl", "sigma_dd_rs", "sigma_ss_rs"]:
             data[key] = np.zeros((self.CAMBGenerator.om_resolution, self.CAMBGenerator.h0_resolution))
-        for key in ["R1", "R2", "J00", "J01", "J11", "I00", "I01", "I11"]:
+        for key in ["R1", "R2", "Pdd_spt", "Pdt_spt", "Ptt_spt", "Pdd_halofit_0", "Pdt_halofit_0", "Ptt_halofit_0", "Pdd_halofit_z"]:
             data[key] = np.zeros((self.CAMBGenerator.om_resolution, self.CAMBGenerator.h0_resolution, self.CAMBGenerator.k_num))
 
         for i, j in indexes:
@@ -141,7 +140,10 @@ class PTGenerator(object):
             self.logger.debug("Rank %d Generating %d:%d  %0.3f  %0.3f" % (rank, i, j, omch2, h0))
 
             # Get the CAMB power spectrum and spline it
-            r_drag, pk_lin = self.CAMBGenerator.data[i, j, 0], self.CAMBGenerator.data[i, j, 1:]
+            r_drag = self.CAMBGenerator.data[i, j, 0]
+            pk_lin = self.CAMBGenerator.data[i, j, 1:1+self.CAMBGenerator.k_num]
+            pk_nonlin_0 = self.CAMBGenerator.data[i, j, 1+self.CAMBGenerator.k_num:1+2*self.CAMBGenerator.k_num]
+            pk_nonlin_z = self.CAMBGenerator.data[i, j, 1+2*self.CAMBGenerator.k_num:]
 
             # Get the spherical bessel functions
             j0 = special.jn(0, r_drag * self.CAMBGenerator.ks)
@@ -151,6 +153,8 @@ class PTGenerator(object):
             # BAO damping and SPT integrals used in the Noda2017 model
             om = omch2 / (h0 * h0) + self.CAMBGenerator.omega_b
             pk_smooth_lin = smooth(self.CAMBGenerator.ks, pk_lin, method=self.smooth_type, om=om, h0=h0)
+            pk_smooth_nonlin_0 = smooth(self.CAMBGenerator.ks, pk_nonlin_0, method=self.smooth_type, om=om, h0=h0)
+            pk_smooth_nonlin_z = smooth(self.CAMBGenerator.ks, pk_nonlin_z, method=self.smooth_type, om=om, h0=h0)
             pk_smooth_spline = interpolate.splrep(self.CAMBGenerator.ks, pk_smooth_lin)
 
             # Sigma^2
@@ -177,11 +181,6 @@ class PTGenerator(object):
             data["R1"][i, j, :] = self.CAMBGenerator.ks ** 2 * integrate.simps(pk_lin * R1, self.CAMBGenerator.ks, axis=1) / (4.0 * np.pi ** 2)
             data["R2"][i, j, :] = self.CAMBGenerator.ks ** 2 * integrate.simps(pk_lin * R2, self.CAMBGenerator.ks, axis=1) / (4.0 * np.pi ** 2)
 
-            # J_00, J_01, J_11
-            data["J00"][i, j, :] = 3.0 * self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J00, self.CAMBGenerator.ks, axis=1) / (np.pi ** 2)
-            data["J01"][i, j, :] = 3.0 * self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J01, self.CAMBGenerator.ks, axis=1) / (np.pi ** 2)
-            data["J11"][i, j, :] = 3.0 * self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J11, self.CAMBGenerator.ks, axis=1) / (np.pi ** 2)
-
             # I_00/P_sm,lin, I_01/P_sm,lin, I_02/P_sm,lin
             for k, kval in enumerate(self.CAMBGenerator.ks):
                 rvals = r[k, 0:]
@@ -193,12 +192,24 @@ class PTGenerator(object):
                 r2pk = rvals ** 2 * pk_smooth_lin
                 IP0 = kval ** 2 * ((-10.0 * rx * xs + 7.0 * xs).T + 3.0 * rvals) / (14.0 * rvals * y ** 2)
                 IP1 = kval ** 2 * ((-6.0 * rx * xs + 7.0 * xs).T - rvals) / (14.0 * rvals * y ** 2)
-                data["I00"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp * IP0 * IP0, xs, axis=0), rvals)
-                data["I01"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp * IP0 * IP1, xs, axis=0), rvals)
-                data["I11"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp * IP1 * IP1, xs, axis=0), rvals)
-            data["I00"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (2.0 * np.pi ** 2) / pk_smooth_lin
-            data["I01"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (2.0 * np.pi ** 2) / pk_smooth_lin
-            data["I11"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (2.0 * np.pi ** 2) / pk_smooth_lin
+                data["Pdd_spt"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp * IP0 * IP0, xs, axis=0), rvals)
+                data["Pdt_spt"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp * IP0 * IP1, xs, axis=0), rvals)
+                data["Ptt_spt"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp * IP1 * IP1, xs, axis=0), rvals)
+            data["Pdd_spt"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (2.0 * np.pi ** 2) / pk_smooth_lin
+            data["Pdt_spt"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (2.0 * np.pi ** 2) / pk_smooth_lin
+            data["Ptt_spt"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (2.0 * np.pi ** 2) / pk_smooth_lin
+
+            # Add on k^2[J_00, J_01, J_11] to obtain P_sm,spt/P_sm,L -1
+            data["Pdd_spt"][i, j, :] = 3.0 * self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J00, self.CAMBGenerator.ks, axis=1) / (np.pi ** 2)
+            data["Pdt_spt"][i, j, :] = 3.0 * self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J01, self.CAMBGenerator.ks, axis=1) / (np.pi ** 2)
+            data["Ptt_spt"][i, j, :] = 3.0 * self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J11, self.CAMBGenerator.ks, axis=1) / (np.pi ** 2)
+
+            # Compute the non linear correction to the power spectra using the fitting formulae from Jennings2012
+            data["Pdd_halofit_0"][i, j, :] = pk_smooth_nonlin_0
+            data["Pdt_halofit_0"][i, j, :] = (-12483.8*np.sqrt(pk_smooth_nonlin_0) + 2.554*pk_smooth_nonlin_0**2)/(1381.29 + 2.540*pk_smooth_nonlin_0)
+            data["Ptt_halofit_0"][i, j, :] = (-12480.5*np.sqrt(pk_smooth_nonlin_0) + 1.824*pk_smooth_nonlin_0**2)/(2165.87 + 1.796*pk_smooth_nonlin_0)
+            data["Pdd_halofit_z"][i, j, :] = pk_smooth_nonlin_z
+
         return data
 
     def _generate_data(self):

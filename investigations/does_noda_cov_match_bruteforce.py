@@ -36,7 +36,7 @@ if __name__ == "__main__":
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
     camb = getCambGenerator()
-    r_s, _ = camb.get_data()
+    r_s, _, _, _ = camb.get_data()
     extractor = PureBAOExtractor(r_s)
     mink = 0.02
 
