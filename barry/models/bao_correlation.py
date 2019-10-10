@@ -89,7 +89,7 @@ class CorrelationFunctionFit(Model):
 
         """
         # Get base linear power spectrum from camb
-        r_s, pk_lin, _, _ = self.camb.get_data(om=om, h0=self.camb.h0)
+        r_s, pk_lin, _ = self.camb.get_data(om=om, h0=self.camb.h0)
         pk_smooth_lin = smooth(self.camb.ks, pk_lin, method=self.smooth_type, om=om, h0=self.camb.h0)  # Get the smoothed power spectrum
         pk_ratio = pk_lin / pk_smooth_lin - 1.0  # Get the ratio
         return pk_smooth_lin, pk_ratio

@@ -16,7 +16,7 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name, remove_output=False)
 
     c = getCambGenerator()
-    r_s, _, _, _ = c.get_data()
+    r_s = c.get_data()[0]
     p = BAOExtractor(r_s)
 
     sampler = DynestySampler(temp_dir=dir_name, nlive=200)

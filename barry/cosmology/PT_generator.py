@@ -7,7 +7,7 @@ import os
 import logging
 from scipy import integrate, special, interpolate
 import pickle
-from barry.cosmology.camb_generator import getCambGenerator
+from barry.cosmology.camb_generator import getCambGenerator, Omega_m_z, E_z
 from barry.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
 
 
@@ -17,6 +17,37 @@ def getCambGeneratorAndPT(redshift=0.51, om_resolution=101, h0_resolution=1, h0=
     pt = PTGenerator(c, smooth_type=smooth_type, recon_smoothing_scale=recon_smoothing_scale)
     return c, pt
 
+
+def Growth_factor_Linder(omega_m, z, gamma=0.55):
+    """
+    Computes the unnormalised growth factor at redshift z given the present day value of omega_m. Uses the approximation
+    from Linder2005 with fixed gamma
+
+    :param omega_m: the matter density at the present day
+    :param z: the redshift we want the matter density at
+    :param gamma: the growth index. Default of 0.55 corresponding to LCDM.
+    :return: the unnormalised growth factor at redshift z.
+    """
+    avals = np.logspace(-4.0, np.log10(1.0/(1.0+z)), 10000)
+    f = Omega_m_z(omega_m, 1.0/avals - 1.0)**gamma
+    integ = integrate.simps((f-1.0)/avals, avals, axis=0)
+    return np.exp(integ)/(1.0+z)
+
+def Growth_factor_Heath(omega_m, z):
+    """
+    Computes the unnormalised growth factor at redshift z given the present day value of omega_m. Uses the expression
+    from Heath1977
+
+    Assumes Flat LCDM cosmology, which is fine given this is also assumed in CambGenerator. Possible improvement
+    could be to tabulate this using the CambGenerator so that it would be self consistent for non-LCDM cosmologies.
+
+    :param omega_m: the matter density at the present day
+    :param z: the redshift we want the matter density at
+    :return: the unnormalised growth factor at redshift z.
+    """
+    avals = np.logspace(-4.0, np.log10(1.0/(1.0+z)), 10000)
+    integ = integrate.simps(1.0/(avals*E_z(omega_m, 1.0/avals-1.0))**3, avals, axis=0)
+    return 5.0/2.0*omega_m*E_z(omega_m, z)*integ
 
 # TODO: Add options for mnu, h0 default, omega_b, etc
 # TODO: Expand to work for smoothing kernels other than Gaussian (perhaps the user can choose Gaussian, Tophat, CIC)
@@ -71,11 +102,11 @@ class PTGenerator(object):
         self.logger.info("Generating PT data")
         os.makedirs(self.data_dir, exist_ok=True)
 
-        # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
+        # Compute the smoothing kernels (assumes a Gaussian smoothing kernel)
         smoothing_kernel = np.exp(-self.CAMBGenerator.ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0)
 
         # Run CAMBGenerator.get_data once to ensure the data is loaded under CAMBGenerator.data
-        _, _, _, _ = self.CAMBGenerator.get_data()
+        _, _, _ = self.CAMBGenerator.get_data()
 
         # Generate a grid of values for R1, R2, Imn and Jmn
         nx = 200
@@ -87,50 +118,36 @@ class PTGenerator(object):
         R2 = (1.0 - r ** 2) / (24.0 * r ** 2) * (3.0 - 2.0 * r ** 2 + 3.0 * r ** 4) + (r ** 2 - 1.0) ** 3 * (1.0 + r ** 2) / (16.0 * r ** 3) * np.log(
             np.fabs((1.0 + r) / (1.0 - r))
         )
-        J00 = (
-            12.0 / r ** 2
-            - 158.0
-            + 100.0 * r ** 2
-            - 42.0 * r ** 4
-            + 3.0 * (r ** 2 - 1.0) ** 3 * (2.0 + 7.0 * r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
-        ) / 3024.0
-        J01 = (
-            24.0 / r ** 2
-            - 202.0
-            + 56.0 * r ** 2
-            - 30.0 * r ** 4
-            + 3.0 * (r ** 2 - 1.0) ** 3 * (4.0 + 5.0 * r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
-        ) / 3024.0
-        J11 = (
-            12.0 / r ** 2 - 82.0 + 4.0 * r ** 2 - 6.0 * r ** 4 + 3.0 * (r ** 2 - 1.0) ** 3 * (2.0 + r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
-        ) / 1008.0
+        J00 = 12.0 / r ** 2 - 158.0 + 100.0 * r ** 2 - 42.0 * r ** 4 + 3.0 * (r ** 2 - 1.0) ** 3 * (2.0 + 7.0 * r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
+        J01 = 24.0 / r ** 2 - 202.0 +  56.0 * r ** 2 - 30.0 * r ** 4 + 3.0 * (r ** 2 - 1.0) ** 3 * (4.0 + 5.0 * r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
+        J11 = 12.0 / r ** 2 -  82.0 +   4.0 * r ** 2 -  6.0 * r ** 4 + 3.0 * (r ** 2 - 1.0) ** 3 * (2.0 + r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
 
         # We get NaNs in R1, R2 etc., when r = 1.0 (diagonals). We manually set these to the correct values.
         # We also get numerical issues for large/small r, so we set these manually to asymptotic limits
         R1[np.diag_indices(len(self.CAMBGenerator.ks))] = 2.0 / 3.0
         R2[np.diag_indices(len(self.CAMBGenerator.ks))] = 0.0
-        J00[np.diag_indices(len(self.CAMBGenerator.ks))] = -11.0 / 378.0
-        J01[np.diag_indices(len(self.CAMBGenerator.ks))] = -19.0 / 378.0
-        J11[np.diag_indices(len(self.CAMBGenerator.ks))] = -27.0 / 378.0
+        J00[np.diag_indices(len(self.CAMBGenerator.ks))] = -88.0
+        J01[np.diag_indices(len(self.CAMBGenerator.ks))] = -152.0
+        J11[np.diag_indices(len(self.CAMBGenerator.ks))] = -72.0
         index = np.where(r < 1.0e-3)
         R1[index] = 16.0 / 15.0 * r[index] ** 2
         R2[index] = 4.0 / 15.0 * r[index] ** 2
-        J00[index] = -168.0 / 3024.0
-        J01[index] = -168.0 / 3024.0
-        J11[index] = -168.0 / 3024.0
-        index = np.where(r > 1.0e3)
+        J00[index] = -168.0
+        J01[index] = -168.0
+        J11[index] =  -56.0
+        index = np.where(r > 1.0e2)
         R1[index] = 16.0 / 15.0
         R2[index] = 4.0 / 15.0
-        J00[index] = -97.6 / 3024.0
-        J01[index] = -200.0 / 3024.0
-        J11[index] = -1.0 / 10.0
+        J00[index] = -97.6
+        J01[index] = -200.0
+        J11[index] = -100.8
 
         rank = 0 if self.mpi_comm is None else mpi_comm.Get_rank()
 
         data = {}
         for key in ["sigma", "sigma_dd", "sigma_ss", "sigma_nl", "sigma_dd_nl", "sigma_sd_nl", "sigma_ss_nl", "sigma_dd_rs", "sigma_ss_rs"]:
             data[key] = np.zeros((self.CAMBGenerator.om_resolution, self.CAMBGenerator.h0_resolution))
-        for key in ["R1", "R2", "Pdd_spt", "Pdt_spt", "Ptt_spt", "Pdd_halofit_0", "Pdt_halofit_0", "Ptt_halofit_0", "Pdd_halofit_z"]:
+        for key in ["R1", "R2", "Pdd_spt", "Pdt_spt", "Ptt_spt", "Pdd_halofit", "Pdt_halofit", "Ptt_halofit"]:
             data[key] = np.zeros((self.CAMBGenerator.om_resolution, self.CAMBGenerator.h0_resolution, self.CAMBGenerator.k_num))
 
         for i, j in indexes:
@@ -168,12 +185,12 @@ class PTGenerator(object):
             data["sigma_nl"][i, j] = integrate.simps(pk_lin * (1.0 - j0), self.CAMBGenerator.ks) / (6.0 * np.pi ** 2)
             data["sigma_dd_nl"][i, j] = integrate.simps(pk_lin * (1.0 - smoothing_kernel) ** 2 * (1.0 - j0), self.CAMBGenerator.ks) / (6.0 * np.pi ** 2)
             data["sigma_sd_nl"][i, j] = integrate.simps(
-                pk_lin * (0.5 * (smoothing_kernel ** 2 - (1.0 - smoothing_kernel) ** 2) - j0 * smoothing_kernel * (1.0 - smoothing_kernel)),
+                pk_lin * (0.5 * (smoothing_kernel ** 2 + (1.0 - smoothing_kernel) ** 2) - j0 * smoothing_kernel * (1.0 - smoothing_kernel)),
                 self.CAMBGenerator.ks,
             ) / (6.0 * np.pi ** 2)
             data["sigma_ss_nl"][i, j] = integrate.simps(pk_lin * smoothing_kernel ** 2 * (1.0 - j0), self.CAMBGenerator.ks) / (6.0 * np.pi ** 2)
 
-            # Sigma^2_dd,rs, Sigma^2_ss,rs (Noda2017 model)
+            # Sigma^2_dd,rs, Sigma^2_ss,rs (Noda2019 model)
             data["sigma_dd_rs"][i, j] = integrate.simps(pk_smooth_lin * (1.0 - j0 + 2.0 * j2), self.CAMBGenerator.ks) / (6.0 * np.pi ** 2)
             data["sigma_ss_rs"][i, j] = integrate.simps(pk_smooth_lin * j2, self.CAMBGenerator.ks) / (2.0 * np.pi ** 2)
 
@@ -189,26 +206,30 @@ class PTGenerator(object):
                 pk_smooth_interp = interpolate.splev(y, pk_smooth_spline)
                 index = np.where(np.logical_and(y < self.CAMBGenerator.k_min, y > self.CAMBGenerator.k_max))
                 pk_smooth_interp[index] = 0.0
-                r2pk = rvals ** 2 * pk_smooth_lin
-                IP0 = kval ** 2 * ((-10.0 * rx * xs + 7.0 * xs).T + 3.0 * rvals) / (14.0 * rvals * y ** 2)
-                IP1 = kval ** 2 * ((-6.0 * rx * xs + 7.0 * xs).T - rvals) / (14.0 * rvals * y ** 2)
-                data["Pdd_spt"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp * IP0 * IP0, xs, axis=0), rvals)
-                data["Pdt_spt"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp * IP0 * IP1, xs, axis=0), rvals)
-                data["Ptt_spt"][i, j, k] = integrate.simps(r2pk * integrate.simps(pk_smooth_interp * IP1 * IP1, xs, axis=0), rvals)
-            data["Pdd_spt"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (2.0 * np.pi ** 2) / pk_smooth_lin
-            data["Pdt_spt"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (2.0 * np.pi ** 2) / pk_smooth_lin
-            data["Ptt_spt"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (2.0 * np.pi ** 2) / pk_smooth_lin
+                IP0 = kval ** 2 * ((-10.0 * rx * xs + 7.0 * xs).T + 3.0 * rvals) / (y ** 2)
+                IP1 = kval ** 2 * ((-6.0 * rx * xs + 7.0 * xs).T - rvals) / (y ** 2)
+                data["Pdd_spt"][i, j, k] = integrate.simps(pk_smooth_lin * integrate.simps(pk_smooth_interp * IP0 * IP0, xs, axis=0), rvals)
+                data["Pdt_spt"][i, j, k] = integrate.simps(pk_smooth_lin * integrate.simps(pk_smooth_interp * IP0 * IP1, xs, axis=0), rvals)
+                data["Ptt_spt"][i, j, k] = integrate.simps(pk_smooth_lin * integrate.simps(pk_smooth_interp * IP1 * IP1, xs, axis=0), rvals)
+            data["Pdd_spt"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (392.0 * np.pi ** 2) / pk_smooth_lin
+            data["Pdt_spt"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (392.0 * np.pi ** 2) / pk_smooth_lin
+            data["Ptt_spt"][i, j, :] *= self.CAMBGenerator.ks ** 3 / (392.0 * np.pi ** 2) / pk_smooth_lin
 
-            # Add on k^2[J_00, J_01, J_11] to obtain P_sm,spt/P_sm,L -1
-            data["Pdd_spt"][i, j, :] = 3.0 * self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J00, self.CAMBGenerator.ks, axis=1) / (np.pi ** 2)
-            data["Pdt_spt"][i, j, :] = 3.0 * self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J01, self.CAMBGenerator.ks, axis=1) / (np.pi ** 2)
-            data["Ptt_spt"][i, j, :] = 3.0 * self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J11, self.CAMBGenerator.ks, axis=1) / (np.pi ** 2)
+            # Add on k^2[J_00, J_01, J_11] to obtain P_sm,spt/P_sm,L - 1
+            data["Pdd_spt"][i, j, :] += self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J00, self.CAMBGenerator.ks, axis=1) / (1008.0 * np.pi ** 2)
+            data["Pdt_spt"][i, j, :] += self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J01, self.CAMBGenerator.ks, axis=1) / (1008.0 * np.pi ** 2)
+            data["Ptt_spt"][i, j, :] += self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J11, self.CAMBGenerator.ks, axis=1) / ( 336.0 * np.pi ** 2)
 
             # Compute the non linear correction to the power spectra using the fitting formulae from Jennings2012
-            data["Pdd_halofit_0"][i, j, :] = pk_smooth_nonlin_0
-            data["Pdt_halofit_0"][i, j, :] = (-12483.8*np.sqrt(pk_smooth_nonlin_0) + 2.554*pk_smooth_nonlin_0**2)/(1381.29 + 2.540*pk_smooth_nonlin_0)
-            data["Ptt_halofit_0"][i, j, :] = (-12480.5*np.sqrt(pk_smooth_nonlin_0) + 1.824*pk_smooth_nonlin_0**2)/(2165.87 + 1.796*pk_smooth_nonlin_0)
-            data["Pdd_halofit_z"][i, j, :] = pk_smooth_nonlin_z
+            growth_0, growth_z = Growth_factor_Linder(om, 1.0e-4), Growth_factor_Linder(om, self.CAMBGenerator.redshift)
+            cfactor = (growth_z+growth_z**2+growth_z**3)/(growth_0+growth_0**2+growth_0**3)
+            Pdt_0 = (-12483.8*np.sqrt(pk_smooth_nonlin_0) + 2.554*pk_smooth_nonlin_0**2)/(1381.29 + 2.540*pk_smooth_nonlin_0)
+            Ptt_0 = (-12480.5*np.sqrt(pk_smooth_nonlin_0) + 1.824*pk_smooth_nonlin_0**2)/(2165.87 + 1.796*pk_smooth_nonlin_0)
+            Pdt_z = cfactor**2*(Pdt_0 - pk_smooth_nonlin_0) + pk_smooth_nonlin_z
+            Ptt_z = cfactor**2*(Ptt_0 - pk_smooth_nonlin_0) + pk_smooth_nonlin_z
+            data["Pdd_halofit"][i, j, :] = pk_smooth_nonlin_z/pk_smooth_lin - 1.0
+            data["Pdt_halofit"][i, j, :] = Pdt_z / pk_smooth_lin - 1.0
+            data["Ptt_halofit"][i, j, :] = Ptt_z / pk_smooth_lin - 1.0
 
         return data
 
@@ -314,7 +335,7 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.cosmology import CambGenerator, getCambGenerator
+    from barry.cosmology.camb_generator import CambGenerator, getCambGenerator
 
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
@@ -337,63 +358,49 @@ if __name__ == "__main__":
         PT_generator._generate_data()
 
     else:
-        generator = CambGenerator(om_resolution=101)
-        PT_generator = PTGenerator(generator, recon_smoothing_scale=15)
-        PT_generator.get_data()
+        import timeit
+        import matplotlib.pyplot as plt
 
-        # import timeit
-        # n = 1000
-        # print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
+        c = {"om": 0.31, "h0": 0.676, "z": 0.61, "ob": 0.04814, "ns": 0.97, "reconscale": 15}
 
-        # import matplotlib.pyplot as plt
-        # nvals = 100
-        # sigmas = np.empty((nvals, 9))
-        # oms = np.linspace(0.2, 0.4, nvals)
-        # for i, om in enumerate(oms):
-        #     data = PT_generator.get_data(om)
-        #     sigmas[i, 0] = data["sigma"]
-        #     sigmas[i, 1] = data["sigma_dd"]
-        #     sigmas[i, 2] = data["sigma_ss"]
-        #     sigmas[i, 3] = data["sigma_nl"]
-        #     sigmas[i, 4] = data["sigma_dd_nl"]
-        #     sigmas[i, 5] = data["sigma_sd_nl"]
-        #     sigmas[i, 6] = data["sigma_ss_nl"]
-        #     sigmas[i, 7] = data["sigma_dd_rs"]
-        #     sigmas[i, 8] = data["sigma_ss_rs"]
-        #     print(data["sigma_dd"], data["sigma_dd_nl"])
-        #
-        # plt.plot(oms, sigmas[0:, 0], label=r"$\Sigma^{2}$")
-        # plt.plot(oms, sigmas[0:, 1], label=r"$\Sigma^{2}_{dd}$")
-        # plt.plot(oms, sigmas[0:, 2], label=r"$\Sigma^{2}_{ss}$")
-        # plt.plot(oms, sigmas[0:, 3], label=r"$\Sigma^{2}_{nl}$")
-        # plt.plot(oms, sigmas[0:, 4], label=r"$\Sigma^{2}_{dd,nl}$")
-        # plt.plot(oms, sigmas[0:, 5], label=r"$\Sigma^{2}_{sd,nl}$")
-        # plt.plot(oms, sigmas[0:, 6], label=r"$\Sigma^{2}_{ss,nl}$")
-        # plt.plot(oms, sigmas[0:, 7], label=r"$\Sigma^{2}_{dd,rs}$")
-        # plt.plot(oms, sigmas[0:, 8], label=r"$\Sigma^{2}_{ss,rs}$")
-        # plt.ylim(0.0, 50.0)
-        # plt.legend()
-        # plt.show()
-        #
-        # pk_lin = generator.get_data(0.3121)[1]
-        # pk_smooth_lin = smooth(generator.ks, pk_lin, method=PT_generator.smooth_type)
-        #
-        # plt.plot(PT_generator.CAMBGenerator.ks, pk_lin, label=r"$P(k)$")
-        # plt.plot(PT_generator.CAMBGenerator.ks, pk_lin*PT_generator.get_data(0.2)["R1"], label=r"$R_{1}(\Omega_{m}=0.2)$")
-        # plt.plot(PT_generator.CAMBGenerator.ks, pk_lin*PT_generator.get_data(0.3121)["R1"], label=r"$R_{1}(\Omega_{m}=0.31)$")
-        # plt.plot(PT_generator.CAMBGenerator.ks, -pk_lin*PT_generator.get_data(0.2)["R2"], label=r"$-R_{2}(\Omega_{m}=0.2)$")
-        # plt.plot(PT_generator.CAMBGenerator.ks, -pk_lin*PT_generator.get_data(0.3121)["R2"], label=r"$-R_{2}(\Omega_{m}=0.31)$")
-        # plt.ylim(1.0e-8, 1.0e5)
-        # plt.xscale("log")
-        # plt.yscale("log")
-        # plt.legend()
-        # plt.show()
-        #
-        # plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin, label=r"$P(k)$")
-        # plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin*(1.0 + PT_generator.get_data(0.3121)["I00"] + PT_generator.get_data(0.3121)["J00"]), label=r"$P_{sm,\delta \theta}(\Omega_{m}=0.3)$")
-        # plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin*(1.0 + PT_generator.get_data(0.3121)["I01"] + PT_generator.get_data(0.3121)["J01"]), label=r"$P_{sm,\delta \theta}(\Omega_{m}=0.3)$")
-        # plt.plot(PT_generator.CAMBGenerator.ks, pk_smooth_lin*(1.0 + PT_generator.get_data(0.3121)["I11"] + PT_generator.get_data(0.3121)["J11"]), label=r"$P_{sm,\theta \theta}(\Omega_{m}=0.3)$")
-        # plt.xscale("log")
-        # plt.yscale("log")
-        # plt.legend()
-        # plt.show()
+        generator = CambGenerator(om_resolution=101, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"])
+        generator.load_data(can_generate=True)
+        pt_generator = PTGenerator(generator, recon_smoothing_scale=15)
+        pt_generator.load_data(can_generate=True)
+        pt_generator.get_data()
+
+        n = 1000
+        print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
+
+        pk_lin = generator.get_data(0.3)[1]
+        pk_smooth_lin = smooth(generator.ks, pk_lin, method=pt_generator.smooth_type)
+
+        plt.plot(generator.ks, pt_generator.get_data(0.2)["Pdd_spt"], color='b', linestyle='-', label=r"$\mathrm{SPT}\,\Omega_{m}=0.2$")
+        plt.plot(generator.ks, pt_generator.get_data(0.3)["Pdd_spt"], color='r', linestyle='-', label=r"$\mathrm{SPT}\,\Omega_{m}=0.3$")
+        plt.plot(generator.ks, pt_generator.get_data(0.2)["Pdd_halofit"], color='b', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
+        plt.plot(generator.ks, pt_generator.get_data(0.3)["Pdd_halofit"], color='r', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
+        plt.ylabel(r"$P_{\delta \delta}/P_{L} - 1$")
+        plt.xlim(0.0, 0.3)
+        plt.ylim(-1.0, 1.0)
+        plt.legend()
+        plt.show()
+
+        plt.plot(generator.ks, pt_generator.get_data(0.2)["Pdt_spt"], color='b', linestyle='-', label=r"$\mathrm{SPT}\,\Omega_{m}=0.2$")
+        plt.plot(generator.ks, pt_generator.get_data(0.3)["Pdt_spt"], color='r', linestyle='-', label=r"$\mathrm{SPT}\,\Omega_{m}=0.3$")
+        plt.plot(generator.ks, pt_generator.get_data(0.2)["Pdt_halofit"], color='b', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
+        plt.plot(generator.ks, pt_generator.get_data(0.3)["Pdt_halofit"], color='r', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
+        plt.ylabel(r"$P_{\delta \theta}/P_{L} - 1$")
+        plt.xlim(0.0, 0.3)
+        plt.ylim(-1.0, 1.0)
+        plt.legend()
+        plt.show()
+
+        plt.plot(generator.ks, pt_generator.get_data(0.2)["Ptt_spt"], color='b', linestyle='-', label=r"$\mathrm{SPT}\,\Omega_{m}=0.2$")
+        plt.plot(generator.ks, pt_generator.get_data(0.3)["Ptt_spt"], color='r', linestyle='-', label=r"$\mathrm{SPT}\,\Omega_{m}=0.3$")
+        plt.plot(generator.ks, pt_generator.get_data(0.2)["Ptt_halofit"], color='b', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
+        plt.plot(generator.ks, pt_generator.get_data(0.3)["Ptt_halofit"], color='r', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
+        plt.ylabel(r"$P_{\theta \theta}/P_{L} - 1$")
+        plt.xlim(0.0, 0.3)
+        plt.ylim(-1.0, 1.0)
+        plt.legend()
+        plt.show()
