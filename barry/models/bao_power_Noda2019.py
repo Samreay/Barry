@@ -15,9 +15,15 @@ class PowerNoda2019(PowerSpectrumFit):
 
     """
 
-    def __init__(self, name="Pk Noda 2019", fix_params=None, gammaval=None, smooth_type="hinton2017", recon=False, postprocess=None, smooth=False, correction=None):
+    def __init__(self, name="Pk Noda 2019", fix_params=("om", "f"), gammaval=None, smooth_type="hinton2017", nonlinear_type="spt", recon=False, postprocess=None, smooth=False, correction=None):
         self.recon = recon
         self.recon_smoothing_scale = None
+        if gammaval is None:
+            if self.recon:
+                gammaval = 4.0
+            else:
+                gammaval = 1.0
+        self.gammaval = gammaval
         super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction)
 
         self.fit_omega_m = fix_params is None or "om" not in fix_params
@@ -27,13 +33,19 @@ class PowerNoda2019(PowerSpectrumFit):
         self.mu = np.linspace(0.0, 1.0, self.nmu)
         self.smoothing_kernel = None
 
-        if gammaval is None:
-            if self.recon:
-                gammaval = 4.0
-            else:
-                gammaval = 1.0
-        self.gammaval = gammaval
         self.set_default("gamma", self.gammaval)
+
+        self.nonlinear_type = nonlinear_type.lower()
+        if not self.validate_nonlinear_method():
+            exit(0)
+
+    def validate_nonlinear_method(self):
+        if self.nonlinear_type in ["spt", "halofit"]:
+            return True
+        else:
+            logging.getLogger("barry").error(
+                f"Smoothing method is {self.nonlinear_type} and not in list {['spt', 'halofit']}")
+            return False
 
     @lru_cache(maxsize=32)
     def get_growth(self, om):
@@ -44,12 +56,16 @@ class PowerNoda2019(PowerSpectrumFit):
         return self.PT.get_data(om=om)
 
     @lru_cache(maxsize=8192)
-    def get_damping(self, growth, om):
-        return -np.outer((1.0 + (2.0 + growth) * growth * self.mu ** 2) * self.get_pt_data(om)["sigma_dd_rs"] + (growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * self.get_pt_data(om)["sigma_ss_rs"], ks ** 2)
+    def get_damping(self, growth, om, gamma):
+        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth * self.mu ** 2) * self.get_pt_data(om)["sigma_dd_rs"] + (growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * self.get_pt_data(om)["sigma_ss_rs"], self.camb.ks ** 2)/gamma)
 
-    @lru_cache(maxsize=8192)
+    @lru_cache(maxsize=512)
     def apply_gamma(self, damping, gamma):
         return np.exp(damping/gamma)
+
+    @lru_cache(maxsize=512)
+    def get_nonlinear(self, growth, om):
+        return self.get_pt_data(om)["Pdd_"+self.nonlinear_type], np.outer(2.0 * growth * self.mu ** 2, self.get_pt_data(om)["Pdt_"+self.nonlinear_type]), np.outer((growth * self.mu ** 2) ** 2, self.get_pt_data(om)["Ptt_"+self.nonlinear_type])
 
     def set_data(self, data):
         super().set_data(data)
@@ -102,7 +118,7 @@ class PowerNoda2019(PowerSpectrumFit):
         gamma = np.round(gamma, decimals=5)
 
         # Compute the BAO damping/propagator
-        propagator = self.apply_gamma(self.get_damping(growth, om), gamma)
+        propagator = self.get_damping(growth, om, gamma)
 
         # Compute the smooth model
         if self.recon:
@@ -112,15 +128,15 @@ class PowerNoda2019(PowerSpectrumFit):
         fog = np.exp(-p["A"] * ks ** 2)
         pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
 
-        # Compute the non-linear SPT correction to the smooth power spectrum
-        pk_spt = (self.get_pt_data(om)["Pdd_spt"] + 2.0 * np.outer(growth / p["b"] * self.mu ** 2, self.get_pt_data(om)["Pdt_spt"])
-            + np.outer((growth / p["b"] * self.mu ** 2) ** 2, self.get_pt_data(om)["Ptt_spt"]))
+        # Compute the non-linear correction to the smooth power spectrum
+        p_dd, p_dt, p_tt = self.get_nonlinear(growth, om)
+        pk_nonlinear = p_dd + p_dt / p["b"] + p_tt / p["b"] ** 2
 
         # Integrate over mu
         if smooth:
-            pk1d = integrate.simps(pk_smooth * ((1.0 + 0.0 * pk_ratio * propagator) * kaiser_prefac ** 2 + pk_spt), self.mu, axis=0)
+            pk1d = integrate.simps(pk_smooth * ((1.0 + 0.0 * pk_ratio * propagator) * kaiser_prefac ** 2 + pk_nonlinear), self.mu, axis=0)
         else:
-            pk1d = integrate.simps(pk_smooth * ((1.0 + pk_ratio * propagator) * kaiser_prefac ** 2 + pk_spt), self.mu, axis=0)
+            pk1d = integrate.simps(pk_smooth * ((1.0 + pk_ratio * propagator) * kaiser_prefac ** 2 + pk_nonlinear), self.mu, axis=0)
 
         pk_final = splev(k / p["alpha"], splrep(ks, pk1d))
 
@@ -150,7 +166,7 @@ if __name__ == "__main__":
     p = {"om": 0.3, "alpha": 1.0, "A": 7.0, "b": 1.6, "gamma": 4.0}
     for v in np.linspace(1.0, 20, 20):
         p["A"] = v
-        print(v, model_post.get_likelihood(p))
+        print(v, model_post.get_likelihood(p, data[0]))
 
     n = 200
 

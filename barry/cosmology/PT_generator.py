@@ -93,7 +93,7 @@ class PTGenerator(object):
     @lru_cache(maxsize=512)
     def get_data(self, om=0.31, h0=0.676):
         """ Returns the PT integrals: Sigma, Sigma_dd, Sigma_ss, Sigma_dd,nl, Sigma_sd,nl, Sigma_ss,nl, Sigma_rs,
-            R_1, R_2 and the SPT integrals"""
+            R_1, R_2 and the nonlinear parts of the power spectrum"""
         if self.data is None:
             self.load_data()
         omch2 = (om - self.CAMBGenerator.omega_b) * h0 * h0
