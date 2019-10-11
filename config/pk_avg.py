@@ -6,7 +6,7 @@ from barry.postprocessing import BAOExtractor
 from barry.config import setup
 from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
 from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
-from barry.samplers import DynestySampler
+from barry.samplers import EnsembleSampler, DynestySampler
 from barry.fitter import Fitter
 
 if __name__ == "__main__":
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     r_s = c.get_data()[0]
     p = BAOExtractor(r_s)
 
-    sampler = DynestySampler(temp_dir=dir_name)
+    sampler = EnsembleSampler(temp_dir=dir_name)
     fitter = Fitter(dir_name)
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
