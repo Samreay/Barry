@@ -356,7 +356,10 @@ if __name__ == "__main__":
 
         mpi_comm = MPI.COMM_WORLD
         generator = CambGenerator(redshift=0.61, om_resolution=args.om_resolution, h0_resolution=args.h0_resolution)
-        generator.load_data(can_generate=True)
+        rank = mpi_comm.Get_rank()
+        if rank == 0:
+            generator.load_data(can_generate=True)
+        mpi_comm.Barrier()
         pt_generator = PTGenerator(generator, recon_smoothing_scale=args.recon_smoothing_scale, mpi_comm=mpi_comm)
         pt_generator.load_data(can_generate=True)
 
