@@ -7,6 +7,8 @@ import os
 import logging
 from scipy import integrate, special, interpolate
 import pickle
+import sys
+sys.path.append("../..")
 from barry.cosmology.camb_generator import getCambGenerator, Omega_m_z, E_z
 from barry.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
 
@@ -354,8 +356,9 @@ if __name__ == "__main__":
 
         mpi_comm = MPI.COMM_WORLD
         generator = CambGenerator(redshift=0.61, om_resolution=args.om_resolution, h0_resolution=args.h0_resolution)
-        PT_generator = PTGenerator(generator, recon_smoothing_scale=args.recon_smoothing_scale, mpi_comm=mpi_comm)
-        PT_generator._generate_data()
+        generator.load_data(can_generate=True)
+        pt_generator = PTGenerator(generator, recon_smoothing_scale=args.recon_smoothing_scale, mpi_comm=mpi_comm)
+        pt_generator.load_data(can_generate=True)
 
     else:
         import timeit
