@@ -16,7 +16,7 @@ if __name__ == "__main__":
     r_s = c.get_data()[0]
     p = BAOExtractor(r_s)
 
-    sampler = EnsembleSampler(temp_dir=dir_name)
+    sampler = DynestySampler(temp_dir=dir_name)
     fitter = Fitter(dir_name)
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
