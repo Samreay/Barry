@@ -87,10 +87,7 @@ class CorrDing2018(CorrelationFunctionFit):
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
 
         # Compute the growth rate depending on what we have left as free parameters
-        if self.fit_growth:
-            growth = p["f"]
-        else:
-            growth = self.get_growth(p["om"])
+        growth = p["f"]
 
         # Lets round some things for the sake of numerical speed
         om = np.round(p["om"], decimals=5)

@@ -20,8 +20,6 @@ class PowerDing2018(PowerSpectrumFit):
         self.recon_smoothing_scale = None
         super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction)
 
-        self.fit_omega_m = fix_params is None or "om" not in fix_params
-        self.fit_growth = fix_params is None or "f" not in fix_params
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
         self.smoothing_kernel = None
@@ -88,10 +86,7 @@ class PowerDing2018(PowerSpectrumFit):
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
 
         # Compute the growth rate depending on what we have left as free parameters
-        if self.fit_growth:
-            growth = p["f"]
-        else:
-            growth = self.get_growth(p["om"])
+        growth = p["f"]
 
         # Lets round some things for the sake of numerical speed
         om = np.round(p["om"], decimals=5)
@@ -102,11 +97,7 @@ class PowerDing2018(PowerSpectrumFit):
             damping_dd = self.get_damping_dd(growth, om)
             damping_sd = self.get_damping_sd(growth, om)
             damping_ss = self.get_damping_ss(om)
-        else:
-            damping = self.get_damping(growth, om)
 
-        # Compute the propagator
-        if self.recon:
             smooth_prefac = np.tile(self.smoothing_kernel / p["b"], (self.nmu, 1))
             bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
             kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.smoothing_kernel) + bdelta_prefac
@@ -114,6 +105,8 @@ class PowerDing2018(PowerSpectrumFit):
                 (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping_dd + 2.0 * kaiser_prefac * smooth_prefac * damping_sd + smooth_prefac ** 2 * damping_ss
             )
         else:
+            damping = self.get_damping(growth, om)
+
             bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
             kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T + bdelta_prefac
             propagator = (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping
