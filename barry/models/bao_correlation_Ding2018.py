@@ -157,7 +157,7 @@ if __name__ == "__main__":
     model_post = CorrDing2018(recon=True)
     model_post.set_data(data)
 
-    p = {"om": 0.3, "alpha": 1.0, "sigma_s": 10.0, "b": 1.6, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
+    p = {"om": 0.3, "alpha": 1.0, "sigma_s": 10.0, "b": 1.6, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0}
 
     n = 200
 
@@ -182,39 +182,3 @@ if __name__ == "__main__":
         print(p)
         print(minv)
         model_post.plot(p)
-
-    # import sys
-    #
-    # sys.path.append("../..")
-    # logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
-    # logging.getLogger("matplotlib").setLevel(logging.ERROR)
-    #
-    # bao = CorrDing2018()
-    #
-    # from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
-    #
-    # dataset = CorrelationFunction_SDSS_DR12_Z061_NGC()
-    # data = dataset.get_data()
-    # bao.set_data(data)
-    #
-    # import timeit
-    #
-    # n = 200
-    # p = {"om": 0.31, "alpha": 1.0, "f": 1.0, "sigma_s": 5.0, "b_delta": 5.0, "b": 1.0, "a1": 0, "a2": 0, "a3": 0}
-    #
-    # def test():
-    #     bao.get_likelihood(p, data[0])
-    #
-    # print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
-    #
-    # if False:
-    #     ss = data["dist"]
-    #     xi0 = data["xi0"]
-    #     xi = bao.compute_correlation_function(ss, p)
-    #     print(xi0)
-    #     print(xi)
-    #     import matplotlib.pyplot as plt
-    #
-    #     plt.errorbar(ss, ss * ss * xi, yerr=ss * ss * np.sqrt(np.diag(data["cov"])), fmt="o", c="k")
-    #     plt.plot(ss, ss * ss * xi0, c="r")
-    #     plt.show()

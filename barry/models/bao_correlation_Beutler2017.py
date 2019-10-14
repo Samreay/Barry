@@ -43,37 +43,45 @@ class CorrBeutler2017(CorrelationFunctionFit):
 
 if __name__ == "__main__":
     import sys
+    import timeit
+    from barry.datasets.dataset_correlation_function import CorrelationFunction_SDSS_DR12_Z061_NGC
 
     sys.path.append("../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
-    bao = CorrBeutler2017()
-
-    from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
-
-    dataset = CorrelationFunction_SDSS_DR12_Z061_NGC()
+    dataset = CorrelationFunction_SDSS_DR12_Z061_NGC(recon=False)
     data = dataset.get_data()
-    bao.set_data(data)
+    model_pre = CorrBeutler2017()
+    model_pre.set_data(data)
 
-    import timeit
+    dataset = CorrelationFunction_SDSS_DR12_Z061_NGC(recon=True)
+    data = dataset.get_data()
+    model_post = CorrBeutler2017()
+    model_post.set_data(data)
+
+    p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5.0, "sigma_s": 5, "b": 2.0, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
 
     n = 200
-    p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5.0, "sigma_s": 5, "b": 2.0, "a1": 0, "a2": 0, "a3": 0}
 
-    def test():
-        bao.get_likelihood(p, data[0])
+    def test_pre():
+        model_pre.get_likelihood(p, data[0])
 
-    print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
+    def test_post():
+        model_post.get_likelihood(p, data[0])
 
-    if False:
-        ss = data["dist"]
-        xi0 = data["xi0"]
-        xi = bao.compute_correlation_function(ss, p)
-        print(xi0)
-        print(xi)
-        import matplotlib.pyplot as plt
+    print("Pre-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_pre, number=n) * 1000 / n))
+    print("Post-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_post, number=n) * 1000 / n))
 
-        plt.errorbar(ss, ss * ss * xi, yerr=ss * ss * np.sqrt(np.diag(data["cov"])), fmt="o", c="k")
-        plt.plot(ss, ss * ss * xi0, c="r")
-        plt.show()
+    if True:
+        p, minv = model_pre.optimize()
+        print("Pre reconstruction optimisation:")
+        print(p)
+        print(minv)
+        model_pre.plot(p)
+
+        print("Post reconstruction optimisation:")
+        p, minv = model_post.optimize()
+        print(p)
+        print(minv)
+        model_post.plot(p)
