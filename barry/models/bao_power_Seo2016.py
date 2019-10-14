@@ -1,8 +1,11 @@
 import logging
+from functools import lru_cache
+
 import numpy as np
 from scipy.interpolate import splev, splrep
-from scipy.integrate import simps
+from scipy import integrate
 from barry.models.bao_power import PowerSpectrumFit
+from barry.cosmology.camb_generator import Omega_m_z
 
 
 class PowerSeo2016(PowerSpectrumFit):
@@ -14,31 +17,36 @@ class PowerSeo2016(PowerSpectrumFit):
     def __init__(self, name="Pk Seo 2016", fix_params=("om", "f"), smooth_type="hinton2017", recon=False, postprocess=None, smooth=False, correction=None):
         self.recon = recon
         self.recon_smoothing_scale = None
-        self.fit_omega_m = fix_params is None or "om" not in fix_params
-        self.fit_growth = fix_params is None or "f" not in fix_params
         super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction)
 
+        self.fit_omega_m = fix_params is None or "om" not in fix_params
+        self.fit_growth = fix_params is None or "f" not in fix_params
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
-        self.omega_m, self.pt_data, self.damping_dd, self.damping_sd = None, None, None, None
-        self.damping_ss, self.damping, self.growth = None, None, None
         self.smoothing_kernel = None
+
+    @lru_cache(maxsize=32)
+    def get_growth(self, om):
+        return Omega_m_z(om, self.camb.redshift) ** 0.55
+
+    @lru_cache(maxsize=32)
+    def get_pt_data(self, om):
+        return self.PT.get_data(om=om)
+
+    @lru_cache(maxsize=8192)
+    def get_damping_dd(self, growth, om):
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_dd"] / 2.0)
+
+    @lru_cache(maxsize=32)
+    def get_damping_ss(self, om):
+        return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pt_data(om)["sigma_ss"] / 2.0)
+
+    @lru_cache(maxsize=8192)
+    def get_damping(self, growth, om):
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma"] / 2.0)
 
     def set_data(self, data):
         super().set_data(data)
-        self.omega_m = self.get_default("om")
-        if not self.fit_omega_m:
-            self.pt_data = self.PT.get_data(om=self.omega_m)
-            if not self.fit_growth:
-                self.growth = self.omega_m ** 0.55
-                if self.recon:
-                    self.damping_dd = np.exp(
-                        -np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_dd"] / 2.0
-                    )
-                    self.damping_ss = np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.pt_data["sigma_ss"] / 2.0)
-                else:
-                    self.damping = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma"] / 2.0)
-
         # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
         if self.recon:
             self.smoothing_kernel = np.exp(-self.camb.ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0)
@@ -73,42 +81,36 @@ class PowerSeo2016(PowerSpectrumFit):
         # Get the basic power spectrum components
         ks = self.camb.ks
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
-        if self.fit_omega_m:
-            pt_data = self.PT.get_data(om=p["om"])
-        else:
-            pt_data = self.pt_data
 
         # Compute the growth rate depending on what we have left as free parameters
         if self.fit_growth:
             growth = p["f"]
         else:
-            if self.fit_omega_m:
-                growth = p["om"] ** 0.55
-            else:
-                growth = self.growth
+            growth = self.get_growth(p["om"])
+
+        # Lets round some things for the sake of numerical speed
+        om = np.round(p["om"], decimals=5)
+        growth = np.round(growth, decimals=5)
 
         # Compute the BAO damping
         if self.recon:
-            if self.fit_growth or self.fit_omega_m:
-                damping_dd = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * pt_data["sigma_dd"] / 2.0)
-                damping_ss = np.exp(-np.tile(ks ** 2, (self.nmu, 1)) * pt_data["sigma_ss"] / 2.0)
-            else:
-                damping_dd, damping_ss = self.damping_dd, self.damping_ss
+            damping_dd = self.get_damping_dd(growth, om)
+            damping_ss = self.get_damping_ss(om)
         else:
-            if self.fit_growth or self.fit_omega_m:
-                damping = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * pt_data["sigma"] / 2.0)
-            else:
-                damping = self.damping
+            damping = self.get_damping(growth, om)
 
         # Compute the propagator
         if self.recon:
-            kaiser = 1.0 + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.smoothing_kernel)
             smooth_prefac = np.tile(self.smoothing_kernel / p["b"], (self.nmu, 1))
-            propagator = (kaiser * damping_dd + smooth_prefac * (damping_ss - damping_dd)) ** 2
+            kaiser_prefac = 1.0 + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.smoothing_kernel)
+            propagator = (kaiser_prefac * damping_dd + smooth_prefac * (damping_ss - damping_dd)) ** 2
         else:
-            prefac_k = 1.0 + np.tile(3.0 / 7.0 * (pt_data["R1"] * (1.0 - 4.0 / (9.0 * p["b"])) + pt_data["R2"]), (self.nmu, 1))
+            prefac_k = 1.0 + np.tile(3.0 / 7.0 * (self.get_pt_data(om)["R1"] * (1.0 - 4.0 / (9.0 * p["b"])) + self.get_pt_data(om)["R2"]), (self.nmu, 1))
             prefac_mu = np.outer(
-                self.mu ** 2, growth / p["b"] + 3.0 / 7.0 * growth * pt_data["R1"] * (2.0 - 1.0 / (3.0 * p["b"])) + 6.0 / 7.0 * growth * pt_data["R2"]
+                self.mu ** 2,
+                growth / p["b"]
+                + 3.0 / 7.0 * growth * self.get_pt_data(om)["R1"] * (2.0 - 1.0 / (3.0 * p["b"]))
+                + 6.0 / 7.0 * growth * self.get_pt_data(om)["R2"],
             )
             propagator = ((prefac_k + prefac_mu) * damping) ** 2
 
@@ -124,9 +126,9 @@ class PowerSeo2016(PowerSpectrumFit):
 
         # Integrate over mu
         if smooth:
-            pk1d = simps((pk_smooth + shape) * (1.0 + 0.0 * pk_ratio * propagator), self.mu, axis=0)
+            pk1d = integrate.simps((pk_smooth + shape) * (1.0 + 0.0 * pk_ratio * propagator), self.mu, axis=0)
         else:
-            pk1d = simps((pk_smooth + shape) * (1.0 + pk_ratio * propagator), self.mu, axis=0)
+            pk1d = integrate.simps((pk_smooth + shape) * (1.0 + pk_ratio * propagator), self.mu, axis=0)
 
         pk_final = splev(k / p["alpha"], splrep(ks, pk1d))
 
@@ -134,68 +136,47 @@ class PowerSeo2016(PowerSpectrumFit):
 
 
 if __name__ == "__main__":
+
     import sys
+    import timeit
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z061_NGC
 
     sys.path.append("../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
-    model_pre = PowerSeo2016(recon=False)
-    model_post = PowerSeo2016(recon=True)
 
-    from barry.datasets.mock_power import MockPowerSpectrum
-
-    dataset = MockPowerSpectrum(step_size=2)
+    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=False)
     data = dataset.get_data()
+    model_pre = PowerSeo2016(recon=False)
     model_pre.set_data(data)
+
+    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=True)
+    data = dataset.get_data()
+    model_post = PowerSeo2016(recon=True)
     model_post.set_data(data)
+
     p = {"om": 0.3, "alpha": 1.0, "sigma_s": 10.0, "b": 1.6, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
-    p, minv = model_post.optimize(niter=1, maxiter=100, close_default=100)
-    print(p)
-    print(minv)
-    model_post.plot(p)
 
-    if False:
-        import timeit
+    n = 200
 
-        n = 500
+    def test_pre():
+        model_pre.get_likelihood(p, data[0])
 
-        def test():
-            model_post.get_likelihood(p)
+    def test_post():
+        model_post.get_likelihood(p, data[0])
 
-        print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
+    print("Pre-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_pre, number=n) * 1000 / n))
+    print("Post-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_post, number=n) * 1000 / n))
 
-    if False:
-        ks = data["ks"]
-        pk = data["pk"]
-        pk2 = model_pre.get_model(data, p)
-        model_pre.smooth_type = "eh1998"
-        pk3 = model_pre.get_model(data, p)
-        import matplotlib.pyplot as plt
+    if True:
+        p, minv = model_pre.optimize()
+        print("Pre reconstruction optimisation:")
+        print(p)
+        print(minv)
+        model_pre.plot(p)
 
-        plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c="k", label="Data")
-        plt.plot(ks, pk2, ".", c="r", label="hinton2017")
-        plt.plot(ks, pk3, "+", c="b", label="eh1998")
-        plt.xlabel("k")
-        plt.ylabel("P(k)")
-        plt.xscale("log")
-        plt.yscale("log")
-        plt.legend()
-        plt.show()
-
-        model_pre.smooth_type = "hinton2017"
-        pk_smooth_lin, _ = model_pre.compute_basic_power_spectrum(p["om"])
-        pk_smooth_interp = splev(data["ks_input"], splrep(model_pre.camb.ks, pk_smooth_lin))
-        pk_smooth_lin_windowed, mask = model_pre.adjust_model_window_effects(pk_smooth_interp)
-        pk2 = model_pre.get_model(data, p)
-        pk3 = model_post.get_model(data, p)
-        import matplotlib.pyplot as plt
-
-        plt.plot(ks, pk2 / pk_smooth_lin_windowed[mask], ".", c="r", label="pre-recon")
-        plt.plot(ks, pk3 / pk_smooth_lin_windowed[mask], "+", c="b", label="post-recon")
-        plt.xlabel("k")
-        plt.ylabel(r"$P(k)/P_{sm}(k)$")
-        plt.xscale("log")
-        plt.yscale("log")
-        plt.ylim(0.4, 3.0)
-        plt.legend()
-        plt.show()
+        print("Post reconstruction optimisation:")
+        p, minv = model_post.optimize()
+        print(p)
+        print(minv)
+        model_post.plot(p)

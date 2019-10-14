@@ -15,7 +15,7 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name, save_dims=2, remove_output=False)
 
     c = getCambGenerator()
-    r_s, _ = c.get_data()
+    r_s = c.get_data()[0]
 
     sampler = DynestySampler(temp_dir=dir_name, nlive=400)
 

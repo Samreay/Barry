@@ -5,6 +5,7 @@ import numpy as np
 from scipy.interpolate import splev, splrep
 from scipy import integrate
 from barry.models.bao_power import PowerSpectrumFit
+from barry.cosmology.camb_generator import Omega_m_z
 
 
 class PowerDing2018(PowerSpectrumFit):
@@ -24,6 +25,10 @@ class PowerDing2018(PowerSpectrumFit):
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
         self.smoothing_kernel = None
+
+    @lru_cache(maxsize=32)
+    def get_growth(self, om):
+        return Omega_m_z(om, self.camb.redshift) ** 0.55
 
     @lru_cache(maxsize=32)
     def get_pt_data(self, om):
@@ -86,7 +91,7 @@ class PowerDing2018(PowerSpectrumFit):
         if self.fit_growth:
             growth = p["f"]
         else:
-            growth = p["om"] ** 0.55
+            growth = self.get_growth(p["om"])
 
         # Lets round some things for the sake of numerical speed
         om = np.round(p["om"], decimals=5)
@@ -116,6 +121,7 @@ class PowerDing2018(PowerSpectrumFit):
         # Compute the smooth model
         fog = 1.0 / (1.0 + np.outer(self.mu ** 2, ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
         pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
+
         # Polynomial shape
         if self.recon:
             shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
@@ -134,63 +140,47 @@ class PowerDing2018(PowerSpectrumFit):
 
 
 if __name__ == "__main__":
+
     import sys
+    import timeit
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z061_NGC
 
     sys.path.append("../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
-    model_pre = PowerDing2018(recon=False)
-    model_post = PowerDing2018(recon=True)
 
-    from barry.datasets.mock_power import PowerSpectrum_SDSS_DR12_Z061_NGC
-
-    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC()
+    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=False)
     data = dataset.get_data()
+    model_pre = PowerDing2018(recon=False)
     model_pre.set_data(data)
-    model_post.set_data(data)
-    p = {"om": 0.3, "alpha": 1.0, "sigma_s": 10.0, "b": 1.6, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
 
-    import timeit
+    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=True)
+    data = dataset.get_data()
+    model_post = PowerDing2018(recon=True)
+    model_post.set_data(data)
+
+    p = {"om": 0.3, "alpha": 1.0, "sigma_s": 10.0, "b": 1.6, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
 
     n = 200
 
-    def test():
+    def test_pre():
+        model_pre.get_likelihood(p, data[0])
+
+    def test_post():
         model_post.get_likelihood(p, data[0])
 
-    print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
+    print("Pre-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_pre, number=n) * 1000 / n))
+    print("Post-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_post, number=n) * 1000 / n))
 
     if True:
-        ks = data[0]["ks"]
-        pk = data[0]["pk"]
-        pk2 = model_pre.get_model(p, data[0])
-        model_pre.smooth_type = "eh1998"
-        pk3 = model_pre.get_model(p, data[0])
-        import matplotlib.pyplot as plt
+        p, minv = model_pre.optimize()
+        print("Pre reconstruction optimisation:")
+        print(p)
+        print(minv)
+        model_pre.plot(p)
 
-        plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data[0]["cov"])), fmt="o", c="k", label="Data")
-        plt.plot(ks, pk2, ".", c="r", label="hinton2017")
-        plt.plot(ks, pk3, "+", c="b", label="eh1998")
-        plt.xlabel("k")
-        plt.ylabel("P(k)")
-        plt.xscale("log")
-        plt.yscale("log")
-        plt.legend()
-        plt.show()
-
-        model_pre.smooth_type = "hinton2017"
-        pk_smooth_lin, _ = model_pre.compute_basic_power_spectrum(p["om"])
-        pk_smooth_interp = splev(data[0]["ks_input"], splrep(model_pre.camb.ks, pk_smooth_lin))
-        pk_smooth_lin_windowed, mask = model_pre.adjust_model_window_effects(pk_smooth_interp, data[0])
-        pk2 = model_pre.get_model(p, data[0])
-        pk3 = model_post.get_model(p, data[0])
-        import matplotlib.pyplot as plt
-
-        plt.plot(ks, pk2 / pk_smooth_lin_windowed[mask], ".", c="r", label="pre-recon")
-        plt.plot(ks, pk3 / pk_smooth_lin_windowed[mask], "+", c="b", label="post-recon")
-        plt.xlabel("k")
-        plt.ylabel(r"$P(k)/P_{sm}(k)$")
-        plt.xscale("log")
-        plt.yscale("log")
-        plt.ylim(0.4, 3.0)
-        plt.legend()
-        plt.show()
+        print("Post reconstruction optimisation:")
+        p, minv = model_post.optimize()
+        print(p)
+        print(minv)
+        model_post.plot(p)

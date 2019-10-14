@@ -53,7 +53,6 @@ class MetropolisHastings(Sampler):
         accept_ratio=0.234,
         callback=None,
         plot_covariance=False,
-        num_start=100,
     ):
         self.temp_dir = temp_dir
         if temp_dir is not None and not os.path.exists(temp_dir):
@@ -64,7 +63,6 @@ class MetropolisHastings(Sampler):
         self.save_dims = None
         self.callback = callback
         self.do_plot_covariance = plot_covariance
-        self.num_start = num_start
 
         self.num_burn = num_burn
         self.num_steps = num_steps
@@ -218,14 +216,8 @@ class MetropolisHastings(Sampler):
                 final_pos = self.start
                 v = self.log_posterior(*final_pos)
             else:
-                log_p = -np.inf
-                for i in range(self.num_start):
-                    position = self.start()
-                    v = self.log_posterior(*position)
-                    self.logger.debug("Log posterior is %s at position %s" % (v, position))
-                    if v > log_p:
-                        log_p = v
-                        final_pos = position
+                final_pos = list(self.start(num_walkers=1).flatten())
+                v = self.log_posterior(final_pos)
             position = np.concatenate(([v, 0.1, 1], final_pos))
         return position
 
@@ -273,7 +265,7 @@ class MetropolisHastings(Sampler):
         past_pot = position[self.IND_P]
         while True:
             pot = self._propose_point(position, covariance)
-            posterior = self.log_posterior(*pot)
+            posterior = self.log_posterior(pot)
             if posterior > past_pot or np.exp(posterior - past_pot) > np.random.uniform():
                 result = np.concatenate(([posterior, position[self.IND_S], 1], pot))
                 return result, attempts

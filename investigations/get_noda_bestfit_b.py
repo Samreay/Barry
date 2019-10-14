@@ -9,7 +9,7 @@ if __name__ == "__main__":
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
     c = getCambGenerator()
-    r_s, _ = c.get_data()
+    r_s = c.get_data()[0]
 
     postprocess = BAOExtractor(r_s, mink=0.15)
 

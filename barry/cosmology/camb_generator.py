@@ -7,12 +7,39 @@ import logging
 
 
 # TODO: Add options for mnu, h0 default, omega_b, etc
-# TODO: Calculate/Tabulate r_s alongside power spectra for different omega_m and hubble. We need this for eh98 smoothing of powerspectra
 
 
 @lru_cache(maxsize=32)
 def getCambGenerator(redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97):
     return CambGenerator(redshift=redshift, om_resolution=om_resolution, h0_resolution=h0_resolution, h0=h0, ob=ob, ns=ns)
+
+
+def Omega_m_z(omega_m, z):
+    """
+    Computes the matter density at redshift based on the present day value.
+
+    Assumes Flat LCDM cosmology, which is fine given this is also assumed in CambGenerator. Possible improvement
+    could be to tabulate this using the CambGenerator so that it would be self consistent for non-LCDM cosmologies.
+
+    :param omega_m: the matter density at the present day
+    :param z: the redshift we want the matter density at
+    :return: the matter density at redshift z
+    """
+    return omega_m * (1.0 + z) ** 3 / E_z(omega_m, z) ** 2
+
+
+def E_z(omega_m, z):
+    """
+    Compute the E-function; the ratio of the Hubble parameter at redshift z to the Hubble-Lemaitre constant.
+
+    Assumes Flat LCDM cosmology, which is fine given this is also assumed in CambGenerator. Would not be necessary if
+    we tabulated Omega_m_z using the CambGenerator.
+
+    :param omega_m: the matter density at the present day
+    :param z: the redshift we want the E-function at
+    :return: The E-function at redshift z given the matter density
+    """
+    return np.sqrt((1.0 + z) ** 3 * omega_m + (1.0 - omega_m))
 
 
 class CambGenerator(object):
@@ -67,14 +94,14 @@ class CambGenerator(object):
 
     @lru_cache(maxsize=512)
     def get_data(self, om=0.31, h0=None):
-        """ Returns the sound horizon the linear power spectrum"""
+        """ Returns the sound horizon, the linear power spectrum, and the halofit power spectrum at self.redshift"""
         if h0 is None:
             h0 = self.h0
         if self.data is None:
             self.load_data()
         omch2 = (om - self.omega_b) * h0 * h0
         data = self._interpolate(omch2, h0)
-        return data[0], data[1:]
+        return data[0], data[1 : 1 + self.k_num], data[1 + 2 * self.k_num :]
 
     def _generate_data(self):
         self.logger.info(f"Generating CAMB data with {self.om_resolution} x {self.h0_resolution}")
@@ -84,10 +111,10 @@ class CambGenerator(object):
         pars = camb.CAMBparams()
         pars.set_dark_energy(w=-1.0, dark_energy_model="fluid")
         pars.InitPower.set_params(As=2.130e-9, ns=self.ns)
-        pars.set_matter_power(redshifts=[self.redshift], kmax=self.k_max)
+        pars.set_matter_power(redshifts=[self.redshift, 0.0001], kmax=self.k_max)
         self.logger.info("Configured CAMB power and dark energy")
 
-        data = np.zeros((self.om_resolution, self.h0_resolution, 1 + self.k_num))
+        data = np.zeros((self.om_resolution, self.h0_resolution, 1 + 3 * self.k_num))
         for i, omch2 in enumerate(self.omch2s):
             for j, h0 in enumerate(self.h0s):
                 self.logger.debug("Generating %d:%d  %0.3f  %0.3f" % (i, j, omch2, h0))
@@ -106,8 +133,12 @@ class CambGenerator(object):
                 params = results.get_derived_params()
                 rdrag = params["rdrag"]
                 kh, z, pk_lin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
+                pars.NonLinear = camb.model.NonLinear_pk
+                results.calc_power_spectra(pars)
+                kh, z, pk_nonlin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
                 data[i, j, 0] = rdrag
-                data[i, j, 1:] = pk_lin
+                data[i, j, 1 : 1 + self.k_num] = pk_lin[1, :]
+                data[i, j, 1 + self.k_num :] = pk_nonlin.flatten()
         self.logger.info(f"Saving to {self.filename}")
         np.save(self.filename, data)
         return data
@@ -158,6 +189,10 @@ def test_rand():
 
 
 if __name__ == "__main__":
+
+    import timeit
+    import matplotlib.pyplot as plt
+
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
@@ -165,17 +200,15 @@ if __name__ == "__main__":
 
     generator = CambGenerator(om_resolution=101, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"])
     generator.load_data(can_generate=True)
-    # generator = CambGenerator()
-    # generator = CambGenerator(om_resolution=50, h0_resolution=1)
-    # generator = CambGenerator(om_resolution=10, h0_resolution=10)
-    # generator = CambGenerator(om_resolution=50, h0_resolution=50)
-    #
-    # import timeit
-    # n = 10000
-    # print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
-    # import matplotlib.pyplot as plt
-    # plt.plot(generator.ks, generator.get_data(0.3)[1])
-    # plt.plot(generator.ks, generator.get_data(0.2)[1])
-    # plt.xscale("log")
-    # plt.yscale("log")
-    # plt.show()
+
+    n = 10000
+    print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
+
+    plt.plot(generator.ks, generator.get_data(0.2)[1], color="b", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.2$")
+    plt.plot(generator.ks, generator.get_data(0.3)[1], color="r", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.3$")
+    plt.plot(generator.ks, generator.get_data(0.2)[2], color="b", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
+    plt.plot(generator.ks, generator.get_data(0.3)[2], color="r", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.legend()
+    plt.show()

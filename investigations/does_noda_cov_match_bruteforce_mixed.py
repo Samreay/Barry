@@ -55,7 +55,7 @@ if __name__ == "__main__":
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
     camb = getCambGenerator()
-    r_s, _ = camb.get_data()
+    r_s = c.get_data()[0]
     extractor = BAOExtractor(r_s, reorder=False)
     extractor2 = PureBAOExtractor(r_s)
 
