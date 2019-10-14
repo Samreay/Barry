@@ -1,41 +1,56 @@
 import logging
+from functools import lru_cache
+
 import numpy as np
 from scipy import integrate
 from barry.models.bao_correlation import CorrelationFunctionFit
+from barry.cosmology.camb_generator import Omega_m_z
 
 
 class CorrDing2018(CorrelationFunctionFit):
-    """ xi(s) model inspired from Ding 2018. """
+    """ xi(s) model inspired from Ding 2018.
+
+    See https://ui.adsabs.harvard.edu/abs/2018MNRAS.479.1021D for details.
+
+    """
 
     def __init__(self, name="Corr Ding 2018", recon=False, smooth_type="hinton2017", fix_params=("om", "f"), smooth=False, correction=None):
         self.recon = recon
         self.recon_smoothing_scale = None
-        super().__init__(name, smooth_type, fix_params, smooth, correction=correction)
-
-        self.nmu = 100
-        self.mu = np.linspace(0.0, 1.0, self.nmu)
+        super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, smooth=smooth, correction=correction)
 
         self.fit_omega_m = fix_params is None or "om" not in fix_params
         self.fit_growth = fix_params is None or "f" not in fix_params
-
-        self.omega_m, self.pt_data, self.damping_dd, self.damping_sd = None, None, None, None
-        self.damping_ss, self.damping, self.growth = None, None, None
+        self.nmu = 100
+        self.mu = np.linspace(0.0, 1.0, self.nmu)
         self.smoothing_kernel = None
+
+    @lru_cache(maxsize=32)
+    def get_growth(self, om):
+        return Omega_m_z(om, self.camb.redshift) ** 0.55
+
+    @lru_cache(maxsize=32)
+    def get_pt_data(self, om):
+        return self.PT.get_data(om=om)
+
+    @lru_cache(maxsize=8192)
+    def get_damping_dd(self, growth, om):
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_dd_nl"])
+
+    @lru_cache(maxsize=8192)
+    def get_damping_sd(self, growth, om):
+        return np.exp(-np.outer(1.0 + growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_dd_nl"])
+
+    @lru_cache(maxsize=32)
+    def get_damping_ss(self, om):
+        return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pt_data(om)["sigma_ss_nl"])
+
+    @lru_cache(maxsize=8192)
+    def get_damping(self, growth, om):
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_nl"])
 
     def set_data(self, data):
         super().set_data(data)
-        self.omega_m = self.get_default("om")
-        if not self.fit_omega_m:
-            self.pt_data = self.PT.get_data(om=self.omega_m)
-            if not self.fit_growth:
-                self.growth = self.omega_m ** 0.55
-                if self.recon:
-                    self.damping_dd = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_dd_nl"])
-                    self.damping_sd = np.exp(-np.outer(1.0 + self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_dd_nl"])
-                    self.damping_ss = np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.pt_data["sigma_ss_nl"])
-                else:
-                    self.damping = np.exp(-np.outer(1.0 + (2.0 + self.growth) * self.growth * self.mu ** 2, self.camb.ks ** 2) * self.pt_data["sigma_nl"])
-
         # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
         if self.recon:
             self.smoothing_kernel = np.exp(-self.camb.ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0)
@@ -51,35 +66,43 @@ class CorrDing2018(CorrelationFunctionFit):
         self.add_param("a3", r"$a_3$", -0.2, 0.2, 0)  # Polynomial marginalisation 3
 
     def compute_correlation_function(self, d, p, smooth=False):
+        """ Computes the correlation function model at d*alpha using the Ding et. al., 2018 EFT0 model
+
+        Parameters
+        ----------
+        d : np.ndarray
+            Array of separations to compute
+        p : dict
+            dictionary of parameter names to their values
+
+        Returns
+        -------
+        array
+            xi_final - The correlation function at the dilated d-values
+
+        """
+
+        # Get the basic power spectrum components
         ks = self.camb.ks
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
-        if self.fit_omega_m:
-            pt_data = self.PT.get_data(om=p["om"])
-        else:
-            pt_data = self.pt_data
 
         # Compute the growth rate depending on what we have left as free parameters
         if self.fit_growth:
             growth = p["f"]
         else:
-            if self.fit_omega_m:
-                growth = p["om"] ** 0.55
-            else:
-                growth = self.growth
+            growth = self.get_growth(p["om"])
+
+        # Lets round some things for the sake of numerical speed
+        om = np.round(p["om"], decimals=5)
+        growth = np.round(growth, decimals=5)
 
         # Compute the BAO damping
         if self.recon:
-            if self.fit_growth or self.fit_omega_m:
-                damping_dd = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * pt_data["sigma_dd_nl"])
-                damping_sd = np.exp(-np.outer(1.0 + growth * self.mu ** 2, ks ** 2) * pt_data["sigma_dd_nl"])
-                damping_ss = np.exp(-np.tile(ks ** 2, (self.nmu, 1)) * pt_data["sigma_ss_nl"])
-            else:
-                damping_dd, damping_sd, damping_ss = self.damping_dd, self.damping_sd, self.damping_ss
+            damping_dd = self.get_damping_dd(growth, om)
+            damping_sd = self.get_damping_sd(growth, om)
+            damping_ss = self.get_damping_ss(om)
         else:
-            if self.fit_growth or self.fit_omega_m:
-                damping = np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, ks ** 2) * pt_data["sigma_nl"])
-            else:
-                damping = self.damping
+            damping = self.get_damping(growth, om)
 
         # Compute the propagator
         if self.recon:
@@ -100,7 +123,7 @@ class CorrDing2018(CorrelationFunctionFit):
 
         # Integrate over mu
         if smooth:
-            pk1d = integrate.simps(pk_smooth, self.mu, axis=0)
+            pk1d = integrate.simps(pk_smooth * (1.0 + 0.0 * pk_ratio * propagator), self.mu, axis=0)
         else:
             pk1d = integrate.simps(pk_smooth * (1.0 + pk_ratio * propagator), self.mu, axis=0)
 
@@ -117,37 +140,81 @@ class CorrDing2018(CorrelationFunctionFit):
 
 if __name__ == "__main__":
     import sys
+    import timeit
+    from barry.datasets.dataset_correlation_function import CorrelationFunction_SDSS_DR12_Z061_NGC
 
     sys.path.append("../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
-    bao = CorrDing2018()
-
-    from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
-
-    dataset = CorrelationFunction_SDSS_DR12_Z061_NGC()
+    dataset = CorrelationFunction_SDSS_DR12_Z061_NGC(recon=False)
     data = dataset.get_data()
-    bao.set_data(data)
+    model_pre = CorrDing2018(recon=False)
+    model_pre.set_data(data)
 
-    import timeit
+    dataset = CorrelationFunction_SDSS_DR12_Z061_NGC(recon=True)
+    data = dataset.get_data()
+    model_post = CorrDing2018(recon=True)
+    model_post.set_data(data)
+
+    p = {"om": 0.3, "alpha": 1.0, "sigma_s": 10.0, "b": 1.6, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
 
     n = 200
-    p = {"om": 0.31, "alpha": 1.0, "f": 1.0, "sigma_s": 5.0, "b_delta": 5.0, "b": 1.0, "a1": 0, "a2": 0, "a3": 0}
 
-    def test():
-        bao.get_likelihood(p, data[0])
+    def test_pre():
+        model_pre.get_likelihood(p, data[0])
 
-    print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
+    def test_post():
+        model_post.get_likelihood(p, data[0])
 
-    if False:
-        ss = data["dist"]
-        xi0 = data["xi0"]
-        xi = bao.compute_correlation_function(ss, p)
-        print(xi0)
-        print(xi)
-        import matplotlib.pyplot as plt
+    print("Pre-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_pre, number=n) * 1000 / n))
+    print("Post-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_post, number=n) * 1000 / n))
 
-        plt.errorbar(ss, ss * ss * xi, yerr=ss * ss * np.sqrt(np.diag(data["cov"])), fmt="o", c="k")
-        plt.plot(ss, ss * ss * xi0, c="r")
-        plt.show()
+    if True:
+        p, minv = model_pre.optimize()
+        print("Pre reconstruction optimisation:")
+        print(p)
+        print(minv)
+        model_pre.plot(p)
+
+        print("Post reconstruction optimisation:")
+        p, minv = model_post.optimize()
+        print(p)
+        print(minv)
+        model_post.plot(p)
+
+    # import sys
+    #
+    # sys.path.append("../..")
+    # logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
+    # logging.getLogger("matplotlib").setLevel(logging.ERROR)
+    #
+    # bao = CorrDing2018()
+    #
+    # from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
+    #
+    # dataset = CorrelationFunction_SDSS_DR12_Z061_NGC()
+    # data = dataset.get_data()
+    # bao.set_data(data)
+    #
+    # import timeit
+    #
+    # n = 200
+    # p = {"om": 0.31, "alpha": 1.0, "f": 1.0, "sigma_s": 5.0, "b_delta": 5.0, "b": 1.0, "a1": 0, "a2": 0, "a3": 0}
+    #
+    # def test():
+    #     bao.get_likelihood(p, data[0])
+    #
+    # print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
+    #
+    # if False:
+    #     ss = data["dist"]
+    #     xi0 = data["xi0"]
+    #     xi = bao.compute_correlation_function(ss, p)
+    #     print(xi0)
+    #     print(xi)
+    #     import matplotlib.pyplot as plt
+    #
+    #     plt.errorbar(ss, ss * ss * xi, yerr=ss * ss * np.sqrt(np.diag(data["cov"])), fmt="o", c="k")
+    #     plt.plot(ss, ss * ss * xi0, c="r")
+    #     plt.show()
