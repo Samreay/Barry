@@ -15,7 +15,18 @@ class PowerNoda2019(PowerSpectrumFit):
 
     """
 
-    def __init__(self, name="Pk Noda 2019", fix_params=("om", "f", "gamma"), gammaval=None, smooth_type="hinton2017", nonlinear_type="spt", recon=False, postprocess=None, smooth=False, correction=None):
+    def __init__(
+        self,
+        name="Pk Noda 2019",
+        fix_params=("om", "f", "gamma"),
+        gammaval=None,
+        smooth_type="hinton2017",
+        nonlinear_type="spt",
+        recon=False,
+        postprocess=None,
+        smooth=False,
+        correction=None,
+    ):
         self.recon = recon
         self.recon_smoothing_scale = None
         if gammaval is None:
@@ -43,8 +54,7 @@ class PowerNoda2019(PowerSpectrumFit):
         if self.nonlinear_type in ["spt", "halofit"]:
             return True
         else:
-            logging.getLogger("barry").error(
-                f"Smoothing method is {self.nonlinear_type} and not in list {['spt', 'halofit']}")
+            logging.getLogger("barry").error(f"Smoothing method is {self.nonlinear_type} and not in list {['spt', 'halofit']}")
             return False
 
     @lru_cache(maxsize=32)
@@ -57,15 +67,26 @@ class PowerNoda2019(PowerSpectrumFit):
 
     @lru_cache(maxsize=8192)
     def get_damping(self, growth, om, gamma):
-        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth * self.mu ** 2) * self.get_pt_data(om)["sigma_dd_rs"] + (growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * self.get_pt_data(om)["sigma_ss_rs"], self.camb.ks ** 2)/gamma)
+        return np.exp(
+            -np.outer(
+                (1.0 + (2.0 + growth) * growth * self.mu ** 2) * self.get_pt_data(om)["sigma_dd_rs"]
+                + (growth * self.mu ** 2 * (self.mu ** 2 - 1.0)) * self.get_pt_data(om)["sigma_ss_rs"],
+                self.camb.ks ** 2,
+            )
+            / gamma
+        )
 
     @lru_cache(maxsize=512)
     def apply_gamma(self, damping, gamma):
-        return np.exp(damping/gamma)
+        return np.exp(damping / gamma)
 
     @lru_cache(maxsize=512)
     def get_nonlinear(self, growth, om):
-        return self.get_pt_data(om)["Pdd_"+self.nonlinear_type], np.outer(2.0 * growth * self.mu ** 2, self.get_pt_data(om)["Pdt_"+self.nonlinear_type]), np.outer((growth * self.mu ** 2) ** 2, self.get_pt_data(om)["Ptt_"+self.nonlinear_type])
+        return (
+            self.get_pt_data(om)["Pdd_" + self.nonlinear_type],
+            np.outer(2.0 * growth * self.mu ** 2, self.get_pt_data(om)["Pdt_" + self.nonlinear_type]),
+            np.outer((growth * self.mu ** 2) ** 2, self.get_pt_data(om)["Ptt_" + self.nonlinear_type]),
+        )
 
     def set_data(self, data):
         super().set_data(data)

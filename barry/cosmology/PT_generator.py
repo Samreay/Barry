@@ -8,6 +8,7 @@ import logging
 from scipy import integrate, special, interpolate
 import pickle
 import sys
+
 sys.path.append("../..")
 from barry.cosmology.camb_generator import getCambGenerator, Omega_m_z, E_z
 from barry.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
@@ -30,10 +31,11 @@ def Growth_factor_Linder(omega_m, z, gamma=0.55):
     :param gamma: the growth index. Default of 0.55 corresponding to LCDM.
     :return: the unnormalised growth factor at redshift z.
     """
-    avals = np.logspace(-4.0, np.log10(1.0/(1.0+z)), 10000)
-    f = Omega_m_z(omega_m, 1.0/avals - 1.0)**gamma
-    integ = integrate.simps((f-1.0)/avals, avals, axis=0)
-    return np.exp(integ)/(1.0+z)
+    avals = np.logspace(-4.0, np.log10(1.0 / (1.0 + z)), 10000)
+    f = Omega_m_z(omega_m, 1.0 / avals - 1.0) ** gamma
+    integ = integrate.simps((f - 1.0) / avals, avals, axis=0)
+    return np.exp(integ) / (1.0 + z)
+
 
 def Growth_factor_Heath(omega_m, z):
     """
@@ -47,9 +49,10 @@ def Growth_factor_Heath(omega_m, z):
     :param z: the redshift we want the matter density at
     :return: the unnormalised growth factor at redshift z.
     """
-    avals = np.logspace(-4.0, np.log10(1.0/(1.0+z)), 10000)
-    integ = integrate.simps(1.0/(avals*E_z(omega_m, 1.0/avals-1.0))**3, avals, axis=0)
-    return 5.0/2.0*omega_m*E_z(omega_m, z)*integ
+    avals = np.logspace(-4.0, np.log10(1.0 / (1.0 + z)), 10000)
+    integ = integrate.simps(1.0 / (avals * E_z(omega_m, 1.0 / avals - 1.0)) ** 3, avals, axis=0)
+    return 5.0 / 2.0 * omega_m * E_z(omega_m, z) * integ
+
 
 # TODO: Add options for mnu, h0 default, omega_b, etc
 # TODO: Expand to work for smoothing kernels other than Gaussian (perhaps the user can choose Gaussian, Tophat, CIC)
@@ -120,9 +123,21 @@ class PTGenerator(object):
         R2 = (1.0 - r ** 2) / (24.0 * r ** 2) * (3.0 - 2.0 * r ** 2 + 3.0 * r ** 4) + (r ** 2 - 1.0) ** 3 * (1.0 + r ** 2) / (16.0 * r ** 3) * np.log(
             np.fabs((1.0 + r) / (1.0 - r))
         )
-        J00 = 12.0 / r ** 2 - 158.0 + 100.0 * r ** 2 - 42.0 * r ** 4 + 3.0 * (r ** 2 - 1.0) ** 3 * (2.0 + 7.0 * r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
-        J01 = 24.0 / r ** 2 - 202.0 +  56.0 * r ** 2 - 30.0 * r ** 4 + 3.0 * (r ** 2 - 1.0) ** 3 * (4.0 + 5.0 * r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
-        J11 = 12.0 / r ** 2 -  82.0 +   4.0 * r ** 2 -  6.0 * r ** 4 + 3.0 * (r ** 2 - 1.0) ** 3 * (2.0 + r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
+        J00 = (
+            12.0 / r ** 2
+            - 158.0
+            + 100.0 * r ** 2
+            - 42.0 * r ** 4
+            + 3.0 * (r ** 2 - 1.0) ** 3 * (2.0 + 7.0 * r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
+        )
+        J01 = (
+            24.0 / r ** 2
+            - 202.0
+            + 56.0 * r ** 2
+            - 30.0 * r ** 4
+            + 3.0 * (r ** 2 - 1.0) ** 3 * (4.0 + 5.0 * r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
+        )
+        J11 = 12.0 / r ** 2 - 82.0 + 4.0 * r ** 2 - 6.0 * r ** 4 + 3.0 * (r ** 2 - 1.0) ** 3 * (2.0 + r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
 
         # We get NaNs in R1, R2 etc., when r = 1.0 (diagonals). We manually set these to the correct values.
         # We also get numerical issues for large/small r, so we set these manually to asymptotic limits
@@ -136,7 +151,7 @@ class PTGenerator(object):
         R2[index] = 4.0 / 15.0 * r[index] ** 2
         J00[index] = -168.0
         J01[index] = -168.0
-        J11[index] =  -56.0
+        J11[index] = -56.0
         index = np.where(r > 1.0e2)
         R1[index] = 16.0 / 15.0
         R2[index] = 4.0 / 15.0
@@ -160,9 +175,9 @@ class PTGenerator(object):
 
             # Get the CAMB power spectrum and spline it
             r_drag = self.CAMBGenerator.data[i, j, 0]
-            pk_lin = self.CAMBGenerator.data[i, j, 1:1+self.CAMBGenerator.k_num]
-            pk_nonlin_0 = self.CAMBGenerator.data[i, j, 1+self.CAMBGenerator.k_num:1+2*self.CAMBGenerator.k_num]
-            pk_nonlin_z = self.CAMBGenerator.data[i, j, 1+2*self.CAMBGenerator.k_num:]
+            pk_lin = self.CAMBGenerator.data[i, j, 1 : 1 + self.CAMBGenerator.k_num]
+            pk_nonlin_0 = self.CAMBGenerator.data[i, j, 1 + self.CAMBGenerator.k_num : 1 + 2 * self.CAMBGenerator.k_num]
+            pk_nonlin_z = self.CAMBGenerator.data[i, j, 1 + 2 * self.CAMBGenerator.k_num :]
 
             # Get the spherical bessel functions
             j0 = special.jn(0, r_drag * self.CAMBGenerator.ks)
@@ -220,16 +235,16 @@ class PTGenerator(object):
             # Add on k^2[J_00, J_01, J_11] to obtain P_sm,spt/P_sm,L - 1
             data["Pdd_spt"][i, j, :] += self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J00, self.CAMBGenerator.ks, axis=1) / (1008.0 * np.pi ** 2)
             data["Pdt_spt"][i, j, :] += self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J01, self.CAMBGenerator.ks, axis=1) / (1008.0 * np.pi ** 2)
-            data["Ptt_spt"][i, j, :] += self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J11, self.CAMBGenerator.ks, axis=1) / ( 336.0 * np.pi ** 2)
+            data["Ptt_spt"][i, j, :] += self.CAMBGenerator.ks ** 2 * integrate.simps(pk_smooth_lin * J11, self.CAMBGenerator.ks, axis=1) / (336.0 * np.pi ** 2)
 
             # Compute the non linear correction to the power spectra using the fitting formulae from Jennings2012
             growth_0, growth_z = Growth_factor_Linder(om, 1.0e-4), Growth_factor_Linder(om, self.CAMBGenerator.redshift)
-            cfactor = (growth_z+growth_z**2+growth_z**3)/(growth_0+growth_0**2+growth_0**3)
-            Pdt_0 = (-12483.8*np.sqrt(pk_smooth_nonlin_0) + 2.554*pk_smooth_nonlin_0**2)/(1381.29 + 2.540*pk_smooth_nonlin_0)
-            Ptt_0 = (-12480.5*np.sqrt(pk_smooth_nonlin_0) + 1.824*pk_smooth_nonlin_0**2)/(2165.87 + 1.796*pk_smooth_nonlin_0)
-            Pdt_z = cfactor**2*(Pdt_0 - pk_smooth_nonlin_0) + pk_smooth_nonlin_z
-            Ptt_z = cfactor**2*(Ptt_0 - pk_smooth_nonlin_0) + pk_smooth_nonlin_z
-            data["Pdd_halofit"][i, j, :] = pk_smooth_nonlin_z/pk_smooth_lin - 1.0
+            cfactor = (growth_z + growth_z ** 2 + growth_z ** 3) / (growth_0 + growth_0 ** 2 + growth_0 ** 3)
+            Pdt_0 = (-12483.8 * np.sqrt(pk_smooth_nonlin_0) + 2.554 * pk_smooth_nonlin_0 ** 2) / (1381.29 + 2.540 * pk_smooth_nonlin_0)
+            Ptt_0 = (-12480.5 * np.sqrt(pk_smooth_nonlin_0) + 1.824 * pk_smooth_nonlin_0 ** 2) / (2165.87 + 1.796 * pk_smooth_nonlin_0)
+            Pdt_z = cfactor ** 2 * (Pdt_0 - pk_smooth_nonlin_0) + pk_smooth_nonlin_z
+            Ptt_z = cfactor ** 2 * (Ptt_0 - pk_smooth_nonlin_0) + pk_smooth_nonlin_z
+            data["Pdd_halofit"][i, j, :] = pk_smooth_nonlin_z / pk_smooth_lin - 1.0
             data["Pdt_halofit"][i, j, :] = Pdt_z / pk_smooth_lin - 1.0
             data["Ptt_halofit"][i, j, :] = Ptt_z / pk_smooth_lin - 1.0
 
@@ -381,30 +396,30 @@ if __name__ == "__main__":
         pk_lin = generator.get_data(0.3)[1]
         pk_smooth_lin = smooth(generator.ks, pk_lin, method=pt_generator.smooth_type)
 
-        plt.plot(generator.ks, pt_generator.get_data(0.2)["Pdd_spt"], color='b', linestyle='-', label=r"$\mathrm{SPT}\,\Omega_{m}=0.2$")
-        plt.plot(generator.ks, pt_generator.get_data(0.3)["Pdd_spt"], color='r', linestyle='-', label=r"$\mathrm{SPT}\,\Omega_{m}=0.3$")
-        plt.plot(generator.ks, pt_generator.get_data(0.2)["Pdd_halofit"], color='b', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
-        plt.plot(generator.ks, pt_generator.get_data(0.3)["Pdd_halofit"], color='r', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
+        plt.plot(generator.ks, pt_generator.get_data(0.2)["Pdd_spt"], color="b", linestyle="-", label=r"$\mathrm{SPT}\,\Omega_{m}=0.2$")
+        plt.plot(generator.ks, pt_generator.get_data(0.3)["Pdd_spt"], color="r", linestyle="-", label=r"$\mathrm{SPT}\,\Omega_{m}=0.3$")
+        plt.plot(generator.ks, pt_generator.get_data(0.2)["Pdd_halofit"], color="b", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
+        plt.plot(generator.ks, pt_generator.get_data(0.3)["Pdd_halofit"], color="r", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
         plt.ylabel(r"$P_{\delta \delta}/P_{L} - 1$")
         plt.xlim(0.0, 0.3)
         plt.ylim(-1.0, 1.0)
         plt.legend()
         plt.show()
 
-        plt.plot(generator.ks, pt_generator.get_data(0.2)["Pdt_spt"], color='b', linestyle='-', label=r"$\mathrm{SPT}\,\Omega_{m}=0.2$")
-        plt.plot(generator.ks, pt_generator.get_data(0.3)["Pdt_spt"], color='r', linestyle='-', label=r"$\mathrm{SPT}\,\Omega_{m}=0.3$")
-        plt.plot(generator.ks, pt_generator.get_data(0.2)["Pdt_halofit"], color='b', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
-        plt.plot(generator.ks, pt_generator.get_data(0.3)["Pdt_halofit"], color='r', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
+        plt.plot(generator.ks, pt_generator.get_data(0.2)["Pdt_spt"], color="b", linestyle="-", label=r"$\mathrm{SPT}\,\Omega_{m}=0.2$")
+        plt.plot(generator.ks, pt_generator.get_data(0.3)["Pdt_spt"], color="r", linestyle="-", label=r"$\mathrm{SPT}\,\Omega_{m}=0.3$")
+        plt.plot(generator.ks, pt_generator.get_data(0.2)["Pdt_halofit"], color="b", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
+        plt.plot(generator.ks, pt_generator.get_data(0.3)["Pdt_halofit"], color="r", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
         plt.ylabel(r"$P_{\delta \theta}/P_{L} - 1$")
         plt.xlim(0.0, 0.3)
         plt.ylim(-1.0, 1.0)
         plt.legend()
         plt.show()
 
-        plt.plot(generator.ks, pt_generator.get_data(0.2)["Ptt_spt"], color='b', linestyle='-', label=r"$\mathrm{SPT}\,\Omega_{m}=0.2$")
-        plt.plot(generator.ks, pt_generator.get_data(0.3)["Ptt_spt"], color='r', linestyle='-', label=r"$\mathrm{SPT}\,\Omega_{m}=0.3$")
-        plt.plot(generator.ks, pt_generator.get_data(0.2)["Ptt_halofit"], color='b', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
-        plt.plot(generator.ks, pt_generator.get_data(0.3)["Ptt_halofit"], color='r', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
+        plt.plot(generator.ks, pt_generator.get_data(0.2)["Ptt_spt"], color="b", linestyle="-", label=r"$\mathrm{SPT}\,\Omega_{m}=0.2$")
+        plt.plot(generator.ks, pt_generator.get_data(0.3)["Ptt_spt"], color="r", linestyle="-", label=r"$\mathrm{SPT}\,\Omega_{m}=0.3$")
+        plt.plot(generator.ks, pt_generator.get_data(0.2)["Ptt_halofit"], color="b", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
+        plt.plot(generator.ks, pt_generator.get_data(0.3)["Ptt_halofit"], color="r", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
         plt.ylabel(r"$P_{\theta \theta}/P_{L} - 1$")
         plt.xlim(0.0, 0.3)
         plt.ylim(-1.0, 1.0)

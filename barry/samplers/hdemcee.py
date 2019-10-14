@@ -59,15 +59,15 @@ class EmceeWrapper(object):
         else:
             self.logger.debug("Starting sampling. Saving to %s ever %d seconds" % (temp_dir, save_interval))
 
-        for result in self.sampler.sample(pos, iterations=num, store=False):
-            self.chain[:, step, :] = result[0][:, :save_dim]
-            self.posterior[:, step] = result[1]
+        for state in self.sampler.sample(pos, iterations=num, store=False):
+            self.chain[:, step, :] = state.coords[:, :save_dim]
+            self.posterior[:, step] = state.log_prob
             step += 1
             if step == 1 or temp_dir is not None and save_interval is not None:
                 t2 = time()
                 if temp_dir is not None and (step == 1 or t2 - t > save_interval or step == num_steps):
                     t = t2
-                    position = result[0]
+                    position = state.coords
                     np.save(position_file, position)
                     np.save(chain_file, self.chain[:, :step, :].astype(np.float32))
                     np.save(posterior_file, self.posterior[:, :step].astype(np.float32))

@@ -8,6 +8,7 @@ import logging
 
 # TODO: Add options for mnu, h0 default, omega_b, etc
 
+
 @lru_cache(maxsize=32)
 def getCambGenerator(redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97):
     return CambGenerator(redshift=redshift, om_resolution=om_resolution, h0_resolution=h0_resolution, h0=h0, ob=ob, ns=ns)
@@ -24,7 +25,7 @@ def Omega_m_z(omega_m, z):
     :param z: the redshift we want the matter density at
     :return: the matter density at redshift z
     """
-    return omega_m*(1.0+z)**3/E_z(omega_m, z)**2
+    return omega_m * (1.0 + z) ** 3 / E_z(omega_m, z) ** 2
 
 
 def E_z(omega_m, z):
@@ -38,7 +39,7 @@ def E_z(omega_m, z):
     :param z: the redshift we want the E-function at
     :return: The E-function at redshift z given the matter density
     """
-    return np.sqrt((1.0+z)**3*omega_m + (1.0-omega_m))
+    return np.sqrt((1.0 + z) ** 3 * omega_m + (1.0 - omega_m))
 
 
 class CambGenerator(object):
@@ -100,7 +101,7 @@ class CambGenerator(object):
             self.load_data()
         omch2 = (om - self.omega_b) * h0 * h0
         data = self._interpolate(omch2, h0)
-        return data[0], data[1:1+self.k_num], data[1+2*self.k_num:]
+        return data[0], data[1 : 1 + self.k_num], data[1 + 2 * self.k_num :]
 
     def _generate_data(self):
         self.logger.info(f"Generating CAMB data with {self.om_resolution} x {self.h0_resolution}")
@@ -113,7 +114,7 @@ class CambGenerator(object):
         pars.set_matter_power(redshifts=[self.redshift, 0.0001], kmax=self.k_max)
         self.logger.info("Configured CAMB power and dark energy")
 
-        data = np.zeros((self.om_resolution, self.h0_resolution, 1 + 3*self.k_num))
+        data = np.zeros((self.om_resolution, self.h0_resolution, 1 + 3 * self.k_num))
         for i, omch2 in enumerate(self.omch2s):
             for j, h0 in enumerate(self.h0s):
                 self.logger.debug("Generating %d:%d  %0.3f  %0.3f" % (i, j, omch2, h0))
@@ -136,8 +137,8 @@ class CambGenerator(object):
                 results.calc_power_spectra(pars)
                 kh, z, pk_nonlin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
                 data[i, j, 0] = rdrag
-                data[i, j, 1:1+self.k_num] = pk_lin[1, :]
-                data[i, j, 1+self.k_num:] = pk_nonlin.flatten()
+                data[i, j, 1 : 1 + self.k_num] = pk_lin[1, :]
+                data[i, j, 1 + self.k_num :] = pk_nonlin.flatten()
         self.logger.info(f"Saving to {self.filename}")
         np.save(self.filename, data)
         return data
@@ -203,10 +204,10 @@ if __name__ == "__main__":
     n = 10000
     print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
 
-    plt.plot(generator.ks, generator.get_data(0.2)[1], color='b', linestyle='-', label=r"$\mathrm{Linear}\,\Omega_{m}=0.2$")
-    plt.plot(generator.ks, generator.get_data(0.3)[1], color='r', linestyle='-', label=r"$\mathrm{Linear}\,\Omega_{m}=0.3$")
-    plt.plot(generator.ks, generator.get_data(0.2)[2], color='b', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
-    plt.plot(generator.ks, generator.get_data(0.3)[2], color='r', linestyle='--', label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
+    plt.plot(generator.ks, generator.get_data(0.2)[1], color="b", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.2$")
+    plt.plot(generator.ks, generator.get_data(0.3)[1], color="r", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.3$")
+    plt.plot(generator.ks, generator.get_data(0.2)[2], color="b", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
+    plt.plot(generator.ks, generator.get_data(0.3)[2], color="r", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()

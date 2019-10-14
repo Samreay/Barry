@@ -107,7 +107,10 @@ class PowerSeo2016(PowerSpectrumFit):
         else:
             prefac_k = 1.0 + np.tile(3.0 / 7.0 * (self.get_pt_data(om)["R1"] * (1.0 - 4.0 / (9.0 * p["b"])) + self.get_pt_data(om)["R2"]), (self.nmu, 1))
             prefac_mu = np.outer(
-                self.mu ** 2, growth / p["b"] + 3.0 / 7.0 * growth * self.get_pt_data(om)["R1"] * (2.0 - 1.0 / (3.0 * p["b"])) + 6.0 / 7.0 * growth * self.get_pt_data(om)["R2"]
+                self.mu ** 2,
+                growth / p["b"]
+                + 3.0 / 7.0 * growth * self.get_pt_data(om)["R1"] * (2.0 - 1.0 / (3.0 * p["b"]))
+                + 6.0 / 7.0 * growth * self.get_pt_data(om)["R2"],
             )
             propagator = ((prefac_k + prefac_mu) * damping) ** 2
 
