@@ -5,7 +5,6 @@ import numpy as np
 from scipy.interpolate import splev, splrep
 from scipy import integrate
 from barry.models.bao_power import PowerSpectrumFit
-from barry.cosmology.camb_generator import Omega_m_z
 
 
 class PowerSeo2016(PowerSpectrumFit):
@@ -22,10 +21,6 @@ class PowerSeo2016(PowerSpectrumFit):
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
         self.smoothing_kernel = None
-
-    @lru_cache(maxsize=32)
-    def get_growth(self, om):
-        return Omega_m_z(om, self.camb.redshift) ** 0.55
 
     @lru_cache(maxsize=32)
     def get_pt_data(self, om):
@@ -81,10 +76,7 @@ class PowerSeo2016(PowerSpectrumFit):
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
 
         # Compute the growth rate depending on what we have left as free parameters
-        if self.fit_growth:
-            growth = p["f"]
-        else:
-            growth = self.get_growth(p["om"])
+        growth = p["f"]
 
         # Lets round some things for the sake of numerical speed
         om = np.round(p["om"], decimals=5)

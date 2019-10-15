@@ -22,10 +22,6 @@ class CorrSeo2016(CorrelationFunctionFit):
         self.smoothing_kernel = None
 
     @lru_cache(maxsize=32)
-    def get_growth(self, om):
-        return Omega_m_z(om, self.camb.redshift) ** 0.55
-
-    @lru_cache(maxsize=32)
     def get_pt_data(self, om):
         return self.PT.get_data(om=om)
 
@@ -78,28 +74,23 @@ class CorrSeo2016(CorrelationFunctionFit):
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
 
         # Compute the growth rate depending on what we have left as free parameters
-        if self.fit_growth:
-            growth = p["f"]
-        else:
-            growth = self.get_growth(p["om"])
+        growth = p["f"]
 
         # Lets round some things for the sake of numerical speed
         om = np.round(p["om"], decimals=5)
         growth = np.round(growth, decimals=5)
 
-        # Compute the BAO damping
+        # Compute the propagator
         if self.recon:
             damping_dd = self.get_damping_dd(growth, om)
             damping_ss = self.get_damping_ss(om)
-        else:
-            damping = self.get_damping(growth, om)
 
-        # Compute the propagator
-        if self.recon:
             smooth_prefac = np.tile(self.smoothing_kernel / p["b"], (self.nmu, 1))
             kaiser_prefac = 1.0 + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.smoothing_kernel)
             propagator = (kaiser_prefac * damping_dd + smooth_prefac * (damping_ss - damping_dd)) ** 2
         else:
+            damping = self.get_damping(growth, om)
+
             prefac_k = 1.0 + np.tile(3.0 / 7.0 * (self.get_pt_data(om)["R1"] * (1.0 - 4.0 / (9.0 * p["b"])) + self.get_pt_data(om)["R2"]), (self.nmu, 1))
             prefac_mu = np.outer(
                 self.mu ** 2,
@@ -120,7 +111,7 @@ class CorrSeo2016(CorrelationFunctionFit):
             pk1d = integrate.simps(pk_smooth * (1.0 + pk_ratio * propagator), self.mu, axis=0)
 
         # Convert to correlation function and take alpha into account
-        xi = self.pk2xi.__call__(ks, pk1d, d * p["alpha"])
+        xi = self.pk2xi(ks, pk1d, d * p["alpha"])
 
         # Polynomial shape
         shape = p["a1"] / (d ** 2) + p["a2"] / d + p["a3"]

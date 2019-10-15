@@ -11,7 +11,7 @@ from barry.models.model import Model
 class CorrelationFunctionFit(Model):
     """ A generic model for computing correlation functions."""
 
-    def __init__(self, name="BAO Correlation Polynomial Fit", smooth_type="hinton2017", fix_params=["om"], smooth=False, correction=None):
+    def __init__(self, name="BAO Correlation Polynomial Fit", smooth_type="hinton2017", fix_params=("om"), smooth=False, correction=None):
         """ Generic correlation function model
 
         Parameters

@@ -55,10 +55,6 @@ class PowerNoda2019(PowerSpectrumFit):
             return False
 
     @lru_cache(maxsize=32)
-    def get_growth(self, om):
-        return Omega_m_z(om, self.camb.redshift) ** 0.55
-
-    @lru_cache(maxsize=32)
     def get_pt_data(self, om):
         return self.PT.get_data(om=om)
 
