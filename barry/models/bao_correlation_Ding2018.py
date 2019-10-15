@@ -29,11 +29,11 @@ class CorrDing2018(CorrelationFunctionFit):
     def get_pt_data(self, om):
         return self.PT.get_data(om=om)
 
-    @lru_cache(maxsize=4096)
+    @lru_cache(maxsize=2048)
     def get_damping_dd(self, growth, om):
         return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_dd_nl"])
 
-    @lru_cache(maxsize=4096)
+    @lru_cache(maxsize=2048)
     def get_damping_sd(self, growth, om):
         return np.exp(-np.outer(1.0 + growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_dd_nl"])
 
@@ -41,7 +41,7 @@ class CorrDing2018(CorrelationFunctionFit):
     def get_damping_ss(self, om):
         return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pt_data(om)["sigma_ss_nl"])
 
-    @lru_cache(maxsize=4096)
+    @lru_cache(maxsize=2048)
     def get_damping(self, growth, om):
         return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_nl"])
 

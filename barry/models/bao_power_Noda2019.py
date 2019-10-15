@@ -58,7 +58,7 @@ class PowerNoda2019(PowerSpectrumFit):
     def get_pt_data(self, om):
         return self.PT.get_data(om=om)
 
-    @lru_cache(maxsize=4096)
+    @lru_cache(maxsize=32)
     def get_damping(self, growth, om, gamma):
         return np.exp(
             -np.outer(
@@ -69,11 +69,7 @@ class PowerNoda2019(PowerSpectrumFit):
             / gamma
         )
 
-    @lru_cache(maxsize=512)
-    def apply_gamma(self, damping, gamma):
-        return np.exp(damping / gamma)
-
-    @lru_cache(maxsize=512)
+    @lru_cache(maxsize=32)
     def get_nonlinear(self, growth, om):
         return (
             self.get_pt_data(om)["Pdd_" + self.nonlinear_type],
