@@ -26,8 +26,8 @@ if __name__ == "__main__":
         n = PowerNoda2019(postprocess=postprocess, recon=r, nonlinear_type="spt")
         n2 = PowerNoda2019(postprocess=postprocess, recon=r, nonlinear_type="halofit")
 
-        fitter.add_model_and_dataset(n, data, name=f"N19 {rt} SPT", color="r", shade_alpha=0.7)
-        fitter.add_model_and_dataset(n2, data, name=f"N19 {rt} Halofit", color="o", shade_alpha=0.7)
+        fitter.add_model_and_dataset(n, data, name=f"N19 {rt} SPT", color="r", shade_alpha=0.7, linestyle="-" if r else "--", zorder=10 if r else 2)
+        fitter.add_model_and_dataset(n2, data, name=f"N19 {rt} Halofit", color="lb", shade_alpha=0.7, linestyle="-" if r else "--", zorder=10 if r else 2)
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(20)
@@ -49,7 +49,6 @@ if __name__ == "__main__":
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
         # extents = {"$\\alpha$": (0.963, 1.06)}
-        extents = None
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
         c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
         c.plotter.plot(
@@ -58,12 +57,9 @@ if __name__ == "__main__":
             chains=names2,
             truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0},
             figsize="COLUMN",
-            extents=extents,
         )
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
-        with open(pfn + "_corr.txt", "w") as f:
-            f.write(c.analysis.get_correlation_table(chain="N19 Recon fixed $f$, $\\gamma_{rec}$"))
 
     # FINDINGS
     # So turns out that fixing all these parameters really helps get good constraints.
