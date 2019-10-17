@@ -34,38 +34,31 @@ class PowerNoda2019(PowerSpectrumFit):
                 gammaval = 4.0
             else:
                 gammaval = 1.0
-        self.gammaval = gammaval
-        super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction)
 
-        self.fit_omega_m = fix_params is None or "om" not in fix_params
-        self.fit_growth = fix_params is None or "f" not in fix_params
-        self.fit_gamma = self.recon and (fix_params is None or "gamma" not in fix_params)
+        super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction)
+        self.set_default("gamma", gammaval)
+
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
         self.smoothing_kernel = None
-
-        self.set_default("gamma", self.gammaval)
 
         self.nonlinear_type = nonlinear_type.lower()
         if not self.validate_nonlinear_method():
             exit(0)
 
     def validate_nonlinear_method(self):
-        if self.nonlinear_type in ["spt", "halofit"]:
+        types = ["spt", "halofit"]
+        if self.nonlinear_type in types:
             return True
         else:
-            logging.getLogger("barry").error(f"Smoothing method is {self.nonlinear_type} and not in list {['spt', 'halofit']}")
+            logging.getLogger("barry").error(f"Smoothing method is {self.nonlinear_type} and not in list {types}")
             return False
-
-    @lru_cache(maxsize=32)
-    def get_growth(self, om):
-        return Omega_m_z(om, self.camb.redshift) ** 0.55
 
     @lru_cache(maxsize=32)
     def get_pt_data(self, om):
         return self.PT.get_data(om=om)
 
-    @lru_cache(maxsize=8192)
+    @lru_cache(maxsize=32)
     def get_damping(self, growth, om, gamma):
         return np.exp(
             -np.outer(
@@ -76,11 +69,7 @@ class PowerNoda2019(PowerSpectrumFit):
             / gamma
         )
 
-    @lru_cache(maxsize=512)
-    def apply_gamma(self, damping, gamma):
-        return np.exp(damping / gamma)
-
-    @lru_cache(maxsize=512)
+    @lru_cache(maxsize=32)
     def get_nonlinear(self, growth, om):
         return (
             self.get_pt_data(om)["Pdd_" + self.nonlinear_type],
@@ -97,7 +86,7 @@ class PowerNoda2019(PowerSpectrumFit):
     def declare_parameters(self):
         super().declare_parameters()
         self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure
-        self.add_param("gamma", r"$\gamma_{rec}$", 1.0, 8.0, self.gammaval)  # Describes the sharpening of the BAO post-reconstruction
+        self.add_param("gamma", r"$\gamma_{rec}$", 1.0, 8.0, 1.0)  # Describes the sharpening of the BAO post-reconstruction
         self.add_param("A", r"$A$", -10, 30.0, 10)  # Fingers-of-god damping
 
     def compute_power_spectrum(self, k, p, smooth=False):
@@ -122,16 +111,8 @@ class PowerNoda2019(PowerSpectrumFit):
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
 
         # Compute the growth rate depending on what we have left as free parameters
-        if self.fit_growth:
-            growth = p["f"]
-        else:
-            growth = self.get_growth(p["om"])
-
-        # Set the value of gamma for the BAO damping
-        if self.fit_gamma:
-            gamma = p["gamma"]
-        else:
-            gamma = self.gammaval
+        growth = p["f"]
+        gamma = p["gamma"]
 
         # Lets round some things for the sake of numerical speed
         om = np.round(p["om"], decimals=5)

@@ -2,6 +2,7 @@ from functools import lru_cache
 import numpy as np
 
 from barry.cosmology.PT_generator import getCambGeneratorAndPT
+from barry.cosmology.camb_generator import Omega_m_z
 from barry.cosmology.pk2xi import PowerToCorrelationGauss
 from barry.cosmology.power_spectrum_smoothing import validate_smooth_method, smooth
 from barry.models.model import Model
@@ -10,7 +11,7 @@ from barry.models.model import Model
 class CorrelationFunctionFit(Model):
     """ A generic model for computing correlation functions."""
 
-    def __init__(self, name="BAO Correlation Polynomial Fit", smooth_type="hinton2017", fix_params=["om"], smooth=False, correction=None):
+    def __init__(self, name="BAO Correlation Polynomial Fit", smooth_type="hinton2017", fix_params=("om"), smooth=False, correction=None):
         """ Generic correlation function model
 
         Parameters
@@ -55,6 +56,9 @@ class CorrelationFunctionFit(Model):
         """
         super().set_data(data)
         c = data[0]["cosmology"]
+        z = c["z"]
+        if self.param_dict.get("f") is not None:
+            self.set_default("f", Omega_m_z(self.get_default("om"), z) ** 0.55)
         if self.cosmology != c:
             self.recon_smoothing_scale = c["reconsmoothscale"]
             self.camb, self.PT = getCambGeneratorAndPT(

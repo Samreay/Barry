@@ -25,7 +25,7 @@ if __name__ == "__main__":
         data = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=postprocess)
         n = PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"])
         # n2 = PowerNoda2019(postprocess=postprocess, recon=r, fix_params=["om", "f", "gamma", "b"])
-        n.param_dict["b"].default = 2.022 if r else 2.092
+        n.param_dict["b"].default = 1.992 if r else 1.996
         fitter.add_model_and_dataset(
             n, data, name=f"N19 {rt} fixed $f$, $\\gamma_{{rec}}$, $b$", linestyle="-" if r else "--", color="o", shade_alpha=0.7, zorder=10
         )

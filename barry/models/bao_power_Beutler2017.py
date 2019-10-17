@@ -71,68 +71,46 @@ class PowerBeutler2017(PowerSpectrumFit):
 
 
 if __name__ == "__main__":
+    import sys
+    import timeit
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z061_NGC
+
+    sys.path.append("../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
-    recon = True
-    model1 = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}")
-    model_smooth = PowerBeutler2017(recon=recon, name=f"Beutler2017, recon={recon}", smooth=True)
 
-    from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
+    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=False)
+    data = dataset.get_data()
+    model_pre = PowerBeutler2017(recon=False)
+    model_pre.set_data(data)
 
-    dataset1 = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=recon)
-    data1 = dataset1.get_data()
-    model1.set_data(data1)
+    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=True)
+    data = dataset.get_data()
+    model_post = PowerBeutler2017(recon=True)
+    model_post.set_data(data)
 
-    # First comparison - the actual recon data
-    if False:
-        p, minv = model1.optimize()
-        model_smooth.set_data(data1)
-        p2, minv2 = model_smooth.optimize()
-        print(p)
-        print(minv)
-        model1.plot(p, smooth_params=p2)
+    p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5.0, "sigma_s": 5, "b": 2.0, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
+
+    n = 200
+
+    def test_pre():
+        model_pre.get_likelihood(p, data[0])
+
+    def test_post():
+        model_post.get_likelihood(p, data[0])
+
+    print("Pre-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_pre, number=n) * 1000 / n))
+    print("Post-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_post, number=n) * 1000 / n))
 
     if True:
-        import timeit
+        p, minv = model_pre.optimize()
+        print("Pre reconstruction optimisation:")
+        print(p)
+        print(minv)
+        model_pre.plot(p)
 
-        n = 200
-        p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5, "sigma_s": 10.0, "b": 1.6, "b_delta": 1, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
-
-        def test():
-            model1.get_likelihood(p, data1[0])
-
-        print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
-
-    if False:
-        ks = data["ks"]
-        pk = data["pk"]
-        pk2 = model.get_model(data, p)
-        model.smooth_type = "eh1998"
-        pk3 = model.get_model(data, p)
-        import matplotlib.pyplot as plt
-
-        plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c="k", label="Data")
-        plt.plot(ks, pk2, ".", c="r", label="hinton2017")
-        plt.plot(ks, pk3, "+", c="b", label="eh1998")
-        plt.xlabel("k")
-        plt.ylabel("P(k)")
-        plt.xscale("log")
-        plt.yscale("log")
-        plt.legend()
-        plt.show()
-
-        model.smooth_type = "hinton2017"
-        pk_smooth_lin, _ = model.compute_basic_power_spectrum(p["om"])
-        pk_smooth_interp = splev(data["ks_input"], splrep(model.camb.ks, pk_smooth_lin))
-        pk_smooth_lin_windowed, mask = model.adjust_model_window_effects(pk_smooth_interp)
-        pk2 = model.get_model(data, p)
-        import matplotlib.pyplot as plt
-
-        plt.plot(ks, pk2 / pk_smooth_lin_windowed[mask], ".", c="r", label="pre-recon")
-        plt.xlabel("k")
-        plt.ylabel(r"$P(k)/P_{sm}(k)$")
-        plt.xscale("log")
-        plt.yscale("log")
-        plt.ylim(0.4, 3.0)
-        plt.legend()
-        plt.show()
+        print("Post reconstruction optimisation:")
+        p, minv = model_post.optimize()
+        print(p)
+        print(minv)
+        model_post.plot(p)

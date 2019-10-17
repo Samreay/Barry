@@ -1,0 +1,15 @@
+\begin{table}
+    \centering
+    \caption{}
+    \label{tab:model_params}
+    \begin{tabular}{cccc}
+        \hline
+		Model & $\alpha$ & $b$ & $A$ \\ 
+		\hline
+		N19 Recon SPT & $0.995^{+0.012}_{-0.011}$ & $1.993\pm 0.016$ & $4.10\pm 0.36$ \\ 
+		N19 Recon Halofit & $0.987^{+0.011}_{-0.012}$ & $1.981^{+0.017}_{-0.015}$ & $2.94\pm 0.37$ \\ 
+		N19 Prerecon SPT & $1.013^{+0.016}_{-0.017}$ & $1.993^{+0.027}_{-0.024}$ & $0.23^{+0.37}_{-0.33}$ \\ 
+		N19 Prerecon Halofit & $0.998^{+0.017}_{-0.016}$ & $1.993^{+0.027}_{-0.025}$ & $-0.78^{+0.39}_{-0.33}$ \\ 
+		\hline
+    \end{tabular}
+\end{table}

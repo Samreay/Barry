@@ -5,7 +5,6 @@ import numpy as np
 from scipy.interpolate import splev, splrep
 from scipy import integrate
 from barry.models.bao_power import PowerSpectrumFit
-from barry.cosmology.camb_generator import Omega_m_z
 
 
 class PowerSeo2016(PowerSpectrumFit):
@@ -19,21 +18,15 @@ class PowerSeo2016(PowerSpectrumFit):
         self.recon_smoothing_scale = None
         super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction)
 
-        self.fit_omega_m = fix_params is None or "om" not in fix_params
-        self.fit_growth = fix_params is None or "f" not in fix_params
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
         self.smoothing_kernel = None
 
     @lru_cache(maxsize=32)
-    def get_growth(self, om):
-        return Omega_m_z(om, self.camb.redshift) ** 0.55
-
-    @lru_cache(maxsize=32)
     def get_pt_data(self, om):
         return self.PT.get_data(om=om)
 
-    @lru_cache(maxsize=8192)
+    @lru_cache(maxsize=32)
     def get_damping_dd(self, growth, om):
         return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_dd"] / 2.0)
 
@@ -41,7 +34,7 @@ class PowerSeo2016(PowerSpectrumFit):
     def get_damping_ss(self, om):
         return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pt_data(om)["sigma_ss"] / 2.0)
 
-    @lru_cache(maxsize=8192)
+    @lru_cache(maxsize=32)
     def get_damping(self, growth, om):
         return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma"] / 2.0)
 
@@ -83,10 +76,7 @@ class PowerSeo2016(PowerSpectrumFit):
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
 
         # Compute the growth rate depending on what we have left as free parameters
-        if self.fit_growth:
-            growth = p["f"]
-        else:
-            growth = self.get_growth(p["om"])
+        growth = p["f"]
 
         # Lets round some things for the sake of numerical speed
         om = np.round(p["om"], decimals=5)

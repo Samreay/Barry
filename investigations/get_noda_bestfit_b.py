@@ -30,6 +30,6 @@ if __name__ == "__main__":
         model1.plot(p)
 
         # FINDINGS
-        # 2.022 for Recon, 2.092 for prerecon
+        # 1.992 for Recon, 1.996 for prerecon
 
         # Private communiucation with the team means for the mock means they found 1.86996 for recon and 1.89131 for prerecon
