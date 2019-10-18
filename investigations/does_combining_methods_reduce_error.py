@@ -79,12 +79,14 @@ if __name__ == "__main__":
     mean = np.mean(res2d, axis=1)
     cov = np.cov(res2d)
     corr = np.corrcoef(res2d)
+
     print(np.sqrt(np.diag(cov)), corr)
 
     # Compute the consensus value using the equation of Winkler1981, Sanchez2016
     from scipy import linalg
 
     cov_inv = linalg.inv(cov)
+    # print(mean.shape, cov_inv.shape)
     sigma_c = np.sum(cov_inv)
     combined = np.sum(cov_inv * mean) / sigma_c
     print(mean, combined)
