@@ -85,7 +85,7 @@ if __name__ == "__main__":
         all_ids = pd.concat(tuple([res[l][["realisation"]] for l in ks]))
         counts = all_ids.groupby("realisation").size().reset_index()
         max_count = counts.values[:, 1].max()
-        good_ids = all_ids.loc[counts.values[:, 1] == max_count, ["realisation"]]
+        good_ids = counts.loc[counts.values[:, 1] == max_count, ["realisation"]]
 
         # Define colour scheme
         c2 = ["#225465", "#5FA45E"]  # ["#581d7f", "#e05286"]
