@@ -26,7 +26,8 @@ corr = np.corrcoef(means.T)
 fig, ax = plt.subplots(figsize=(7, 7))
 sb.heatmap(pd.DataFrame(corr, columns=labels, index=labels), annot=True, fmt="0.3f", square=True, ax=ax, cbar=False)
 ax.set_ylim(len(labels) + 0.5, -0.5)
-
+fig.savefig("consensus_correlation.png", transparent=True, dpi=150, bbox_inches="tight")
+fig.savefig("consensus_correlation.pdf", transparent=True, dpi=150, bbox_inches="tight")
 
 # Compute the consensus value using the equation of Winkler1981, Sanchez2016
 from scipy import linalg
