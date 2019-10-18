@@ -83,6 +83,15 @@ if __name__ == "__main__":
         for label, df in res.items():
             res[label] = pd.merge(good_ids, df, how="left", on="realisation")
 
+        df_all = None
+        for label, means in res.items():
+            d = pd.DataFrame({"realisation": means["realisation"], f"{label}_pk_mean": means["avg"], f"{label}_pk_std": means["std"]})
+            if df_all is None:
+                df_all = d
+            else:
+                df_all = pd.merge(df_all, d, how="outer", on="realisation")
+        df_all.to_csv(pfn + "_alphameans.csv", index=False, float_format="%0.5f")
+
         # Define colour scheme
         c2 = ["#225465", "#5FA45E"]  # ["#581d7f", "#e05286"]
         c3 = ["#2C455A", "#258E71", "#C1C64D"]  # ["#501b73", "#a73b8f", "#ee8695"]
