@@ -3,7 +3,7 @@ import sys
 sys.path.append("..")
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
-from barry.config import setup
+from barry.config import setup, weighted_avg_and_std
 from barry.models import CorrBeutler2017, CorrDing2018, CorrSeo2016
 from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
 from barry.samplers import DynestySampler
@@ -66,7 +66,8 @@ if __name__ == "__main__":
                 res[n] = []
             i = posterior.argmax()
             chi2 = -2 * posterior[i]
-            res[n].append([np.average(chain[:, 0], weights=weight), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
+            m, s = weighted_avg_and_std(chain[:, 0], weight)
+            res[n].append([m, s, chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
         for label in res.keys():
             res[label] = pd.DataFrame(res[label], columns=["avg", "std", "max", "posterior", "chi2", "Dchi2", "realisation"])
 
