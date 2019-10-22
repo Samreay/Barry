@@ -60,7 +60,7 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         res = {}
-        for posterior, weight, chain, model, data, extra in fitter.load():
+        for posterior, weight, chain, evidence, model, data, extra in fitter.load():
             n = extra["name"].split(",")[0]
             if res.get(n) is None:
                 res[n] = []

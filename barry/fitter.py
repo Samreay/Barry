@@ -199,8 +199,11 @@ class Fitter(object):
         d = self.get_sampler().load_file(file)
         chain = d["chain"]
         weights = d.get("weights")
+        evidence = d.get("evidence")
         if weights is None:
             weights = np.ones((chain.shape[0], 1))
+        if evidence is None:
+            evidence = np.full(chain.shape[0], np.nan)
         if len(weights.shape) == 1:
             weights = np.atleast_2d(weights).T
         posterior = d.get("posterior")
@@ -208,7 +211,7 @@ class Fitter(object):
             posterior = np.ones((chain.shape[0], 1))
         if len(posterior.shape) == 1:
             posterior = np.atleast_2d(posterior).T
-        result = np.hstack((posterior, weights, chain))
+        result = np.hstack((posterior, weights, evidence, chain))
         return result
 
     def load(self, split_models=True, split_walkers=False):
@@ -270,8 +273,9 @@ class Fitter(object):
         for result, model in zip(results, results_models):
             posterior = result[:, 0]
             weight = result[:, 1]
-            chain = result[:, 2:]
-            finals.append((posterior, weight, chain, model[0], model[1], model[2]))
+            evidence = result[:, 2]
+            chain = result[:, 3:]
+            finals.append((posterior, weight, chain, evidence, model[0], model[1], model[2]))
         self.logger.info(f"Loaded {len(finals)} chains")
         if len(finals) == 1:
             self.logger.info(f"Chain has shape {finals[0][2].shape}")

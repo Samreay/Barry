@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
         res, = fitter.load()
 
-        posterior, weight, chain, model, data, extra = res
+        posterior, weight, chain, evidence, model, data, extra = res
         print(chain.shape, weight.shape)
         print(weight.max())
         import matplotlib.pyplot as plt
