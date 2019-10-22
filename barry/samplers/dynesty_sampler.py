@@ -39,22 +39,24 @@ class DynestySampler(Sampler):
         self.logger.debug("Fit finished")
 
         dresults = sampler.results
+        logz = dresults["logz"]
         chain = dresults["samples"]
         weights = np.exp(dresults["logwt"] - dresults["logz"][-1])
         max_weight = weights.max()
         trim = max_weight / 1e5
         mask = weights > trim
         likelihood = dresults["logl"]
-        self._save(chain[mask, :], weights[mask], likelihood[mask], filename, save_dims)
-        return {"chain": chain[mask, :], "weights": weights[mask], "posterior": likelihood[mask]}
+        self._save(chain[mask, :], weights[mask], likelihood[mask], filename, logz, save_dims)
+        return {"chain": chain[mask, :], "weights": weights[mask], "posterior": likelihood[mask], "evidence": logz}
 
-    def _save(self, chain, weights, likelihood, filename, save_dims):
-        res = np.vstack((likelihood, weights, chain[:, :save_dims].T)).T
+    def _save(self, chain, weights, likelihood, filename, logz, save_dims):
+        res = np.vstack((likelihood, weights, logz, chain[:, :save_dims].T)).T
         np.save(filename, res.astype(np.float32))
 
     def load_file(self, filename):
         results = np.load(filename)
         likelihood = results[:, 0]
         weights = results[:, 1]
-        flat_chain = results[:, 2:]
-        return {"chain": flat_chain, "posterior": likelihood, "weights": weights}
+        logz = results[:, 2]
+        flat_chain = results[:, 3:]
+        return {"chain": flat_chain, "posterior": likelihood, "evidence": logz, "weights": weights}
