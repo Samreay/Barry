@@ -32,8 +32,10 @@ if __name__ == "__main__":
         print(weight.max())
         import matplotlib.pyplot as plt
 
-        plt.plot(weight)
+        fig, ax = plt.subplots(nrows=2)
+        ax[0].plot(weight)
+        ax[1].plot(evidence)
         plt.show()
-        c = ChainConsumer()
-        c.add_chain(chain, weights=weight, parameters=model.get_labels())
-        c.plotter.plot(filename=pfn + "_contour.png")
+        # c = ChainConsumer()
+        # c.add_chain(chain, weights=weight, parameters=model.get_labels())
+        # c.plotter.plot(filename=pfn + "_contour.png")

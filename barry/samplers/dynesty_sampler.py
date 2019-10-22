@@ -46,7 +46,7 @@ class DynestySampler(Sampler):
         trim = max_weight / 1e5
         mask = weights > trim
         likelihood = dresults["logl"]
-        self._save(chain[mask, :], weights[mask], likelihood[mask], filename, logz, save_dims)
+        self._save(chain[mask, :], weights[mask], likelihood[mask], filename, logz[mask], save_dims)
         return {"chain": chain[mask, :], "weights": weights[mask], "posterior": likelihood[mask], "evidence": logz}
 
     def _save(self, chain, weights, likelihood, filename, logz, save_dims):

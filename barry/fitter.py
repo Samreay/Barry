@@ -206,6 +206,8 @@ class Fitter(object):
             evidence = np.full(chain.shape[0], np.nan)
         if len(weights.shape) == 1:
             weights = np.atleast_2d(weights).T
+        if len(evidence.shape) == 1:
+            evidence = np.atleast_2d(evidence).T
         posterior = d.get("posterior")
         if posterior is None:
             posterior = np.ones((chain.shape[0], 1))
