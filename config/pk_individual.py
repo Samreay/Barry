@@ -71,9 +71,9 @@ if __name__ == "__main__":
             i = posterior.argmax()
             chi2 = -2 * posterior[i]
             m, s = weighted_avg_and_std(chain[:, 0], weight)
-            res[n].append([m, s, chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
+            res[n].append([m, s, chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"], evidence.max()])
         for label in res.keys():
-            res[label] = pd.DataFrame(res[label], columns=["avg", "std", "max", "posterior", "chi2", "Dchi2", "realisation"])
+            res[label] = pd.DataFrame(res[label], columns=["avg", "std", "max", "posterior", "chi2", "Dchi2", "realisation", "evidence"])
 
         ks = list(res.keys())
         all_ids = pd.concat(tuple([res[l][["realisation"]] for l in ks]))
@@ -86,7 +86,14 @@ if __name__ == "__main__":
 
         df_all = None
         for label, means in res.items():
-            d = pd.DataFrame({"realisation": means["realisation"], f"{label}_pk_mean": means["avg"], f"{label}_pk_std": means["std"]})
+            d = pd.DataFrame(
+                {
+                    "realisation": means["realisation"],
+                    f"{label}_xi_mean": means["avg"],
+                    f"{label}_xi_std": means["std"],
+                    f"{label}_xi_evidence": means["evidence"],
+                }
+            )
             if df_all is None:
                 df_all = d
             else:
