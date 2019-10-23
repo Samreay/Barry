@@ -89,9 +89,9 @@ if __name__ == "__main__":
             d = pd.DataFrame(
                 {
                     "realisation": means["realisation"],
-                    f"{label}_xi_mean": means["avg"],
-                    f"{label}_xi_std": means["std"],
-                    f"{label}_xi_evidence": means["evidence"],
+                    f"{label}_pk_mean": means["avg"],
+                    f"{label}_pk_std": means["std"],
+                    f"{label}_pk_evidence": means["evidence"],
                 }
             )
             if df_all is None:
