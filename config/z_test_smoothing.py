@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
         c = ChainConsumer()
         pks = {}
-        for posterior, weight, chain, model, data, extra in fitter.load():
+        for posterior, weight, chain, evidence, model, data, extra in fitter.load():
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
 
             # params = dict([(p.name, v) for p, v in zip(model.get_active_params(), chain[posterior.argmax(), :])])

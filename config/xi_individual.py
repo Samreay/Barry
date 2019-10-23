@@ -3,7 +3,7 @@ import sys
 sys.path.append("..")
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
-from barry.config import setup
+from barry.config import setup, weighted_avg_and_std
 from barry.models import CorrBeutler2017, CorrDing2018, CorrSeo2016
 from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
 from barry.samplers import DynestySampler
@@ -60,15 +60,16 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         res = {}
-        for posterior, weight, chain, model, data, extra in fitter.load():
+        for posterior, weight, chain, evidence, model, data, extra in fitter.load():
             n = extra["name"].split(",")[0]
             if res.get(n) is None:
                 res[n] = []
             i = posterior.argmax()
             chi2 = -2 * posterior[i]
-            res[n].append([np.average(chain[:, 0], weights=weight), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
+            m, s = weighted_avg_and_std(chain[:, 0], weight)
+            res[n].append([m, s, chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"], evidence.max()])
         for label in res.keys():
-            res[label] = pd.DataFrame(res[label], columns=["avg", "std", "max", "posterior", "chi2", "Dchi2", "realisation"])
+            res[label] = pd.DataFrame(res[label], columns=["avg", "std", "max", "posterior", "chi2", "Dchi2", "realisation", "evidence"])
 
         ks = list(res.keys())
         all_ids = pd.concat(tuple([res[l][["realisation"]] for l in ks]))
@@ -78,6 +79,22 @@ if __name__ == "__main__":
 
         for label, df in res.items():
             res[label] = pd.merge(good_ids, df, how="left", on="realisation")
+
+        df_all = None
+        for label, means in res.items():
+            d = pd.DataFrame(
+                {
+                    "realisation": means["realisation"],
+                    f"{label}_xi_mean": means["avg"],
+                    f"{label}_xi_std": means["std"],
+                    f"{label}_xi_evidence": means["evidence"],
+                }
+            )
+            if df_all is None:
+                df_all = d
+            else:
+                df_all = pd.merge(df_all, d, how="outer", on="realisation")
+        df_all.to_csv(pfn + "_alphameans.csv", index=False, float_format="%0.5f")
 
         # Define colour scheme
         c2 = ["#225465", "#5FA45E"]  # ["#581d7f", "#e05286"]

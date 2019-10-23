@@ -27,13 +27,15 @@ if __name__ == "__main__":
 
         res, = fitter.load()
 
-        posterior, weight, chain, model, data, extra = res
+        posterior, weight, chain, evidence, model, data, extra = res
         print(chain.shape, weight.shape)
         print(weight.max())
         import matplotlib.pyplot as plt
 
-        plt.plot(weight)
+        fig, ax = plt.subplots(nrows=2)
+        ax[0].plot(weight)
+        ax[1].plot(evidence)
         plt.show()
-        c = ChainConsumer()
-        c.add_chain(chain, weights=weight, parameters=model.get_labels())
-        c.plotter.plot(filename=pfn + "_contour.png")
+        # c = ChainConsumer()
+        # c.add_chain(chain, weights=weight, parameters=model.get_labels())
+        # c.plotter.plot(filename=pfn + "_contour.png")

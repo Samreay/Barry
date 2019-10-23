@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
         c = ChainConsumer()
         names2 = []
-        for posterior, weight, chain, model, data, extra in fitter.load():
+        for posterior, weight, chain, evidence, model, data, extra in fitter.load():
             # print(model.get_names())
             # print(chain.mean(axis=0))
             name = extra["name"]

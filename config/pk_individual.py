@@ -5,7 +5,7 @@ sys.path.append("..")
 from barry.samplers import DynestySampler
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
-from barry.config import setup
+from barry.config import setup, weighted_avg_and_std
 from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
 from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.fitter import Fitter
@@ -64,13 +64,14 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         res = {}
-        for posterior, weight, chain, model, data, extra in fitter.load():
+        for posterior, weight, chain, evidence, model, data, extra in fitter.load():
             n = extra["name"].split(",")[0]
             if res.get(n) is None:
                 res[n] = []
             i = posterior.argmax()
             chi2 = -2 * posterior[i]
-            res[n].append([np.average(chain[:, 0], weights=weight), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
+            m, s = weighted_avg_and_std(chain[:, 0], weight)
+            res[n].append([m, s, chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
         for label in res.keys():
             res[label] = pd.DataFrame(res[label], columns=["avg", "std", "max", "posterior", "chi2", "Dchi2", "realisation"])
 
@@ -82,6 +83,15 @@ if __name__ == "__main__":
 
         for label, df in res.items():
             res[label] = pd.merge(good_ids, df, how="left", on="realisation")
+
+        df_all = None
+        for label, means in res.items():
+            d = pd.DataFrame({"realisation": means["realisation"], f"{label}_pk_mean": means["avg"], f"{label}_pk_std": means["std"]})
+            if df_all is None:
+                df_all = d
+            else:
+                df_all = pd.merge(df_all, d, how="outer", on="realisation")
+        df_all.to_csv(pfn + "_alphameans.csv", index=False, float_format="%0.5f")
 
         # Define colour scheme
         c2 = ["#225465", "#5FA45E"]  # ["#581d7f", "#e05286"]

@@ -47,7 +47,7 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         c = ChainConsumer()
-        for posterior, weight, chain, model, data, extra in fitter.load():
+        for posterior, weight, chain, evidence, model, data, extra in fitter.load():
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
             print(extra["name"], chain.shape, weight.shape, posterior.shape)
         c.configure(shade=True, bins=30, legend_artists=True)
