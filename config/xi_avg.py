@@ -44,7 +44,7 @@ if __name__ == "__main__":
         import logging
 
         logging.info("Creating plots")
-
+        res = fitter.load()
         if False:
             from chainconsumer import ChainConsumer
 
@@ -73,7 +73,7 @@ if __name__ == "__main__":
             import matplotlib.pyplot as plt
             import matplotlib.gridspec as gridspec
 
-            fig, axes = plt.subplots(figsize=(6, 8), nrows=1, sharex=True)
+            fig, axes = plt.subplots(figsize=(5, 7), nrows=1, sharex=True)
             inner = gridspec.GridSpecFromSubplotSpec(4, 1, subplot_spec=axes, hspace=0.04)
             ax = plt.subplot(inner[0:])
             ax.spines["top"].set_color("none")
@@ -85,7 +85,7 @@ if __name__ == "__main__":
             ax.tick_params(labelcolor="none", top=False, bottom=False, left=False, right=False)
 
             counter = 0
-            for posterior, weight, chain, evidence, model, data, extra in fitter.load():
+            for posterior, weight, chain, evidence, model, data, extra in res:
                 if not "Recon" in extra["name"]:
                     continue
                 model.set_data(data)
@@ -97,18 +97,21 @@ if __name__ == "__main__":
                     xi = data[0]["xi0"]
                     err = np.sqrt(np.diag(data[0]["cov"]))
                 ax = fig.add_subplot(inner[counter])
-                ax.errorbar(ss, 1.0e3 * (xi - smooth), yerr=1.0e3 * err, fmt="o", c="k", ms=4, zorder=0)
+                ax.errorbar(ss, 1.0e3 * (xi - smooth), yerr=1.0e3 * err, fmt="o", c="#666666", elinewidth=0.75, ms=3, zorder=0)
                 ax.plot(ss, 1.0e3 * (bestfit - smooth), color=extra["color"], label=extra["name"], linestyle=extra["linestyle"], zorder=1, linewidth=1.8)
                 ax.set_ylim(-4.5, 4.5)
                 ax.tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
-                ax.legend(loc="upper right", fontsize=9)
+                ax.legend(frameon=False, markerfirst=False, loc=1)
                 counter += 1
+                ax.set_ylim(-5, 6.5)
             ax.tick_params(axis="x", which="both", labelcolor="k", bottom=True, labelbottom=True)
-            plt.savefig(pfn + "_bestfits.pdf")
 
-            fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True, gridspec_kw={"hspace": 0.04, "height_ratios": [1.5, 1]})
+            plt.savefig(pfn + "_bestfits.pdf", bbox_inches="tight", dpi=300, transparent=True)
+            plt.savefig(pfn + "_bestfits.png", bbox_inches="tight", dpi=300, transparent=True)
 
-            for posterior, weight, chain, evidence, model, data, extra in fitter.load():
+            fig, axes = plt.subplots(figsize=(5, 7), nrows=2, sharex=True, gridspec_kw={"hspace": 0.04, "height_ratios": [1.5, 1]})
+
+            for posterior, weight, chain, evidence, model, data, extra in res:
                 if not "Recon" in extra["name"]:
                     continue
                 model.set_data(data)
@@ -119,7 +122,7 @@ if __name__ == "__main__":
                     ss = data[0]["dist"]
                     xi = data[0]["xi0"]
                     err = np.sqrt(np.diag(data[0]["cov"]))
-                    axes[0].errorbar(ss, ss * ss * xi, yerr=ss * ss * err, fmt="o", c="k", ms=4, zorder=0)
+                    axes[0].errorbar(ss, ss * ss * xi, yerr=ss * ss * err, fmt="o", c="#666666", elinewidth=0.75, ms=3, zorder=0)
                     axes[1].fill_between(ss, -1.0e3 * err, 1.0e3 * err, color="k", zorder=0, alpha=0.15)
                 axes[0].plot(ss, ss * ss * bestfit, color=extra["color"], label=extra["name"], linestyle=extra["linestyle"], zorder=1, linewidth=1.5)
                 axes[1].plot(ss, 1.0e3 * (bestfit - xi), color=extra["color"], label=extra["name"], linestyle=extra["linestyle"], zorder=1, linewidth=1.5)
@@ -128,6 +131,7 @@ if __name__ == "__main__":
             axes[0].set_ylabel(r"$s^{2}\xi(s) (h^{-2}\,\mathrm{Mpc^{2}})$")
             axes[1].set_ylabel(r"$\mathrm{Bestfit} - \mathrm{Data}\,(\times 10^{-3})$")
             axes[0].tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
-            axes[0].legend()
+            axes[0].legend(frameon=False, markerfirst=False, loc=1)
             axes[1].set_xlabel(r"$s\,(h^{-1}\,\mathrm{Mpc})$")
-            plt.savefig(pfn + "_bestfits_2.pdf")
+            plt.savefig(pfn + "_bestfits_2.pdf", bbox_inches="tight", dpi=300, transparent=True)
+            plt.savefig(pfn + "_bestfits_2.png", bbox_inches="tight", dpi=300, transparent=True)
