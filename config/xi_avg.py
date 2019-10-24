@@ -1,4 +1,8 @@
 import sys
+import os
+import numpy as np
+import pandas as pd
+from scipy.interpolate import interp1d
 
 sys.path.append("..")
 from barry.cosmology.camb_generator import CambGenerator
@@ -45,23 +49,57 @@ if __name__ == "__main__":
 
         logging.info("Creating plots")
         res = fitter.load()
-        if False:
+        if True:
             from chainconsumer import ChainConsumer
 
-            c = ChainConsumer()
-            for posterior, weight, chain, evidence, model, data, extra in fitter.load():
-                c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
-                print(extra["name"], chain.shape, weight.shape, posterior.shape)
-            c.configure(shade=True, bins=30, legend_artists=True)
-            c.analysis.get_latex_table(filename=pfn + "_params.txt", parameters=[r"$\alpha$"])
-            c.plotter.plot_summary(filename=pfn + "_summary.png", extra_parameter_spacing=1.5, errorbar=True, truth={"$\\Omega_m$": 0.31, "$\\alpha$": 1.0})
-            c.plotter.plot_summary(
-                filename=[pfn + "_summary2.png", pfn + "_summary2.pdf"],
-                extra_parameter_spacing=1.5,
-                parameters=1,
-                errorbar=True,
-                truth={"$\\Omega_m$": 0.31, "$\\alpha$": 1.0},
-            )
+            if True:
+                ind_path = "plots/xi_individual/xi_individual_alphameans.csv"
+                n = 1000000
+                stds_dict = None
+                if os.path.exists(ind_path):
+                    df = pd.read_csv(ind_path)
+                    cols = [c for c in df.columns if "std" in c]
+                    stds = df[cols]
+                    stds_dict = {}
+                    for c in cols:
+                        x = np.sort(df[c])
+                        print(c, np.mean(x), np.std(x))
+                        cdfs = np.linspace(0, 1, x.size)
+                        d = np.atleast_2d(interp1d(cdfs, x)(np.random.rand(n))).T
+                        print(c, d.shape)
+                        stds_dict[c.split("_xi")[0]] = d
+
+                from chainconsumer import ChainConsumer
+
+                c = ChainConsumer()
+                for posterior, weight, chain, evidence, model, data, extra in fitter.load():
+                    # Resample to uniform weights, eugh
+                    m = chain.shape[0]
+                    weight = weight / weight.max()
+                    samples = None
+                    while samples is None or samples.shape[0] < n:
+                        if samples is None:
+                            samples = chain[np.random.rand(m) < weight, :]
+                        else:
+                            samples = np.concatenate((samples, chain[np.random.rand(m) < weight, :]))
+                    samples = samples[:n, :]
+                    if stds_dict is not None:
+                        samples = np.hstack((samples, stds_dict[extra["name"]]))
+
+                    # c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
+                    c.add_chain(samples, parameters=model.get_labels() + [r"$\sigma_\alpha$"], **extra)
+                c.configure(shade=True, bins=30, legend_artists=True)
+                c.analysis.get_latex_table(filename=pfn + "_params.txt", parameters=[r"$\alpha$"])
+                c.plotter.plot_summary(filename=pfn + "_summary.png", extra_parameter_spacing=1.5, errorbar=True, truth={"$\\Omega_m$": 0.31, "$\\alpha$": 1.0})
+                extents = {r"$\alpha$": [0.975, 1.032], r"$\sigma_\alpha$": [0.01, 0.029]}
+                fig = c.plotter.plot_summary(
+                    filename=[pfn + "_summary2.png", pfn + "_summary2.pdf"],
+                    extra_parameter_spacing=1.5,
+                    parameters=[r"$\alpha$", r"$\sigma_\alpha$"],
+                    errorbar=True,
+                    truth={"$\\Omega_m$": 0.31, "$\\alpha$": 1.0},
+                    extents=extents,
+                )
             # c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
             # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
 
