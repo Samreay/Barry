@@ -47,7 +47,7 @@ if __name__ == "__main__":
         import logging
 
         logging.info("Creating plots")
-
+        res = fitter.load()
         if False:
             from chainconsumer import ChainConsumer
 
@@ -76,7 +76,7 @@ if __name__ == "__main__":
             import matplotlib.pyplot as plt
             import matplotlib.gridspec as gridspec
 
-            fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True, gridspec_kw={"hspace": 0.06, "height_ratios": [4.3, 1]})
+            fig, axes = plt.subplots(figsize=(5, 8), nrows=2, sharex=True, gridspec_kw={"hspace": 0.06, "height_ratios": [4.3, 1]})
             inner = gridspec.GridSpecFromSubplotSpec(4, 1, subplot_spec=axes[0], hspace=0.04)
             ax = plt.subplot(inner[0:])
             ax.spines["top"].set_color("none")
@@ -87,7 +87,7 @@ if __name__ == "__main__":
             ax.tick_params(labelcolor="none", top=False, bottom=False, left=False, right=False)
 
             counter = 0
-            for posterior, weight, chain, evidence, model, data, extra in fitter.load():
+            for posterior, weight, chain, evidence, model, data, extra in res:
                 if not "Recon" in extra["name"]:
                     continue
                 if extra["name"] == "Noda 2019 Recon":
@@ -102,24 +102,25 @@ if __name__ == "__main__":
                     err = np.sqrt(np.diag(data[0]["cov"]))
                     rk = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=True, postprocess=PureBAOExtractor(r_s)).get_data()[0]
                 if extra["name"] == "Noda 2019 Recon":
-                    axes[1].errorbar(ks, rk["pk"], yerr=np.sqrt(np.diag(rk["cov"])), fmt="o", c="k", ms=4, zorder=0)
+                    axes[1].errorbar(ks, rk["pk"], yerr=np.sqrt(np.diag(rk["cov"])), fmt="o", c="#666666", elinewidth=0.75, ms=3, zorder=0)
                     axes[1].plot(ks, bestfit, color=extra["color"], label=extra["name"], linestyle=extra["linestyle"], zorder=1, linewidth=1.8)
                     axes[1].set_ylabel(r"$R(k)$", labelpad=-5)
-                    axes[1].legend()
+                    axes[1].legend(frameon=False, markerfirst=False)
                 else:
                     ax = fig.add_subplot(inner[counter])
-                    ax.errorbar(ks, pk / smooth, yerr=err / smooth, fmt="o", c="k", ms=4, zorder=0)
+                    ax.errorbar(ks, pk / smooth, yerr=err / smooth, fmt="o", c="#666666", elinewidth=0.75, ms=3, zorder=0)
                     ax.plot(ks, bestfit / smooth, color=extra["color"], label=extra["name"], linestyle=extra["linestyle"], zorder=1, linewidth=1.8)
                     ax.set_ylim(0.88, 1.12)
                     ax.tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
-                    ax.legend()
+                    ax.legend(frameon=False, markerfirst=False)
                 counter += 1
             axes[1].set_xlabel(r"$k\,(h\,\mathrm{Mpc^{-1}})$")
-            plt.savefig(pfn + "_bestfits.pdf")
+            plt.savefig(pfn + "_bestfits.pdf", bbox_inches="tight", dpi=300, transparent=True)
+            plt.savefig(pfn + "_bestfits.png", bbox_inches="tight", dpi=300, transparent=True)
 
-            fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True, gridspec_kw={"hspace": 0.04, "height_ratios": [1.5, 1]})
+            fig, axes = plt.subplots(figsize=(5, 8), nrows=2, sharex=True, gridspec_kw={"hspace": 0.04, "height_ratios": [1.5, 1]})
 
-            for posterior, weight, chain, evidence, model, data, extra in fitter.load():
+            for posterior, weight, chain, evidence, model, data, extra in res:
                 if not "Recon" in extra["name"]:
                     continue
                 if extra["name"] == "Noda 2019 Recon":
@@ -132,7 +133,7 @@ if __name__ == "__main__":
                     ks = data[0]["ks"]
                     pk = data[0]["pk"]
                     err = np.sqrt(np.diag(data[0]["cov"]))
-                    axes[0].errorbar(ks, ks * pk, yerr=ks * err, fmt="o", c="k", ms=4, zorder=0)
+                    axes[0].errorbar(ks, ks * pk, yerr=ks * err, fmt="o", c="#666666", elinewidth=0.75, ms=3, zorder=0)
                     axes[1].fill_between(ks, 1.0 + err / pk, 1.0 - err / pk, color="k", zorder=0, alpha=0.15)
                 axes[0].plot(ks, ks * bestfit, color=extra["color"], label=extra["name"], linestyle=extra["linestyle"], zorder=1, linewidth=1.5)
                 axes[1].plot(ks, bestfit / pk, color=extra["color"], label=extra["name"], linestyle=extra["linestyle"], zorder=1, linewidth=1.5)
@@ -143,4 +144,5 @@ if __name__ == "__main__":
             axes[0].tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
             axes[0].legend()
             axes[1].set_xlabel(r"$k\,(h\,\mathrm{Mpc^{-1}})$")
-            plt.savefig(pfn + "_bestfits_2.pdf")
+            plt.savefig(pfn + "_bestfits_2.pdf", bbox_inches="tight", dpi=300, transparent=True)
+            plt.savefig(pfn + "_bestfits_2.png", bbox_inches="tight", dpi=300, transparent=True)
