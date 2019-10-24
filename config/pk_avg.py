@@ -52,10 +52,12 @@ if __name__ == "__main__":
             from chainconsumer import ChainConsumer
 
             c = ChainConsumer()
-            for posterior, weight, chain, model, data, extra in fitter.load():
+            for posterior, weight, chain, evidence, model, data, extra in fitter.load():
                 c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
+                print(extra["name"], chain.shape, weight.shape, posterior.shape)
             c.configure(shade=True, bins=30, legend_artists=True)
             c.analysis.get_latex_table(filename=pfn + "_params.txt", parameters=[r"$\alpha$"])
+            c.plotter.plot_summary(filename=pfn + "_summary.png", extra_parameter_spacing=1.5, errorbar=True, truth={"$\\Omega_m$": 0.31, "$\\alpha$": 1.0})
             c.plotter.plot_summary(
                 filename=[pfn + "_summary2.png", pfn + "_summary2.pdf"],
                 extra_parameter_spacing=1.5,
@@ -63,9 +65,7 @@ if __name__ == "__main__":
                 errorbar=True,
                 truth={"$\\Omega_m$": 0.31, "$\\alpha$": 1.0},
             )
-            c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth={"$\\Omega_m$": 0.31, "$\\alpha$": 1.0})
-            c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth={"$\\Omega_m$": 0.31, "$\\alpha$": 1.0}, parameters=2)
-            c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"], truth={"$\\Omega_m$": 0.31, "$\\alpha$": 1.0})
+            # c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
             # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0})
 
         # Plots the average recon mock measurements and the best-fit models from each of the models tested.
@@ -87,7 +87,7 @@ if __name__ == "__main__":
             ax.tick_params(labelcolor="none", top=False, bottom=False, left=False, right=False)
 
             counter = 0
-            for posterior, weight, chain, model, data, extra in fitter.load():
+            for posterior, weight, chain, evidence, model, data, extra in fitter.load():
                 if not "Recon" in extra["name"]:
                     continue
                 if extra["name"] == "Noda 2019 Recon":
@@ -116,3 +116,31 @@ if __name__ == "__main__":
                 counter += 1
             axes[1].set_xlabel(r"$k\,(h\,\mathrm{Mpc^{-1}})$")
             plt.savefig(pfn + "_bestfits.pdf")
+
+            fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True, gridspec_kw={"hspace": 0.04, "height_ratios": [1.5, 1]})
+
+            for posterior, weight, chain, evidence, model, data, extra in fitter.load():
+                if not "Recon" in extra["name"]:
+                    continue
+                if extra["name"] == "Noda 2019 Recon":
+                    model.postprocess = None
+                model.set_data(data)
+                p = model.get_param_dict(chain[np.argmax(posterior)])
+                smooth = model.get_model(p, data[0], smooth=True)
+                bestfit = model.get_model(p, data[0])
+                if extra["name"] == "Beutler 2017 Recon":
+                    ks = data[0]["ks"]
+                    pk = data[0]["pk"]
+                    err = np.sqrt(np.diag(data[0]["cov"]))
+                    axes[0].errorbar(ks, ks * pk, yerr=ks * err, fmt="o", c="k", ms=4, zorder=0)
+                    axes[1].fill_between(ks, 1.0 + err / pk, 1.0 - err / pk, color="k", zorder=0, alpha=0.15)
+                axes[0].plot(ks, ks * bestfit, color=extra["color"], label=extra["name"], linestyle=extra["linestyle"], zorder=1, linewidth=1.5)
+                axes[1].plot(ks, bestfit / pk, color=extra["color"], label=extra["name"], linestyle=extra["linestyle"], zorder=1, linewidth=1.5)
+            axes[0].set_ylim(750.0, 1650.0)
+            axes[1].set_ylim(0.95, 1.05)
+            axes[0].set_ylabel(r"$kP(k) (h^{-2}\,\mathrm{Mpc^{2}})$")
+            axes[1].set_ylabel(r"$\mathrm{Bestfit} / \mathrm{Data}$")
+            axes[0].tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
+            axes[0].legend()
+            axes[1].set_xlabel(r"$k\,(h\,\mathrm{Mpc^{-1}})$")
+            plt.savefig(pfn + "_bestfits_2.pdf")
