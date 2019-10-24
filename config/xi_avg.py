@@ -49,7 +49,7 @@ if __name__ == "__main__":
             from chainconsumer import ChainConsumer
 
             c = ChainConsumer()
-            for posterior, weight, chain, model, data, extra in fitter.load():
+            for posterior, weight, chain, evidence, model, data, extra in fitter.load():
                 c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
                 print(extra["name"], chain.shape, weight.shape, posterior.shape)
             c.configure(shade=True, bins=30, legend_artists=True)
@@ -73,35 +73,61 @@ if __name__ == "__main__":
             import matplotlib.pyplot as plt
             import matplotlib.gridspec as gridspec
 
-            fig, axes = plt.subplots(figsize=(6, 8), nrows=1, sharex=True, gridspec_kw={"hspace": 0.06, "height_ratios": [4.3, 1]})
-            inner = gridspec.GridSpecFromSubplotSpec(4, 1, subplot_spec=axes[0], hspace=0.04)
+            fig, axes = plt.subplots(figsize=(6, 8), nrows=1, sharex=True)
+            inner = gridspec.GridSpecFromSubplotSpec(4, 1, subplot_spec=axes, hspace=0.04)
             ax = plt.subplot(inner[0:])
             ax.spines["top"].set_color("none")
             ax.spines["bottom"].set_color("none")
             ax.spines["left"].set_color("none")
             ax.spines["right"].set_color("none")
-            ax.set_ylabel(r"$\xi(s) - \xi_{\mathrm{smooth}}(s)$")
+            ax.set_xlabel(r"$s\,(h^{-1}\,\mathrm{Mpc})$")
+            ax.set_ylabel(r"$\xi(s) - \xi_{\mathrm{smooth}}(s)\,(\times10^{-3})$")
             ax.tick_params(labelcolor="none", top=False, bottom=False, left=False, right=False)
 
             counter = 0
-            for posterior, weight, chain, model, data, extra in fitter.load():
+            for posterior, weight, chain, evidence, model, data, extra in fitter.load():
                 if not "Recon" in extra["name"]:
                     continue
                 model.set_data(data)
-                print(data[0].keys())
                 p = model.get_param_dict(chain[np.argmax(posterior)])
                 smooth = model.get_model(p, data[0], smooth=True)
                 bestfit = model.get_model(p, data[0])
-                if counter == 0:
+                if extra["name"] == "Beutler 2017 Recon":
                     ss = data[0]["dist"]
                     xi = data[0]["xi0"]
                     err = np.sqrt(np.diag(data[0]["cov"]))
-                    ax = fig.add_subplot(inner[counter])
-                    ax.errorbar(ss, xi - smooth, yerr=err / smooth, fmt="o", c="k", ms=4, zorder=0)
-                    ax.plot(ss, bestfit - smooth, color=extra["color"], label=extra["name"], linestyle=extra["linestyle"], zorder=1, linewidth=1.8)
-                    ax.set_ylim(0.88, 1.12)
-                    ax.tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
-                    ax.legend()
+                ax = fig.add_subplot(inner[counter])
+                ax.errorbar(ss, 1.0e3 * (xi - smooth), yerr=1.0e3 * err, fmt="o", c="k", ms=4, zorder=0)
+                ax.plot(ss, 1.0e3 * (bestfit - smooth), color=extra["color"], label=extra["name"], linestyle=extra["linestyle"], zorder=1, linewidth=1.8)
+                ax.set_ylim(-4.5, 4.5)
+                ax.tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
+                ax.legend(loc="upper right", fontsize=9)
                 counter += 1
-            axes[1].set_xlabel(r"$s\,(h^{-1}\,\mathrm{Mpc})$")
+            ax.tick_params(axis="x", which="both", labelcolor="k", bottom=True, labelbottom=True)
             plt.savefig(pfn + "_bestfits.pdf")
+
+            fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True, gridspec_kw={"hspace": 0.04, "height_ratios": [1.5, 1]})
+
+            for posterior, weight, chain, evidence, model, data, extra in fitter.load():
+                if not "Recon" in extra["name"]:
+                    continue
+                model.set_data(data)
+                p = model.get_param_dict(chain[np.argmax(posterior)])
+                smooth = model.get_model(p, data[0], smooth=True)
+                bestfit = model.get_model(p, data[0])
+                if extra["name"] == "Beutler 2017 Recon":
+                    ss = data[0]["dist"]
+                    xi = data[0]["xi0"]
+                    err = np.sqrt(np.diag(data[0]["cov"]))
+                    axes[0].errorbar(ss, ss * ss * xi, yerr=ss * ss * err, fmt="o", c="k", ms=4, zorder=0)
+                    axes[1].fill_between(ss, -1.0e3 * err, 1.0e3 * err, color="k", zorder=0, alpha=0.15)
+                axes[0].plot(ss, ss * ss * bestfit, color=extra["color"], label=extra["name"], linestyle=extra["linestyle"], zorder=1, linewidth=1.5)
+                axes[1].plot(ss, 1.0e3 * (bestfit - xi), color=extra["color"], label=extra["name"], linestyle=extra["linestyle"], zorder=1, linewidth=1.5)
+            axes[0].set_ylim(-40.0, 85.0)
+            axes[1].set_ylim(-1.6, 1.6)
+            axes[0].set_ylabel(r"$s^{2}\xi(s) (h^{-2}\,\mathrm{Mpc^{2}})$")
+            axes[1].set_ylabel(r"$\mathrm{Bestfit} - \mathrm{Data}\,(\times 10^{-3})$")
+            axes[0].tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
+            axes[0].legend()
+            axes[1].set_xlabel(r"$s\,(h^{-1}\,\mathrm{Mpc})$")
+            plt.savefig(pfn + "_bestfits_2.pdf")
