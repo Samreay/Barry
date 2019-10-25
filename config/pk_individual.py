@@ -312,7 +312,7 @@ if __name__ == "__main__":
             fig.savefig(pfn + "_alphaerrhist.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
         # Error-error comparison
-        if False:
+        if True:
             from matplotlib.colors import to_rgb, to_hex
 
             def blend_hex(hex1, hex2):
@@ -364,6 +364,10 @@ if __name__ == "__main__":
                             else:
                                 ax.set_xticks(ticks2)
                         else:
+                            if label2 == "Beutler 2017 Recon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
                             ax.set_xticklabels([])
                     else:
                         print(label1, label2)
@@ -398,6 +402,10 @@ if __name__ == "__main__":
                             else:
                                 ax.set_xticks(ticks2)
                         else:
+                            if label2 == "Beutler 2017 Recon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
                             ax.set_xticklabels([])
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphaerrcomp.png", bbox_inches="tight", dpi=300, transparent=True)
@@ -444,6 +452,10 @@ if __name__ == "__main__":
                             else:
                                 ax.set_xticks(ticks2)
                         else:
+                            if label2 == "Beutler 2017 Prerecon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
                             ax.set_xticklabels([])
                     else:
                         print(label1, label2)
@@ -451,7 +463,7 @@ if __name__ == "__main__":
                         a2 = np.array(res[label1][k])
                         c = np.abs(a1 - a2)
                         # ax.scatter(a1, a2, s=2, c=means["avg"], cmap="viridis_r", vmin=0.92, vmax=1.08)
-                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0001, vmax=0.01)
+                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0001, vmax=0.012)
                         if label1 == "Beutler 2017 Prerecon":
                             ax.set_ylim(*lim)
                         else:
@@ -478,6 +490,10 @@ if __name__ == "__main__":
                             else:
                                 ax.set_xticks(ticks2)
                         else:
+                            if label2 == "Beutler 2017 Prerecon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
                             ax.set_xticklabels([])
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphaerrcomp_prerecon.png", bbox_inches="tight", dpi=300, transparent=True)

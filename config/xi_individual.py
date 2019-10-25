@@ -125,7 +125,7 @@ if __name__ == "__main__":
         lim_both = bins_both[0], bins_both[-1]
 
         # Make histogram comparison of the means
-        if True:
+        if False:
             fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
             for label, means in res.items():
                 if "Prerecon" in label:
@@ -155,7 +155,7 @@ if __name__ == "__main__":
             fig.savefig(pfn + "_alphahist.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
         # Alpha-alpha comparison
-        if True:
+        if False:
 
             from matplotlib.colors import to_rgb, to_hex
 
@@ -189,7 +189,7 @@ if __name__ == "__main__":
                         ax.spines["top"].set_visible(False)
                         if j == 0:
                             ax.spines["left"].set_visible(False)
-                        if j == 4:
+                        if j == 3:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
                             ax.set_xticks(ticks)
                     else:
@@ -212,7 +212,7 @@ if __name__ == "__main__":
                         else:
                             ax.set_ylabel(" ".join(label1.split()[:-1]), fontsize=12)
                             ax.set_yticks(ticks)
-                        if i == 4:
+                        if i == 3:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
                             ax.set_xticks(ticks)
             plt.subplots_adjust(hspace=0.0, wspace=0)
@@ -240,7 +240,7 @@ if __name__ == "__main__":
                         ax.spines["top"].set_visible(False)
                         if j == 0:
                             ax.spines["left"].set_visible(False)
-                        if j == 4:
+                        if j == 3:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
                             ax.set_xticks(ticks)
                     else:
@@ -263,7 +263,7 @@ if __name__ == "__main__":
                         else:
                             ax.set_ylabel(" ".join(label1.split()[:-1]), fontsize=12)
                             ax.set_yticks(ticks)
-                        if i == 4:
+                        if i == 3:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
                             ax.set_xticks(ticks)
             plt.subplots_adjust(hspace=0.0, wspace=0)
@@ -275,7 +275,7 @@ if __name__ == "__main__":
         lim_both = bins_both[0], bins_both[-1]
 
         # Make histogram comparison of the errors
-        if True:
+        if False:
             fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
             for label, means in res.items():
                 if "Prerecon" in label:
@@ -315,14 +315,14 @@ if __name__ == "__main__":
 
             # Post-recon
             bins = np.linspace(0.006, 0.028, 31)
-            bins2 = np.linspace(0.006, 0.018, 31)
+            bins2 = np.linspace(0.006, 0.028, 31)
             ticks = [0.010, 0.017, 0.024]
-            ticks2 = [0.008, 0.012, 0.016]
+            ticks2 = [0.008, 0.017, 0.024]
             lim = bins[0], bins[-1]
             lim2 = bins2[0], bins2[-1]
 
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2]}
-            fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=False)
+            fig, axes = plt.subplots(4, 4, figsize=(8, 8), sharex=False)
             labels = ["Beutler 2017 Recon", "Beutler 2017 Fixed $\\Sigma_{nl}$ Recon", "Seo 2016 Recon", "Ding 2018 Recon"]
             k = "std"
             for i, label1 in enumerate(labels):
@@ -348,13 +348,17 @@ if __name__ == "__main__":
                         ax.spines["top"].set_visible(False)
                         if j == 0:
                             ax.spines["left"].set_visible(False)
-                        if j == 4:
+                        if j == 3:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
                             if label2 == "Beutler 2017 Recon":
                                 ax.set_xticks(ticks)
                             else:
                                 ax.set_xticks(ticks2)
                         else:
+                            if label2 == "Beutler 2017 Recon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
                             ax.set_xticklabels([])
                     else:
                         print(label1, label2)
@@ -382,13 +386,17 @@ if __name__ == "__main__":
                                 ax.set_yticks(ticks)
                             else:
                                 ax.set_yticks(ticks2)
-                        if i == 4:
+                        if i == 3:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
                             if label2 == "Beutler 2017 Recon":
                                 ax.set_xticks(ticks)
                             else:
                                 ax.set_xticks(ticks2)
                         else:
+                            if label2 == "Beutler 2017 Recon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
                             ax.set_xticklabels([])
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphaerrcomp.png", bbox_inches="tight", dpi=300, transparent=True)
@@ -396,13 +404,13 @@ if __name__ == "__main__":
 
             # Pre-recon
             bins = np.linspace(0.005, 0.055, 31)
-            bins2 = np.linspace(0.005, 0.035, 31)
+            bins2 = np.linspace(0.005, 0.055, 31)
             ticks = [0.01, 0.03, 0.05]
-            ticks2 = [0.01, 0.02, 0.03]
+            ticks2 = [0.01, 0.03, 0.05]
             lim = bins[0], bins[-1]
             lim2 = bins2[0], bins2[-1]
 
-            fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=False)
+            fig, axes = plt.subplots(4, 4, figsize=(8, 8), sharex=False)
             labels = ["Beutler 2017 Prerecon", "Beutler 2017 Fixed $\\Sigma_{nl}$ Prerecon", "Seo 2016 Prerecon", "Ding 2018 Prerecon"]
             k = "std"
             for i, label1 in enumerate(labels):
@@ -428,13 +436,17 @@ if __name__ == "__main__":
                         ax.spines["top"].set_visible(False)
                         if j == 0:
                             ax.spines["left"].set_visible(False)
-                        if j == 4:
+                        if j == 3:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
                             if label2 == "Beutler 2017 Prerecon":
                                 ax.set_xticks(ticks)
                             else:
                                 ax.set_xticks(ticks2)
                         else:
+                            if label2 == "Beutler 2017 Prerecon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
                             ax.set_xticklabels([])
                     else:
                         print(label1, label2)
@@ -442,7 +454,7 @@ if __name__ == "__main__":
                         a2 = np.array(res[label1][k])
                         c = np.abs(a1 - a2)
                         # ax.scatter(a1, a2, s=2, c=means["avg"], cmap="viridis_r", vmin=0.92, vmax=1.08)
-                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0001, vmax=0.01)
+                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0001, vmax=0.012)
                         if label1 == "Beutler 2017 Prerecon":
                             ax.set_ylim(*lim)
                         else:
@@ -462,20 +474,24 @@ if __name__ == "__main__":
                                 ax.set_yticks(ticks)
                             else:
                                 ax.set_yticks(ticks2)
-                        if i == 4:
+                        if i == 3:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
                             if label2 == "Beutler 2017 Prerecon":
                                 ax.set_xticks(ticks)
                             else:
                                 ax.set_xticks(ticks2)
                         else:
+                            if label2 == "Beutler 2017 Prerecon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
                             ax.set_xticklabels([])
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphaerrcomp_prerecon.png", bbox_inches="tight", dpi=300, transparent=True)
             fig.savefig(pfn + "_alphaerrcomp_prerecon.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
         # Plot the error as a function of the mean, to see how these are correlated
-        if True:
+        if False:
 
             import matplotlib.gridspec as gridspec
 
