@@ -1,5 +1,6 @@
 import sys
 
+from chainconsumer import ChainConsumer
 
 sys.path.append("..")
 from barry.samplers import DynestySampler
@@ -162,6 +163,10 @@ if __name__ == "__main__":
         if True:
 
             from matplotlib.colors import to_rgb, to_hex
+
+            c = ChainConsumer()
+            c.configure()
+            c.plotter.set_rc_params()
 
             def blend_hex(hex1, hex2):
                 a = np.array(to_rgb(hex1))
