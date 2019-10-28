@@ -92,6 +92,7 @@ if __name__ == "__main__":
                 c.add_chain(samples, parameters=model.get_labels() + [r"$\sigma_\alpha$"], **extra)
             c.configure(shade=True, bins=30, legend_artists=True)
             c.analysis.get_latex_table(filename=pfn + "_params.txt", parameters=[r"$\alpha$"])
+            c.analysis.get_latex_table(filename=pfn + "_params_all.txt", transpose=True)
             c.plotter.plot_summary(filename=pfn + "_summary.png", extra_parameter_spacing=1.5, errorbar=True, truth={"$\\Omega_m$": 0.31, "$\\alpha$": 1.0})
             extents = {r"$\alpha$": [0.98, 1.03], r"$\sigma_\alpha$": [0.008, 0.027]}
             fig = c.plotter.plot_summary(
