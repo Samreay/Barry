@@ -72,10 +72,13 @@ if __name__ == "__main__":
     for label, df in res.items():
         res[label] = pd.merge(good_ids, df, how="left", on="realisation")
 
-    labels = ["Beutler 2017 Recon", "Beutler 2017 Fixed $\\Sigma_{nl}$ Recon", "Seo 2016 Recon", "Ding 2018 Recon", "Noda 2019 Recon"]
+    labels = ["Beutler 2017 Recon", "Beutler 2017 Fixed $\\Sigma_{nl}$ Recon", "Seo 2016 Recon", "Ding 2018 Recon"]
     res2d = np.empty((len(labels), len(res[labels[0]]["avg"])))
+    res2d_std = np.empty((len(labels), len(res[labels[0]]["avg"])))
     for i, label in enumerate(labels):
         res2d[i, 0:] = res[label]["avg"]
+        res2d_std[i, 0:] = res[label]["std"]
+
     mean = np.mean(res2d, axis=1)
     cov = np.cov(res2d)
     corr = np.corrcoef(res2d)
@@ -83,7 +86,7 @@ if __name__ == "__main__":
     print(np.sqrt(np.diag(cov)), corr)
 
     # Compute the consensus value using the equation of Winkler1981, Sanchez2016
-    from scipy import linalg
+    from scipy import linalg, optimize
 
     cov_inv = linalg.inv(cov)
     # print(mean.shape, cov_inv.shape)
@@ -92,5 +95,3 @@ if __name__ == "__main__":
     print(mean, combined)
     print(np.sqrt(np.diag(cov)), 1.0 / np.sqrt(sigma_c))
     print(1.0 / np.sqrt(sigma_c * np.diag(cov)))
-
-    # Answer: Yes, by between 5-10%

@@ -68,7 +68,8 @@ if __name__ == "__main__":
                 res[n] = []
             i = posterior.argmax()
             chi2 = -2 * posterior[i]
-            a, s = weighted_avg_and_std(chain[:, 0], weights=weight)
+            a, s = weighted_avg_and_std(evidence, weights=weight)
+            # a, s = weighted_avg_and_std(chain[:, 0], weights=weight)
             res[n].append([a, s, chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
 
         for label in res.keys():
@@ -95,6 +96,35 @@ if __name__ == "__main__":
         c5 = ["#262232", "#1F4D5C", "#0E7A6E", "#5BA561", "#C1C64D"]  # ["#3c1357", "#61208d", "#a73b8f", "#e8638b", "#f4aea3"]
         plt.rc("text", usetex=True)
         plt.rc("font", family="serif")
+
+        if True:
+            fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True, gridspec_kw={"hspace": 0.0})
+            pairs = [("B17", "B17 + Extractor"), ("D18", "D18 + Extractor")]
+
+            for pair, ax, index in zip(pairs, axes, [0, 2]):
+                combined_df = pd.merge(res[pair[0]], res[pair[1]], on="realisation", suffixes=("_original", "_extracted"))
+
+                data = combined_df[["avg_original", "avg_extracted"]].values
+                corr = np.corrcoef(data.T)[1, 0]
+                print("corr is ", corr)
+
+                step = 9
+                alpha_diff = combined_df["avg_original"] - combined_df["avg_extracted"]
+                print(np.mean(alpha_diff), np.std(alpha_diff))
+                err = np.sqrt(
+                    combined_df["std_original"] ** 2 + combined_df["std_extracted"] ** 2 - 2 * corr * combined_df["std_extracted"] * combined_df["std_original"]
+                )
+                chi2 = (np.abs(alpha_diff) / err).sum() / alpha_diff.size
+                print("chi2 is ", chi2)
+                x = combined_df["realisation"][::step]
+                ax.errorbar(x, alpha_diff[::step], c=c4[index], yerr=err[::step], fmt="o", elinewidth=0.5, ms=2)
+                ax.axhline(0, c="k", lw=1, ls="--")
+                ax.set_ylabel(r"$\Delta\alpha$ for " + pair[0], fontsize=14)
+                ax.set_ylim(-0.012, 0.012)
+            axes[1].set_xlabel("Realisation", fontsize=14)
+            plt.savefig(pfn + "_alphadiff.pdf", bbox_inches="tight", dpi=300, transparent=True)
+            plt.savefig(pfn + "_alphadiff.png", bbox_inches="tight", dpi=300, transparent=True)
+
         # Make histogram comparison
         if False:
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
@@ -129,7 +159,7 @@ if __name__ == "__main__":
             return to_hex(0.5 * (a + b))
 
         # Alpha-alpha comparison
-        if True:
+        if False:
             from scipy.interpolate import interp1d
 
             bins_both = np.linspace(0.92, 1.08, 31)
