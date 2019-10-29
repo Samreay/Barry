@@ -18,8 +18,10 @@ cs2 = ["#262232", "#262232", "#116A71", "#48AB75", "#a7b536"]
 for f, x in zip([filename_pk, filename_xi], ["$P(k)$", "$\\xi(s)$"]):
     for r in ("Recon", "Prerecon"):
         df = pd.read_csv(f)
-        df = df[[c for c in df.columns if "_mean" in c and r in c]]
+        df = df[[c for c in df.columns if "_std" in c and r in c]]
+
         df = df.rename(columns={c: c.split(r)[0].strip() for c in df.columns})
+        print(df.head())
         mins = df.min(axis=1)
 
         counts = [(np.isclose(df[c], mins, atol=0.0005)).sum() for c in df.columns]
