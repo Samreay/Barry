@@ -1,8 +1,9 @@
 import sys
 
+import numpy as np
 
 sys.path.append("..")
-from barry.config import setup
+from barry.config import setup, weighted_avg_and_std
 from barry.models import PowerNoda2019
 from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.postprocessing import BAOExtractor
@@ -50,9 +51,16 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         c = ChainConsumer()
+        alphas = []
+        aas = []
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
             print(extra["name"])
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
+            m, s = weighted_avg_and_std(evidence, weights=weight)
+            m2, s2 = weighted_avg_and_std(chain[:, -1], weights=weight)
+            alphas.append(m)
+            aas.append(m2)
+        print(np.std(alphas), np.std(aas))
         c.configure(shade=True, bins=25, legend_artists=True, cmap="plasma", sigmas=[0, 1, 2])
         extents = None  # {"$\\alpha$": (0.88, 1.18), "$A$": (0, 10), "$b$": (1.5, 1.8), r"$\gamma_{rec}$": (1, 8)}
         params = ["$\\alpha$", "$A$", "$b$"]
