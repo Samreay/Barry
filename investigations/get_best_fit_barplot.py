@@ -22,7 +22,7 @@ for f, x in zip([filename_pk, filename_xi], ["$P(k)$", "$\\xi(s)$"]):
         df = df.rename(columns={c: c.split(r)[0].strip() for c in df.columns})
         mins = df.min(axis=1)
 
-        counts = [(np.isclose(df[c], mins, atol=0.001)).sum() for c in df.columns]
+        counts = [(np.isclose(df[c], mins, atol=0.0005)).sum() for c in df.columns]
         y_pos = -np.arange(len(df.columns))
 
         barlist = axes[i].barh(y_pos, counts, align="center", height=0.8)

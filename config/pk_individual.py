@@ -66,7 +66,7 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         res = {}
-        if path.exists(pfn + "_alphameans.csv"):
+        if False and path.exists(pfn + "_alphameans.csv"):
             logging.info("Found alphameans.csv, reading from existing file")
 
             df = pd.read_csv(pfn + "_alphameans.csv")
@@ -78,6 +78,7 @@ if __name__ == "__main__":
 
             logging.info("Didn't find alphameans.csv, reading chains")
 
+            doonce = True
             for posterior, weight, chain, evidence, model, data, extra in fitter.load():
                 n = extra["name"].split(",")[0]
                 if res.get(n) is None:
@@ -85,7 +86,18 @@ if __name__ == "__main__":
                 i = posterior.argmax()
                 chi2 = -2 * posterior[i]
                 m, s = weighted_avg_and_std(chain[:, 0], weight)
-                print(m)
+
+                if doonce:
+                    doonce = False
+                    import pandas as pd
+
+                    df = pd.DataFrame(chain[:, 0], columns=["alpha"])
+                    nsamp = int((weight / weight.max()).sum())
+                    r = []
+                    for ii in range(1000):
+                        r.append(df.sample(weights=weight, replace=True, n=nsamp).std())
+                    print(f"SE of std is {np.std(r)}")
+
                 res[n].append([m, s, chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"], evidence.max()])
             for label in res.keys():
                 res[label] = pd.DataFrame(res[label], columns=["avg", "std", "max", "posterior", "chi2", "Dchi2", "realisation", "evidence"])

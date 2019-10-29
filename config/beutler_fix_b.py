@@ -7,7 +7,7 @@ from barry.samplers import DynestySampler
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
 from barry.config import setup, weighted_avg_and_std
-from barry.models import PowerBeutler2017
+from barry.models import PowerBeutler2017, PowerSeo2016, PowerDing2018
 from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.fitter import Fitter
 import numpy as np
@@ -39,8 +39,24 @@ if __name__ == "__main__":
         beutler.set_default("b", 0.9)
         beutler.set_fix_params(["om", "sigma_nl", "b"])
 
+        seo = PowerSeo2016(recon=r)
+        seo_fixed = PowerSeo2016(recon=r)
+        seo_fixed.set_default("b", 1.89)
+        seo_fixed.set_fix_params(["om", "f", "b"])
+
+        ding = PowerDing2018(recon=r)
+        ding_fixed = PowerDing2018(recon=r)
+        ding_fixed.set_default("b", 1.91)
+        ding_fixed.set_fix_params(["om", "f", "b"])
+
         fitter.add_model_and_dataset(beutler_not_fixed, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ ", linestyle=ls, color="p")
         fitter.add_model_and_dataset(beutler, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ and $b$", linestyle=ls, color="p")
+
+        fitter.add_model_and_dataset(seo, d, name=f"Seo 2016")
+        fitter.add_model_and_dataset(seo_fixed, d, name=f"Seo 2016 Fixed")
+        fitter.add_model_and_dataset(ding, d, name=f"Ding 2018")
+        fitter.add_model_and_dataset(ding_fixed, d, name=f"Ding 2018 Fixed")
+
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(5)
     fitter.set_num_concurrent(500)
@@ -60,4 +76,5 @@ if __name__ == "__main__":
             n = extra["name"].split(",")[0]
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
 
-        c.analysis.get_latex_table(pfn + "_latex.txt", transpose=True)
+        c.analysis.get_latex_table(filename=pfn + "_latex.txt", transpose=True)
+        c.plotter.plot(filename=pfn + ".png")
