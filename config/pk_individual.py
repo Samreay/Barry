@@ -142,7 +142,7 @@ if __name__ == "__main__":
         lim_both = bins_both[0], bins_both[-1]
 
         # Make histogram comparison of the means
-        if True:
+        if False:
             fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
             for label, means in res.items():
                 if "Prerecon" in label:
@@ -172,7 +172,7 @@ if __name__ == "__main__":
             fig.savefig(pfn + "_alphahist.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
         # Alpha-alpha comparison
-        if True:
+        if False:
 
             from matplotlib.colors import to_rgb, to_hex
 
@@ -296,7 +296,7 @@ if __name__ == "__main__":
         lim_both = bins_both[0], bins_both[-1]
 
         # Make histogram comparison of the errors
-        if True:
+        if False:
             fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
             for label, means in res.items():
                 if "Prerecon" in label:
@@ -325,15 +325,25 @@ if __name__ == "__main__":
 
         # Error-error comparison
         if True:
+            from matplotlib.colors import to_rgb, to_hex
+
+            def blend_hex(hex1, hex2):
+                a = np.array(to_rgb(hex1))
+                b = np.array(to_rgb(hex2))
+                return to_hex(0.5 * (a + b))
+
             from scipy.interpolate import interp1d
 
             # Post-recon
-            bins = np.linspace(0.004, 0.02, 31)
-            ticks = [0.008, 0.012, 0.016]
+            bins = np.linspace(0.006, 0.028, 31)
+            bins2 = np.linspace(0.006, 0.018, 31)
+            ticks = [0.010, 0.017, 0.024]
+            ticks2 = [0.008, 0.012, 0.016]
             lim = bins[0], bins[-1]
+            lim2 = bins2[0], bins2[-1]
 
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
-            fig, axes = plt.subplots(5, 5, figsize=(10, 10), sharex=True)
+            fig, axes = plt.subplots(5, 5, figsize=(10, 10), sharex=False)
             labels = ["Beutler 2017 Recon", "Beutler 2017 Fixed $\\Sigma_{nl}$ Recon", "Seo 2016 Recon", "Ding 2018 Recon", "Noda 2019 Recon"]
             k = "std"
             for i, label1 in enumerate(labels):
@@ -343,27 +353,49 @@ if __name__ == "__main__":
                         ax.axis("off")
                         continue
                     elif i == j:
-                        h, _, _ = ax.hist(res[label1][k], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
-                        ax.hist(res[label1][k], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
+                        if label1 == "Beutler 2017 Recon":
+                            h, _, _ = ax.hist(res[label1][k], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
+                            ax.hist(res[label1][k], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
+                        else:
+                            h, _, _ = ax.hist(res[label1][k], bins=bins2, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
+                            ax.hist(res[label1][k], bins=bins2, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
                         ax.set_yticklabels([])
                         ax.tick_params(axis="y", left=False)
-                        ax.set_xlim(*lim)
+                        if label1 == "Beutler 2017 Recon":
+                            ax.set_xlim(*lim)
+                        else:
+                            ax.set_xlim(*lim2)
                         ax.spines["right"].set_visible(False)
                         ax.spines["top"].set_visible(False)
                         if j == 0:
                             ax.spines["left"].set_visible(False)
                         if j == 4:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
-                            ax.set_xticks(ticks)
+                            if label2 == "Beutler 2017 Recon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
+                        else:
+                            if label2 == "Beutler 2017 Recon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
+                            ax.set_xticklabels([])
                     else:
                         print(label1, label2)
                         a1 = np.array(res[label2][k])
                         a2 = np.array(res[label1][k])
                         c = np.abs(a1 - a2)
-                        # ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.01, vmax=0.15)
-                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0001, vmax=0.005)
-                        ax.set_xlim(*lim)
-                        ax.set_ylim(*lim)
+                        # ax.scatter(a1, a2, s=2, c=means["avg"], cmap="viridis_r", vmin=0.92, vmax=1.08)
+                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0001, vmax=0.006)
+                        if label1 == "Beutler 2017 Recon":
+                            ax.set_ylim(*lim)
+                        else:
+                            ax.set_ylim(*lim2)
+                        if label2 == "Beutler 2017 Recon":
+                            ax.set_xlim(*lim)
+                        else:
+                            ax.set_xlim(*lim2)
                         ax.plot([0.0, 1.0], [0.0, 1.0], c="k", lw=1, alpha=0.8, ls=":")
 
                         if j != 0:
@@ -371,20 +403,35 @@ if __name__ == "__main__":
                             ax.tick_params(axis="y", left=False)
                         else:
                             ax.set_ylabel(" ".join(label1.split()[:-1]), fontsize=12)
-                            ax.set_yticks(ticks)
+                            if label1 == "Beutler 2017 Recon":
+                                ax.set_yticks(ticks)
+                            else:
+                                ax.set_yticks(ticks2)
                         if i == 4:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
-                            ax.set_xticks(ticks)
+                            if label2 == "Beutler 2017 Recon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
+                        else:
+                            if label2 == "Beutler 2017 Recon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
+                            ax.set_xticklabels([])
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphaerrcomp.png", bbox_inches="tight", dpi=300, transparent=True)
             fig.savefig(pfn + "_alphaerrcomp.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
             # Pre-recon
-            bins = np.linspace(0.005, 0.045, 31)
-            ticks = [0.01, 0.025, 0.04]
+            bins = np.linspace(0.005, 0.055, 31)
+            bins2 = np.linspace(0.005, 0.035, 31)
+            ticks = [0.01, 0.03, 0.05]
+            ticks2 = [0.01, 0.02, 0.03]
             lim = bins[0], bins[-1]
+            lim2 = bins2[0], bins2[-1]
 
-            fig, axes = plt.subplots(5, 5, figsize=(10, 10), sharex=True)
+            fig, axes = plt.subplots(5, 5, figsize=(10, 10), sharex=False)
             labels = ["Beutler 2017 Prerecon", "Beutler 2017 Fixed $\\Sigma_{nl}$ Prerecon", "Seo 2016 Prerecon", "Ding 2018 Prerecon", "Noda 2019 Prerecon"]
             k = "std"
             for i, label1 in enumerate(labels):
@@ -394,27 +441,49 @@ if __name__ == "__main__":
                         ax.axis("off")
                         continue
                     elif i == j:
-                        h, _, _ = ax.hist(res[label1][k], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
-                        ax.hist(res[label1][k], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
+                        if label1 == "Beutler 2017 Prerecon":
+                            h, _, _ = ax.hist(res[label1][k], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
+                            ax.hist(res[label1][k], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
+                        else:
+                            h, _, _ = ax.hist(res[label1][k], bins=bins2, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]])
+                            ax.hist(res[label1][k], bins=bins2, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
                         ax.set_yticklabels([])
                         ax.tick_params(axis="y", left=False)
-                        ax.set_xlim(*lim)
+                        if label1 == "Beutler 2017 Prerecon":
+                            ax.set_xlim(*lim)
+                        else:
+                            ax.set_xlim(*lim2)
                         ax.spines["right"].set_visible(False)
                         ax.spines["top"].set_visible(False)
                         if j == 0:
                             ax.spines["left"].set_visible(False)
                         if j == 4:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
-                            ax.set_xticks(ticks)
+                            if label2 == "Beutler 2017 Prerecon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
+                        else:
+                            if label2 == "Beutler 2017 Prerecon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
+                            ax.set_xticklabels([])
                     else:
                         print(label1, label2)
                         a1 = np.array(res[label2][k])
                         a2 = np.array(res[label1][k])
                         c = np.abs(a1 - a2)
-                        # ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.01, vmax=0.15)
-                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0001, vmax=0.01)
-                        ax.set_xlim(*lim)
-                        ax.set_ylim(*lim)
+                        # ax.scatter(a1, a2, s=2, c=means["avg"], cmap="viridis_r", vmin=0.92, vmax=1.08)
+                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0001, vmax=0.012)
+                        if label1 == "Beutler 2017 Prerecon":
+                            ax.set_ylim(*lim)
+                        else:
+                            ax.set_ylim(*lim2)
+                        if label2 == "Beutler 2017 Prerecon":
+                            ax.set_xlim(*lim)
+                        else:
+                            ax.set_xlim(*lim2)
                         ax.plot([0.0, 1.0], [0.0, 1.0], c="k", lw=1, alpha=0.8, ls=":")
 
                         if j != 0:
@@ -422,10 +491,89 @@ if __name__ == "__main__":
                             ax.tick_params(axis="y", left=False)
                         else:
                             ax.set_ylabel(" ".join(label1.split()[:-1]), fontsize=12)
-                            ax.set_yticks(ticks)
+                            if label1 == "Beutler 2017 Prerecon":
+                                ax.set_yticks(ticks)
+                            else:
+                                ax.set_yticks(ticks2)
                         if i == 4:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
-                            ax.set_xticks(ticks)
+                            if label2 == "Beutler 2017 Prerecon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
+                        else:
+                            if label2 == "Beutler 2017 Prerecon":
+                                ax.set_xticks(ticks)
+                            else:
+                                ax.set_xticks(ticks2)
+                            ax.set_xticklabels([])
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphaerrcomp_prerecon.png", bbox_inches="tight", dpi=300, transparent=True)
             fig.savefig(pfn + "_alphaerrcomp_prerecon.pdf", bbox_inches="tight", dpi=300, transparent=True)
+
+        # Plot the error as a function of the mean, to see how these are correlated
+        if False:
+
+            import matplotlib.gridspec as gridspec
+
+            # Post-recon
+            fig, axes = plt.subplots(figsize=(6, 8), nrows=1, sharex=True)
+            inner = gridspec.GridSpecFromSubplotSpec(5, 1, subplot_spec=axes, hspace=0.04)
+            ax = plt.subplot(inner[0:])
+            ax.spines["top"].set_color("none")
+            ax.spines["bottom"].set_color("none")
+            ax.spines["left"].set_color("none")
+            ax.spines["right"].set_color("none")
+            ax.set_xlabel(r"$\alpha$")
+            ax.set_ylabel(r"$\sigma_{\alpha}$")
+            ax.tick_params(labelcolor="none", top=False, bottom=False, left=False, right=False)
+
+            counter = 0
+            for label, means in res.items():
+                if not "Recon" in label:
+                    continue
+                ax = fig.add_subplot(inner[counter])
+                c = np.abs(means["std"] - np.mean(means["std"]))
+                ax.scatter(means["avg"], means["std"], s=2, c=c, cmap="viridis_r", vmin=-0.0001, vmax=0.01, label=label)
+                ax.axhline(y=np.mean(means["std"]), c="k", lw=1, alpha=0.8, ls=":")
+                ax.set_xlim(0.96, 1.04)
+                if label == "Beutler 2017 Recon":
+                    ax.set_ylim(0.006, 0.028)
+                else:
+                    ax.set_ylim(0.006, 0.018)
+                ax.tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
+                ax.legend(loc="upper right", fontsize=9)
+                counter += 1
+            ax.tick_params(axis="x", which="both", labelcolor="k", bottom=True, labelbottom=True)
+            plt.savefig(pfn + "_alphameanerr.pdf")
+
+            # Pre-recon
+            fig, axes = plt.subplots(figsize=(6, 8), nrows=1, sharex=True)
+            inner = gridspec.GridSpecFromSubplotSpec(5, 1, subplot_spec=axes, hspace=0.04)
+            ax = plt.subplot(inner[0:])
+            ax.spines["top"].set_color("none")
+            ax.spines["bottom"].set_color("none")
+            ax.spines["left"].set_color("none")
+            ax.spines["right"].set_color("none")
+            ax.set_xlabel(r"$\alpha$")
+            ax.set_ylabel(r"$\sigma_{\alpha}$")
+            ax.tick_params(labelcolor="none", top=False, bottom=False, left=False, right=False)
+
+            counter = 0
+            for label, means in res.items():
+                if not "Prerecon" in label:
+                    continue
+                ax = fig.add_subplot(inner[counter])
+                c = np.abs(means["std"] - np.mean(means["std"]))
+                ax.scatter(means["avg"], means["std"], s=2, c=c, cmap="viridis_r", vmin=-0.0001, vmax=0.01, label=label)
+                ax.axhline(y=np.mean(means["std"]), c="k", lw=1, alpha=0.8, ls=":")
+                ax.set_xlim(0.91, 1.09)
+                if label == "Beutler 2017 Prerecon":
+                    ax.set_ylim(0.006, 0.055)
+                else:
+                    ax.set_ylim(0.006, 0.035)
+                ax.tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
+                ax.legend(loc="upper right", fontsize=9)
+                counter += 1
+            ax.tick_params(axis="x", which="both", labelcolor="k", bottom=True, labelbottom=True)
+            plt.savefig(pfn + "_alphameanerr_prerecon.pdf")
