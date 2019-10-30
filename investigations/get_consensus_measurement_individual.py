@@ -283,7 +283,7 @@ if True:
     colors = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
     fig, axes = plt.subplots(figsize=(5, 4), nrows=1, sharex=True)
-    inner = gridspec.GridSpecFromSubplotSpec(2, 2, subplot_spec=axes, hspace=0.0, wspace=0.0, width_ratios=[3, 1])
+    inner = gridspec.GridSpecFromSubplotSpec(3, 2, subplot_spec=axes, hspace=0.0, wspace=0.0, width_ratios=[3, 1])
     ax = plt.subplot(inner[0:])
     ax.spines["top"].set_color("none")
     ax.spines["bottom"].set_color("none")
@@ -291,11 +291,13 @@ if True:
     ax.spines["right"].set_color("none")
     ax.tick_params(labelcolor="none", top=False, bottom=False, left=False, right=False)
 
-    for i in range(2):
+    for i in range(3):
         step = 1
         x = np.linspace(1, len(means[0]), len(means[0]))[::step]
         if i == 0:
             err_rat = pk_xi_combined_err / integrate_err[0]
+        elif i == 1:
+            err_rat = pk_xi_combined_err / stds[0][0:, 1]
         else:
             err_rat = pk_xi_combined_err / pk_xi_best_err
 
@@ -306,15 +308,20 @@ if True:
         if i == 0:
             ax.set_xticklabels([])
             ax.set_ylabel(r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{average}}$")
+        elif i == 1:
+            ax.set_xticklabels([])
+            ax.set_ylabel(r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{Beutler\,Fixed}}$")
         else:
             ax.set_xlabel("Realisation", fontsize=14)
             ax.set_ylabel(r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{min(P,\xi)}}$")
 
-    for i in range(2):
+    for i in range(3):
         step = 1
         x = np.linspace(1, len(means[0]), len(means[0]))[::step]
         if i == 0:
             err_rat = pk_xi_combined_err / integrate_err[0]
+        elif i == 1:
+            err_rat = pk_xi_combined_err / stds[0][0:, 1]
         else:
             err_rat = pk_xi_combined_err / pk_xi_best_err
 
