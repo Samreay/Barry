@@ -55,7 +55,7 @@ if __name__ == "__main__":
         c.configure(shade=True, bins=25, legend_artists=True, cmap="plasma", sigmas=[0, 1, 2])
         extents = None  # {"$\\alpha$": (0.88, 1.18), "$A$": (0, 10), "$b$": (1.5, 1.8), r"$\gamma_{rec}$": (1, 8)}
         params = ["$\\alpha$", "$A$", "$b$"]
-        truth = {"$\\Omega_m$": 0.31, "$\\alpha$": 1.0}
+        truth = {"$\\Omega_m$": 0.31, "$\\alpha$": 0.9982}
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth=truth, extents=extents, parameters=params)
         c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, extents=extents, parameters=params, figsize="COLUMN")

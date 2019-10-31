@@ -138,8 +138,8 @@ if __name__ == "__main__":
             axes[1].set_xlabel(r"$\langle \alpha \rangle$", fontsize=14)
             axes[0].set_yticklabels([])
             axes[1].set_yticklabels([])
-            axes[0].axvline(1.0, color="k", lw=1, ls="--", alpha=0.6)
-            axes[1].axvline(1.0, color="k", lw=1, ls="--", alpha=0.6)
+            axes[0].axvline(0.9982, color="k", lw=1, ls="--", alpha=0.6)
+            axes[1].axvline(0.9982, color="k", lw=1, ls="--", alpha=0.6)
             axes[0].annotate("Prerecon", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
             axes[1].annotate("Recon", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
             leg1 = axes[0].legend(loc=2, frameon=False)
@@ -155,7 +155,7 @@ if __name__ == "__main__":
             fig.savefig(pfn + "_alphahist.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
         # Alpha-alpha comparison
-        if False:
+        if True:
 
             from matplotlib.colors import to_rgb, to_hex
 
@@ -203,8 +203,8 @@ if __name__ == "__main__":
                         ax.set_xlim(*lim)
                         ax.set_ylim(*lim)
                         ax.plot([0.8, 1.2], [0.8, 1.2], c="k", lw=1, alpha=0.8, ls=":")
-                        ax.axvline(1.0, color="k", lw=1, ls="--", alpha=0.4)
-                        ax.axhline(1.0, color="k", lw=1, ls="--", alpha=0.4)
+                        ax.axvline(0.9982, color="k", lw=1, ls="--", alpha=0.4)
+                        ax.axhline(0.9982, color="k", lw=1, ls="--", alpha=0.4)
 
                         if j != 0:
                             ax.set_yticklabels([])
@@ -254,8 +254,8 @@ if __name__ == "__main__":
                         ax.set_xlim(*lim)
                         ax.set_ylim(*lim)
                         ax.plot([0.8, 1.2], [0.8, 1.2], c="k", lw=1, alpha=0.8, ls=":")
-                        ax.axvline(1.0, color="k", lw=1, ls="--", alpha=0.4)
-                        ax.axhline(1.0, color="k", lw=1, ls="--", alpha=0.4)
+                        ax.axvline(0.9982, color="k", lw=1, ls="--", alpha=0.4)
+                        ax.axhline(0.9982, color="k", lw=1, ls="--", alpha=0.4)
 
                         if j != 0:
                             ax.set_yticklabels([])

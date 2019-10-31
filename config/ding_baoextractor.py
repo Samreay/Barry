@@ -140,8 +140,8 @@ if __name__ == "__main__":
             axes[1].set_xlabel(r"$\langle \alpha \rangle$", fontsize=14)
             axes[0].set_yticklabels([])
             axes[1].set_yticklabels([])
-            axes[0].axvline(1.0, color="k", lw=1, ls="--", alpha=0.6)
-            axes[1].axvline(1.0, color="k", lw=1, ls="--", alpha=0.6)
+            axes[0].axvline(0.9982, color="k", lw=1, ls="--", alpha=0.6)
+            axes[1].axvline(0.9982, color="k", lw=1, ls="--", alpha=0.6)
             leg1 = axes[0].legend(loc=2, frameon=False)
             leg2 = axes[1].legend(loc=2, frameon=False)
             for lh in leg1.legendHandles + leg2.legendHandles:
@@ -204,8 +204,8 @@ if __name__ == "__main__":
                         ax.set_xlim(lim[0], lim[1])
                         ax.set_ylim(*lim)
                         ax.plot([0.8, 1.2], [0.8, 1.2], c="k", lw=1, alpha=0.8, ls=":")
-                        ax.axvline(1.0, color="k", lw=1, ls="--", alpha=0.4)
-                        ax.axhline(1.0, color="k", lw=1, ls="--", alpha=0.4)
+                        ax.axvline(0.9982, color="k", lw=1, ls="--", alpha=0.4)
+                        ax.axhline(0.9982, color="k", lw=1, ls="--", alpha=0.4)
 
                         if "Extractor" in label1 or "Extractor" in label2:
                             if "Extractor" in label1 and "Extractor" in label2:

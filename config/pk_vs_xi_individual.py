@@ -70,6 +70,7 @@ if __name__ == "__main__":
                 res[n] = []
             i = posterior.argmax()
             chi2 = -2 * posterior[i]
+            # res[n].append([np.average(evidence, weights=weight), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
             res[n].append([np.average(chain[:, 0], weights=weight), np.std(chain[:, 0]), chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
         for label in res.keys():
             res[label] = pd.DataFrame(res[label], columns=["avg", "std", "max", "posterior", "chi2", "Dchi2", "realisation"])
@@ -154,8 +155,8 @@ if __name__ == "__main__":
                         ax.set_xlim(lim[0], l2)
                         ax.set_ylim(*lim)
                         ax.plot([0.8, 1.2], [0.8, 1.2], c="k", lw=1, alpha=0.8, ls=":")
-                        ax.axvline(1.0, color="k", lw=1, ls="--", alpha=0.4)
-                        ax.axhline(1.0, color="k", lw=1, ls="--", alpha=0.4)
+                        ax.axvline(0.9982, color="k", lw=1, ls="--", alpha=0.4)
+                        ax.axhline(0.9982, color="k", lw=1, ls="--", alpha=0.4)
 
                         if j != 0:
                             ax.set_yticklabels([])

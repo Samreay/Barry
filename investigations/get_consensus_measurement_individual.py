@@ -52,10 +52,18 @@ chi2 = np.empty(np.shape(means[0]))
 pvals = np.empty(len(means[0][0, 0:]))
 rv = stats.chi2(1)
 for i in range(len(cols_mean)):
-    chi2[0:, i] = (means[0][0:, i] - 1.0) ** 2 / stds[0][0:, i] ** 2
-    anderson = stats.anderson_ksamp([chi2[0:, i], rv.rvs(len(chi2[0:, i]))])
+    chi2[:, i] = (means[0][:, i] - 1.0) ** 2 / stds[0][0:, i] ** 2
+    anderson = stats.anderson_ksamp([chi2[:, i], rv.rvs(len(chi2[:, i]))])
     pvals[i] = stats.kstest(chi2[0:, i], rv.cdf).pvalue
-    print(cols_mean[i], np.mean(means[0][0:, i]), np.std(means[0][0:, i]), np.mean(stds[0][0:, i]), pvals[i], anderson[0], anderson[1])
+    print(cols_mean[i], np.mean(means[0][:, i]), np.std(means[0][:, i]), np.mean(stds[0][0:, i]), pvals[i], anderson[0], anderson[1])
+
+# bins = np.linspace(0, 10, 21)
+# for row, label in zip(chi2.T, cols_mean):
+#     if "pk" not in label or "Noda" in label:
+#         continue
+#     plt.hist(row, bins=bins, histtype="step", label=label)
+# plt.legend()
+# plt.show()
 
 if True:
 
@@ -80,6 +88,7 @@ if True:
 
     counter = 0
     colors = ["#262232", "#262232", "#116A71", "#48AB75", "#D1E05B"]
+    colors2 = ["#262232", "#262232", "#116A71", "#48AB75", "#aebd39"]
 
     y = np.linspace(0.0, 1.0, len(means[0]))
     for i in range(2):
@@ -95,16 +104,17 @@ if True:
                 ax.tick_params(axis="y", which="both", labelcolor="none", bottom=False, labelbottom=False)
                 ax.set_xticks([])
                 for k in range(nrows):
-                    ax.plot([], label=labels[k], color=colors[k])
-                ax.legend(frameon=False, markerfirst=False, loc="lower right", fontsize=8)
+                    ax.plot([], label=labels[k], color=colors[k], ls="-." if "Fixed" in label else "-")
+                ax.legend(frameon=False, markerfirst=False, loc="lower right", fontsize=9, labelspacing=0.15, borderaxespad=0, borderpad=0)
 
             else:
                 x = np.sort(chi2[0:, i * nrows + j])
+
                 xvals = np.logspace(-3.0, np.log10(25.0), 10000)
                 bins = np.logspace(-3.0, np.log10(25.0), 100)
 
                 y2 = interp1d(x, y, bounds_error=False, fill_value=(y[0], y[-1]))(xvals)
-                y3 = gaussian_filter(y2, 60, mode="nearest")
+                y3 = gaussian_filter(y2, 90, mode="nearest")
                 # PDF
                 # ax.hist(chi2[0:, i * nrows + j], bins=bins, label=cols_mean[i * nrows + j], color=colors[j], histtype="step", density=True)
                 # ax.plot(xvals, rv.pdf(xvals), color="k", linestyle="--", zorder=0, alpha=0.5, linewidth=1.5)
@@ -119,13 +129,16 @@ if True:
                 ax.set_xscale("log")
                 ax.set_xlim(0.0008, 25.0)
                 ax.set_ylim(-0.1, 1.2)
+
+                ax.annotate(label, (0.03, 0.95), xycoords="axes fraction", horizontalalignment="left", verticalalignment="top", color=colors2[j], fontsize=10)
+
                 if i == 0:
                     # ax.set_ylabel(labels[i * nrows + j])
 
                     if j == 0:
                         ax.set_title(r"$P(k)$")
                     if j == nrows - 1:
-                        ax.set_xlabel(r"$\chi^{2}$")
+                        ax.set_xlabel(r"$\chi^{2}$", labelpad=-5)
                         ax.tick_params(axis="x", which="both")
                     else:
                         ax.tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
@@ -134,7 +147,7 @@ if True:
                         ax.set_title(r"$\xi(s)$")
                     ax.tick_params(axis="y", which="both", labelcolor="none", bottom=False, labelbottom=False)
                     if j == nrows - 2:
-                        ax.set_xlabel(r"$\chi^{2}$")
+                        ax.set_xlabel(r"$\chi^{2}$", labelpad=-5)
                         ax.tick_params(axis="x", which="both")
                     else:
                         ax.tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
@@ -155,7 +168,7 @@ def logchi(param):
     return stats.kstest(chi2, rv.cdf).statistic
 
 
-if False:
+if True:
     add_err = [np.empty(len(cols_mean)), np.empty(len(cols_mean_pk)), np.empty(len(cols_mean_xi))]
     for i in range(len(cols_mean)):
         add_err[0][i] = 10.0 ** (minimize(logchi, -4.0, method="Nelder-Mead", options={"xatol": 1.0e-6, "maxiter": 10000}).x)

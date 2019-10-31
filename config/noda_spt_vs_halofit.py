@@ -45,20 +45,27 @@ if __name__ == "__main__":
             if "fixed $f$" in name:
                 names2.append(name)
             i = posterior.argmax()
+
+            # If using the old chains without evidence
+            import numpy as np
+
+            chain = np.hstack((np.atleast_2d(evidence).T, chain))
+
             print(name, model.get_names(), chain[i, :])
+
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
         # extents = {"$\\alpha$": (0.963, 1.06)}
-        c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
-        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
+        c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982})
+        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982})
         c.plotter.plot(
             filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"],
             parameters=3,
             chains=names2,
-            truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0},
+            truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982},
             figsize="COLUMN",
         )
-        c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
+        c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982})
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
 
     # FINDINGS

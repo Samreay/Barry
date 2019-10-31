@@ -131,13 +131,13 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20)
-        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
-        c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"], parameters=2, truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
-        c.plotter.plot_summary(filename=pfn + "_summary.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0}, errorbar=True)
+        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982})
+        c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"], parameters=2, truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982})
+        c.plotter.plot_summary(filename=pfn + "_summary.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982}, errorbar=True)
         c.plotter.plot_summary(
-            filename=pfn + "_summary2.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0}, errorbar=True, parameters=1, extra_parameter_spacing=0.5
+            filename=pfn + "_summary2.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982}, errorbar=True, parameters=1, extra_parameter_spacing=0.5
         )
-        c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
+        c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982})
         with open(pfn + "_params.txt", "w") as f:
             f.write(c.analysis.get_latex_table(transpose=True))
 

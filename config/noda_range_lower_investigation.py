@@ -47,13 +47,13 @@ if __name__ == "__main__":
         c.plotter.plot_summary(
             filename=[pfn + "_summary.png", pfn + "_summary.pdf"],
             errorbar=True,
-            truth={"$\\Omega_m$": 0.31, "$\\alpha$": 1.0},
+            truth={"$\\Omega_m$": 0.31, "$\\alpha$": 0.9982},
             extents=extents,
             parameters=params,
         )
         c.plotter.plot(
             filename=[pfn + "_contour.png", pfn + "_contour.pdf"],
-            truth={"$\\Omega_m$": 0.31, "$\\alpha$": 1.0},
+            truth={"$\\Omega_m$": 0.31, "$\\alpha$": 0.9982},
             extents=extents,
             parameters=params,
             figsize="COLUMN",

@@ -90,14 +90,16 @@ if __name__ == "__main__":
                     c.add_chain(samples, parameters=model.get_labels() + [r"$\sigma_\alpha$"], **extra)
                 c.configure(shade=True, bins=30, legend_artists=True)
                 c.analysis.get_latex_table(filename=pfn + "_params.txt", parameters=[r"$\alpha$"])
-                c.plotter.plot_summary(filename=pfn + "_summary.png", extra_parameter_spacing=1.5, errorbar=True, truth={"$\\Omega_m$": 0.31, "$\\alpha$": 1.0})
+                c.plotter.plot_summary(
+                    filename=pfn + "_summary.png", extra_parameter_spacing=1.5, errorbar=True, truth={"$\\Omega_m$": 0.31, "$\\alpha$": 0.9982}
+                )
                 extents = {r"$\alpha$": [0.975, 1.032], r"$\sigma_\alpha$": [0.01, 0.029]}
                 fig = c.plotter.plot_summary(
                     filename=[pfn + "_summary2.png", pfn + "_summary2.pdf"],
                     extra_parameter_spacing=1.5,
                     parameters=[r"$\alpha$", r"$\sigma_\alpha$"],
                     errorbar=True,
-                    truth={"$\\Omega_m$": 0.31, "$\\alpha$": 1.0},
+                    truth={"$\\Omega_m$": 0.31, "$\\alpha$": 0.9982},
                     extents=extents,
                 )
             # c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})

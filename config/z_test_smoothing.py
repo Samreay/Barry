@@ -37,6 +37,6 @@ if __name__ == "__main__":
             # pks[key] = model.get_model(datas[0].get_data(), params)
 
         c.configure(shade=True, bins=0.7)
-        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
+        c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982})
         with open(pfn + "_params.txt", "w") as f:
             f.write(c.analysis.get_latex_table(transpose=True))
