@@ -17,6 +17,8 @@ df_all = pd.merge(df_pk, df_xi, on="realisation")
 print(list(df_all.columns))
 use_columns = [a for a in list(df_all.columns) if "realisation" not in a and "Recon" in a]
 
+alpha = 0.9982
+
 df = df_all[use_columns]
 
 cols_mean = [a for a in df.columns if "mean" in a]
@@ -52,7 +54,7 @@ chi2 = np.empty(np.shape(means[0]))
 pvals = np.empty(len(means[0][0, 0:]))
 rv = stats.chi2(1)
 for i in range(len(cols_mean)):
-    chi2[:, i] = (means[0][:, i] - 1.0) ** 2 / stds[0][0:, i] ** 2
+    chi2[:, i] = (means[0][:, i] - alpha) ** 2 / stds[0][0:, i] ** 2
     anderson = stats.anderson_ksamp([chi2[:, i], rv.rvs(len(chi2[:, i]))])
     pvals[i] = stats.kstest(chi2[0:, i], rv.cdf).pvalue
     print(cols_mean[i], np.mean(means[0][:, i]), np.std(means[0][:, i]), np.mean(stds[0][0:, i]), pvals[i], anderson[0], anderson[1])
@@ -65,7 +67,7 @@ for i in range(len(cols_mean)):
 # plt.legend()
 # plt.show()
 
-if False:
+if True:
 
     import numpy as np
     import matplotlib.pyplot as plt
@@ -164,7 +166,7 @@ def logchi(param):
     if 10.0 ** param[0] < 0:
         return -np.inf
     newvar = stds[0][0:, i] ** 2 + (10.0 ** param[0]) ** 2
-    chi2 = (means[0][0:, i] - 1.0) ** 2 / newvar
+    chi2 = (means[0][0:, i] - alpha) ** 2 / newvar
     return stats.kstest(chi2, rv.cdf).statistic
 
 
@@ -234,13 +236,13 @@ if True:
 
     # Now have a look at the distributions for each of the three methods
     for i, (index, type) in enumerate(zip([1, 2, 0], ["Pk", "Xi", "All"])):
-        best_chi = (best_val[index, 0:] - 1.0) ** 2 / best_err[index, 0:] ** 2
-        best_combined_chi = (best_combined_val[index, 0:] - 1.0) ** 2 / best_combined_err[index, 0:] ** 2
+        best_chi = (best_val[index, 0:] - alpha) ** 2 / best_err[index, 0:] ** 2
+        best_combined_chi = (best_combined_val[index, 0:] - alpha) ** 2 / best_combined_err[index, 0:] ** 2
 
-        best_add_chi = (best_add_val[index, 0:] - 1.0) ** 2 / best_add_err[index, 0:] ** 2
-        best_add_combined_chi = (best_add_combined_val[index, 0:] - 1.0) ** 2 / best_add_combined_err[index, 0:] ** 2
+        best_add_chi = (best_add_val[index, 0:] - alpha) ** 2 / best_add_err[index, 0:] ** 2
+        best_add_combined_chi = (best_add_combined_val[index, 0:] - alpha) ** 2 / best_add_combined_err[index, 0:] ** 2
 
-        integrate_chi = (integrate_val[index, 0:] - 1.0) ** 2 / integrate_err[index, 0:] ** 2
+        integrate_chi = (integrate_val[index, 0:] - alpha) ** 2 / integrate_err[index, 0:] ** 2
 
         rv = stats.chi2(1)
         x = np.linspace(0.0, 10.0, 1000)
@@ -306,8 +308,8 @@ if True:
         pk_xi_combined_val[j] = np.sum(weight * val)
         pk_xi_combined_err[j] = np.sqrt(weight @ newcov @ weight)
 
-    pk_xi_best_chi = (pk_xi_best_val - 1.0) ** 2 / pk_xi_best_err ** 2
-    pk_xi_combined_chi = (pk_xi_combined_val - 1.0) ** 2 / pk_xi_combined_err ** 2
+    pk_xi_best_chi = (pk_xi_best_val - alpha) ** 2 / pk_xi_best_err ** 2
+    pk_xi_combined_chi = (pk_xi_combined_val - alpha) ** 2 / pk_xi_combined_err ** 2
     print("Pk_err < Xi_err: ", len(np.where(best_add_err[1] < best_add_err[2])[0]))
     print("Pk+Xi Minimum", np.mean(pk_xi_best_val), np.std(pk_xi_best_val), np.mean(pk_xi_best_err), stats.kstest(pk_xi_best_chi, rv.cdf))
     print("Pk+Xi BLUES", np.mean(pk_xi_combined_val), np.std(pk_xi_combined_val), np.mean(pk_xi_combined_err), stats.kstest(pk_xi_combined_chi, rv.cdf))
