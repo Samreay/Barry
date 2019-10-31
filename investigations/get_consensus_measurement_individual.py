@@ -65,7 +65,7 @@ for i in range(len(cols_mean)):
 # plt.legend()
 # plt.show()
 
-if True:
+if False:
 
     import numpy as np
     import matplotlib.pyplot as plt
@@ -317,60 +317,71 @@ if True:
     # 2: Take the smallest error model for each mock after adding on any additional error required
     # 3: Calculate the BLUES combination of P(k) and Xi after adding on the additional error required for each model.
     if True:
-
+        plt.rc("text", usetex=True)
+        plt.rc("font", family="serif")
         colors = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
-        fig, axes = plt.subplots(figsize=(5, 4), nrows=1, sharex=True)
-        inner = gridspec.GridSpecFromSubplotSpec(3, 2, subplot_spec=axes, hspace=0.0, wspace=0.0, width_ratios=[3, 1])
-        ax = plt.subplot(inner[0:])
-        ax.spines["top"].set_color("none")
-        ax.spines["bottom"].set_color("none")
-        ax.spines["left"].set_color("none")
-        ax.spines["right"].set_color("none")
-        ax.tick_params(labelcolor="none", top=False, bottom=False, left=False, right=False)
-
-        for i in range(3):
+        fig, axes = plt.subplots(figsize=(5, 5), nrows=3, ncols=2, sharey=True, sharex=True, gridspec_kw={"hspace": 0, "wspace": 0, "width_ratios": [2, 1]})
+        bins = np.linspace(0.5, 1.0, 21)
+        for i, axs in enumerate(axes):
             step = 1
             x = np.linspace(1, len(means[0]), len(means[0]))[::step]
             if i == 0:
                 err_rat = pk_xi_combined_err / integrate_err[0]
             elif i == 1:
-                err_rat = pk_xi_combined_err / stds[0][0:, 1]
+                err_rat = pk_xi_combined_err / stds[0][:, 1]
             else:
                 err_rat = pk_xi_combined_err / pk_xi_best_err
 
-            ax = fig.add_subplot(inner[i, 0])
-            ax.scatter(x, err_rat[::step], c=np.abs(pk_xi_combined_val - integrate_val[0]), marker="o", s=2, vmin=0.0)
-            ax.axhline(1, c="k", lw=1, ls="--")
-            ax.set_ylim(0.5, 1.05)
+            axs[0].scatter(x, err_rat[::step], c=np.abs(pk_xi_combined_val - integrate_val[0]), marker="o", s=1, vmin=0.0)
+            axs[0].axhline(1, c="k", lw=0.7, ls="--")
+            axs[0].set_ylim(0.5, 1.17)
             if i == 0:
-                ax.set_xticklabels([])
-                ax.set_ylabel(r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{average}}$")
-            elif i == 1:
-                ax.set_xticklabels([])
-                ax.set_ylabel(r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{Beutler\,Fixed}}$")
-            else:
-                ax.set_xlabel("Realisation", fontsize=14)
-                ax.set_ylabel(r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{min(P,\xi)}}$")
+                # axs[0].set_xticklabels([])
+                # axs[0].set_xticks([])
+                axs[0].annotate(
+                    r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{average}} $",
+                    (0.03, 0.93),
+                    xycoords="axes fraction",
+                    horizontalalignment="left",
+                    verticalalignment="top",
+                    fontsize=12,
+                )
 
-        for i in range(3):
-            step = 1
-            x = np.linspace(1, len(means[0]), len(means[0]))[::step]
-            if i == 0:
-                err_rat = pk_xi_combined_err / integrate_err[0]
+                # axs[0].set_ylabel(r"$\frac{\sigma_{\alpha}^{\mathrm{BLUES}} }{ \sigma_{\alpha}^{\mathrm{average}} }$", fontsize=18)
             elif i == 1:
-                err_rat = pk_xi_combined_err / stds[0][0:, 1]
-            else:
-                err_rat = pk_xi_combined_err / pk_xi_best_err
+                # axs[0].set_xticklabels([])
+                # axs[0].set_xticks([])
+                axs[0].annotate(
+                    r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{Beutler\,Fixed}} $",
+                    (0.03, 0.93),
+                    xycoords="axes fraction",
+                    horizontalalignment="left",
+                    verticalalignment="top",
+                    fontsize=12,
+                )
 
-            ax = fig.add_subplot(inner[i, 1])
-            ax.hist(err_rat, bins=50, histtype="stepfilled", linewidth=2, alpha=0.3, color=colors[1], orientation="horizontal", log=True)
-            ax.hist(err_rat, bins=50, histtype="step", linewidth=1.5, color=colors[1], orientation="horizontal", log=True)
-            ax.axhline(1, c="k", lw=1, ls="--")
-            ax.set_ylim(0.5, 1.05)
-            ax.set_yticklabels([])
-            if i == 0:
-                ax.set_xticklabels([])
+                # axs[0].set_ylabel(r"$\frac{\sigma_{\alpha}^{\mathrm{BLUES}} }{ \sigma_{\alpha}^{\mathrm{Beutler\,Fixed}} }$", fontsize=18)
+                axs[0].set_ylabel(r"Ratio of uncertainty", fontsize=14)
+            else:
+                axs[0].set_xlabel("Realisation", fontsize=14)
+                axs[0].annotate(
+                    r"$ \sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{min(P,\xi)}} $",
+                    (0.03, 0.93),
+                    xycoords="axes fraction",
+                    horizontalalignment="left",
+                    verticalalignment="top",
+                    fontsize=12,
+                )
+
+                # axs[0].set_ylabel(r"$\frac{ \sigma_{\alpha}^{\mathrm{BLUES}} }{ \sigma_{\alpha}^{\mathrm{min(P,\xi)}} }$", fontsize=18)
+                axs[1].set_xlabel("Count", fontsize=14)
+            if i != 2:
+                pass
+            n, _, _ = axs[1].hist(err_rat, bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=colors[1], orientation="horizontal")
+            axs[1].hist(err_rat, bins=bins, histtype="step", linewidth=1.5, color=colors[1], orientation="horizontal")
+            axs[1].axhline(1, c="k", lw=0.7, ls="--")
+            axs[1].set_xlim(0, 1.1 * n.max())
 
         plt.savefig("consensus_individual.pdf", bbox_inches="tight", dpi=300, transparent=True)
         plt.savefig("consensus_individual.png", bbox_inches="tight", dpi=300, transparent=True)
