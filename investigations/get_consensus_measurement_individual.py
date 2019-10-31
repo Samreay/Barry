@@ -5,6 +5,8 @@ import matplotlib.gridspec as gridspec
 from scipy import linalg, stats
 from scipy.optimize import minimize
 
+expected_alpha = 0.99820942
+
 filename_pk = "../config/plots/pk_individual/pk_individual_alphameans.csv"
 filename_xi = "../config/plots/xi_individual/xi_individual_alphameans.csv"
 
@@ -39,7 +41,7 @@ chi2 = np.empty(np.shape(means[0]))
 pvals = np.empty(len(means[0][0, 0:]))
 rv = stats.chi2(1)
 for i in range(len(cols_mean)):
-    chi2[0:, i] = (means[0][0:, i] - 1.0) ** 2 / stds[0][0:, i] ** 2
+    chi2[0:, i] = (means[0][0:, i] - expected_alpha) ** 2 / stds[0][0:, i] ** 2
     anderson = stats.anderson_ksamp([chi2[0:, i], rv.rvs(len(chi2[0:, i]))])
     pvals[i] = stats.kstest(chi2[0:, i], rv.cdf).pvalue
     print(cols_mean[i], np.mean(means[0][0:, i]), np.std(means[0][0:, i]), np.mean(stds[0][0:, i]), pvals[i], anderson[0], anderson[1])
@@ -128,17 +130,21 @@ if True:
 
 # For each model fit an additional error component to minimize the k-s statistic
 def logchi(param):
-    if 10.0 ** param[0] < 0:
-        return -np.inf
-    newvar = stds[0][0:, i] ** 2 + (10.0 ** param[0]) ** 2
-    chi2 = (means[0][0:, i] - 1.0) ** 2 / newvar
+    newvar = stds[0][0:, i] ** 2 + np.sign(param[0]) * (param[0]) ** 2
+    chi2 = (means[0][0:, i] - expected_alpha) ** 2 / newvar
     return stats.kstest(chi2, rv.cdf).statistic
 
 
 add_err = [np.empty(len(cols_mean)), np.empty(len(cols_mean_pk)), np.empty(len(cols_mean_xi))]
 for i in range(len(cols_mean)):
-    add_err[0][i] = 10.0 ** (minimize(logchi, -4.0, method="Nelder-Mead", options={"xatol": 1.0e-6, "maxiter": 10000}).x)
-    print(cols_mean[i], add_err[0][i])
+    add_err[0][i] = minimize(logchi, 0.0, method="Nelder-Mead", options={"xatol": 1.0e-6, "maxiter": 10000}).x
+    print(
+        cols_mean[i],
+        add_err[0][i],
+        np.mean(stds[0][0:, i]),
+        np.mean(np.sqrt(stds[0][0:, i] ** 2 + np.sign(add_err[0][i]) * add_err[0][i] ** 2)),
+        np.mean(np.sqrt(stds[0][0:, i] ** 2 + np.sign(add_err[0][i]) * add_err[0][i] ** 2)) / np.mean(stds[0][0:, i]),
+    )
 add_err[1] = add_err[0][0 : len(cols_mean_pk)]
 add_err[2] = add_err[0][len(cols_mean_pk) :]
 
@@ -163,7 +169,7 @@ for i in range(3):
     for j, (std_old, val) in enumerate(zip(stds[i], means[i])):
         for add in [False, True]:
             if add:
-                std = np.sqrt(std_old ** 2 + add_err[i] ** 2)
+                std = np.sqrt(std_old ** 2 + np.sign(add_err[i]) * add_err[i] ** 2)
             else:
                 std = std_old
             newcov = (std * corr[i]).T * std
@@ -200,13 +206,13 @@ for i in range(3):
 
 # Now have a look at the distributions for each of the three methods
 for i, (index, type) in enumerate(zip([1, 2, 0], ["Pk", "Xi", "All"])):
-    best_chi = (best_val[index, 0:] - 1.0) ** 2 / best_err[index, 0:] ** 2
-    best_combined_chi = (best_combined_val[index, 0:] - 1.0) ** 2 / best_combined_err[index, 0:] ** 2
+    best_chi = (best_val[index, 0:] - expected_alpha) ** 2 / best_err[index, 0:] ** 2
+    best_combined_chi = (best_combined_val[index, 0:] - expected_alpha) ** 2 / best_combined_err[index, 0:] ** 2
 
-    best_add_chi = (best_add_val[index, 0:] - 1.0) ** 2 / best_add_err[index, 0:] ** 2
-    best_add_combined_chi = (best_add_combined_val[index, 0:] - 1.0) ** 2 / best_add_combined_err[index, 0:] ** 2
+    best_add_chi = (best_add_val[index, 0:] - expected_alpha) ** 2 / best_add_err[index, 0:] ** 2
+    best_add_combined_chi = (best_add_combined_val[index, 0:] - expected_alpha) ** 2 / best_add_combined_err[index, 0:] ** 2
 
-    integrate_chi = (integrate_val[index, 0:] - 1.0) ** 2 / integrate_err[index, 0:] ** 2
+    integrate_chi = (integrate_val[index, 0:] - expected_alpha) ** 2 / integrate_err[index, 0:] ** 2
 
     rv = stats.chi2(1)
     x = np.linspace(0.0, 10.0, 1000)
@@ -268,8 +274,8 @@ for j, (val, std) in enumerate(zip(np.column_stack((best_add_val[1], best_add_va
     pk_xi_combined_val[j] = np.sum(weight * val)
     pk_xi_combined_err[j] = np.sqrt(weight @ newcov @ weight)
 
-pk_xi_best_chi = (pk_xi_best_val - 1.0) ** 2 / pk_xi_best_err ** 2
-pk_xi_combined_chi = (pk_xi_combined_val - 1.0) ** 2 / pk_xi_combined_err ** 2
+pk_xi_best_chi = (pk_xi_best_val - expected_alpha) ** 2 / pk_xi_best_err ** 2
+pk_xi_combined_chi = (pk_xi_combined_val - expected_alpha) ** 2 / pk_xi_combined_err ** 2
 print("Pk_err < Xi_err: ", len(np.where(best_add_err[1] < best_add_err[2])[0]))
 print("Pk+Xi Minimum", np.mean(pk_xi_best_val), np.std(pk_xi_best_val), np.mean(pk_xi_best_err), stats.kstest(pk_xi_best_chi, rv.cdf))
 print("Pk+Xi BLUES", np.mean(pk_xi_combined_val), np.std(pk_xi_combined_val), np.mean(pk_xi_combined_err), stats.kstest(pk_xi_combined_chi, rv.cdf))
@@ -294,14 +300,17 @@ if True:
     for i in range(3):
         step = 1
         x = np.linspace(1, len(means[0]), len(means[0]))[::step]
+        ax = fig.add_subplot(inner[i, 0])
         if i == 0:
             err_rat = pk_xi_combined_err / integrate_err[0]
+            ax.set_ylim(0.5, 1.05)
         elif i == 1:
             err_rat = pk_xi_combined_err / stds[0][0:, 1]
+            ax.set_ylim(0.7, 1.05)
         else:
             err_rat = pk_xi_combined_err / pk_xi_best_err
+            ax.set_ylim(0.8, 1.05)
 
-        ax = fig.add_subplot(inner[i, 0])
         ax.scatter(x, err_rat[::step], c=np.abs(pk_xi_combined_val - integrate_val[0]), marker="o", s=2, vmin=0.0)
         ax.axhline(1, c="k", lw=1, ls="--")
         ax.set_ylim(0.5, 1.05)
@@ -316,20 +325,20 @@ if True:
             ax.set_ylabel(r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{min(P,\xi)}}$")
 
     for i in range(3):
-        step = 1
-        x = np.linspace(1, len(means[0]), len(means[0]))[::step]
+        ax = fig.add_subplot(inner[i, 1])
         if i == 0:
             err_rat = pk_xi_combined_err / integrate_err[0]
+            ax.set_xlim(0.5, 1.05)
         elif i == 1:
             err_rat = pk_xi_combined_err / stds[0][0:, 1]
+            ax.set_xlim(0.7, 1.05)
         else:
             err_rat = pk_xi_combined_err / pk_xi_best_err
+            ax.set_xlim(0.8, 1.05)
 
-        ax = fig.add_subplot(inner[i, 1])
-        ax.hist(err_rat, bins=50, histtype="stepfilled", linewidth=2, alpha=0.3, color=colors[1], orientation="horizontal", log=True)
-        ax.hist(err_rat, bins=50, histtype="step", linewidth=1.5, color=colors[1], orientation="horizontal", log=True)
+        ax.hist(err_rat, bins=50, histtype="stepfilled", linewidth=2, alpha=0.3, color=colors[1], orientation="horizontal")
+        ax.hist(err_rat, bins=50, histtype="step", linewidth=1.5, color=colors[1], orientation="horizontal")
         ax.axhline(1, c="k", lw=1, ls="--")
-        ax.set_ylim(0.5, 1.05)
         ax.set_yticklabels([])
         if i == 0:
             ax.set_xticklabels([])
