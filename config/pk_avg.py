@@ -21,7 +21,7 @@ if __name__ == "__main__":
     r_s = c.get_data()[0]
     p = BAOExtractor(r_s)
 
-    sampler = DynestySampler(temp_dir=dir_name)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
     fitter = Fitter(dir_name)
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         fitter.add_model_and_dataset(PowerNoda2019(recon=r, postprocess=p), de, name=f"Noda 2019 {t}", linestyle=ls, color=cs[3])
 
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(10)
+    fitter.set_num_walkers(30)
     fitter.fit(file)
 
     if fitter.should_plot():
@@ -91,6 +91,7 @@ if __name__ == "__main__":
                 # c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
                 c.add_chain(samples, parameters=model.get_labels() + [r"$\sigma_\alpha$"], **extra)
             c.configure(shade=True, bins=30, legend_artists=True)
+            c.configure_truth(zorder=-10)
             c.analysis.get_latex_table(filename=pfn + "_params.txt", parameters=[r"$\alpha$"])
             c.analysis.get_latex_table(filename=pfn + "_params_all.txt", transpose=True)
             c.plotter.plot_summary(filename=pfn + "_summary.png", extra_parameter_spacing=1.5, errorbar=True, truth={"$\\Omega_m$": 0.31, "$\\alpha$": 0.9982})

@@ -20,7 +20,7 @@ if __name__ == "__main__":
     r_s = c.get_data()[0]
     p = BAOExtractor(r_s)
 
-    sampler = DynestySampler(temp_dir=dir_name)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
     fitter = Fitter(dir_name)
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
@@ -89,6 +89,7 @@ if __name__ == "__main__":
                     # c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
                     c.add_chain(samples, parameters=model.get_labels() + [r"$\sigma_\alpha$"], **extra)
                 c.configure(shade=True, bins=30, legend_artists=True)
+                c.configure_truth(zorder=-10)
                 c.analysis.get_latex_table(filename=pfn + "_params.txt", parameters=[r"$\alpha$"])
                 c.plotter.plot_summary(
                     filename=pfn + "_summary.png", extra_parameter_spacing=1.5, errorbar=True, truth={"$\\Omega_m$": 0.31, "$\\alpha$": 0.9982}
