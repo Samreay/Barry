@@ -7,7 +7,7 @@ import numpy as np
 
 sys.path.append("..")
 from barry.cosmology.camb_generator import getCambGenerator
-from barry.postprocessing import BAOExtractor
+from barry.postprocessing import BAOExtractor, PureBAOExtractor
 from barry.config import setup
 from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
 from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         logging.info("Creating plots")
         res = fitter.load()
 
-        if True:
+        if False:
             ind_path = "plots/pk_individual/pk_individual_alphameans.csv"
             n = 1000000
             stds_dict = None
@@ -184,3 +184,90 @@ if __name__ == "__main__":
             axes[1].set_xlabel(r"$k\,(h\,\mathrm{Mpc^{-1}})$")
             plt.savefig(pfn + "_bestfits_2.pdf", bbox_inches="tight", dpi=300, transparent=True)
             plt.savefig(pfn + "_bestfits_2.png", bbox_inches="tight", dpi=300, transparent=True)
+
+        # Plots the propagator for the Seo and Ding models compared to Beutler so we can compare.
+        if True:
+
+            import numpy as np
+            import matplotlib.pyplot as plt
+            import matplotlib.gridspec as gridspec
+
+            fig, axes = plt.subplots(figsize=(5, 5), nrows=1, sharex=True)
+            inner = gridspec.GridSpecFromSubplotSpec(3, 1, subplot_spec=axes, hspace=0.04)
+            ax = plt.subplot(inner[0:])
+            ax.spines["top"].set_color("none")
+            ax.spines["bottom"].set_color("none")
+            ax.spines["left"].set_color("none")
+            ax.spines["right"].set_color("none")
+            ax.set_ylabel(r"$\mathcal{C}(k,\mu)$")
+            ax.tick_params(labelcolor="none", top=False, bottom=False, left=False, right=False)
+
+            muvals = np.array([0.0, 0.5, 1.0])
+            for posterior, weight, chain, evidence, model, data, extra in res:
+                if not "Recon" in extra["name"]:
+                    continue
+                model.set_data(data)
+                p = model.get_param_dict(chain[np.argmax(posterior)])
+                model.mu, model.nmu = muvals, len(muvals)
+                if extra["name"] == "Seo 2016 Recon":
+                    damping_dd = model.get_damping_dd(p["f"], p["om"])
+                    damping_ss = model.get_damping_ss(p["om"])
+                    smooth_prefac = np.tile(model.smoothing_kernel / p["b"], (model.nmu, 1))
+                    kaiser_prefac = 1.0 + np.outer(p["f"] / p["b"] * model.mu ** 2, 1.0 - model.smoothing_kernel)
+                    fog = 1.0 / (1.0 + np.outer(model.mu ** 2, model.camb.ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
+                    propagator_Seo = (kaiser_prefac * damping_dd + smooth_prefac * (damping_ss - damping_dd)) ** 2  # * fog
+                    extra_Seo = extra
+                    print(model.get_pt_data(p["om"])["sigma_dd"], model.get_pt_data(p["om"])["sigma_ss"])
+                elif extra["name"] == "Ding 2018 Recon":
+                    damping_dd = model.get_damping_dd(p["f"], p["om"])
+                    damping_sd = model.get_damping_sd(p["f"], p["om"])
+                    damping_ss = model.get_damping_ss(p["om"])
+                    smooth_prefac = np.tile(model.smoothing_kernel / p["b"], (model.nmu, 1))
+                    bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * model.camb.ks ** 2, (model.nmu, 1))
+                    kaiser_prefac = 1.0 - smooth_prefac + np.outer(p["f"] / p["b"] * model.mu ** 2, 1.0 - model.smoothing_kernel) + bdelta_prefac
+                    fog = 1.0 / (1.0 + np.outer(model.mu ** 2, model.camb.ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
+                    propagator_Ding = (
+                        (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping_dd
+                        + 2.0 * kaiser_prefac * smooth_prefac * damping_sd
+                        + smooth_prefac ** 2 * damping_ss
+                    )  # * fog
+
+                    extra_Ding = extra
+                    print(model.get_pt_data(p["om"])["sigma_dd_nl"], model.get_pt_data(p["om"])["sigma_sd_nl"], model.get_pt_data(p["om"])["sigma_ss_nl"])
+                if extra["name"] == "Beutler 2017 Recon":
+                    ks = model.camb.ks
+                    fog = 1.0 / (1.0 + ks ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
+                    propagator_Beutler = np.exp(-0.5 * model.camb.ks ** 2 * p["sigma_nl"] ** 2)  # * fog
+                    extra_Beutler = extra
+                    print(p["sigma_nl"] ** 2)
+            for i, mu in enumerate(muvals):
+                ax = fig.add_subplot(inner[i])
+                ax.plot(
+                    ks,
+                    propagator_Beutler,
+                    color=extra_Beutler["color"],
+                    label=extra_Beutler["name"],
+                    linestyle=extra_Beutler["linestyle"],
+                    zorder=0,
+                    linewidth=1.8,
+                )
+                ax.plot(ks, propagator_Seo[i, 0:], color=extra_Seo["color"], label=extra_Seo["name"], linestyle=extra_Seo["linestyle"], zorder=1, linewidth=1.8)
+                ax.plot(
+                    ks, propagator_Ding[i, 0:], color=extra_Ding["color"], label=extra_Ding["name"], linestyle=extra_Ding["linestyle"], zorder=2, linewidth=1.8
+                )
+                ax.axhline(1, c="k", lw=0.7, ls="--")
+                mustr = str(r"$ \mu=%2.1lf $" % mu)
+                ax.annotate(mustr, (0.93, 0.93), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top", fontsize=12)
+                # ax.set_xscale("log")
+                # ax.set_yscale("log")
+                ax.set_xlim(0.0, 0.32)
+                if i == 2:
+                    ax.set_ylim(0.0, 1.5)
+                    ax.legend(frameon=False, markerfirst=False)
+                    ax.set_xlabel(r"$k\,(h\,\mathrm{Mpc^{-1}})$")
+                else:
+                    ax.set_ylim(0.0, 1.1)
+                    ax.tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
+
+            plt.savefig(pfn + "_propagator.pdf", bbox_inches="tight", dpi=300, transparent=True)
+            plt.savefig(pfn + "_propagator.png", bbox_inches="tight", dpi=300, transparent=True)

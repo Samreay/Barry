@@ -38,7 +38,7 @@ class PowerDing2018(PowerSpectrumFit):
 
     @lru_cache(maxsize=32)
     def get_damping_sd(self, growth, om):
-        return np.exp(-np.outer(1.0 + growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_dd_nl"])
+        return np.exp(-np.outer(1.0 + growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_sd_nl"])
 
     @lru_cache(maxsize=32)
     def get_damping_ss(self, om):
