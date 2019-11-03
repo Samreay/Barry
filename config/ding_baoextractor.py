@@ -68,8 +68,8 @@ if __name__ == "__main__":
                 res[n] = []
             i = posterior.argmax()
             chi2 = -2 * posterior[i]
-            a, s = weighted_avg_and_std(evidence, weights=weight)
-            # a, s = weighted_avg_and_std(chain[:, 0], weights=weight)
+            # a, s = weighted_avg_and_std(evidence, weights=weight)
+            a, s = weighted_avg_and_std(chain[:, 0], weights=weight)
             res[n].append([a, s, chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"]])
 
         for label in res.keys():
