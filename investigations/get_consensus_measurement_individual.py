@@ -73,7 +73,7 @@ if True:
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
 
-    plt.rc("text", usetex=True)
+    # plt.rc("text", usetex=True)
     plt.rc("font", family="serif")
 
     nrows = np.amax([len(cols_mean_pk), len(cols_mean_xi)])
@@ -174,7 +174,7 @@ if True:
     add_err = [np.empty(len(cols_mean)), np.empty(len(cols_mean_pk)), np.empty(len(cols_mean_xi))]
     for i in range(len(cols_mean)):
         add_err[0][i] = 10.0 ** (minimize(logchi, -4.0, method="Nelder-Mead", options={"xatol": 1.0e-6, "maxiter": 10000}).x)
-        print(cols_mean[i], add_err[0][i])
+        print(cols_mean[i], add_err[0][i], np.mean(np.sqrt(stds[0][0:, i] ** 2 + add_err[0][i] ** 2) / stds[0][0:, i]))
     add_err[1] = add_err[0][0 : len(cols_mean_pk)]
     add_err[2] = add_err[0][len(cols_mean_pk) :]
 
@@ -319,12 +319,13 @@ if True:
     # 2: Take the smallest error model for each mock after adding on any additional error required
     # 3: Calculate the BLUES combination of P(k) and Xi after adding on the additional error required for each model.
     if True:
-        plt.rc("text", usetex=True)
+        # plt.rc("text", usetex=True)
         plt.rc("font", family="serif")
         colors = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
-        fig, axes = plt.subplots(figsize=(5, 5), nrows=3, ncols=2, sharey=True, sharex=True, gridspec_kw={"hspace": 0, "wspace": 0, "width_ratios": [2, 1]})
-        bins = np.linspace(0.5, 1.0, 21)
+        fig, axes = plt.subplots(figsize=(5, 5), nrows=3, ncols=2, sharey=False, sharex=False, gridspec_kw={"hspace": 0, "wspace": 0, "width_ratios": [2, 1]})
+        # bins = np.linspace(0.5, 1.0, 21)
+        bins = 21
         for i, axs in enumerate(axes):
             step = 1
             x = np.linspace(1, len(means[0]), len(means[0]))[::step]
@@ -335,11 +336,12 @@ if True:
             else:
                 err_rat = pk_xi_combined_err / pk_xi_best_err
 
-            axs[0].scatter(x, err_rat[::step], c=np.abs(pk_xi_combined_val - integrate_val[0]), marker="o", s=1, vmin=0.0)
+            axs[0].scatter(x, err_rat[::step], c=pk_xi_combined_err, marker="o", s=1, vmin=0.009, vmax=0.013)
             axs[0].axhline(1, c="k", lw=0.7, ls="--")
-            axs[0].set_ylim(0.5, 1.17)
             if i == 0:
-                # axs[0].set_xticklabels([])
+                ylow, yhi = 0.39, 1.19
+                axs[0].set_xticklabels([])
+                axs[1].set_xticklabels([])
                 # axs[0].set_xticks([])
                 axs[0].annotate(
                     r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{average}} $",
@@ -352,7 +354,10 @@ if True:
 
                 # axs[0].set_ylabel(r"$\frac{\sigma_{\alpha}^{\mathrm{BLUES}} }{ \sigma_{\alpha}^{\mathrm{average}} }$", fontsize=18)
             elif i == 1:
-                # axs[0].set_xticklabels([])
+                ylow, yhi = 0.7, 1.13
+
+                axs[0].set_xticklabels([])
+                axs[1].set_xticklabels([])
                 # axs[0].set_xticks([])
                 axs[0].annotate(
                     r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{Beutler\,Fixed}} $",
@@ -364,8 +369,10 @@ if True:
                 )
 
                 # axs[0].set_ylabel(r"$\frac{\sigma_{\alpha}^{\mathrm{BLUES}} }{ \sigma_{\alpha}^{\mathrm{Beutler\,Fixed}} }$", fontsize=18)
-                axs[0].set_ylabel(r"Ratio of uncertainty", fontsize=14)
+                axs[0].set_ylabel(r"Ratio of uncertainty", fontsize=14, labelpad=5)
             else:
+                ylow, yhi = 0.85, 1.06
+
                 axs[0].set_xlabel("Realisation", fontsize=14)
                 axs[0].annotate(
                     r"$ \sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{min(P,\xi)}} $",
@@ -380,10 +387,15 @@ if True:
                 axs[1].set_xlabel("Count", fontsize=14)
             if i != 2:
                 pass
-            n, _, _ = axs[1].hist(err_rat, bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=colors[1], orientation="horizontal")
-            axs[1].hist(err_rat, bins=bins, histtype="step", linewidth=1.5, color=colors[1], orientation="horizontal")
+            binedges = np.histogram([], bins=bins, range=(ylow, np.amax(err_rat)))[1]
+            axs[0].set_ylim(ylow, yhi)
+            axs[1].set_ylim(ylow, yhi)
+            axs[1].set_yticklabels([])
+            n, _, _ = axs[1].hist(err_rat, bins=binedges, histtype="stepfilled", linewidth=2, alpha=0.3, color=colors[1], orientation="horizontal")
+            axs[1].hist(err_rat, bins=binedges, histtype="step", linewidth=1.5, color=colors[1], orientation="horizontal")
             axs[1].axhline(1, c="k", lw=0.7, ls="--")
-            axs[1].set_xlim(0, 1.1 * n.max())
+            axs[0].set_xlim(0, 999)
+            axs[1].set_xlim(0, 500)
 
         plt.savefig("consensus_individual.pdf", bbox_inches="tight", dpi=300, transparent=True)
         plt.savefig("consensus_individual.png", bbox_inches="tight", dpi=300, transparent=True)
