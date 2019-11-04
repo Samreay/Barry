@@ -6,12 +6,12 @@
         \hline
 		Model & $\alpha$ \\ 
 		\hline
-		Beutler 2017 Recon & $0.999^{+0.013}_{-0.011}$ \\ 
+		Beutler 2017 Recon & $1.000^{+0.013}_{-0.012}$ \\ 
 		Beutler 2017 Fixed $\Sigma_{nl}$ Recon & $0.999^{+0.013}_{-0.011}$ \\ 
-		Seo 2016 Recon & $0.999^{+0.010}_{-0.011}$ \\ 
-		Ding 2018 Recon & $\left( 997.9^{+10.4}_{-9.5} \right) \times 10^{-3}$ \\ 
-		Noda 2019 Recon & $0.994^{+0.012}_{-0.010}$ \\ 
-		Beutler 2017 Prerecon & $1.004^{+0.020}_{-0.021}$ \\ 
+		Seo 2016 Recon & $0.998\pm 0.010$ \\ 
+		Ding 2018 Recon & $\left( 997.9^{+10.3}_{-9.6} \right) \times 10^{-3}$ \\ 
+		Noda 2019 Recon & $0.995^{+0.012}_{-0.010}$ \\ 
+		Beutler 2017 Prerecon & $1.004^{+0.021}_{-0.020}$ \\ 
 		Beutler 2017 Fixed $\Sigma_{nl}$ Prerecon & $1.003^{+0.018}_{-0.019}$ \\ 
 		Seo 2016 Prerecon & $0.995^{+0.015}_{-0.013}$ \\ 
 		Ding 2018 Prerecon & $0.997^{+0.015}_{-0.014}$ \\ 

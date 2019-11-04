@@ -54,7 +54,7 @@ if __name__ == "__main__":
         logging.info("Creating plots")
         res = fitter.load()
 
-        if False:
+        if True:
             ind_path = "plots/pk_individual/pk_individual_alphameans.csv"
             n = 1000000
             stds_dict = None
@@ -72,7 +72,10 @@ if __name__ == "__main__":
                     stds_dict[c.split("_pk")[0]] = d
 
             from chainconsumer import ChainConsumer
+            import matplotlib.pyplot as plt
 
+            plt.rc("text", usetex=True)
+            plt.rc("font", family="serif")
             c = ChainConsumer()
             for posterior, weight, chain, evidence, model, data, extra in fitter.load():
                 # Resample to uniform weights, eugh
@@ -109,12 +112,14 @@ if __name__ == "__main__":
 
         # Plots the average recon mock measurements and the best-fit models from each of the models tested.
         # We'll also plot the ratio for everything against the smooth Beutler2017 model.
-        if False:
+        if True:
 
             import numpy as np
             import matplotlib.pyplot as plt
             import matplotlib.gridspec as gridspec
 
+            plt.rc("text", usetex=True)
+            plt.rc("font", family="serif")
             fig, axes = plt.subplots(figsize=(5, 8), nrows=2, sharex=True, gridspec_kw={"hspace": 0.06, "height_ratios": [4.3, 1]})
             inner = gridspec.GridSpecFromSubplotSpec(4, 1, subplot_spec=axes[0], hspace=0.04)
             ax = plt.subplot(inner[0:])
@@ -193,6 +198,8 @@ if __name__ == "__main__":
             import matplotlib.pyplot as plt
             import matplotlib.gridspec as gridspec
 
+            plt.rc("text", usetex=True)
+            plt.rc("font", family="serif")
             fig, axes = plt.subplots(figsize=(5, 5), nrows=1, sharex=True)
             inner = gridspec.GridSpecFromSubplotSpec(3, 1, subplot_spec=axes, hspace=0.04)
             ax = plt.subplot(inner[0:])

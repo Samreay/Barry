@@ -166,6 +166,8 @@ if __name__ == "__main__":
 
             from scipy.interpolate import interp1d
 
+            plt.rc("text", usetex=True)
+            plt.rc("font", family="serif")
             # Post-recon
             cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2]}
             fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)

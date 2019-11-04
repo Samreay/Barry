@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from matplotlib.patches import Patch
 from scipy import linalg, stats
 from scipy.interpolate import interp1d
 from scipy.ndimage import gaussian_filter
@@ -319,6 +320,49 @@ if True:
     # 2: Take the smallest error model for each mock after adding on any additional error required
     # 3: Calculate the BLUES combination of P(k) and Xi after adding on the additional error required for each model.
     if True:
+        color_map = {
+            "blue": "#1976D2",
+            "lblue": "#4FC3F7",
+            "red": "#E53935",
+            "green": "#43A047",
+            "lgreen": "#8BC34A",
+            "purple": "#673AB7",
+            "cyan": "#4DD0E1",
+            "magenta": "#E91E63",
+            "yellow": "#F2D026",
+            "black": "#333333",
+            "grey": "#9E9E9E",
+            "orange": "#FB8C00",
+            "amber": "#FFB300",
+            "brown": "#795548",
+        }
+
+        ratios = [pk_xi_combined_err / integrate_err[0], pk_xi_combined_err / stds[0][:, 1], pk_xi_combined_err / pk_xi_best_err]
+        labels = [
+            r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{average}} $",
+            r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{Beutler\,Fixed}} $",
+            r"$ \sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{min(P,\xi)}} $",
+        ]
+        colors = [color_map["amber"], color_map["purple"], color_map["red"]]
+
+        plt.rc("text", usetex=True)
+        plt.rc("font", family="serif")
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(4.5, 3.5))
+        bins = np.linspace(0.65, 1.0, 31)
+        bc = 0.5 * (bins[1:] + bins[:-1])
+        legend_elements = []
+        for ratio, label, color in zip(ratios, labels, colors):
+            n, _, _ = ax.hist(ratio, bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=color)
+            ax.hist(ratio, bins=bins, histtype="step", linewidth=1.5, color=color)
+            legend_elements.append(Patch(facecolor=color + "44", edgecolor=color, label=label, linewidth=2))
+        ax.axvline(1, c="k", lw=0.7, ls="--")
+        leg1 = ax.legend(handles=legend_elements, loc=2, frameon=False, fontsize=12)
+        ax.set_xlabel("Ratio of uncertainty")
+        ax.set_ylabel("Count")
+        fig.savefig("consensus_individual2.pdf", bbox_inches="tight", dpi=300, transparent=True)
+        fig.savefig("consensus_individual2.png", bbox_inches="tight", dpi=300, transparent=True)
+
+    if False:
         # plt.rc("text", usetex=True)
         plt.rc("font", family="serif")
         colors = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
