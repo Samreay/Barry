@@ -68,7 +68,7 @@ for i in range(len(cols_mean)):
 # plt.legend()
 # plt.show()
 
-if True:
+if False:
 
     import numpy as np
     import matplotlib.pyplot as plt
@@ -337,27 +337,23 @@ if True:
             "brown": "#795548",
         }
 
-        ratios = [pk_xi_combined_err / integrate_err[0], pk_xi_combined_err / stds[0][:, 1], pk_xi_combined_err / pk_xi_best_err]
-        labels = [
-            r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{average}} $",
-            r"$\sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{Beutler\,Fixed}} $",
-            r"$ \sigma_{\alpha}^{\mathrm{BLUES}} / \sigma_{\alpha}^{\mathrm{min(P,\xi)}} $",
-        ]
+        ratios = [integrate_err[0] / pk_xi_combined_err, stds[0][:, 1] / pk_xi_combined_err, pk_xi_best_err / pk_xi_combined_err]
+        labels = [r"$\mathrm{average} $", r"$\mathrm{Beutler\,Fixed} $", r"$\mathrm{min(P,\xi)} $"]
         colors = [color_map["amber"], color_map["purple"], color_map["red"]]
 
         plt.rc("text", usetex=True)
         plt.rc("font", family="serif")
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(4.5, 3.5))
-        bins = np.linspace(0.65, 1.0, 31)
+        bins = np.linspace(1.0, 1.5, 31)
         bc = 0.5 * (bins[1:] + bins[:-1])
         legend_elements = []
         for ratio, label, color in zip(ratios, labels, colors):
-            n, _, _ = ax.hist(ratio, bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=color)
+            n, _, _ = ax.hist(ratio, bins=bins, histtype="stepfilled", linewidth=1.5, alpha=0.3, color=color)
             ax.hist(ratio, bins=bins, histtype="step", linewidth=1.5, color=color)
-            legend_elements.append(Patch(facecolor=color + "44", edgecolor=color, label=label, linewidth=2))
+            legend_elements.append(Patch(facecolor=color + "44", edgecolor=color, label=label, linewidth=1.5))
         ax.axvline(1, c="k", lw=0.7, ls="--")
-        leg1 = ax.legend(handles=legend_elements, loc=2, frameon=False, fontsize=12)
-        ax.set_xlabel("Ratio of uncertainty")
+        leg1 = ax.legend(handles=legend_elements, loc=1, frameon=False, fontsize=12)
+        ax.set_xlabel("Ratio of uncertainty to the CLUES method.")
         ax.set_ylabel("Count")
         fig.savefig("consensus_individual2.pdf", bbox_inches="tight", dpi=300, transparent=True)
         fig.savefig("consensus_individual2.png", bbox_inches="tight", dpi=300, transparent=True)
