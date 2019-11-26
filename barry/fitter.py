@@ -3,7 +3,6 @@ import os
 import shutil
 import socket
 import sys
-import platform
 import numpy as np
 
 from barry.config import get_config
