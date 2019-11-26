@@ -45,12 +45,15 @@ Please raise issues, bugs and feature requests `on the Github Issues Page <https
 How to Use
 ----------
 
-1. Check out / download / clone / fork Barry to your local machine.
-2. Customise the :code:`config.yml` file for your usage.
-3. Implement some config file which loads models and datasets into the fitter. Check the entire :code:`config` directory for examples.
-4. Copy / re-clone your version of Barry to your HPC system. Output will go in the :code:`plots/yourfile` directory.
-5. Start a fitting run by invoking your configuration file: :code:`python yourfile.py`
-6. Once all jobs have finished, either copy the "plots/yourfile" directory back to your local machine and then run :code:`python yourfile.py` again, or run :code:`python yourfile.py -1` and get the output plots.
+1. Ensure that you have a named conda environment of at least python 3.6.
+2. Clone this project onto both your local computer and a cluster computer
+3. Have all dependencies installed: :code:`pip install -r requirements.txt`
+4. Update :code:`config.yml` to include the name of your environment for activation on the HPC
+5. Run any of the python files in :code:`barry.config`.
+    1. If you run on your local computer (ie :code:`python test.py`), it will run the first MCMC run only to verify it works.
+    2. If you run on a cluster (checks for cluster if the OS is centos, let me know if yours isn't), it will create a slurm job script and send out all needed runs
+    3. Once all jobs have finished, copy the output from the plots folder ie :code:`barry.config.plots.mocks` to your local computer
+    4. Run the same python script and it will load in the data and create the plots.
 
 Check out the API below or browse the examples used to make the Barry paper. For any questions, flick me an email (samuelreay@gmail.com).
 
