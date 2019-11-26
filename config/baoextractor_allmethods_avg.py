@@ -9,6 +9,8 @@ from barry.cosmology.camb_generator import getCambGenerator
 from barry.samplers import DynestySampler
 from barry.fitter import Fitter
 
+# We want to verify the behaviour of other models when the BAO extractor technique is applied to them
+# We also want to see what the behaviour is if we keep the polynomial terms enabled or disable them.
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
@@ -47,7 +49,3 @@ if __name__ == "__main__":
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
         c.plotter.plot_summary(filename=pfn + "_summary.png", errorbar=True, truth={"$\\Omega_m$": 0.31, "$\\alpha$": 0.9982})
         c.plotter.plot(filename=pfn + "_contour.png", truth={"$\\Omega_m$": 0.31, "$\\alpha$": 0.9982})
-        # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.31, '$\\alpha$': 1.0})
-
-    # FINDINGS: All non-noda methods similarly fit to a lower alpha, whilst noda fits high. Noda would fit better if we could assume a gamma
-    # value of around 4 to 5, but this makes me feel... uncomfortable.

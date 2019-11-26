@@ -53,6 +53,9 @@ if __name__ == "__main__":
             from chainconsumer import ChainConsumer
 
             if True:
+                # This is a dirty way of faking another column in the dataset so I can keep plots visually consistent.
+                # Essentially resampling our weighted chain to be uniform weights.
+                # Note this requires that xi_individual.py has been run first! #######################################
                 ind_path = "plots/xi_individual/xi_individual_alphameans.csv"
                 n = 1000000
                 stds_dict = None

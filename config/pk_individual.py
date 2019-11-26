@@ -6,7 +6,8 @@ sys.path.append("..")
 from barry.samplers import DynestySampler
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
-from barry.config import setup, weighted_avg_and_std
+from barry.config import setup
+from barry.utils import weighted_avg_and_std
 from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
 from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.fitter import Fitter
@@ -57,13 +58,15 @@ if __name__ == "__main__":
     if not fitter.should_plot():
         fitter.fit(file)
 
+    # Everything below is nasty plotting code ###########################################################
     if fitter.should_plot():
         from os import path
         import matplotlib.pyplot as plt
-
         import logging
 
         logging.info("Creating plots")
+        plt.rc("text", usetex=True)
+        plt.rc("font", family="serif")
 
         res = {}
         if False and path.exists(pfn + "_alphameans.csv"):
@@ -173,18 +176,6 @@ if __name__ == "__main__":
 
         # Alpha-alpha comparison
         if True:
-
-            from matplotlib.colors import to_rgb, to_hex
-
-            c = ChainConsumer()
-            c.configure()
-            c.plotter.set_rc_params()
-
-            def blend_hex(hex1, hex2):
-                a = np.array(to_rgb(hex1))
-                b = np.array(to_rgb(hex2))
-                return to_hex(0.5 * (a + b))
-
             from scipy.interpolate import interp1d
 
             # Post-recon
@@ -325,15 +316,6 @@ if __name__ == "__main__":
 
         # Error-error comparison
         if True:
-            plt.rc("text", usetex=True)
-            plt.rc("font", family="serif")
-            from matplotlib.colors import to_rgb, to_hex
-
-            def blend_hex(hex1, hex2):
-                a = np.array(to_rgb(hex1))
-                b = np.array(to_rgb(hex2))
-                return to_hex(0.5 * (a + b))
-
             from scipy.interpolate import interp1d
 
             # Post-recon

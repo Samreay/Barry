@@ -10,6 +10,8 @@ from barry.cosmology.camb_generator import CambGenerator
 from barry.samplers import DynestySampler
 from barry.fitter import Fitter
 
+
+# Investigate the impact of shifting the minimum k value at which the extractor kicks in
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
@@ -41,27 +43,14 @@ if __name__ == "__main__":
             print(extra["name"])
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=30, legend_artists=True, cmap="plasma", sigmas=[0, 1])
-        extents = None  # {"$\\alpha$": (0.88, 1.18), "$A$": (0, 10), "$b$": (1.5, 1.8), r"$\gamma_{rec}$": (1, 8)}
         params = ["$\\alpha$", "$A$", "$b$"]
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
         c.plotter.plot_summary(
-            filename=[pfn + "_summary.png", pfn + "_summary.pdf"],
-            errorbar=True,
-            truth={"$\\Omega_m$": 0.31, "$\\alpha$": 0.9982},
-            extents=extents,
-            parameters=params,
+            filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth={"$\\Omega_m$": 0.31, "$\\alpha$": 0.9982}, parameters=params
         )
         c.plotter.plot(
-            filename=[pfn + "_contour.png", pfn + "_contour.pdf"],
-            truth={"$\\Omega_m$": 0.31, "$\\alpha$": 0.9982},
-            extents=extents,
-            parameters=params,
-            figsize="COLUMN",
+            filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth={"$\\Omega_m$": 0.31, "$\\alpha$": 0.9982}, parameters=params, figsize="COLUMN"
         )
-        # c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, '$\\alpha$': 1.0},
-        #                      extents=extents)
 
     # FINDINGS
-    # Well, looks like where you transition from alternating indices to only using the extractor
-    # has a strong impact on not only where you fit alpha, b, gamma and A, but also on their uncertainties.
-    # It also impracts the degeneracy direction between alpha and A.
+    # The minimum k value doesnt shift things much.

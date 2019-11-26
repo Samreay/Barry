@@ -4,7 +4,6 @@ import random
 import time
 from functools import lru_cache
 import inspect
-import numpy as np
 import yaml
 
 
@@ -31,14 +30,3 @@ def setup(filename):
     except Exception:
         pass
     return pfn, dir_name, file
-
-
-def weighted_avg_and_std(values, weights):
-    """
-    Return the weighted average and standard deviation.
-
-    values, weights -- Numpy ndarrays with the same shape.
-    """
-    average = np.average(values, weights=weights)
-    variance = np.average((values - average) ** 2, weights=weights)
-    return average, np.sqrt(variance)

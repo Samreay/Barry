@@ -7,7 +7,9 @@ from scipy import linalg, stats
 from scipy.interpolate import interp1d
 from scipy.ndimage import gaussian_filter
 from scipy.optimize import minimize
+import os
 
+os.makedirs("plots", exist_ok=True)
 filename_pk = "../config/plots/pk_individual/pk_individual_alphameans.csv"
 filename_xi = "../config/plots/xi_individual/xi_individual_alphameans.csv"
 
@@ -60,13 +62,6 @@ for i in range(len(cols_mean)):
     pvals[i] = stats.kstest(chi2[0:, i], rv.cdf).pvalue
     print(cols_mean[i], np.mean(means[0][:, i]), np.std(means[0][:, i]), np.mean(stds[0][0:, i]), pvals[i], anderson[0], anderson[1])
 
-# bins = np.linspace(0, 10, 21)
-# for row, label in zip(chi2.T, cols_mean):
-#     if "pk" not in label or "Noda" in label:
-#         continue
-#     plt.hist(row, bins=bins, histtype="step", label=label)
-# plt.legend()
-# plt.show()
 
 if False:
 
@@ -155,8 +150,8 @@ if False:
                     else:
                         ax.tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
 
-    plt.savefig("alpha_individual_chi2_cdf.pdf", bbox_inches="tight", dpi=300, transparent=True)
-    plt.savefig("alpha_individual_chi2_cdf.png", bbox_inches="tight", dpi=300, transparent=True)
+    plt.savefig("plots/alpha_individual_chi2_cdf.pdf", bbox_inches="tight", dpi=300, transparent=True)
+    plt.savefig("plots/alpha_individual_chi2_cdf.png", bbox_inches="tight", dpi=300, transparent=True)
 
 # These results suggest simply choosing the one with the smallest error is a bad idea. This is because the Seo and Ding P(k) models
 # (and the Noda model to some extent) don't seem to follow a chi^2 distribution. They are probably underestimating their uncertainties.
@@ -221,7 +216,7 @@ if True:
                     best_combined_err[i, j] = np.sqrt(weight @ newcov @ weight)
 
     # An alternative way to account for missing uncertainty is to simply integrate over the different results. So try this too.
-    from barry.config import weighted_avg_and_std
+    from barry.utils import weighted_avg_and_std
 
     nalpha = 100
     alpha_grid = np.linspace(0.8, 1.2, nalpha)
@@ -355,8 +350,8 @@ if True:
         leg1 = ax.legend(handles=legend_elements, loc=1, frameon=False, fontsize=12)
         ax.set_xlabel("Ratio of uncertainty to the CLUES method.")
         ax.set_ylabel("Count")
-        fig.savefig("consensus_individual2.pdf", bbox_inches="tight", dpi=300, transparent=True)
-        fig.savefig("consensus_individual2.png", bbox_inches="tight", dpi=300, transparent=True)
+        fig.savefig("plots/consensus_individual2.pdf", bbox_inches="tight", dpi=300, transparent=True)
+        fig.savefig("plots/consensus_individual2.png", bbox_inches="tight", dpi=300, transparent=True)
 
     if False:
         # plt.rc("text", usetex=True)
@@ -437,5 +432,5 @@ if True:
             axs[0].set_xlim(0, 999)
             axs[1].set_xlim(0, 500)
 
-        plt.savefig("consensus_individual.pdf", bbox_inches="tight", dpi=300, transparent=True)
-        plt.savefig("consensus_individual.png", bbox_inches="tight", dpi=300, transparent=True)
+        plt.savefig("plots/consensus_individual.pdf", bbox_inches="tight", dpi=300, transparent=True)
+        plt.savefig("plots/consensus_individual.png", bbox_inches="tight", dpi=300, transparent=True)

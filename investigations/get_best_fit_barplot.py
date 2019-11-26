@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
+import os
 
 filename_pk = "../config/plots/pk_individual/pk_individual_alphameans.csv"
 filename_xi = "../config/plots/xi_individual/xi_individual_alphameans.csv"
@@ -38,8 +38,9 @@ for f, x in zip([filename_pk, filename_xi], ["$P(k)$", "$\\xi(s)$"]):
                 l.set_color(c)
         i += 1
 
-fig.savefig("best_methods.png", bbox_inches="tight", transparent=True, dpi=300)
-fig.savefig("best_methods.pdf", bbox_inches="tight", transparent=True, dpi=300)
+os.makedirs("plots", exist_ok=True)
+fig.savefig("plots/best_methods.png", bbox_inches="tight", transparent=True, dpi=300)
+fig.savefig("plots/best_methods.pdf", bbox_inches="tight", transparent=True, dpi=300)
 plt.show()
 
 # recon_cols = [c for c in df.columns if "Recon" in c]

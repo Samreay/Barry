@@ -37,31 +37,14 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         c = ChainConsumer()
-        names2 = []
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
-            # print(model.get_names())
-            # print(chain.mean(axis=0))
-            name = extra["name"]
-            if "fixed $f$" in name:
-                names2.append(name)
-            i = posterior.argmax()
-
-            # If using the old chains without evidence
-            import numpy as np
-
-            print(name, model.get_names(), chain[i, :], "      ", model.get_labels())
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
-        # extents = {"$\\alpha$": (0.963, 1.06)}
-        c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982})
-        c.plotter.plot(
-            filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982}, parameters=["$\\alpha$", "$A$", "$b$"]
-        )
-
+        truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982}
+        c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth=truth)
+        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=["$\\alpha$", "$A$", "$b$"])
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982})
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
 
     # FINDINGS
-    # So turns out that fixing all these parameters really helps get good constraints.
-    # Both the choice of b and gamma entirely determine where alpha will fit.
-    # Really fixing b is what is driving down uncertainty.
+    # Can get better pre-recon by swapping to Halofit NL model.

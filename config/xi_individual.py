@@ -3,7 +3,8 @@ import sys
 sys.path.append("..")
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
-from barry.config import setup, weighted_avg_and_std
+from barry.config import setup
+from barry.utils import weighted_avg_and_std
 from barry.models import CorrBeutler2017, CorrDing2018, CorrSeo2016
 from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
 from barry.samplers import DynestySampler
@@ -52,6 +53,7 @@ if __name__ == "__main__":
     if not fitter.should_plot():
         fitter.fit(file)
 
+    # Everything below is nasty plotting code ###########################################################
     if fitter.should_plot():
         from os import path
         import matplotlib.pyplot as plt

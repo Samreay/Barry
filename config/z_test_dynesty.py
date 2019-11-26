@@ -22,20 +22,20 @@ if __name__ == "__main__":
     fitter.set_num_walkers(1)
     fitter.fit(file)
 
-    if fitter.should_plot():  # As I'm not sure if the cluster has matplotlib
-        from chainconsumer import ChainConsumer
+    if fitter.should_plot():
 
         res, = fitter.load()
 
         posterior, weight, chain, evidence, model, data, extra = res
-        print(chain.shape, weight.shape)
-        print(weight.max())
         import matplotlib.pyplot as plt
 
         fig, ax = plt.subplots(nrows=2)
         ax[0].plot(weight)
         ax[1].plot(evidence)
         plt.show()
-        # c = ChainConsumer()
-        # c.add_chain(chain, weights=weight, parameters=model.get_labels())
-        # c.plotter.plot(filename=pfn + "_contour.png")
+
+        from chainconsumer import ChainConsumer
+
+        c = ChainConsumer()
+        c.add_chain(chain, weights=weight, parameters=model.get_labels())
+        c.plotter.plot(filename=pfn + "_contour.png")

@@ -10,6 +10,8 @@ from barry.fitter import Fitter
 import numpy as np
 import pandas as pd
 
+
+# Check correlation between pk and xi results using recon Ding
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
     fitter = Fitter(dir_name, save_dims=2, remove_output=False)
@@ -25,13 +27,9 @@ if __name__ == "__main__":
         d_pk = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
         d_xi = CorrelationFunction_SDSS_DR12_Z061_NGC(recon=r, realisation=0)
 
-        # beutler_pk = PowerBeutler2017(recon=r)
-        # seo_pk = PowerSeo2016(recon=r)
         ding_pk = PowerDing2018(recon=r)
         ding_pk_smooth = PowerDing2018(recon=r, smooth=True)
 
-        # beutler_xi = CorrBeutler2017()
-        # seo_xi = CorrSeo2016(recon=r)
         ding_xi = CorrDing2018(recon=r)
         ding_xi_smooth = CorrDing2018(recon=r, smooth=True)
 
@@ -41,13 +39,9 @@ if __name__ == "__main__":
 
             fitter.add_model_and_dataset(ding_pk, d_pk, name=f"Ding 2018 $P(k)$, mock number {i}", linestyle="-", color="p", realisation=i)
             fitter.add_model_and_dataset(ding_pk_smooth, d_pk, name=f"Ding 2018 $P(k)$ Smooth, mock number {i}", linestyle="-", color="p", realisation=i)
-            # fitter.add_model_and_dataset(seo_pk, d_pk, name=f"Seo 2016 P(k), mock number {i}", linestyle="-", color="r")
-            # fitter.add_model_and_dataset(ding_pk, d_pk, name=f"Ding 2018 P(k), mock number {i}", linestyle="-", color="lb")
 
             fitter.add_model_and_dataset(ding_xi, d_xi, name=f"Ding 2018 $\\xi(s)$, mock number {i}", linestyle=":", color="p", realisation=i)
             fitter.add_model_and_dataset(ding_xi_smooth, d_xi, name=f"Ding 2018 $\\xi(s)$ Smooth, mock number {i}", linestyle=":", color="p", realisation=i)
-            # fitter.add_model_and_dataset(seo_xi, d_xi, name=f"Seo 2016 corr, mock number {i}", linestyle=":", color="r")
-            # fitter.add_model_and_dataset(ding_xi, d_xi, name=f"Ding 2018 corr, mock number {i}", linestyle=":", color="lb")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)

@@ -9,6 +9,8 @@ from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
 from barry.samplers import DynestySampler
 from barry.fitter import Fitter
 
+# Checks to see if the better fits from the power spectrum are due to differences in the effective fitting range.
+# Spoiler: No.
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
