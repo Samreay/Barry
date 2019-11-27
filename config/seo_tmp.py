@@ -5,7 +5,7 @@ from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
 from barry.config import setup
 from barry.utils import weighted_avg_and_std, get_model_comparison_dataframe
-from barry.models import PowerDing2018, PowerBeutler2017
+from barry.models import PowerSeo2016
 from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
 from barry.samplers import DynestySampler
 from barry.fitter import Fitter
@@ -31,8 +31,8 @@ if __name__ == "__main__":
 
         d = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r)
 
-        ding = PowerDing2018(recon=r)
-        fitter.add_model_and_dataset(ding, d, name=f"D18", linestyle=ls, color="p")
+        ding = PowerSeo2016(recon=r)
+        fitter.add_model_and_dataset(ding, d, name=f"S16", linestyle=ls, color="p")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)

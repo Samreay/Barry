@@ -17,7 +17,7 @@ import pandas as pd
 # Spoiler: They do not.
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
-    fitter = Fitter(dir_name, remove_output=False)
+    fitter = Fitter(dir_name, remove_output=True)
 
     c = getCambGenerator()
     r_s = c.get_data()["r_s"]
