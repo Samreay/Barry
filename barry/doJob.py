@@ -1,3 +1,4 @@
+import inspect
 import os
 import shutil
 import logging
@@ -23,7 +24,8 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, 
     d = {"directory": directory, "executable": executable, "name": name, "output_dir": output_dir, "num_concurrent": num_concurrent, "num_tasks": num_tasks}
     d.update(config)
 
-    with open("jobscripts/slurm_fit.job") as f:
+    slurm_job = os.path.join(os.path.dirname(os.path.abspath(inspect.stack()[0][1])), "jobscripts/slurm_fit.job")
+    with open(slurm_job) as f:
         raw_template = f.read()
     template = raw_template.format(**d)
 
