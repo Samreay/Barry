@@ -226,6 +226,8 @@ class Model(ABC):
             with open(self.pregen_path, "rb") as f:
                 self.pregen = pickle.load(f)
             self.logger.info(f"Pregen data loaded from {self.pregen_path}")
+        else:
+            self.logger.info("Dont need to load any pregen data")
 
     def _save_precomputed_data(self, data):
         with open(self.pregen_path, "wb") as f:
@@ -252,7 +254,7 @@ class Model(ABC):
         return self.camb.interpolate(om, h0, data)
 
     def _needs_precompute(self):
-        return self.precompute != self.__class__.__bases__[0].precompute
+        return self.precompute is self.__class__.__bases__[0].precompute
 
     def precompute(self, camb, om, h0):
         """ A function available for overriding that precomputes values that depend only on the outputs of CAMB.

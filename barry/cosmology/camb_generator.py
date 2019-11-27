@@ -93,8 +93,8 @@ class CambGenerator(object):
             else:
                 self.data = self._generate_data()
         else:
-            self.logger.info("Loading existing CAMB data")
             self.data = np.load(self.filename)
+            self.logger.info("Loading existing CAMB data")
 
     @lru_cache(maxsize=512)
     def get_data(self, om=0.31, h0=None):
@@ -105,7 +105,13 @@ class CambGenerator(object):
             self.load_data()
         omch2 = (om - self.omega_b) * h0 * h0
         data = self._interpolate(omch2, h0)
-        return {"r_s": data[0], "ks": self.ks, "pk_lin": data[1 : 1 + self.k_num], "pk_nl": data[1 + 2 * self.k_num :]}
+        return {
+            "r_s": data[0],
+            "ks": self.ks,
+            "pk_lin": data[1 : 1 + self.k_num],
+            "pk_nl_0": data[1 + 1 * self.k_num : 1 + 2 * self.k_num],
+            "pk_nl_z": data[1 + 2 * self.k_num :],
+        }
 
     def _generate_data(self):
         self.logger.info(f"Generating CAMB data with {self.om_resolution} x {self.h0_resolution}")

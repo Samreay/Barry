@@ -65,14 +65,13 @@ class PowerSpectrumFit(Model):
 
         """
         # Get base linear power spectrum from camb
-        r_s, pk_lin, _ = self.camb.get_data(om=om, h0=self.camb.h0)
-        pk_smooth_lin = smooth(self.camb.ks, pk_lin, method=self.smooth_type, om=om, h0=self.camb.h0)  # Get the smoothed power spectrum
-        pk_ratio = pk_lin / pk_smooth_lin - 1.0  # Get the ratio
+        res = self.camb.get_data(om=om, h0=self.camb.h0)
+        pk_smooth_lin = smooth(self.camb.ks, res["pk_lin"], method=self.smooth_type, om=om, h0=self.camb.h0)  # Get the smoothed power spectrum
+        pk_ratio = res["pk_lin"] / pk_smooth_lin - 1.0  # Get the ratio
         return pk_smooth_lin, pk_ratio
 
     def compute_power_spectrum(self, p, smooth=False, shape=True):
-        """ Returns the wiggle ratio interpolated at some k/alpha values. Useful if we only want alpha to modify
-            the BAO feature and not the smooth component.
+        """ Get raw ks and p(k) for a given parametrisation.
 
         Parameters
         ----------
@@ -83,7 +82,7 @@ class PowerSpectrumFit(Model):
         shape : bool, optional
             Whether or not to include shape marginalisation terms.
 
-            
+
         Returns
         -------
         ks : np.ndarray

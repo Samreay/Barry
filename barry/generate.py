@@ -80,7 +80,7 @@ if __name__ == "__main__":
         generator.load_data(can_generate=True)
 
     # For each cosmology, ensure that each model pregens the right data
-    models = [c() for c in get_concrete(Model) if "PowerDing" in c.__name__]
+    models = [c() for c in get_concrete(Model) if "Dummy" not in c.__name__]
     for m in models:
         for c in cosmologies:
             try:

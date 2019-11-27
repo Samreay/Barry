@@ -20,7 +20,6 @@ class PowerDing2018(PowerSpectrumFit):
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
-        self.smoothing_kernel = None
 
     def precompute(self, camb, om, h0):
 
@@ -52,7 +51,7 @@ class PowerDing2018(PowerSpectrumFit):
 
     @lru_cache(maxsize=32)
     def get_damping(self, growth, om):
-        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_nl"])
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_nl", om))
 
     def declare_parameters(self):
         super().declare_parameters()
@@ -66,7 +65,7 @@ class PowerDing2018(PowerSpectrumFit):
         self.add_param("a5", r"$a_5$", -3.0, 3.0, 0)  # Polynomial marginalisation 5
 
     def compute_power_spectrum(self, p, smooth=False, shape=True):
-        """ Computes the power spectrum model at k/alpha using the Ding et. al., 2018 EFT0 model
+        """ Computes the power spectrum model using the Ding et. al., 2018 EFT0 model
         
         Parameters
         ----------
@@ -79,8 +78,10 @@ class PowerDing2018(PowerSpectrumFit):
 
         Returns
         -------
-        array
-            pk_final - The power spectrum at the dilated k-values
+        ks : np.ndarray
+            Wavenumbers of the computed pk
+        pk_1d : np.ndarray
+            the ratio (pk_lin / pk_smooth - 1.0),  NOT interpolated to k/alpha.
         
         """
         # Get the basic power spectrum components
@@ -118,7 +119,7 @@ class PowerDing2018(PowerSpectrumFit):
 
                 smooth_prefac = np.tile(self.camb.smoothing_kernel / p["b"], (self.nmu, 1))
                 bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
-                kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.smoothing_kernel) + bdelta_prefac
+                kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel) + bdelta_prefac
                 propagator = (
                     (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping_dd + 2.0 * kaiser_prefac * smooth_prefac * damping_sd + smooth_prefac ** 2 * damping_ss
                 )
