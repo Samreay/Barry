@@ -1,9 +1,9 @@
 #!/bin/bash -l
+#SBATCH -J {name}
+#SBATCH -o {output}.o%j
 #SBATCH -p {partition}
-#SBATCH -J ptgenerator
 #SBATCH --mem-per-cpu=4GB
 #SBATCH -t 04:00:00
-#SBATCH -o jobs/zlog.o%j
 #SBATCH -n 20
 
 module load {mpi_module}
@@ -14,4 +14,4 @@ echo "Activated python"
 echo `which python`
 
 cd {path}
-/opt/openmpi/bin/mpirun python precompute_mpi.py --model {model} --reconsmoothscale {reconsmoothscale} --redshift {z} --om {om} --h0 {h0} --ob {ob} --ns {ns}
+mpirun python precompute_mpi.py --model {model} --reconsmoothscale {reconsmoothscale} --redshift {z} --om {om} --h0 {h0} --ob {ob} --ns {ns}

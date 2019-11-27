@@ -33,6 +33,8 @@ if __name__ == "__main__":
 
     mpi_comm = MPI.COMM_WORLD
     rank = mpi_comm.Get_rank()
+    size = mpi_comm.Get_size()
+    logging.info(f"Process reporting rank {rank} and size {size}")
 
     # Ensure that the camb data loads
     if rank == 0:
@@ -53,10 +55,10 @@ if __name__ == "__main__":
     run_indexes = mpi_comm.scatter(delegations, root=0)
     results = model.generate_precomputed_data(run_indexes)
     all_results = mpi_comm.gather(results, root=0)
-    rank = mpi_comm.Get_rank()
 
     # Should have a list of results mapping indexes to values that have come back. Unpack these into fixed arrays
     if rank == 0:
+        logging.info("Merging results")
         data = all_results[0]  # Start with the first set
 
         # Use the shapes to create the right sized arrays

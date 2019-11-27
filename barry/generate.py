@@ -2,7 +2,7 @@ import inspect
 import sys
 import os
 import logging
-
+import argparse
 
 sys.path.append("..")
 from barry.models import Model
@@ -16,13 +16,17 @@ def setup_ptgenerator_slurm(model, c):
     config = get_config()
     job_path = os.path.join(os.path.dirname(inspect.stack()[0][1]), "jobscripts/slurm_pt_generator.job")
     python_path = os.path.abspath(os.path.dirname(inspect.stack()[0][1]))
-
+    unique_name = "".join([k + str(c[k]) for k in sorted(c.keys())]) + ".job"
+    job_dir = os.path.abspath("jobs")
+    output = os.path.join(job_dir, "zlog")
     d = {
         "partition": config["job_partition"],
+        "name": unique_name,
         "conda_env": config["job_conda_env"],
         "mpi_module": config["mpi_module"],
         "fort_compile_module": config["fort_compile_module"],
         "path": python_path,
+        "output": output,
         "model": model.__class__.__name__,
     }
     with open(job_path) as f:
@@ -30,8 +34,6 @@ def setup_ptgenerator_slurm(model, c):
     d.update(c)
     template = raw_template.format(**d)
 
-    job_dir = "jobs"
-    unique_name = "".join([k + str(c[k]) for k in sorted(c.keys())]) + ".job"
     filename = os.path.join(job_dir, unique_name)
     os.makedirs(job_dir, exist_ok=True)
     with open(filename, "w") as f:
@@ -58,6 +60,11 @@ def get_cosmologies(datasets):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
 
+    # Set up command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-r", "--refresh", action="store_true", default=False)
+    args = parser.parse_args()
+
     # This should be run on a HPC for the PTGenerator side of things.
     assert not is_local(), "Please run this on your HPC system"
 
@@ -79,5 +86,8 @@ if __name__ == "__main__":
             try:
                 m.set_cosmology(c)
                 logging.info(f"Model {m.__class__.__name__} already has pregenerated data for {m.camb.filename_unique}")
+                if args.refresh:
+                    logging.info("But going to refresh tme anyway!")
+                    assert not args.refresh, "Refreshing anyway!"
             except AssertionError:
                 setup_ptgenerator_slurm(m, c)
