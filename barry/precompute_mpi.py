@@ -3,7 +3,7 @@ import logging
 import argparse
 import numpy as np
 
-sys.path.append("../..")
+sys.path.append("..")
 from barry.models import Model
 from tests.utils import get_concrete
 
@@ -25,7 +25,9 @@ if __name__ == "__main__":
     # Find the right model
     model = [c() for c in get_concrete(Model) if args.model == c.__name__][0]
     logging.info(f"Model found is {model}")
-    model.set_cosmology({"z": args.redshift, "h0": args.h0, "om": args.om, "ob": args.ob, "ns": args.ns, "reconsmoothscale": args.reconsmoothscale})
+    model.set_cosmology(
+        {"z": args.redshift, "h0": args.h0, "om": args.om, "ob": args.ob, "ns": args.ns, "reconsmoothscale": args.reconsmoothscale}, load_pregen=False
+    )
 
     from mpi4py import MPI
 
@@ -72,7 +74,7 @@ if __name__ == "__main__":
         # Combine the results of all different cores
         for data in all_results:
             for i, j, values in data:
-                for k, v in values:
+                for k, v in values.items():
                     if k in num:
                         combined[k][i, j] = v
                     else:

@@ -69,7 +69,7 @@ class Model(ABC):
         self.pregen = None
         self.pregen_path = None
         current_file = os.path.dirname(inspect.stack()[0][1])
-        self.data_location = os.path.normpath(current_file + f"../generated/")
+        self.data_location = os.path.normpath(current_file + f"/../generated/")
         os.makedirs(self.data_location, exist_ok=True)
 
         self.params = []
@@ -86,7 +86,7 @@ class Model(ABC):
     def get_name(self):
         return self.name
 
-    def set_cosmology(self, c):
+    def set_cosmology(self, c, load_pregen=True):
         z = c["z"]
         if self.param_dict.get("f") is not None:
             f = Omega_m_z(self.get_default("om"), z) ** 0.55
@@ -96,9 +96,10 @@ class Model(ABC):
         if self.cosmology != c:
             self.camb = getCambGenerator(h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], recon_smoothing_scale=c["reconsmoothscale"])
             self.set_default("om", c["om"])
-            self.pregen_path = os.path.join(self.data_location, self.__class__.__name__ + "_" + self.camb.filename_unique + ".pkl")
+            self.pregen_path = os.path.abspath(os.path.join(self.data_location, self.__class__.__name__ + "_" + self.camb.filename_unique + ".pkl"))
             self.cosmology = c
-            self._load_precomputed_data()
+            if load_pregen:
+                self._load_precomputed_data()
 
     def set_data(self, data):
         """ Sets the models data, including fetching the right cosmology and PT generator.
@@ -227,7 +228,7 @@ class Model(ABC):
             self.logger.info(f"Pregen data loaded from {self.pregen_path}")
 
     def _save_precomputed_data(self, data):
-        with open(self.pregen_path, "rb") as f:
+        with open(self.pregen_path, "wb") as f:
             pickle.dump(data, f)
             self.logger.info(f"Pregen data saved to {self.pregen_path}")
 

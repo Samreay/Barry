@@ -56,10 +56,10 @@ def get_cosmologies(datasets):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
+    logging.basicConfig(level=logging.INFO, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
 
     # This should be run on a HPC for the PTGenerator side of things.
-    # assert not is_local(), "Please run this on your HPC system"
+    assert not is_local(), "Please run this on your HPC system"
 
     datasets = [c() for c in get_concrete(Dataset) if "Dummy" not in c.__name__]
 
