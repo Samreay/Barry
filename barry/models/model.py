@@ -69,7 +69,7 @@ class Model(ABC):
         self.pregen = None
         self.pregen_path = None
         current_file = os.path.dirname(inspect.stack()[0][1])
-        self.data_location = os.path.normpath(current_file + f"/precomputed/")
+        self.data_location = os.path.normpath(current_file + f"../data/")
         os.makedirs(self.data_location, exist_ok=True)
 
         self.params = []
