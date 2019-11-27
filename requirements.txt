@@ -7,3 +7,4 @@ chainconsumer>=0.30.0
 emcee>=3.0.0
 dynesty
 pyyaml
+mpi4py

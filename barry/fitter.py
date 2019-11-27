@@ -185,7 +185,8 @@ class Fitter(object):
                         shutil.rmtree(self.temp_dir)
                 filename = write_jobscript_slurm(file, name=os.path.basename(file), num_tasks=self.get_num_jobs(), num_concurrent=num_concurrent, delete=False)
                 self.logger.info("Running batch job at %s" % filename)
-                os.system("sbatch %s" % filename)
+                config = get_config()
+                os.system(f"{config['hpc_submit_command']} {filename}")
             else:
                 # or if running a specific fit to a model+dataset pair
                 index = int(sys.argv[1])

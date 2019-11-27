@@ -20,7 +20,7 @@ class TestDataset:
                 assert "cosmology" in keys, "Data should have a cosmology key!"
                 cosmology = data["cosmology"]
                 assert isinstance(cosmology, dict)
-                required_keys = ["z", "om", "h0", "ns", "ob"]
+                required_keys = ["z", "om", "h0", "ns", "ob", "reconsmoothscale"]
                 for r in required_keys:
                     assert r in cosmology.keys(), f"Cosmology should have key {r}, but has keys {list(cosmology.keys())}"
 

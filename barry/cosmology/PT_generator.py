@@ -1,4 +1,3 @@
-import platform
 from functools import lru_cache
 
 import numpy as np
@@ -9,7 +8,9 @@ from scipy import integrate, special, interpolate
 import pickle
 import sys
 
+
 sys.path.append("../..")
+from barry.config import get_config, is_local
 from barry.cosmology.camb_generator import getCambGenerator, Omega_m_z, E_z
 from barry.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
 
@@ -357,25 +358,32 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
-    if "centos" in platform.platform():
+    if not is_local():
         import argparse
 
         # Set up command line arguments
         parser = argparse.ArgumentParser()
         parser.add_argument("--om_resolution", type=int, default=101, help="Num of Omch2s to generate")
         parser.add_argument("--h0_resolution", type=int, default=1, help="Num of h0s to generate")
-        parser.add_argument("--recon_smoothing_scale", type=float, default=21.21)
+        parser.add_argument("--reconsmoothscale", type=float, default=21.21)
+        parser.add_argument("--redshift", type=float, default=21.21)
+        parser.add_argument("--om", type=float, default=0.31)
+        parser.add_argument("--h0", type=float, default=0.676)
+        parser.add_argument("--ob", type=float, default=0.04814)
+        parser.add_argument("--ns", type=float, default=0.97)
         args = parser.parse_args()
 
         from mpi4py import MPI
 
         mpi_comm = MPI.COMM_WORLD
-        generator = CambGenerator(redshift=0.61, om_resolution=args.om_resolution, h0_resolution=args.h0_resolution)
+        generator = CambGenerator(
+            redshift=args.redshift, om_resolution=args.om_resolution, h0_resolution=args.h0_resolution, h0=args.h0, ob=args.ob, ns=args.ns
+        )
         rank = mpi_comm.Get_rank()
         if rank == 0:
             generator.load_data(can_generate=True)
         mpi_comm.Barrier()
-        pt_generator = PTGenerator(generator, recon_smoothing_scale=args.recon_smoothing_scale, mpi_comm=mpi_comm)
+        pt_generator = PTGenerator(generator, recon_smoothing_scale=args.reconsmoothscale, mpi_comm=mpi_comm)
         pt_generator.load_data(can_generate=True)
 
     else:

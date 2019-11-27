@@ -1,6 +1,7 @@
 import logging
 import os
 import random
+import shutil
 import time
 from functools import lru_cache
 import inspect
@@ -30,3 +31,7 @@ def setup(filename):
     except Exception:
         pass
     return pfn, dir_name, file
+
+
+def is_local():
+    return shutil.which(get_config()["hpc_determining_command"]) is None

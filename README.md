@@ -24,6 +24,9 @@ something working.
 
 ## Barry Paper
 
+Note the internal differentiation; the `configs` directory is used when performing fits and submiting jobs, whilst
+the `investigations` directory is when performing investigations or tests locally.
+
 * `configs/pk_avg.py`: Generates Figures 1 and 4
 * `configs/xi_avg.py`: Generates Figures 2 and 9
 * `configs/pk_individual.py`: Generates Figure 3 and 5
@@ -37,6 +40,12 @@ something working.
 * `investigations/get_consensus_measurement_individual`: Generates Figures 11 and 13
 * `configs/pk_vs_xi_individual.py`: Generates Figure 12
 
+## In-built tests
+
+In the `tests` directory, we have three files:
+* `test_datasets.py`: Will attempt to instantiate all concrete implementations of the Dataset class, ensure they have valid cosmology, and valid keys in the dictionary structure of the data. 
+* `test_models.py`: Will attempt to instantiate all concrete implementations of the Model class, and then ensures that the likelihood generated at the default parameter values for the SDSS DR12 z=0.61 NGC dataset returns a finite number. Using random samples in the allowed prior range, 100 points are also randomly evaluated to ensure all return finite values.
+* `test_pk2xi.py`: Validates that both the current FT and Gaussian integration methods of doing the Spherical Hankel Transform give good results.
 
 
 ## Adding new datasets

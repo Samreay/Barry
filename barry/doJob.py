@@ -20,31 +20,12 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
 
-    template = f"""#!/bin/bash -l
-#SBATCH -J {name}
-#SBATCH -p {config['job_partition']}
-#SBATCH --array=1-{num_tasks}%{num_concurrent}
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task={config['job_cpus_per_task']}
-#SBATCH --nodes=1
-#SBATCH --mem={config['job_memory']}
-#SBATCH -t {config['job_walltime_limit']}
-#SBATCH -o {output_dir}/{name}.o%j
+    d = {"directory": directory, "executable": executable, "name": name, "output_dir": output_dir, "num_concurrent": num_concurrent, "num_tasks": num_tasks}
+    d.update(config)
 
-IDIR={directory}
-conda deactivate
-conda activate {config["job_conda_env"]}
-echo $PATH
-echo "Activated python"
-executable=$(which python)
-echo $executable
-
-PROG={executable}
-PARAMS=`expr ${{SLURM_ARRAY_TASK_ID}} - 1`
-cd $IDIR
-sleep $((RANDOM % 5))
-$executable $PROG $PARAMS
-"""
+    with open("jobscripts/slurm_fit.job") as f:
+        raw_template = f.read()
+    template = raw_template.format(**d)
 
     n = "%s/%s.q" % (q_dir, executable[: executable.index(".py")])
     with open(n, "w") as f:
