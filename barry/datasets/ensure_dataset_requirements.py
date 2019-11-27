@@ -52,7 +52,7 @@ if __name__ == "__main__":
     assert not is_local(), "Please run this on your HPC system"
 
     classes = get_concrete(Dataset)
-    concrete = [c() for c in classes]
+    concrete = [c() for c in classes if "Dummy" not in c.__name__]
     launched = []
     for dataset in concrete:
         logging.info(f"Ensuring requirements for {dataset.name}")

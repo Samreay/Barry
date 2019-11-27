@@ -179,7 +179,6 @@ class PTGenerator(object):
             pk_lin = self.CAMBGenerator.data[i, j, 1 : 1 + self.CAMBGenerator.k_num]
             pk_nonlin_0 = self.CAMBGenerator.data[i, j, 1 + self.CAMBGenerator.k_num : 1 + 2 * self.CAMBGenerator.k_num]
             pk_nonlin_z = self.CAMBGenerator.data[i, j, 1 + 2 * self.CAMBGenerator.k_num :]
-
             # Get the spherical bessel functions
             j0 = special.jn(0, r_drag * self.CAMBGenerator.ks)
             j2 = special.jn(2, r_drag * self.CAMBGenerator.ks)

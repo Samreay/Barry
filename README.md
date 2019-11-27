@@ -60,15 +60,9 @@ Assuming you get the pickle made, you just need a wrapper class defining the def
 `barry.datasets.dataset_power_spectrum.py` for examples - you can copy and paste and change the pickle name.
 
 Also, after loading in a dataset, which will have its own smoothing scale, redshift and cosmology, you should pre-generated
-the `PTGenerator` and `CambGenerator` (which are used to speed sampling up as you dont have to invoke CAMB and compute nasty
-integrals in each step). To do this yourself, under `barry/cosmology` what you can do is:
+the `PTGenerator` and `CambGenerator`. This can be done by, on your HPC, running `python ensure_dataset_requirements.py`, which will
+check that every dataset class implemented has the correct pre-generated files.
 
-1. Update `camb_generator.py` (line 199) to match your cosmology and run the file. This will generate a pickle with CAMB pregenerated.
-2. Update `PT_generator.py` (line 385) to match your cosmology, update `slurm_pt_generator.job` to have the correct recon smoothing scale, and submit the job. It will generate the PT pickle.
-3. Commit and push both files
-
-This is a bit annoying, so I'm planning on writing a little file where you just give it the dataset class and it'll do this 
-all for you. If that doesn't exist by the time you read this, ping me and I'll drop everything to get it done.
 
 ## Adding new models
 
