@@ -1,6 +1,8 @@
 import inspect
 import sys
 import os
+import logging
+
 
 sys.path.append("../..")
 from barry.config import is_local, get_config
@@ -20,13 +22,13 @@ def setup_ptgenerator_slurm(c, launched):
     template = raw_template.format(**d)
 
     job_dir = "jobs"
-    unique_name = "".join([k + c[k] for k in sorted(c.keys())]) + ".job"
+    unique_name = "".join([k + str(c[k]) for k in sorted(c.keys())]) + ".job"
     filename = os.path.join(job_dir, unique_name)
     os.makedirs(job_dir, exist_ok=True)
     with open(filename, "w") as f:
         f.write(template)
     if filename not in launched:
-        print(f"Submitting {filename}")
+        logging.info(f"Submitting {filename}")
         os.system(f"{config['hpc_submit_command']} {filename}")
         launched.append(filename)
 
@@ -43,6 +45,8 @@ def ensure_requirements(dataset, launched):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
+
     # This should be run on a HPC for the PTGenerator side of things.
     assert not is_local(), "Please run this on your HPC system"
 
@@ -50,4 +54,5 @@ if __name__ == "__main__":
     concrete = [c() for c in classes]
     launched = []
     for dataset in concrete:
+        logging.info(f"Ensuring requirements for {dataset.name}")
         ensure_requirements(dataset, launched)
