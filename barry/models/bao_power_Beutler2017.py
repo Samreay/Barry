@@ -1,6 +1,5 @@
 import logging
 import numpy as np
-from scipy.interpolate import splev, splrep
 from barry.models.bao_power import PowerSpectrumFit
 
 
@@ -26,13 +25,11 @@ class PowerBeutler2017(PowerSpectrumFit):
         self.add_param("a4", r"$a_4$", -200.0, 200.0, 0)  # Polynomial marginalisation 4
         self.add_param("a5", r"$a_5$", -3.0, 3.0, 0)  # Polynomial marginalisation 5
 
-    def compute_power_spectrum(self, k, p, smooth=False):
+    def compute_power_spectrum(self, p, smooth=False, shape=True):
         """ Computes the power spectrum for the Beutler et. al., 2017 model at k/alpha
         
         Parameters
         ----------
-        k : np.ndarray
-            Array of wavenumbers to compute
         p : dict
             dictionary of parameter names to their values
         smooth : bool, optional
@@ -49,25 +46,27 @@ class PowerBeutler2017(PowerSpectrumFit):
         ks = self.camb.ks
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
 
-        # Compute the propagator
-        C = np.exp(-0.5 * ks ** 2 * p["sigma_nl"] ** 2)
-
         # Compute the smooth model
         fog = 1.0 / (1.0 + ks ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
         pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
 
         # Polynomial shape
-        if self.recon:
-            shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
+        if shape:
+            if self.recon:
+                shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
+            else:
+                shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
         else:
-            shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
+            shape = 0
 
         if smooth:
-            pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth + shape))
+            pk1d = pk_smooth + shape
         else:
-            pk_final = splev(k / p["alpha"], splrep(ks, (pk_smooth + shape) * (1.0 + pk_ratio * C)))
+            # Compute the propagator
+            C = np.exp(-0.5 * ks ** 2 * p["sigma_nl"] ** 2)
+            pk1d = (pk_smooth + shape) * (1.0 + pk_ratio * C)
 
-        return pk_final
+        return ks, pk1d
 
 
 if __name__ == "__main__":

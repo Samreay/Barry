@@ -1,5 +1,6 @@
 import logging
-import numpy as np
+
+from barry.models import PowerBeutler2017
 from barry.models.bao_correlation import CorrelationFunctionFit
 
 
@@ -9,9 +10,14 @@ class CorrBeutler2017(CorrelationFunctionFit):
 
     def __init__(self, name="Corr Beutler 2017", smooth_type="hinton2017", fix_params=("om"), smooth=False, correction=None):
         super().__init__(name, smooth_type, fix_params, smooth, correction=correction)
+        self.parent = PowerBeutler2017(fix_params=fix_params, smooth_type=smooth_type, recon=True, smooth=smooth, correction=correction)
+        # Recon doesnt matter above as it only changes the unused shape terms for Beutler
+
+    def set_data(self, data):
+        super().set_data(data)
+        self.parent.set_data(data)
 
     def declare_parameters(self):
-        # Define parameters
         super().declare_parameters()
         self.add_param("sigma_nl", r"$\Sigma_{NL}$", 1.0, 20.0, 1.0)  # dampening
         self.add_param("a1", r"$a_1$", -100, 100, 0)  # Polynomial marginalisation 1
@@ -20,18 +26,10 @@ class CorrBeutler2017(CorrelationFunctionFit):
 
     def compute_correlation_function(self, d, p, smooth=False):
         # Get base linear power spectrum from camb
-        ks = self.camb.ks
-        pk_smooth, pk_ratio_dewiggled = self.compute_basic_power_spectrum(p["om"])
-
-        # Blend the two
-        if smooth:
-            pk_dewiggled = pk_smooth
-        else:
-            pk_linear_weight = np.exp(-0.5 * (ks * p["sigma_nl"]) ** 2)
-            pk_dewiggled = (pk_linear_weight * (1 + pk_ratio_dewiggled) + (1 - pk_linear_weight)) * pk_smooth
+        ks, pk1d = self.parent.compute_power_spectrum(p, smooth=smooth, shape=False)
 
         # Convert to correlation function and take alpha into account
-        xi = self.pk2xi(ks, pk_dewiggled, d * p["alpha"])
+        xi = self.pk2xi(ks, pk1d, d * p["alpha"])
 
         # Polynomial shape
         shape = p["a1"] / (d ** 2) + p["a2"] / d + p["a3"]

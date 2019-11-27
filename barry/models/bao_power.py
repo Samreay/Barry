@@ -97,30 +97,35 @@ class PowerSpectrumFit(Model):
         pk_ratio = pk_lin / pk_smooth_lin - 1.0  # Get the ratio
         return pk_smooth_lin, pk_ratio
 
-    def compute_power_spectrum(self, k, p, smooth=False):
+    def compute_power_spectrum(self, p, smooth=False, shape=True):
         """ Returns the wiggle ratio interpolated at some k/alpha values. Useful if we only want alpha to modify
             the BAO feature and not the smooth component.
 
         Parameters
         ----------
-        k : np.ndarray
-            Array of wavenumbers to compute.
         p : dict
             dictionary of parameter names to their values
+        smooth : bool, optional
+            Whether or not to generate a smooth model without the BAO feature
+        shape : bool, optional
+            Whether or not to include shape marginalisation terms.
 
+            
         Returns
         -------
-        pk_final : np.ndarray
-            the ratio (pk_lin / pk_smooth - 1.0),  interpolated to k/alpha.
+        ks : np.ndarray
+            Wavenumbers of the computed pk
+        pk_1d : np.ndarray
+            the ratio (pk_lin / pk_smooth - 1.0),  NOT interpolated to k/alpha.
 
         """
         ks = self.camb.ks
         pk_smooth, pk_ratio_dewiggled = self.compute_basic_power_spectrum(p["om"])
         if smooth:
-            pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth))
+            pk_1d = pk_smooth
         else:
-            pk_final = splev(k / p["alpha"], splrep(ks, pk_smooth * (1 + pk_ratio_dewiggled)))
-        return pk_final
+            pk_1d = pk_smooth * (1 + pk_ratio_dewiggled)
+        return ks, pk_1d
 
     def adjust_model_window_effects(self, pk_generated, data):
         """ Take the window effects into account.
@@ -196,7 +201,9 @@ class PowerSpectrumFit(Model):
 
         """
         # Get the generic pk model
-        pk_generated = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth)
+        ks, pk1d = self.compute_power_spectrum(p, smooth=smooth)
+
+        pk_generated = splev(d["ks_input"] / p["alpha"], splrep(ks, pk1d))
         # Morph it into a model representative of our survey and its selection/window/binning effects
         pk_model, mask = self.adjust_model_window_effects(pk_generated, d)
 

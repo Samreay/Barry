@@ -89,7 +89,7 @@ class PowerNoda2019(PowerSpectrumFit):
         self.add_param("gamma", r"$\gamma_{rec}$", 1.0, 8.0, 1.0)  # Describes the sharpening of the BAO post-reconstruction
         self.add_param("A", r"$A$", -10, 30.0, 10)  # Fingers-of-god damping
 
-    def compute_power_spectrum(self, k, p, smooth=False):
+    def compute_power_spectrum(self, k, p, smooth=False, shape=True):
         """ Computes the power spectrum model at k/alpha using the Ding et. al., 2018 EFT0 model
         
         Parameters

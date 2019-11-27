@@ -1,8 +1,6 @@
 import logging
 from functools import lru_cache
-
 import numpy as np
-from scipy.interpolate import splev, splrep
 from scipy import integrate
 from barry.models.bao_power import PowerSpectrumFit
 from barry.cosmology.camb_generator import Omega_m_z
@@ -65,16 +63,18 @@ class PowerDing2018(PowerSpectrumFit):
         self.add_param("a4", r"$a_4$", -200.0, 200.0, 0)  # Polynomial marginalisation 4
         self.add_param("a5", r"$a_5$", -3.0, 3.0, 0)  # Polynomial marginalisation 5
 
-    def compute_power_spectrum(self, k, p, smooth=False):
+    def compute_power_spectrum(self, p, smooth=False, shape=True):
         """ Computes the power spectrum model at k/alpha using the Ding et. al., 2018 EFT0 model
         
         Parameters
         ----------
-        k : np.ndarray
-            Array of wavenumbers to compute
         p : dict
             dictionary of parameter names to their values
-            
+        smooth : bool, optional
+            Whether or not to return a smooth pk without BAO feature
+        shape : bool, optional
+            Whether or not to add in shape terms
+
         Returns
         -------
         array
@@ -88,48 +88,47 @@ class PowerDing2018(PowerSpectrumFit):
         # Compute the growth rate depending on what we have left as free parameters
         growth = p["f"]
 
-        # Lets round some things for the sake of numerical speed
-        om = np.round(p["om"], decimals=5)
-        growth = np.round(growth, decimals=5)
-
-        # Compute the BAO damping
-        if self.recon:
-            damping_dd = self.get_damping_dd(growth, om)
-            damping_sd = self.get_damping_sd(growth, om)
-            damping_ss = self.get_damping_ss(om)
-
-            smooth_prefac = np.tile(self.smoothing_kernel / p["b"], (self.nmu, 1))
-            bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
-            kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.smoothing_kernel) + bdelta_prefac
-            propagator = (
-                (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping_dd + 2.0 * kaiser_prefac * smooth_prefac * damping_sd + smooth_prefac ** 2 * damping_ss
-            )
-        else:
-            damping = self.get_damping(growth, om)
-
-            bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
-            kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T + bdelta_prefac
-            propagator = (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping
-
         # Compute the smooth model
         fog = 1.0 / (1.0 + np.outer(self.mu ** 2, ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
         pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
 
         # Polynomial shape
-        if self.recon:
-            shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
+        if shape:
+            if self.recon:
+                shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
+            else:
+                shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
         else:
-            shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
+            shape = 0  # Its vectorised, don't worry
 
-        # Integrate over mu
         if smooth:
-            pk1d = integrate.simps((pk_smooth + shape) * (1.0 + 0.0 * pk_ratio * propagator), self.mu, axis=0)
+            pk1d = integrate.simps((pk_smooth + shape), self.mu, axis=0)
         else:
+            # Lets round some things for the sake of numerical speed
+            om = np.round(p["om"], decimals=5)
+            growth = np.round(growth, decimals=5)
+
+            # Compute the BAO damping
+            if self.recon:
+                damping_dd = self.get_damping_dd(growth, om)
+                damping_sd = self.get_damping_sd(growth, om)
+                damping_ss = self.get_damping_ss(om)
+
+                smooth_prefac = np.tile(self.smoothing_kernel / p["b"], (self.nmu, 1))
+                bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
+                kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.smoothing_kernel) + bdelta_prefac
+                propagator = (
+                    (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping_dd + 2.0 * kaiser_prefac * smooth_prefac * damping_sd + smooth_prefac ** 2 * damping_ss
+                )
+            else:
+                damping = self.get_damping(growth, om)
+                bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
+                kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T + bdelta_prefac
+                propagator = (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping
+
             pk1d = integrate.simps((pk_smooth + shape) * (1.0 + pk_ratio * propagator), self.mu, axis=0)
 
-        pk_final = splev(k / p["alpha"], splrep(ks, pk1d))
-
-        return pk_final
+        return ks, pk1d
 
 
 if __name__ == "__main__":

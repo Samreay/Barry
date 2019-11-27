@@ -1,10 +1,8 @@
 import logging
-from functools import lru_cache
-
 import numpy as np
-from scipy import integrate
+
+from barry.models import PowerDing2018
 from barry.models.bao_correlation import CorrelationFunctionFit
-from barry.cosmology.camb_generator import Omega_m_z
 
 
 class CorrDing2018(CorrelationFunctionFit):
@@ -18,41 +16,13 @@ class CorrDing2018(CorrelationFunctionFit):
         self.recon = recon
         self.recon_smoothing_scale = None
         super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, smooth=smooth, correction=correction)
-
-        self.fit_omega_m = fix_params is None or "om" not in fix_params
-        self.fit_growth = fix_params is None or "f" not in fix_params
-        self.nmu = 100
-        self.mu = np.linspace(0.0, 1.0, self.nmu)
-        self.smoothing_kernel = None
-
-    @lru_cache(maxsize=32)
-    def get_pt_data(self, om):
-        return self.PT.get_data(om=om)
-
-    @lru_cache(maxsize=32)
-    def get_damping_dd(self, growth, om):
-        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_dd_nl"])
-
-    @lru_cache(maxsize=32)
-    def get_damping_sd(self, growth, om):
-        return np.exp(-np.outer(1.0 + growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_sd_nl"])
-
-    @lru_cache(maxsize=32)
-    def get_damping_ss(self, om):
-        return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pt_data(om)["sigma_ss_nl"])
-
-    @lru_cache(maxsize=32)
-    def get_damping(self, growth, om):
-        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_nl"])
+        self.parent = PowerDing2018(fix_params=fix_params, smooth_type=smooth_type, recon=recon, correction=correction)
 
     def set_data(self, data):
         super().set_data(data)
-        # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
-        if self.recon:
-            self.smoothing_kernel = np.exp(-self.camb.ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0)
+        self.parent.set_data(data)
 
     def declare_parameters(self):
-        # Define parameters
         super().declare_parameters()
         self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure
         self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
@@ -79,44 +49,7 @@ class CorrDing2018(CorrelationFunctionFit):
         """
 
         # Get the basic power spectrum components
-        ks = self.camb.ks
-        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
-
-        # Compute the growth rate depending on what we have left as free parameters
-        growth = p["f"]
-
-        # Lets round some things for the sake of numerical speed
-        om = np.round(p["om"], decimals=5)
-        growth = np.round(growth, decimals=5)
-
-        # Compute the propagator
-        if self.recon:
-            damping_dd = self.get_damping_dd(growth, om)
-            damping_sd = self.get_damping_sd(growth, om)
-            damping_ss = self.get_damping_ss(om)
-
-            smooth_prefac = np.tile(self.smoothing_kernel / p["b"], (self.nmu, 1))
-            bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
-            kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.smoothing_kernel) + bdelta_prefac
-            propagator = (
-                (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping_dd + 2.0 * kaiser_prefac * smooth_prefac * damping_sd + smooth_prefac ** 2 * damping_ss
-            )
-        else:
-            damping = self.get_damping(growth, om)
-
-            bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
-            kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T + bdelta_prefac
-            propagator = (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping
-
-        # Compute the smooth model
-        fog = 1.0 / (1.0 + np.outer(self.mu ** 2, ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
-        pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
-
-        # Integrate over mu
-        if smooth:
-            pk1d = integrate.simps(pk_smooth * (1.0 + 0.0 * pk_ratio * propagator), self.mu, axis=0)
-        else:
-            pk1d = integrate.simps(pk_smooth * (1.0 + pk_ratio * propagator), self.mu, axis=0)
+        ks, pk1d = self.parent.compute_power_spectrum(p, smooth=smooth, shape=False)
 
         # Convert to correlation function and take alpha into account
         xi = self.pk2xi(ks, pk1d, d * p["alpha"])

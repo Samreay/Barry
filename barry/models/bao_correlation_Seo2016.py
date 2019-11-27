@@ -1,10 +1,8 @@
 import logging
-from functools import lru_cache
 
 import numpy as np
-from scipy import integrate
+from barry.models import PowerSeo2016
 from barry.models.bao_correlation import CorrelationFunctionFit
-from barry.cosmology.camb_generator import Omega_m_z
 
 
 class CorrSeo2016(CorrelationFunctionFit):
@@ -17,31 +15,11 @@ class CorrSeo2016(CorrelationFunctionFit):
         self.recon = recon
         self.recon_smoothing_scale = None
         super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, smooth=smooth, correction=correction)
-        self.nmu = 100
-        self.mu = np.linspace(0.0, 1.0, self.nmu)
-        self.smoothing_kernel = None
-
-    @lru_cache(maxsize=32)
-    def get_pt_data(self, om):
-        return self.PT.get_data(om=om)
-
-    @lru_cache(maxsize=32)
-    def get_damping_dd(self, growth, om):
-        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_dd"] / 2.0)
-
-    @lru_cache(maxsize=32)
-    def get_damping_ss(self, om):
-        return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pt_data(om)["sigma_ss"] / 2.0)
-
-    @lru_cache(maxsize=32)
-    def get_damping(self, growth, om):
-        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma"] / 2.0)
+        self.parent = PowerSeo2016(fix_params=fix_params, smooth_type=smooth_type, recon=recon, smooth=smooth, correction=correction)
 
     def set_data(self, data):
         super().set_data(data)
-        # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
-        if self.recon:
-            self.smoothing_kernel = np.exp(-self.camb.ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0)
+        self.parent.set_data(data)
 
     def declare_parameters(self):
         # Define parameters
@@ -70,45 +48,7 @@ class CorrSeo2016(CorrelationFunctionFit):
         """
 
         # Get the basic power spectrum components
-        ks = self.camb.ks
-        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
-
-        # Compute the growth rate depending on what we have left as free parameters
-        growth = p["f"]
-
-        # Lets round some things for the sake of numerical speed
-        om = np.round(p["om"], decimals=5)
-        growth = np.round(growth, decimals=5)
-
-        # Compute the propagator
-        if self.recon:
-            damping_dd = self.get_damping_dd(growth, om)
-            damping_ss = self.get_damping_ss(om)
-
-            smooth_prefac = np.tile(self.smoothing_kernel / p["b"], (self.nmu, 1))
-            kaiser_prefac = 1.0 + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.smoothing_kernel)
-            propagator = (kaiser_prefac * damping_dd + smooth_prefac * (damping_ss - damping_dd)) ** 2
-        else:
-            damping = self.get_damping(growth, om)
-
-            prefac_k = 1.0 + np.tile(3.0 / 7.0 * (self.get_pt_data(om)["R1"] * (1.0 - 4.0 / (9.0 * p["b"])) + self.get_pt_data(om)["R2"]), (self.nmu, 1))
-            prefac_mu = np.outer(
-                self.mu ** 2,
-                growth / p["b"]
-                + 3.0 / 7.0 * growth * self.get_pt_data(om)["R1"] * (2.0 - 1.0 / (3.0 * p["b"]))
-                + 6.0 / 7.0 * growth * self.get_pt_data(om)["R2"],
-            )
-            propagator = ((prefac_k + prefac_mu) * damping) ** 2
-
-        # Compute the smooth model
-        fog = 1.0 / (1.0 + np.outer(self.mu ** 2, ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
-        pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
-
-        # Integrate over mu
-        if smooth:
-            pk1d = integrate.simps(pk_smooth * (1.0 + 0.0 * pk_ratio * propagator), self.mu, axis=0)
-        else:
-            pk1d = integrate.simps(pk_smooth * (1.0 + pk_ratio * propagator), self.mu, axis=0)
+        ks, pk1d = self.parent.compute_power_spectrum(p, smooth=smooth, shape=False)
 
         # Convert to correlation function and take alpha into account
         xi = self.pk2xi(ks, pk1d, d * p["alpha"])
