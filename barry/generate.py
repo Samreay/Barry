@@ -3,9 +3,9 @@ import sys
 import os
 import logging
 
-from barry.models import Model
 
-sys.path.append("../..")
+sys.path.append("..")
+from barry.models import Model
 from barry.config import is_local, get_config
 from barry.cosmology.camb_generator import CambGenerator
 from barry.datasets.dataset import Dataset

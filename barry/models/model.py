@@ -11,7 +11,7 @@ from scipy.optimize import basinhopping
 from enum import Enum, unique
 from dataclasses import dataclass
 
-from barry.cosmology.PT_generator import getCambGeneratorAndPT
+
 from barry.cosmology.camb_generator import Omega_m_z, getCambGenerator
 
 
@@ -69,7 +69,7 @@ class Model(ABC):
         self.pregen = None
         self.pregen_path = None
         current_file = os.path.dirname(inspect.stack()[0][1])
-        self.data_location = os.path.normpath(current_file + f"../data/")
+        self.data_location = os.path.normpath(current_file + f"../generated/")
         os.makedirs(self.data_location, exist_ok=True)
 
         self.params = []

@@ -61,7 +61,7 @@ class CambGenerator(object):
         self.h0 = h0
         self.redshift = redshift
 
-        self.data_dir = os.path.normpath(os.path.dirname(inspect.stack()[0][1]) + "../data/")
+        self.data_dir = os.path.normpath(os.path.dirname(inspect.stack()[0][1]) + "../generated/")
         hh = int(h0 * 10000)
         self.filename_unique = f"{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}"
         self.filename = self.data_dir + f"camb_{self.filename_unique}.npy"
