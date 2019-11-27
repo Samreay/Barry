@@ -21,6 +21,7 @@ def setup_ptgenerator_slurm(model, c):
         "partition": config["job_partition"],
         "conda_env": config["job_conda_env"],
         "mpi_module": config["mpi_module"],
+        "fort_compile_module": config["fort_compile_module"],
         "path": python_path,
         "model": model.__class__.__name__,
     }
