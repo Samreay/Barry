@@ -14,8 +14,9 @@ from tests.utils import get_concrete
 def setup_ptgenerator_slurm(c, launched):
     config = get_config()
     job_path = os.path.join(os.path.dirname(inspect.stack()[0][1]), "..", "jobscripts/slurm_pt_generator.job")
+    python_path = os.path.join(os.path.dirname(inspect.stack()[0][1]), "..", "cosmology")
 
-    d = {"partition": config["job_partition"], "conda_env": config["job_conda_env"], "mpi_module": config["mpi_module"]}
+    d = {"partition": config["job_partition"], "conda_env": config["job_conda_env"], "mpi_module": config["mpi_module"], "path": python_path}
     with open(job_path) as f:
         raw_template = f.read()
     d.update(c)
