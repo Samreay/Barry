@@ -16,7 +16,7 @@ def setup_ptgenerator_slurm(model, c):
     config = get_config()
     job_path = os.path.join(os.path.dirname(inspect.stack()[0][1]), "jobscripts/slurm_pt_generator.job")
     python_path = os.path.abspath(os.path.dirname(inspect.stack()[0][1]))
-    unique_name = "".join([k + str(c[k]) for k in sorted(c.keys())]) + ".job"
+    unique_name = model.__class__.__name__ + ("".join([k + str(c[k]) for k in sorted(c.keys())])) + ".job"
     job_dir = os.path.abspath("jobs")
     output = os.path.join(job_dir, "zlog")
     d = {
@@ -38,7 +38,7 @@ def setup_ptgenerator_slurm(model, c):
     os.makedirs(job_dir, exist_ok=True)
     with open(filename, "w") as f:
         f.write(template)
-    logging.info(f"Submitting {filename}")
+    logging.info(f"Submitting regen for {filename}")
     os.system(f"{config['hpc_submit_command']} {filename}")
 
 

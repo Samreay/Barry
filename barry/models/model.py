@@ -254,7 +254,8 @@ class Model(ABC):
         return self.camb.interpolate(om, h0, data)
 
     def _needs_precompute(self):
-        return self.precompute is self.__class__.__bases__[0].precompute
+        func2 = getattr(super(type(self), self), self.precompute.__name__)
+        return self.precompute.__func__ != func2.__func__
 
     def precompute(self, camb, om, h0):
         """ A function available for overriding that precomputes values that depend only on the outputs of CAMB.
