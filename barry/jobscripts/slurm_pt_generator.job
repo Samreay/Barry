@@ -13,4 +13,4 @@ echo "Activated python"
 echo `which python`
 
 cd {path}
-/opt/openmpi/bin/mpirun python PT_generator.py --om_resolution 101 --h0_resolution 1 --reconsmoothscale {reconsmoothscale} --redshift {z} --om {om} --h0 {h0} --ob {ob} --ns {ns}
+/opt/openmpi/bin/mpirun python precompute_mpi.py --model {model} --reconsmoothscale {reconsmoothscale} --redshift {z} --om {om} --h0 {h0} --ob {ob} --ns {ns}

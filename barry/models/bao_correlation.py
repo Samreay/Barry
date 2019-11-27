@@ -55,17 +55,7 @@ class CorrelationFunctionFit(Model):
             A list of datas to use
         """
         super().set_data(data)
-        c = data[0]["cosmology"]
-        z = c["z"]
-        if self.param_dict.get("f") is not None:
-            self.set_default("f", Omega_m_z(self.get_default("om"), z) ** 0.55)
-        if self.cosmology != c:
-            self.recon_smoothing_scale = c["reconsmoothscale"]
-            self.camb, self.PT = getCambGeneratorAndPT(
-                h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale
-            )
-            self.pk2xi = PowerToCorrelationGauss(self.camb.ks)
-            self.set_default("om", c["om"])
+        self.pk2xi = PowerToCorrelationGauss(self.camb.ks)
 
     def declare_parameters(self):
         """ Defines model parameters, their bounds and default value. """

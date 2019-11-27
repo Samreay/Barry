@@ -1,4 +1,7 @@
+import os
+import inspect
 import logging
+import pickle
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from numpy.random import uniform
@@ -7,6 +10,9 @@ from scipy.special import loggamma
 from scipy.optimize import basinhopping
 from enum import Enum, unique
 from dataclasses import dataclass
+
+from barry.cosmology.PT_generator import getCambGeneratorAndPT
+from barry.cosmology.camb_generator import Omega_m_z, getCambGenerator
 
 
 @dataclass
@@ -56,6 +62,16 @@ class Model(ABC):
         self.name = name
         self.logger = logging.getLogger("barry")
         self.data = None
+
+        # For pregeneration
+        self.camb = None
+        self.cosmology = None
+        self.pregen = None
+        self.pregen_path = None
+        current_file = os.path.dirname(inspect.stack()[0][1])
+        self.data_location = os.path.normpath(current_file + f"/precomputed/")
+        os.makedirs(self.data_location, exist_ok=True)
+
         self.params = []
         self.fix_params = []
         self.param_dict = {}
@@ -70,10 +86,35 @@ class Model(ABC):
     def get_name(self):
         return self.name
 
+    def set_cosmology(self, c):
+        z = c["z"]
+        if self.param_dict.get("f") is not None:
+            f = Omega_m_z(self.get_default("om"), z) ** 0.55
+            self.set_default("f", f)
+            self.logger.info(f"Setting default growth rate of structure to f={f:0.5f}")
+
+        if self.cosmology != c:
+            self.camb = getCambGenerator(h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], recon_smoothing_scale=c["reconsmoothscale"])
+            self.set_default("om", c["om"])
+            self.pregen_path = os.path.join(self.data_location, self.__class__.__name__ + "_" + self.camb.filename_unique + ".pkl")
+            self.cosmology = c
+            self._load_precomputed_data()
+
     def set_data(self, data):
+        """ Sets the models data, including fetching the right cosmology and PT generator.
+
+        Note that if you pass in multiple datas (ie a list with more than one element),
+        they need to have the same cosmology.
+
+        Parameters
+        ----------
+        data : dict, list[dict]
+            A list of datas to use
+        """
         if not isinstance(data, list):
             data = [data]
         self.data = data
+        self.set_cosmology(data[0]["cosmology"])
 
     def add_param(self, name, label, min, max, default):
         p = Param(name, label, min, max, default, name not in self.fix_params)
@@ -177,6 +218,58 @@ class Model(ABC):
         """ Gets a uniformly distributed starting point between parameter min and max constraints """
         start_random = np.array([uniform(x.min, x.max) for x in self.get_active_params()])
         return start_random
+
+    def _load_precomputed_data(self):
+        if self._needs_precompute():
+            assert os.path.exists(self.pregen_path), f"You need to pregenerate the required data for {self.pregen_path}"
+            with open(self.pregen_path, "rb") as f:
+                self.pregen = pickle.load(f)
+            self.logger.info(f"Pregen data loaded from {self.pregen_path}")
+
+    def _save_precomputed_data(self, data):
+        with open(self.pregen_path, "rb") as f:
+            pickle.dump(data, f)
+            self.logger.info(f"Pregen data saved to {self.pregen_path}")
+
+    def generate_precomputed_data(self, indexes):
+        self.logger.info(f"Pregenerating model {self.__class__.__name__} data for {self.camb.filename_unique}")
+
+        data = []
+        for i, j in indexes:
+            omch2 = self.camb.omch2s[i]
+            h0 = self.camb.h0s[j]
+            om = omch2 / (h0 * h0)
+
+            values = self.precompute(self.camb, om, h0)
+            data.append([i, j, values])
+        return data
+
+    def get_pregen(self, key, om, h0=None):
+        if h0 is None:
+            h0 = self.camb.h0
+        data = self.pregen[key]
+        return self.camb.interpolate(om, h0, data)
+
+    def _needs_precompute(self):
+        return self.precompute != self.__class__.__bases__[0].precompute
+
+    def precompute(self, camb, om, h0):
+        """ A function available for overriding that precomputes values that depend only on the outputs of CAMB.
+
+        Parameters
+        ----------
+        camb : CambGenerator
+            Stores the ks, pklin, etc
+        om : float
+            Value of Omega_m, which you can use to get the Camb ks, pklin and nonlinear pks
+        h0 : float
+            Value of h, which you can use as above
+
+        Returns
+        -------
+        A dictionary mapping specific keywords to their computed values. Or None.
+        """
+        return None
 
     def get_start(self, num_walkers=1):
         """ Gets an optimised `n` starting points by calculating a best fit starting point using basinhopping """

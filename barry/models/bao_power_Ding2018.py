@@ -2,8 +2,8 @@ import logging
 from functools import lru_cache
 import numpy as np
 from scipy import integrate
+from scipy.special import jn
 from barry.models.bao_power import PowerSpectrumFit
-from barry.cosmology.camb_generator import Omega_m_z
 
 
 class PowerDing2018(PowerSpectrumFit):
@@ -22,35 +22,37 @@ class PowerDing2018(PowerSpectrumFit):
         self.mu = np.linspace(0.0, 1.0, self.nmu)
         self.smoothing_kernel = None
 
-    @lru_cache(maxsize=32)
-    def get_growth(self, om):
-        return Omega_m_z(om, self.camb.redshift) ** 0.55
+    def precompute(self, camb, om, h0):
 
-    @lru_cache(maxsize=32)
-    def get_pt_data(self, om):
-        return self.PT.get_data(om=om)
+        c = camb.get_data(om, h0)
+        r_drag = c["r_s"]
+        ks = c["ks"]
+        pk_lin = c["pk_lin"]
+        j0 = jn(0, r_drag * ks)
+        s = camb.smoothing_kernel
+
+        return {
+            "sigma_nl": integrate.simps(pk_lin * (1.0 - j0), ks) / (6.0 * np.pi ** 2),
+            "sigma_dd_nl": integrate.simps(pk_lin * (1.0 - s) ** 2 * (1.0 - j0), ks) / (6.0 * np.pi ** 2),
+            "sigma_sd_nl": integrate.simps(pk_lin * (0.5 * (s ** 2 + (1.0 - s) ** 2) - j0 * s * (1.0 - s)), ks) / (6.0 * np.pi ** 2),
+            "sigma_ss_nl": integrate.simps(pk_lin * s ** 2 * (1.0 - j0), ks) / (6.0 * np.pi ** 2),
+        }
 
     @lru_cache(maxsize=32)
     def get_damping_dd(self, growth, om):
-        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_dd_nl"])
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_dd_nl", om))
 
     @lru_cache(maxsize=32)
     def get_damping_sd(self, growth, om):
-        return np.exp(-np.outer(1.0 + growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_sd_nl"])
+        return np.exp(-np.outer(1.0 + growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_sd_nl", om))
 
     @lru_cache(maxsize=32)
     def get_damping_ss(self, om):
-        return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pt_data(om)["sigma_ss_nl"])
+        return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pregen("sigma_ss_nl", om))
 
     @lru_cache(maxsize=32)
     def get_damping(self, growth, om):
         return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pt_data(om)["sigma_nl"])
-
-    def set_data(self, data):
-        super().set_data(data)
-        # Compute the smoothing kernel (assumes a Gaussian smoothing kernel)
-        if self.recon:
-            self.smoothing_kernel = np.exp(-self.camb.ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0)
 
     def declare_parameters(self):
         super().declare_parameters()
@@ -114,7 +116,7 @@ class PowerDing2018(PowerSpectrumFit):
                 damping_sd = self.get_damping_sd(growth, om)
                 damping_ss = self.get_damping_ss(om)
 
-                smooth_prefac = np.tile(self.smoothing_kernel / p["b"], (self.nmu, 1))
+                smooth_prefac = np.tile(self.camb.smoothing_kernel / p["b"], (self.nmu, 1))
                 bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
                 kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.smoothing_kernel) + bdelta_prefac
                 propagator = (

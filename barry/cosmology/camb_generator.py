@@ -10,8 +10,10 @@ import logging
 
 
 @lru_cache(maxsize=32)
-def getCambGenerator(redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97):
-    return CambGenerator(redshift=redshift, om_resolution=om_resolution, h0_resolution=h0_resolution, h0=h0, ob=ob, ns=ns)
+def getCambGenerator(redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, recon_smoothing_scale=21.21):
+    return CambGenerator(
+        redshift=redshift, om_resolution=om_resolution, h0_resolution=h0_resolution, h0=h0, ob=ob, ns=ns, recon_smoothing_scale=recon_smoothing_scale
+    )
 
 
 def Omega_m_z(omega_m, z):
@@ -48,7 +50,7 @@ class CambGenerator(object):
     Useful because computing them in a likelihood step is insanely slow.
     """
 
-    def __init__(self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97):
+    def __init__(self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, recon_smoothing_scale=21.21):
         """ 
         Precomputes CAMB for efficiency. Access ks via self.ks, and use get_data for an array
         of both the linear and non-linear power spectrum
@@ -68,6 +70,8 @@ class CambGenerator(object):
         self.k_max = 5
         self.k_num = 2000
         self.ks = np.logspace(np.log(self.k_min), np.log(self.k_max), self.k_num, base=np.e)
+        self.recon_smoothing_scale = recon_smoothing_scale
+        self.smoothing_kernel = np.exp(-self.ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0)
 
         self.omch2s = np.linspace(0.05, 0.3, self.om_resolution)
         self.omega_b = ob
@@ -101,7 +105,7 @@ class CambGenerator(object):
             self.load_data()
         omch2 = (om - self.omega_b) * h0 * h0
         data = self._interpolate(omch2, h0)
-        return data[0], data[1 : 1 + self.k_num], data[1 + 2 * self.k_num :]
+        return {"r_s": data[0], "ks": self.ks, "pk_lin": data[1 : 1 + self.k_num], "pk_nl": data[1 + 2 * self.k_num :]}
 
     def _generate_data(self):
         self.logger.info(f"Generating CAMB data with {self.om_resolution} x {self.h0_resolution}")
@@ -143,7 +147,11 @@ class CambGenerator(object):
         np.save(self.filename, data)
         return data
 
-    def _interpolate(self, omch2, h0):
+    def interpolate(self, om, h0, data=None):
+        omch2 = (om - self.omega_b) * h0 * h0
+        return self._interpolate(omch2, h0, data=data)
+
+    def _interpolate(self, omch2, h0, data=None):
         """ Performs bilinear interpolation on the entire pk array """
         omch2_index = 1.0 * (self.om_resolution - 1) * (omch2 - self.omch2s[0]) / (self.omch2s[-1] - self.omch2s[0])
 
@@ -155,7 +163,8 @@ class CambGenerator(object):
         x = omch2_index - np.floor(omch2_index)
         y = h0_index - np.floor(h0_index)
 
-        data = self.data
+        if data is None:
+            data = self.data
         v1 = data[int(np.floor(omch2_index)), int(np.floor(h0_index))]  # 00
         v2 = data[int(np.ceil(omch2_index)), int(np.floor(h0_index))]  # 01
 
@@ -178,16 +187,6 @@ def test_rand_h0const():
     return fn
 
 
-def test_rand():
-    g = CambGenerator()
-    g.load_data()
-
-    def fn():
-        g.get_data(np.random.uniform(0.1, 0.2), h0=np.random.uniform(60, 80))
-
-    return fn
-
-
 if __name__ == "__main__":
 
     import timeit
@@ -204,10 +203,10 @@ if __name__ == "__main__":
     n = 10000
     print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
 
-    plt.plot(generator.ks, generator.get_data(0.2)[1], color="b", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.2$")
-    plt.plot(generator.ks, generator.get_data(0.3)[1], color="r", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.3$")
-    plt.plot(generator.ks, generator.get_data(0.2)[2], color="b", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
-    plt.plot(generator.ks, generator.get_data(0.3)[2], color="r", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
+    plt.plot(generator.ks, generator.get_data(0.2)["pk_lin"], color="b", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.2$")
+    plt.plot(generator.ks, generator.get_data(0.3)["pk_lin"], color="r", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.3$")
+    plt.plot(generator.ks, generator.get_data(0.2)["pk_lin"], color="b", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
+    plt.plot(generator.ks, generator.get_data(0.3)["pk_lin"], color="r", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()

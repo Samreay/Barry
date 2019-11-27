@@ -40,33 +40,6 @@ class PowerSpectrumFit(Model):
 
         # Set up data structures for model fitting
         self.smooth = smooth
-        self.camb = None
-        self.PT = None
-        self.recon_smoothing_scale = None
-        self.cosmology = None
-
-    def set_data(self, data):
-        """ Sets the models data, including fetching the right cosmology and PT generator.
-
-        Note that if you pass in multiple datas (ie a list with more than one element),
-        they need to have the same cosmology.
-
-        Parameters
-        ----------
-        data : dict, list[dict]
-            A list of datas to use
-        """
-        super().set_data(data)
-        c = data[0]["cosmology"]
-        z = c["z"]
-        if self.param_dict.get("f") is not None:
-            self.set_default("f", Omega_m_z(self.get_default("om"), z) ** 0.55)
-        if self.cosmology != c:
-            self.recon_smoothing_scale = c["reconsmoothscale"]
-            self.camb, self.PT = getCambGeneratorAndPT(
-                h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], smooth_type=self.smooth_type, recon_smoothing_scale=self.recon_smoothing_scale
-            )
-            self.set_default("om", c["om"])
 
     def declare_parameters(self):
         """ Defines model parameters, their bounds and default value. """
