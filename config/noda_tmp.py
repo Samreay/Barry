@@ -16,39 +16,49 @@ from barry.fitter import Fitter
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
-    r = True
-    r_s = 147.6
-    postprocess = BAOExtractor(r_s)
+    # r = True
+    # r_s = 147.6
+    # postprocess = BAOExtractor(r_s)
+    #
+    # data = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=postprocess)
+    # d = data.get_data()[0]
+    # model = PowerNoda2019(postprocess=postprocess, recon=r)
+    # model.set_data(d)
+    #
+    # params = model.get_defaults()
+    # ps = model.get_param_dict(params)
+    # posterior = model.get_posterior(params)
+    # ks, pk_final = model.get_model(ps, d)
+    # print(posterior)
+    # print(pk_final)
+    # # import matplotlib.pyplot as plt
+    # #
+    # # plt.plot(ks, pk_final)
+    # # plt.show()
+    # cosmo = model.cosmology
+    # c, pt = getCambGeneratorAndPT(
+    #     redshift=cosmo["z"], h0=cosmo["h0"], ob=cosmo["ob"], ns=cosmo["ns"], smooth_type="hinton2017", recon_smoothing_scale=cosmo["reconsmoothscale"]
+    # )
+    # ptd = pt.get_data(0.3)
+    # import numpy as np
+    #
+    # keys = ["sigma_dd_rs", "sigma_ss_rs", "Pdd_spt", "Pdt_spt", "Ptt_spt", "Pdd_halofit", "Pdt_halofit", "Ptt_halofit"]
+    # for key in keys:
+    #     newv = model.get_pregen(key, 0.3)
+    #     oldv = ptd[key]
+    #     good = np.all(np.isclose(newv, oldv, atol=1e-6))
+    #     print(key, good)
+    #     if not good:
+    #         import matplotlib.pyplot as plt
+    #
+    #         plt.plot(oldv, label="old")
+    #         plt.plot(newv, label="new")
+    #         plt.legend()
+    #         plt.ylabel(key)
+    #         plt.show()
+    #     print(key, np.all(np.isclose(newv, oldv, atol=1e-5)))
 
-    data = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=postprocess)
-    d = data.get_data()[0]
-    model = PowerNoda2019(postprocess=postprocess, recon=r)
-    model.set_data(d)
-
-    params = model.get_defaults()
-    ps = model.get_param_dict(params)
-    posterior = model.get_posterior(params)
-    ks, pk_final = model.get_model(ps, d)
-    print(posterior)
-    print(pk_final)
-    import matplotlib.pyplot as plt
-
-    plt.plot(ks, pk_final)
-    plt.show()
-    cosmo = model.cosmology
-    c, pt = getCambGeneratorAndPT(
-        redshift=cosmo["z"], h0=cosmo["h0"], ob=cosmo["ob"], ns=cosmo["ns"], smooth_type="hinton2017", recon_smoothing_scale=cosmo["reconsmoothscale"]
-    )
-    ptd = pt.get_data(0.3)
-    import numpy as np
-
-    keys = ["sigma_dd_rs", "sigma_ss_rs", "Pdd_spt", "Pdt_spt", "Ptt_spt", "Pdd_halofit", "Pdt_halofit", "Ptt_halofit"]
-    for key in keys:
-        newv = model.get_pregen(key, 0.3)
-        oldv = ptd[key]
-        print(key, np.isclose(newv, oldv, atol=1e-6), newv, oldv)
-
-    if False:
+    if True:
 
         c = getCambGenerator()
         r_s = c.get_data()["r_s"]
