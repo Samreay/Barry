@@ -90,9 +90,9 @@ class PowerNoda2019(PowerSpectrumFit):
             pk_smooth_interp[index] = 0.0
             IP0 = kval ** 2 * ((-10.0 * rx * xs + 7.0 * xs).T + 3.0 * rvals) / (y ** 2)
             IP1 = kval ** 2 * ((-6.0 * rx * xs + 7.0 * xs).T - rvals) / (y ** 2)
-            Pdd_spt = integrate.simps(pk_smooth_lin * integrate.simps(pk_smooth_interp * IP0 * IP0, xs, axis=0), rvals)
-            Pdt_spt = integrate.simps(pk_smooth_lin * integrate.simps(pk_smooth_interp * IP0 * IP1, xs, axis=0), rvals)
-            Ptt_spt = integrate.simps(pk_smooth_lin * integrate.simps(pk_smooth_interp * IP1 * IP1, xs, axis=0), rvals)
+            Pdd_spt[k] = integrate.simps(pk_smooth_lin * integrate.simps(pk_smooth_interp * IP0 * IP0, xs, axis=0), rvals)
+            Pdt_spt[k] = integrate.simps(pk_smooth_lin * integrate.simps(pk_smooth_interp * IP0 * IP1, xs, axis=0), rvals)
+            Ptt_spt[k] = integrate.simps(pk_smooth_lin * integrate.simps(pk_smooth_interp * IP1 * IP1, xs, axis=0), rvals)
         Pdd_spt *= ks ** 3 / (392.0 * np.pi ** 2) / pk_smooth_lin
         Pdt_spt *= ks ** 3 / (392.0 * np.pi ** 2) / pk_smooth_lin
         Ptt_spt *= ks ** 3 / (392.0 * np.pi ** 2) / pk_smooth_lin
@@ -187,10 +187,6 @@ class PowerNoda2019(PowerSpectrumFit):
         else:
             logging.getLogger("barry").error(f"Smoothing method is {self.nonlinear_type} and not in list {types}")
             return False
-
-    @lru_cache(maxsize=32)
-    def get_pt_data(self, om):
-        return self.PT.get_data(om=om)
 
     @lru_cache(maxsize=32)
     def get_damping(self, growth, om, gamma):
