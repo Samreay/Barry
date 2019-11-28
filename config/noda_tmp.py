@@ -16,29 +16,39 @@ from barry.fitter import Fitter
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
-    # r = True
-    # c = getCambGenerator()
-    # r_s = c.get_data()["r_s"]
-    # postprocess = BAOExtractor(r_s)
-    #
-    # data = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=postprocess)
-    # model = PowerNoda2019(postprocess=postprocess, recon=r)
-    # model.set_data(data.get_data())
-    #
-    # cosmo = model.cosmology
-    # c, pt = getCambGeneratorAndPT(
-    #     redshift=cosmo["z"], h0=cosmo["h0"], ob=cosmo["ob"], ns=cosmo["ns"], smooth_type="hinton2017", recon_smoothing_scale=cosmo["reconsmoothscale"]
-    # )
-    # ptd = pt.get_data(0.3)
-    # import numpy as np
-    #
-    # keys = ["sigma_dd_rs", "sigma_ss_rs", "Pdd_spt", "Pdt_spt", "Ptt_spt", "Pdd_halofit", "Pdt_halofit", "Ptt_halofit"]
-    # for key in keys:
-    #     newv = model.get_pregen(key, 0.3)
-    #     oldv = ptd[key]
-    #     print(key, np.isclose(newv, oldv), newv, oldv)
+    r = True
+    r_s = 147.6
+    postprocess = BAOExtractor(r_s)
 
-    if True:
+    data = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=postprocess)
+    d = data.get_data()[0]
+    model = PowerNoda2019(postprocess=postprocess, recon=r)
+    model.set_data(d)
+
+    params = model.get_defaults()
+    ps = model.get_param_dict(params)
+    posterior = model.get_posterior(params)
+    ks, pk_final = model.get_model(ps, d)
+    print(posterior)
+    print(pk_final)
+    import matplotlib.pyplot as plt
+
+    plt.plot(ks, pk_final)
+    plt.show()
+    cosmo = model.cosmology
+    c, pt = getCambGeneratorAndPT(
+        redshift=cosmo["z"], h0=cosmo["h0"], ob=cosmo["ob"], ns=cosmo["ns"], smooth_type="hinton2017", recon_smoothing_scale=cosmo["reconsmoothscale"]
+    )
+    ptd = pt.get_data(0.3)
+    import numpy as np
+
+    keys = ["sigma_dd_rs", "sigma_ss_rs", "Pdd_spt", "Pdt_spt", "Ptt_spt", "Pdd_halofit", "Pdt_halofit", "Ptt_halofit"]
+    for key in keys:
+        newv = model.get_pregen(key, 0.3)
+        oldv = ptd[key]
+        print(key, np.isclose(newv, oldv, atol=1e-6), newv, oldv)
+
+    if False:
 
         c = getCambGenerator()
         r_s = c.get_data()["r_s"]
@@ -77,7 +87,3 @@ if __name__ == "__main__":
                 figsize="COLUMN",
                 extents=extents,
             )
-            c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982})
-            c.analysis.get_latex_table(filename=pfn + "_params.txt")
-            with open(pfn + "_corr.txt", "w") as f:
-                f.write(c.analysis.get_correlation_table(chain="N19 Recon fixed $f$, $\\gamma_{rec}$"))
