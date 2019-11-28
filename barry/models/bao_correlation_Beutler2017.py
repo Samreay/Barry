@@ -2,6 +2,7 @@ import logging
 
 from barry.models import PowerBeutler2017
 from barry.models.bao_correlation import CorrelationFunctionFit
+import numpy as np
 
 
 class CorrBeutler2017(CorrelationFunctionFit):
@@ -26,7 +27,15 @@ class CorrBeutler2017(CorrelationFunctionFit):
 
     def compute_correlation_function(self, d, p, smooth=False):
         # Get base linear power spectrum from camb
-        ks, pk1d = self.parent.compute_power_spectrum(p, smooth=smooth, shape=False)
+        ks = self.camb.ks
+        pk_smooth, pk_ratio_dewiggled = self.compute_basic_power_spectrum(p["om"])
+
+        # Blend the two
+        if smooth:
+            pk1d = pk_smooth
+        else:
+            pk_linear_weight = np.exp(-0.5 * (ks * p["sigma_nl"]) ** 2)
+            pk1d = (pk_linear_weight * (1 + pk_ratio_dewiggled) + (1 - pk_linear_weight)) * pk_smooth
 
         # Convert to correlation function and take alpha into account
         xi = self.pk2xi(ks, pk1d, d * p["alpha"])
