@@ -145,7 +145,7 @@ class PowerSpectrumFit(Model):
         log_likelihood : float
             The corrected log likelihood
         """
-        pk_model = self.get_model(p, d, smooth=self.smooth)
+        ks, pk_model = self.get_model(p, d, smooth=self.smooth)
 
         # Compute the chi2
         diff = d["pk"] - pk_model
@@ -183,7 +183,7 @@ class PowerSpectrumFit(Model):
             pk_model = self.postprocess(ks=d["ks_output"], pk=pk_model, mask=mask)
         else:
             pk_model = pk_model[mask]
-        return pk_model
+        return d["ks_output"][mask], pk_model
 
     def plot(self, params, smooth_params=None):
         import matplotlib.pyplot as plt
