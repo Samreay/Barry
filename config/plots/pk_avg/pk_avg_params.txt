@@ -1,0 +1,21 @@
+\begin{table}
+    \centering
+    \caption{}
+    \label{tab:model_params}
+    \begin{tabular}{cc}
+        \hline
+		Model & $\alpha$ \\ 
+		\hline
+		Beutler 2017 Recon & $1.000\pm 0.012$ \\ 
+		Beutler 2017 Fixed $\Sigma_{nl}$ Recon & $1.000\pm 0.012$ \\ 
+		Seo 2016 Recon & $\left( 998.1^{+10.5}_{-9.8} \right) \times 10^{-3}$ \\ 
+		Ding 2018 Recon & $\left( 997.7^{+10.5}_{-9.2} \right) \times 10^{-3}$ \\ 
+		Noda 2019 Recon & $0.995\pm 0.011$ \\ 
+		Beutler 2017 Prerecon & $1.003^{+0.021}_{-0.019}$ \\ 
+		Beutler 2017 Fixed $\Sigma_{nl}$ Prerecon & $1.003^{+0.018}_{-0.019}$ \\ 
+		Seo 2016 Prerecon & $0.995^{+0.015}_{-0.013}$ \\ 
+		Ding 2018 Prerecon & $0.998^{+0.014}_{-0.015}$ \\ 
+		Noda 2019 Prerecon & $1.012^{+0.017}_{-0.015}$ \\ 
+		\hline
+    \end{tabular}
+\end{table}
