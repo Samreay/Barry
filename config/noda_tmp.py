@@ -16,27 +16,27 @@ from barry.fitter import Fitter
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
-    r = True
-    c = getCambGenerator()
-    r_s = c.get_data()["r_s"]
-    postprocess = BAOExtractor(r_s)
-
-    data = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=postprocess)
-    model = PowerNoda2019(postprocess=postprocess, recon=r)
-    model.set_data(data.get_data())
-
-    cosmo = model.cosmology
-    c, pt = getCambGeneratorAndPT(
-        redshift=cosmo["z"], h0=cosmo["h0"], ob=cosmo["ob"], ns=cosmo["ns"], smooth_type="hinton2017", recon_smoothing_scale=cosmo["reconsmoothscale"]
-    )
-    ptd = pt.get_data(0.3)
-    import numpy as np
-
-    keys = ["sigma_dd_rs", "sigma_ss_rs", "Pdd_spt", "Pdt_spt", "Ptt_spt", "Pdd_halofit", "Pdt_halofit", "Ptt_halofit"]
-    for key in keys:
-        newv = model.get_pregen(key, 0.3)
-        oldv = ptd[key]
-        print(key, np.isclose(newv, oldv), newv, oldv)
+    # r = True
+    # c = getCambGenerator()
+    # r_s = c.get_data()["r_s"]
+    # postprocess = BAOExtractor(r_s)
+    #
+    # data = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r, postprocess=postprocess)
+    # model = PowerNoda2019(postprocess=postprocess, recon=r)
+    # model.set_data(data.get_data())
+    #
+    # cosmo = model.cosmology
+    # c, pt = getCambGeneratorAndPT(
+    #     redshift=cosmo["z"], h0=cosmo["h0"], ob=cosmo["ob"], ns=cosmo["ns"], smooth_type="hinton2017", recon_smoothing_scale=cosmo["reconsmoothscale"]
+    # )
+    # ptd = pt.get_data(0.3)
+    # import numpy as np
+    #
+    # keys = ["sigma_dd_rs", "sigma_ss_rs", "Pdd_spt", "Pdt_spt", "Ptt_spt", "Pdd_halofit", "Pdt_halofit", "Ptt_halofit"]
+    # for key in keys:
+    #     newv = model.get_pregen(key, 0.3)
+    #     oldv = ptd[key]
+    #     print(key, np.isclose(newv, oldv), newv, oldv)
 
     if True:
 
