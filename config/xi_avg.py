@@ -14,7 +14,7 @@ from barry.fitter import Fitter
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
     sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
-    fitter = Fitter(dir_name, remove_output=False)
+    fitter = Fitter(dir_name)
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
     for r in [True, False]:
