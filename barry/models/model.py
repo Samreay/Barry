@@ -86,6 +86,10 @@ class Model(ABC):
     def get_name(self):
         return self.name
 
+    def get_unique_cosmo_name(self):
+        """ Unique name used to save out any pregenerated data. """
+        return self.__class__.__name__ + "_" + self.camb.filename_unique + ".pkl"
+
     def set_cosmology(self, c, load_pregen=True):
         z = c["z"]
         if self.param_dict.get("f") is not None:
@@ -96,7 +100,7 @@ class Model(ABC):
         if self.cosmology != c:
             self.camb = getCambGenerator(h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], recon_smoothing_scale=c["reconsmoothscale"])
             self.set_default("om", c["om"])
-            self.pregen_path = os.path.abspath(os.path.join(self.data_location, self.__class__.__name__ + "_" + self.camb.filename_unique + ".pkl"))
+            self.pregen_path = os.path.abspath(os.path.join(self.data_location, self.get_unique_cosmo_name()))
             self.cosmology = c
             if load_pregen:
                 self._load_precomputed_data()
@@ -241,7 +245,7 @@ class Model(ABC):
         for i, j in indexes:
             omch2 = self.camb.omch2s[i]
             h0 = self.camb.h0s[j]
-            om = omch2 / (h0 * h0)
+            om = omch2 / (h0 * h0) + self.camb.omega_b
 
             values = self.precompute(self.camb, om, h0)
             data.append([i, j, values])

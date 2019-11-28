@@ -47,6 +47,9 @@ class PowerNoda2019(PowerSpectrumFit):
         if not self.validate_nonlinear_method():
             exit(0)
 
+    def get_unique_cosmo_name(self):
+        return self.__class__.__name__ + "_" + self.camb.filename_unique + "_" + self.smooth_type + ".pkl"
+
     def precompute(self, camb, om, h0):
 
         c = camb.get_data(om, h0)
