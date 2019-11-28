@@ -15,10 +15,6 @@ import pandas as pd
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
     fitter = Fitter(dir_name, save_dims=2, remove_output=False)
-
-    c = getCambGenerator()
-    r_s = c.get_data()[0]
-
     sampler = DynestySampler(temp_dir=dir_name, nlive=400)
 
     for r in [True]:

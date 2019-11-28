@@ -1,8 +1,6 @@
 import sys
 
 sys.path.append("..")
-from barry.cosmology.camb_generator import CambGenerator
-from barry.postprocessing import BAOExtractor
 from barry.config import setup
 from barry.models import CorrBeutler2017, CorrDing2018, CorrSeo2016
 from barry.datasets import CorrelationFunction_SDSS_DR12_Z061_NGC
@@ -13,11 +11,6 @@ from barry.fitter import Fitter
 # Spoiler: No.
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
-
-    c = CambGenerator()
-    r_s = c.get_data()[0]
-    p = BAOExtractor(r_s)
-
     sampler = DynestySampler(temp_dir=dir_name)
     fitter = Fitter(dir_name)
 

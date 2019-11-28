@@ -15,7 +15,7 @@ if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
     c = getCambGenerator()
-    r_s = c.get_data()[0]
+    r_s = c.get_data()["r_s"]
 
     postprocess = BAOExtractor(r_s)
 

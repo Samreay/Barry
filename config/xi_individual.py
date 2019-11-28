@@ -2,7 +2,6 @@ import sys
 
 sys.path.append("..")
 from barry.cosmology.camb_generator import getCambGenerator
-from barry.postprocessing import BAOExtractor
 from barry.config import setup
 from barry.utils import weighted_avg_and_std
 from barry.models import CorrBeutler2017, CorrDing2018, CorrSeo2016
@@ -16,11 +15,6 @@ import pandas as pd
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
     fitter = Fitter(dir_name, save_dims=2, remove_output=False)
-
-    c = getCambGenerator()
-    r_s = c.get_data()[0]
-    p = BAOExtractor(r_s)
-
     sampler = DynestySampler(temp_dir=dir_name, nlive=200)
     c4 = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
