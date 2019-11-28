@@ -1,5 +1,6 @@
 import sys
 
+
 sys.path.append("..")
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
@@ -17,38 +18,57 @@ import pandas as pd
 # Spoiler: They do not.
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
-    fitter = Fitter(dir_name, remove_output=True)
 
-    c = getCambGenerator()
-    r_s = c.get_data()["r_s"]
-    p = BAOExtractor(r_s)
+    r = True
+    data = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r)
+    model = PowerDing2018(recon=r)
+    model.set_data(data.get_data())
+    from barry.cosmology.PT_generator import getCambGeneratorAndPT
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=200)
+    cosmo = model.cosmology
+    c, pt = getCambGeneratorAndPT(
+        redshift=cosmo["z"], h0=cosmo["h0"], ob=cosmo["ob"], ns=cosmo["ns"], smooth_type="hinton2017", recon_smoothing_scale=cosmo["reconsmoothscale"]
+    )
+    ptd = pt.get_data(0.3)
+    keys = ["sigma_nl", "sigma_dd_nl", "sigma_sd_nl", "sigma_ss_nl"]
+    for key in keys:
+        newv = model.get_pregen(key, 0.3)
+        oldv = ptd[key]
+        print(key, newv, oldv)
 
-    for r in [True]:  # , False]:
-        t = "Recon" if r else "Prerecon"
-        ls = "-" if r else "--"
+    if False:
+        fitter = Fitter(dir_name, remove_output=True)
 
-        d = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r)
+        c = getCambGenerator()
+        r_s = c.get_data()["r_s"]
+        p = BAOExtractor(r_s)
 
-        ding = PowerDing2018(recon=r)
-        fitter.add_model_and_dataset(ding, d, name=f"D18", linestyle=ls, color="p")
+        sampler = DynestySampler(temp_dir=dir_name, nlive=200)
 
-    fitter.set_sampler(sampler)
-    fitter.set_num_walkers(1)
-    fitter.set_num_concurrent(700)
+        for r in [True]:  # , False]:
+            t = "Recon" if r else "Prerecon"
+            ls = "-" if r else "--"
 
-    fitter.fit(file)
+            d = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r)
 
-    if fitter.should_plot():
-        from chainconsumer import ChainConsumer
+            ding = PowerDing2018(recon=r)
+            fitter.add_model_and_dataset(ding, d, name=f"D18", linestyle=ls, color="p")
 
-        c = ChainConsumer()
-        names2 = []
-        for posterior, weight, chain, evidence, model, data, extra in fitter.load():
-            name = extra["name"]
-            c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
-        c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
-        extents = None
-        c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982})
-        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982})
+        fitter.set_sampler(sampler)
+        fitter.set_num_walkers(1)
+        fitter.set_num_concurrent(700)
+
+        fitter.fit(file)
+
+        if fitter.should_plot():
+            from chainconsumer import ChainConsumer
+
+            c = ChainConsumer()
+            names2 = []
+            for posterior, weight, chain, evidence, model, data, extra in fitter.load():
+                name = extra["name"]
+                c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
+            c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
+            extents = None
+            c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982})
+            c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 0.9982})

@@ -30,15 +30,15 @@ if __name__ == "__main__":
         redshift=cosmo["z"], h0=cosmo["h0"], ob=cosmo["ob"], ns=cosmo["ns"], smooth_type="hinton2017", recon_smoothing_scale=cosmo["reconsmoothscale"]
     )
     ptd = pt.get_data(0.3)
+    import numpy as np
 
     keys = ["sigma_dd_rs", "sigma_ss_rs", "Pdd_spt", "Pdt_spt", "Ptt_spt", "Pdd_halofit", "Pdt_halofit", "Ptt_halofit"]
     for key in keys:
-
         newv = model.get_pregen(key, 0.3)
         oldv = ptd[key]
-        print(key, newv, oldv)
+        print(key, np.isclose(newv, oldv), newv, oldv)
 
-    if False:
+    if True:
 
         c = getCambGenerator()
         r_s = c.get_data()["r_s"]
