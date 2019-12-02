@@ -6,15 +6,15 @@ Modular BAO fitting code.
 
 ## Setup
 
-1. Ensure that you have a named conda environment of at least python 3.6.
+1. Ensure that you have a named conda environment of at least Python 3.7
 2. Clone this project onto both your local computer and a cluster computer
 3. Have all dependencies installed: `pip install -r requirements.txt`
 4. Update `config.yml` to include the name of your environment for activation on the HPC
 5. Run any of the python files in `barry.config`.
     1. If you run on your local computer (ie `python test.py`), it will run the first MCMC run only to verify it works.
-    2. If you run on a cluster (checks for cluster if the OS is centos, let me know if yours isn't), it will create a slurm job script and send out all needed runs
+    2. If you run on a cluster, it will create a slurm job script and send out all needed runs (if you have something other than slurm, let me know)
     3. Once all jobs have finished, copy the output from the plots folder ie `barry.config.plots.mocks` to your local computer
-    4. Run the same python script and it will load in the data and create the plots.
+    4. Run the same python script and it will load in the data and create the plots. (Alternatively, run `python yourjob.py -1` and it will do the plotting on the HPC)
     
 Tests are included in the tests directory. Run them using pytest, `pytest -v .` in the top level directory (where this readme is).
 
@@ -59,9 +59,10 @@ Cullan Howlett. If you want to add a new dataset but need some help, just raise 
 Assuming you get the pickle made, you just need a wrapper class defining the default usage (k range, etc). See
 `barry.datasets.dataset_power_spectrum.py` for examples - you can copy and paste and change the pickle name.
 
-Also, after loading in a dataset, which will have its own smoothing scale, redshift and cosmology, you should pre-generated
-the `PTGenerator` and `CambGenerator`. This can be done by, on your HPC, running `python ensure_dataset_requirements.py`, which will
-check that every dataset class implemented has the correct pre-generated files.
+Also, after loading in a dataset, which will have its own smoothing scale, redshift and cosmology, you should pre-generate
+all the data every model will need. This can be done simply by running `python generate.py` in the `barry` folder. This will
+load all datasets to figure out how many unique cosmologies there are, run (locally) the CAMB pregeneration, and then 
+load all models, firing off a slurm MPI script to generate anything required as per the `pregenerate` method in the Model class.
 
 
 ## Adding new models
