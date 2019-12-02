@@ -219,23 +219,26 @@ if __name__ == "__main__":
                     continue
                 model.set_data(data)
                 p = model.get_param_dict(chain[np.argmax(posterior)])
-                model.mu, model.nmu = muvals, len(muvals)
+                # model.mu, model.nmu = muvals, len(muvals)
                 if extra["name"] == "Seo 2016 Recon":
                     damping_dd = model.get_damping_dd(p["f"], p["om"])
                     damping_ss = model.get_damping_ss(p["om"])
-                    smooth_prefac = np.tile(model.smoothing_kernel / p["b"], (model.nmu, 1))
-                    kaiser_prefac = 1.0 + np.outer(p["f"] / p["b"] * model.mu ** 2, 1.0 - model.smoothing_kernel)
+                    smooth_prefac = np.tile(model.camb.smoothing_kernel / p["b"], (model.nmu, 1))
+                    kaiser_prefac = 1.0 + np.outer(p["f"] / p["b"] * model.mu ** 2, 1.0 - model.camb.smoothing_kernel)
                     fog = 1.0 / (1.0 + np.outer(model.mu ** 2, model.camb.ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
+                    # Test for Cullan
+                    d = damping_ss - damping_dd
+
                     propagator_Seo = (kaiser_prefac * damping_dd + smooth_prefac * (damping_ss - damping_dd)) ** 2  # * fog
                     extra_Seo = extra
-                    print(model.get_pt_data(p["om"])["sigma_dd"], model.get_pt_data(p["om"])["sigma_ss"])
+                    # print(model.get_pt_data(p["om"])["sigma_dd"], model.get_pt_data(p["om"])["sigma_ss"])
                 elif extra["name"] == "Ding 2018 Recon":
                     damping_dd = model.get_damping_dd(p["f"], p["om"])
                     damping_sd = model.get_damping_sd(p["f"], p["om"])
                     damping_ss = model.get_damping_ss(p["om"])
-                    smooth_prefac = np.tile(model.smoothing_kernel / p["b"], (model.nmu, 1))
+                    smooth_prefac = np.tile(model.camb.smoothing_kernel / p["b"], (model.nmu, 1))
                     bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * model.camb.ks ** 2, (model.nmu, 1))
-                    kaiser_prefac = 1.0 - smooth_prefac + np.outer(p["f"] / p["b"] * model.mu ** 2, 1.0 - model.smoothing_kernel) + bdelta_prefac
+                    kaiser_prefac = 1.0 - smooth_prefac + np.outer(p["f"] / p["b"] * model.mu ** 2, 1.0 - model.camb.smoothing_kernel) + bdelta_prefac
                     fog = 1.0 / (1.0 + np.outer(model.mu ** 2, model.camb.ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
                     propagator_Ding = (
                         (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping_dd
@@ -244,7 +247,7 @@ if __name__ == "__main__":
                     )  # * fog
 
                     extra_Ding = extra
-                    print(model.get_pt_data(p["om"])["sigma_dd_nl"], model.get_pt_data(p["om"])["sigma_sd_nl"], model.get_pt_data(p["om"])["sigma_ss_nl"])
+                    # print(model.get_pt_data(p["om"])["sigma_dd_nl"], model.get_pt_data(p["om"])["sigma_sd_nl"], model.get_pt_data(p["om"])["sigma_ss_nl"])
                 if extra["name"] == "Beutler 2017 Recon":
                     ks = model.camb.ks
                     fog = 1.0 / (1.0 + ks ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2

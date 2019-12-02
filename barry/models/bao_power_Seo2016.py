@@ -70,6 +70,7 @@ class PowerSeo2016(PowerSpectrumFit):
 
     @lru_cache(maxsize=32)
     def get_damping_dd(self, growth, om):
+        print(self.nmu, self.mu.shape, self.camb.ks.shape)
         return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_dd", om) / 2.0)
 
     @lru_cache(maxsize=32)
@@ -187,7 +188,7 @@ if __name__ == "__main__":
     model_post = PowerSeo2016(recon=True)
     model_post.set_data(data)
 
-    p = {"om": 0.3, "alpha": 1.0, "sigma_s": 10.0, "b": 1.6, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
+    p = {"om": 0.3, "f": 0.7, "alpha": 1.0, "sigma_s": 10.0, "b": 1.6, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
 
     n = 200
 
