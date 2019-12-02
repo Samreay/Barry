@@ -135,7 +135,7 @@ class Fitter(object):
         sampler : `barry.samplers.sampler.Sampler`
         """
         if self.sampler is None:
-            self.sampler = DynestySampler(temp_dir=self.temp_dir, nlive=100)
+            self.sampler = DynestySampler(temp_dir=self.temp_dir, nlive=500)
         return self.sampler
 
     def _run_fit(self, model_index, walker_index):
