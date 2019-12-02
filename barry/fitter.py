@@ -160,7 +160,7 @@ class Fitter(object):
     def should_plot(self):
         # Plot if we're running on the laptop, or we've passed a -1 as the only argument
         # to the python script on the HPC
-        return self.is_local() or (len(sys.argv) == 2 and int(sys.argv[1]) == -1)
+        return self.is_local() or (len(sys.argv) == 2 and sys.argv[1] == "plot")
 
     def fit(self, file):
         num_concurrent = self.get_num_concurrent()
@@ -176,9 +176,6 @@ class Fitter(object):
         else:
             if len(sys.argv) == 1:
                 # if launching the job for the first time
-                h = socket.gethostname()
-                # TODO: Move this into a config file
-                partition = "regular" if "edison" in h else "smp"
                 if os.path.exists(self.temp_dir):
                     if self.remove_output:
                         self.logger.info("Deleting %s" % self.temp_dir)
@@ -189,7 +186,10 @@ class Fitter(object):
                 os.system(f"{config['hpc_submit_command']} {filename}")
             else:
                 # or if running a specific fit to a model+dataset pair
-                index = int(sys.argv[1])
+                if sys.argv[1].isdigit():
+                    index = int(sys.argv[1])
+                else:
+                    index = -1
                 if index != -1:
                     mi, wi = self._get_indexes_from_index(index)
                     self.logger.info("Running model_dataset %d, walker number %d" % (mi, wi))
