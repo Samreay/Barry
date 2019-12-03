@@ -290,21 +290,16 @@ if __name__ == "__main__":
     model_post = PowerNoda2019(recon=True)
     model_post.set_data(data)
 
-    p = {"om": 0.3, "alpha": 1.0, "A": 7.0, "b": 1.6, "gamma": 4.0}
-    for v in np.linspace(1.0, 20, 20):
-        p["A"] = v
-        print(v, model_post.get_likelihood(p, data[0]))
-
     n = 200
 
     def test_pre():
-        model_pre.get_likelihood(p, data[0])
+        model_pre.get_posterior(model_pre.get_defaults())
 
     def test_post():
-        model_post.get_likelihood(p, data[0])
+        model_post.get_posterior(model_post.get_defaults())
 
-    print("Pre-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_pre, number=n) * 1000 / n))
-    print("Post-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_post, number=n) * 1000 / n))
+    print("Pre-reconstruction posterior takes on average, %.2f milliseconds" % (timeit.timeit(test_pre, number=n) * 1000 / n))
+    print("Post-reconstruction posterior takes on average, %.2f milliseconds" % (timeit.timeit(test_post, number=n) * 1000 / n))
 
     if True:
         p, minv = model_pre.optimize()

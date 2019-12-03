@@ -392,3 +392,14 @@ class Model(ABC):
     def plot(self, params, smooth_params=None):
         """ Plots the predictions given some input parameter dictionary. """
         pass
+
+
+if __name__ == "__main__":
+    print("Calling a Generic model class as main does not do anything. Try running one of the Concrete classes: ")
+    print("bao_power_Beutler2017.py")
+    print("bao_power_Ding2018.py")
+    print("bao_power_Noda2019.py")
+    print("bao_power_Seo2016.py")
+    print("bao_correlation_Beutler2017.py")
+    print("bao_correlation_Ding2018.py")
+    print("bao_correlation_Seo2016.py")

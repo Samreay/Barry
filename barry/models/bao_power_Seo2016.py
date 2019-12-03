@@ -70,7 +70,6 @@ class PowerSeo2016(PowerSpectrumFit):
 
     @lru_cache(maxsize=32)
     def get_damping_dd(self, growth, om):
-        print(self.nmu, self.mu.shape, self.camb.ks.shape)
         return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_dd", om) / 2.0)
 
     @lru_cache(maxsize=32)
@@ -188,18 +187,16 @@ if __name__ == "__main__":
     model_post = PowerSeo2016(recon=True)
     model_post.set_data(data)
 
-    p = {"om": 0.3, "f": 0.7, "alpha": 1.0, "sigma_s": 10.0, "b": 1.6, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
-
     n = 200
 
     def test_pre():
-        model_pre.get_likelihood(p, data[0])
+        model_pre.get_posterior(model_pre.get_defaults())
 
     def test_post():
-        model_post.get_likelihood(p, data[0])
+        model_post.get_posterior(model_post.get_defaults())
 
-    print("Pre-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_pre, number=n) * 1000 / n))
-    print("Post-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_post, number=n) * 1000 / n))
+    print("Pre-reconstruction posterior takes on average, %.2f milliseconds" % (timeit.timeit(test_pre, number=n) * 1000 / n))
+    print("Post-reconstruction posterior takes on average, %.2f milliseconds" % (timeit.timeit(test_post, number=n) * 1000 / n))
 
     if True:
         p, minv = model_pre.optimize()
