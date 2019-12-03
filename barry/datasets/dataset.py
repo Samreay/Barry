@@ -59,3 +59,9 @@ class MultiDataset(Dataset, ABC):
             A list of datasets
         """
         return [i for d in self.datasets for i in d.get_data()]
+
+
+if __name__ == "__main__":
+    print("Calling a Generic model class as main does not do anything. Try running the Concrete classes: ")
+    print("dataset_power_spectrum.py")
+    print("dataset_correlation_function.py")

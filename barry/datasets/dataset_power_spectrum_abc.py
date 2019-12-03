@@ -175,3 +175,8 @@ class PowerSpectrum(Dataset, ABC):
                 "num_mocks": len(self.all_data),
             }
         ]
+
+
+if __name__ == "__main__":
+    print("Calling a Generic model class as main does not do anything. Try running the Concrete class: ")
+    print("dataset_power_spectrum.py")

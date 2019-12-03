@@ -198,3 +198,10 @@ class CorrelationFunctionFit(Model):
             axes[1].set_ylabel("xi(s) / data")
         axes[0].set_ylabel("s^2 * xi(s)")
         plt.show()
+
+
+if __name__ == "__main__":
+    print("Calling a Generic model class as main does not do anything. Try running one of the Concrete classes: ")
+    print("bao_correlation_Beutler2017.py")
+    print("bao_correlation_Ding2018.py")
+    print("bao_correlation_Seo2016.py")

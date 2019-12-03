@@ -17,7 +17,7 @@ class TestPk2Xi:
     def setup_class(cls):
         cls.camb = getCambGenerator()
         cls.ks = cls.camb.ks
-        cls.pk = cls.camb.get_data()["ks"]
+        cls.pk = cls.camb.get_data()["pk_lin"]
         cls.truth = PowerToCorrelationGauss(cls.ks, interpolateDetail=20, a=0.1)
         cls.xi_truth = cls.truth(cls.camb.ks, cls.pk, cls.ss)
         cls.gauss = PowerToCorrelationGauss(cls.ks)

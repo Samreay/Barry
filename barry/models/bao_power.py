@@ -2,8 +2,6 @@ from functools import lru_cache
 
 from scipy.interpolate import splev, splrep
 
-from barry.cosmology.PT_generator import getCambGeneratorAndPT
-from barry.cosmology.camb_generator import Omega_m_z
 from barry.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
 from barry.models.model import Model
 import numpy as np
@@ -94,9 +92,9 @@ class PowerSpectrumFit(Model):
         ks = self.camb.ks
         pk_smooth, pk_ratio_dewiggled = self.compute_basic_power_spectrum(p["om"])
         if smooth:
-            pk_1d = pk_smooth
+            pk_1d = p["b"] ** 2 * pk_smooth
         else:
-            pk_1d = pk_smooth * (1 + pk_ratio_dewiggled)
+            pk_1d = p["b"] ** 2 * pk_smooth * (1 + pk_ratio_dewiggled)
         return ks, pk_1d
 
     def adjust_model_window_effects(self, pk_generated, data):
