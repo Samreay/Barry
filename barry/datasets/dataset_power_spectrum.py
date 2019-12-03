@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
-        datasets = [PowerSpectrum_SDSS_DR7_Z015(recon=r), PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r)]
+        datasets = [PowerSpectrum_SDSS_DR12_Z061_NGC(recon=r)]
         for dataset in datasets:
             data = dataset.get_data()
             plt.errorbar(data[0]["ks"], data[0]["ks"] * data[0]["pk"], yerr=data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"])), fmt="o", c="k", zorder=1)

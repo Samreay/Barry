@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     for r in [True, False]:
         t = "Recon" if r else "Prerecon"
-        datasets = [CorrelationFunction_SDSS_DR7_Z015_MGS(recon=r), CorrelationFunction_SDSS_DR12_Z061_NGC(recon=r)]
+        datasets = [CorrelationFunction_SDSS_DR12_Z061_NGC(recon=r)]
         for dataset in datasets:
             data = dataset.get_data()
             plt.errorbar(
