@@ -271,50 +271,23 @@ class PowerNoda2019(PowerSpectrumFit):
 
 
 if __name__ == "__main__":
-
     import sys
-    import timeit
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z061_NGC
 
     sys.path.append("../..")
-    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
-    logging.getLogger("matplotlib").setLevel(logging.ERROR)
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z061_NGC
+    from barry.postprocessing import BAOExtractor
+    from barry.config import setup_logging
 
-    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=False)
-    data = dataset.get_data()
-    model_pre = PowerNoda2019(recon=False)
-    model_pre.set_data(data)
+    setup_logging()
 
-    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=True)
-    data = dataset.get_data()
-    model_post = PowerNoda2019(recon=True)
-    model_post.set_data(data)
+    postprocess = BAOExtractor(147.6)
 
-    p = {"om": 0.3, "alpha": 1.0, "A": 7.0, "b": 1.6, "gamma": 4.0}
-    for v in np.linspace(1.0, 20, 20):
-        p["A"] = v
-        print(v, model_post.get_likelihood(p, data[0]))
+    print("Checking pre-recon")
+    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=False, postprocess=postprocess)
+    model_pre = PowerNoda2019(recon=False, postprocess=postprocess)
+    model_pre.sanity_check(dataset)
 
-    n = 200
-
-    def test_pre():
-        model_pre.get_likelihood(p, data[0])
-
-    def test_post():
-        model_post.get_likelihood(p, data[0])
-
-    print("Pre-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_pre, number=n) * 1000 / n))
-    print("Post-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_post, number=n) * 1000 / n))
-
-    if True:
-        p, minv = model_pre.optimize()
-        print("Pre reconstruction optimisation:")
-        print(p)
-        print(minv)
-        model_pre.plot(p)
-
-        print("Post reconstruction optimisation:")
-        p, minv = model_post.optimize()
-        print(p)
-        print(minv)
-        model_post.plot(p)
+    print("Checking post-recon")
+    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=True, postprocess=postprocess)
+    model_post = PowerNoda2019(recon=True, postprocess=postprocess)
+    model_post.sanity_check(dataset)

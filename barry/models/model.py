@@ -393,5 +393,27 @@ class Model(ABC):
         """ Plots the predictions given some input parameter dictionary. """
         pass
 
-    def sanity_check(self):
-        pass
+    def sanity_check(self, dataset, niter=200):
+        import timeit
+
+        print(f"Using dataset {str(dataset)}")
+        data = dataset.get_data()
+        self.set_data(data)
+
+        p = self.get_defaults()
+        p_dict = self.get_param_dict(p)
+        posterior = self.get_posterior(p)
+        print(f"Posterior {posterior:0.3f} for defaults {dict(p_dict)}")
+
+        def timing():
+            params = self.get_raw_start()
+            posterior = self.get_posterior(params)
+
+        print("Model posterior takes on average, %.2f milliseconds" % (timeit.timeit(timing, number=niter) * 1000 / niter))
+
+        print("Starting model optimisation. This may take some time.")
+        p, minv = self.optimize()
+        print(f"Model optimisation with value {minv:0.3f} has parameters are {dict(p)}")
+
+        print("Plotting model and data")
+        self.plot(p)

@@ -1,5 +1,5 @@
-import logging
 import numpy as np
+
 from barry.models.bao_power import PowerSpectrumFit
 
 
@@ -71,46 +71,19 @@ class PowerBeutler2017(PowerSpectrumFit):
 
 if __name__ == "__main__":
     import sys
-    import timeit
 
     sys.path.append("../..")
     from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z061_NGC
+    from barry.config import setup_logging
 
-    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
-    logging.getLogger("matplotlib").setLevel(logging.ERROR)
+    setup_logging()
 
+    print("Checking pre-recon")
     dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=False)
-    data = dataset.get_data()
     model_pre = PowerBeutler2017(recon=False)
-    model_pre.set_data(data)
+    model_pre.sanity_check(dataset)
 
+    print("Checking post-recon")
     dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=True)
-    data = dataset.get_data()
     model_post = PowerBeutler2017(recon=True)
-    model_post.set_data(data)
-
-    p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5.0, "sigma_s": 5, "b": 2.0, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
-
-    n = 200
-
-    def test_pre():
-        model_pre.get_likelihood(p, data[0])
-
-    def test_post():
-        model_post.get_likelihood(p, data[0])
-
-    print("Pre-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_pre, number=n) * 1000 / n))
-    print("Post-reconstruction likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test_post, number=n) * 1000 / n))
-
-    if True:
-        p, minv = model_pre.optimize()
-        print("Pre reconstruction optimisation:")
-        print(p)
-        print(minv)
-        model_pre.plot(p)
-
-        print("Post reconstruction optimisation:")
-        p, minv = model_post.optimize()
-        print(p)
-        print(minv)
-        model_post.plot(p)
+    model_post.sanity_check(dataset)
