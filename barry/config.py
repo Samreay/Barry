@@ -35,3 +35,8 @@ def setup(filename):
 
 def is_local():
     return shutil.which(get_config()["hpc_determining_command"]) is None
+
+
+def setup_logging():
+    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)23s]   %(message)s")
+    logging.getLogger("matplotlib").setLevel(logging.ERROR)

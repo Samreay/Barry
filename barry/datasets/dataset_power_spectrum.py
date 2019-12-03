@@ -81,21 +81,3 @@ class PowerSpectrum_SDSS_DR12_Z051(MultiDataset):
             fake_diag=fake_diag,
         )
         super().__init__(name, [ngc, sgc])
-
-
-class PowerSpectrum_SDSS_DR7_Z015(PowerSpectrum):
-    """ Power spectrum for SDSS MGS DR7 sample for with mean redshift z = 0.15    """
-
-    def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=5, postprocess=None):
-        super().__init__(
-            "sdss_dr7_pk.pkl",
-            name=name,
-            min_k=min_k,
-            max_k=max_k,
-            step_size=step_size,
-            recon=recon,
-            reduce_cov_factor=reduce_cov_factor,
-            postprocess=postprocess,
-            realisation=realisation,
-            fake_diag=fake_diag,
-        )

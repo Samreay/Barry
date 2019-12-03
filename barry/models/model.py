@@ -392,3 +392,6 @@ class Model(ABC):
     def plot(self, params, smooth_params=None):
         """ Plots the predictions given some input parameter dictionary. """
         pass
+
+    def sanity_check(self):
+        pass

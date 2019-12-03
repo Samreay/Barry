@@ -23,8 +23,3 @@ if __name__ == "__main__":
 
     plt.errorbar(data["dist"], data["dist"] ** 2 * data["xi0"], yerr=data["dist"] ** 2 * np.sqrt(np.diag(data["cov"])), fmt="o", c="k")
     plt.show()
-
-    # MockAverageCorrelations(min_dist=50, max_dist=170)
-    # MockAverageCorrelations(min_dist=50, max_dist=170, step_size=3)
-    # MockAverageCorrelations(min_dist=50, max_dist=170, step_size=3, recon=False)
-    # MockAverageCorrelations(step_size=4, recon=False)
