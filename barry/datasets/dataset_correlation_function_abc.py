@@ -10,7 +10,7 @@ from barry.datasets.dataset import Dataset
 
 
 class CorrelationFunction(Dataset, ABC):
-    def __init__(self, filename, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
+    def __init__(self, filename, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + f"/../data/{filename}")
         self.min_dist = min_dist
@@ -19,9 +19,10 @@ class CorrelationFunction(Dataset, ABC):
 
         with open(self.data_location, "rb") as f:
             self.data_obj = pickle.load(f)
-        super().__init__(self.data_obj["name"])
-        self.cosmology = self.data_obj["cosmology"]
+        name = name or self.data_obj["name"] + " Recon" if recon else " Prerecon"
+        super().__init__(name)
 
+        self.cosmology = self.data_obj["cosmology"]
         self.all_data = self.data_obj["post-recon"] if recon else self.data_obj["pre-recon"]
         self.reduce_cov_factor = reduce_cov_factor
         if self.reduce_cov_factor == -1:
@@ -61,3 +62,8 @@ class CorrelationFunction(Dataset, ABC):
         else:
             d.update({"xi0": self.data[:, 1]})
         return [d]
+
+
+if __name__ == "__main__":
+    print("Calling a Generic model class as main does not do anything. Try running the Concrete class: ")
+    print("dataset_correlation_function.py")

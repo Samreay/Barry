@@ -14,12 +14,12 @@ class DummyPowerSpectrum_SDSS_DR12_Z061_NGC(PowerSpectrum_SDSS_DR12_Z061_NGC):
     to make a dummy window function too.
     """
 
-    def __init__(self, name="DummyPowerSpectrum", min_k=0.02, max_k=0.30, postprocess=None, dummy_window=False, uncert=0.01):
-        super().__init__(name=name, postprocess=postprocess, min_k=min_k, max_k=max_k)
+    def __init__(self, name="DummyPowerSpectrum", min_k=0.02, max_k=0.30, step_size=1, postprocess=None, dummy_window=False, uncert=0.01):
+        super().__init__(name=name, step_size=step_size, postprocess=postprocess, min_k=min_k, max_k=max_k)
 
         # Set data to camb generated power spectrum
         c = getCambGenerator()
-        r_s, pk_lin, _ = c.get_data()
+        pk_lin = c.get_data()["pk_lin"]
         ks = c.ks
 
         # Apply window function identically as it was applied to data
@@ -51,12 +51,12 @@ class DummyCorrelationFunction_SDSS_DR12_Z061_NGC(CorrelationFunction_SDSS_DR12_
     Uses CAMB's linear power spectrum and faked uncertainty.
     """
 
-    def __init__(self, uncert=0.01):
-        super().__init__()
+    def __init__(self, name="DummyCorrelationFunction", min_dist=30, max_dist=200, uncert=0.01):
+        super().__init__(name=name, min_dist=min_dist, max_dist=max_dist)
 
         # Set data to camb generated power spectrum
         c = getCambGenerator()
-        r_s, pk_lin, _ = c.get_data()
+        pk_lin = c.get_data()["pk_lin"]
         ks = c.ks
         dist = self.data[:, 0]
         xi = pk2xi.PowerToCorrelationGauss(ks).__call__(ks, pk_lin, dist)
@@ -69,17 +69,30 @@ class DummyCorrelationFunction_SDSS_DR12_Z061_NGC(CorrelationFunction_SDSS_DR12_
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
+    logging.getLogger("matplotlib").setLevel(logging.ERROR)
+
+    # Make plots of the Dummy dataset against the CAMB linear model
+    c = getCambGenerator()
+    pk_lin = c.get_data()["pk_lin"]
 
     dataset = DummyPowerSpectrum_SDSS_DR12_Z061_NGC()
     data = dataset.get_data()
-
-    import matplotlib.pyplot as plt
-    import seaborn as sb
-    import numpy as np
-
-    plt.errorbar(data["ks"], data["ks"] * data["pk"], yerr=data["ks"] * np.sqrt(np.diag(data["cov"])), fmt="o", c="k")
+    plt.errorbar(data[0]["ks"], data[0]["ks"] * data[0]["pk"], yerr=data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"])), fmt="o", c="k", zorder=1)
+    plt.errorbar(data[0]["ks"], data[0]["ks"] * splev(dataset.w_ks_output, splrep(c.ks, pk_lin))[dataset.w_mask], fmt="-", c="k", zorder=0)
+    plt.xlabel(r"$k$")
+    plt.ylabel(r"$k\,P(k)$")
+    plt.title(dataset.name)
     plt.show()
 
-    sb.heatmap(data["cov"])
+    dataset = DummyCorrelationFunction_SDSS_DR12_Z061_NGC()
+    data = dataset.get_data()
+    plt.errorbar(data[0]["dist"], data[0]["dist"] ** 2 * data[0]["xi0"], yerr=data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"])), fmt="o", c="k", zorder=1)
+    plt.errorbar(data[0]["dist"], data[0]["dist"] ** 2 * pk2xi.PowerToCorrelationGauss(c.ks).__call__(c.ks, pk_lin, data[0]["dist"]), fmt="-", c="k", zorder=0)
+    plt.xlabel(r"$s$")
+    plt.ylabel(r"$s^{2}\xi(s)$")
+    plt.title(dataset.name)
     plt.show()
