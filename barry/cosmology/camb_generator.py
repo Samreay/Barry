@@ -201,18 +201,15 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
-    c = {"om": 0.31, "h0": 0.676, "z": 0.61, "ob": 0.04814, "ns": 0.97, "reconscale": 15}
-
-    generator = CambGenerator(om_resolution=101, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"])
-    generator.load_data(can_generate=True)
+    c = getCambGenerator()
 
     n = 10000
     print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
 
-    plt.plot(generator.ks, generator.get_data(0.2)["pk_lin"], color="b", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.2$")
-    plt.plot(generator.ks, generator.get_data(0.3)["pk_lin"], color="r", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.3$")
-    plt.plot(generator.ks, generator.get_data(0.2)["pk_lin"], color="b", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
-    plt.plot(generator.ks, generator.get_data(0.3)["pk_lin"], color="r", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
+    plt.plot(c.ks, c.get_data(0.2)["pk_lin"], color="b", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.2$")
+    plt.plot(c.ks, c.get_data(0.3)["pk_lin"], color="r", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.3$")
+    plt.plot(c.ks, c.get_data(0.2)["pk_nl_z"], color="b", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
+    plt.plot(c.ks, c.get_data(0.3)["pk_nl_z"], color="r", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()

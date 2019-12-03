@@ -1,3 +1,5 @@
+import logging
+
 from abc import ABC
 
 import numpy as np
@@ -84,52 +86,45 @@ class PowerToCorrelationFT(PowerToCorrelation):
 
 
 if __name__ == "__main__":
-    from barry.cosmology import CambGenerator
 
-    # camb = CambGenerator(h0=70.0)
-    camb = CambGenerator(om_resolution=10, h0_resolution=1)
-    ks = camb.ks
-    r_s, pklin, _ = camb.get_data(0.3, 0.70)
+    import timeit
+    import matplotlib.pyplot as plt
+    from barry.cosmology.camb_generator import getCambGenerator
+
+    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
+    logging.getLogger("matplotlib").setLevel(logging.WARNING)
+
+    c = getCambGenerator()
+    ks = c.ks
+    pklin = c.get_data()["pk_lin"]
 
     ss = np.linspace(30, 200, 85)
 
-    # This code tests the impact the lower k bound has on converting to correlation plot
-    thresh = 100
-    pk2xi_1 = PowerToCorrelationGauss(ks, interpolateDetail=10, a=1)
-    pk2xi_2 = PowerToCorrelationGauss(ks[ks < thresh], interpolateDetail=10, a=1)
-    import matplotlib.pyplot as plt
-
-    xi1 = pk2xi_1.__call__(ks, pklin, ss)
-    xi2 = pk2xi_2.__call__(ks[ks < thresh], pklin[ks < thresh], ss)
-    fig, ax = plt.subplots(nrows=2)
-    ax[0].plot(ss, xi1)
-    ax[0].plot(ss, xi2)
-    ax[1].plot(ss, 100 * (xi1 - xi2) / xi1)
-    plt.show()
-
+    # Compare Gaussian with many narrow bins, fewer bins, and Hankel transform
     pk2xi_good = PowerToCorrelationGauss(ks, interpolateDetail=10, a=1)
     pk2xi_gauss = PowerToCorrelationGauss(ks, interpolateDetail=2, a=0.25)
     pk2xi_ft = PowerToCorrelationFT()
 
-    if False:
-        import timeit
-
+    if True:
         n = 200
 
-        def test():
+        def test_good():
+            pk2xi_good.__call__(ks, pklin, ss)
+
+        def test_gauss():
             pk2xi_gauss.__call__(ks, pklin, ss)
 
-        print("Gauss method: %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
-
-        def test2():
+        def test_ft():
             pk2xi_ft.__call__(ks, pklin, ss)
 
-        print("FT method: %.2f milliseconds" % (timeit.timeit(test2, number=n) * 1000 / n))
+        print("Gauss-Narrow method: %.2f milliseconds" % (timeit.timeit(test_good, number=n) * 1000 / n))
 
-    if False:
-        import matplotlib.pyplot as plt
+        print("Gauss method: %.2f milliseconds" % (timeit.timeit(test_gauss, number=n) * 1000 / n))
 
-        xi1 = pk2xi_gauss.__call__(ks[ks < 1], pklin, ss)
+        print("FT method: %.2f milliseconds" % (timeit.timeit(test_ft, number=n) * 1000 / n))
+
+    if True:
+        xi1 = pk2xi_gauss.__call__(ks, pklin, ss)
         xi2 = pk2xi_ft.__call__(ks, pklin, ss)
         xi_good = pk2xi_good.__call__(ks, pklin, ss)
 
@@ -138,10 +133,28 @@ if __name__ == "__main__":
         ax[0].plot(ss, xi1, ".", c="b", label="Gauss")
         ax[0].plot(ss, xi2, ".", c="r", label="FT")
         ax[0].legend()
-        ax[1].plot(ss, 100000 * (xi_good - xi1), ".", c="b")
-        ax[1].plot(ss, 100000 * (xi_good - xi2), ".", c="r")
+        ax[1].plot(ss, 100.0 * (xi_good - xi1), ".", c="b")
+        ax[1].plot(ss, 100.0 * (xi_good - xi2), ".", c="r")
         ax[1].axhline(0)
-        ax[1].set_xlabel("Dist")
-        ax[1].set_ylabel("100 000 times diff")
-        ax[0].set_ylabel("xi(s)")
+        ax[1].set_xlabel(r"$s$")
+        ax[1].set_ylabel(r"$100 \times \mathrm{diff}$")
+        ax[0].set_ylabel(r"$\xi(s)$")
+        plt.show()
+
+    # Test the impact of cutting the power spectrum at lower k_max.
+    if True:
+        thresh = 1.0
+        pk2xi_cut = PowerToCorrelationGauss(ks[ks < thresh], interpolateDetail=10, a=1.0)
+        xi1 = pk2xi_cut.__call__(ks[ks < thresh], pklin[ks < thresh], ss)
+        xi_good = pk2xi_good.__call__(ks, pklin, ss)
+
+        fig, ax = plt.subplots(nrows=2, sharex=True)
+        ax[0].plot(ss, xi_good, ".", c="k")
+        ax[0].plot(ss, xi1, ".", c="b", label="k < 2.0")
+        ax[0].legend()
+        ax[1].plot(ss, 100.0 * (xi_good - xi1), ".", c="b")
+        ax[1].axhline(0)
+        ax[1].set_xlabel("s")
+        ax[1].set_ylabel(r"$100 \times \mathrm{diff}$")
+        ax[0].set_ylabel(r"$\xi(s)$")
         plt.show()

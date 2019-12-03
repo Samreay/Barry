@@ -51,6 +51,14 @@ def smooth_eh1998(ks, pk, om=0.3121, ob=0.0491, h0=0.6751, ns=0.9653, sigma8=0.8
 
     nll = lambda *args: __EH98_lnlike(*args)
     start = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    """result = optimize.basinhopping(
+        nll,
+        start,
+        niter_success=10,
+        niter=100,
+        stepsize=0.05,
+        minimizer_kwargs={"method": "Nelder-Mead", "args": (ks, pk_EH98, pk), "options": {"maxiter": 10000, "xatol": 1.0e-6, "fatol": 1.0e-6}},
+    )"""
     result = optimize.minimize(nll, start, args=(ks, pk_EH98, pk), method="Nelder-Mead", tol=1.0e-6, options={"maxiter": 1000000})
 
     # Then compute the smooth model
@@ -150,22 +158,19 @@ def __EH98_rs(om, ob, h0):
 
 if __name__ == "__main__":
     import sys
+    import timeit
+    import matplotlib.pyplot as plt
+    from barry.cosmology.camb_generator import getCambGenerator
 
     sys.path.append("../..")
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
-    om, h0 = 0.3121, 0.6751
-
-    from barry.cosmology import CambGenerator
-
-    camb = CambGenerator(h0=h0)
-    ks = camb.ks
-    r_s, pk_lin, _ = camb.get_data(om=om)
+    c = getCambGenerator()
+    ks = c.ks
+    pk_lin = c.get_data()["pk_lin"]
 
     if True:  # Do timing tests
-        import timeit
-
         n = 30
 
         def test_hinton():
@@ -178,7 +183,7 @@ if __name__ == "__main__":
         t_eh1998 = timeit.timeit(test_eh1998, number=n) * 1000 / n
         print(f"Hinton smoothing takes on average, {t_hinton:.2f} milliseconds")
         print(f"Eisenstein and Hu smoothing takes on average, {t_eh1998:.2f} milliseconds")
-        print(f"Ratio is {t_eh1998/t_hinton:.1f} Hu/Hinton")
+        print(f"Ratio is {t_eh1998/t_hinton:.1f} EH/Hinton")
 
     if True:  # Do plotting comparison
         pk_smoothed = smooth_hinton2017(ks, pk_lin)
@@ -187,10 +192,11 @@ if __name__ == "__main__":
 
         fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
         ax1.plot(ks, pk_lin, "-", c="k")
-        ax1.plot(ks, pk_smoothed, ".", c="r", ms=2)
-        ax1.plot(ks, pk_smoothed2, "+", c="b", ms=2)
+        ax1.plot(ks, pk_smoothed, ".", c="r", ms=2, label="Hinton2017")
+        ax1.plot(ks, pk_smoothed2, "+", c="b", ms=2, label="EH1998")
         ax1.set_xscale("log")
         ax1.set_yscale("log")
         ax2.plot(ks, pk_lin / pk_smoothed, "-", c="r")
         ax2.plot(ks, pk_lin / pk_smoothed2, ":", c="b")
+        ax1.legend()
         plt.show()
