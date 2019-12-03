@@ -3,18 +3,11 @@ import logging
 from barry.datasets.dataset_correlation_function_abc import CorrelationFunction
 
 
-class CorrelationFunction_SDSS_DR7_Z015_MGS(CorrelationFunction):
-    """ Correlation function for SDSS MGS DR7 sample with mean redshift z = 0.15    """
-
-    def __init__(self, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
-        super().__init__("sdss_dr7_corr.pkl", min_dist, max_dist, recon, reduce_cov_factor, realisation)
-
-
 class CorrelationFunction_SDSS_DR12_Z061_NGC(CorrelationFunction):
     """ Correlation function for SDSS BOSS DR12 sample for the NGC with mean redshift z = 0.61    """
 
     def __init__(self, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
-        super().__init__("sdss_dr12_ngc_corr_zbin0p61.pkl", min_dist, max_dist, recon, reduce_cov_factor, realisation)
+        super().__init__("sdss_dr12_z061_corr_ngc.pkl", min_dist, max_dist, recon, reduce_cov_factor, realisation)
 
 
 if __name__ == "__main__":
@@ -22,7 +15,7 @@ if __name__ == "__main__":
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
     # Some basic checks for data we expect to be there
-    dataset = CorrelationFunction_SDSS_DR7_Z015_MGS()
+    dataset = CorrelationFunction_SDSS_DR12_Z061_NGC()
     data = dataset.get_data()
 
     import matplotlib.pyplot as plt

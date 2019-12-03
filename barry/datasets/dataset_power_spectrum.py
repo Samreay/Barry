@@ -7,7 +7,7 @@ class PowerSpectrum_SDSS_DR12_Z061_NGC(PowerSpectrum):
 
     def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
         super().__init__(
-            "sdss_dr12_ngc_pk_zbin0p61.pkl",
+            "sdss_dr12_z061_pk_ngc.pkl",
             name=name,
             min_k=min_k,
             max_k=max_k,
@@ -25,7 +25,7 @@ class PowerSpectrum_SDSS_DR12_Z051_NGC(PowerSpectrum):
 
     def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
         super().__init__(
-            "sdss_dr12_ngc_pk_zbin0p51.pkl",
+            "sdss_dr12_z051_pk_ngc.pkl",
             name=name,
             min_k=min_k,
             max_k=max_k,
@@ -43,7 +43,7 @@ class PowerSpectrum_SDSS_DR12_Z051_SGC(PowerSpectrum):
 
     def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
         super().__init__(
-            "sdss_dr12_sgc_pk_zbin0p51.pkl",
+            "sdss_dr12_z051_pk_sgc.pkl",
             name=name,
             min_k=min_k,
             max_k=max_k,
@@ -57,7 +57,7 @@ class PowerSpectrum_SDSS_DR12_Z051_SGC(PowerSpectrum):
 
 
 class PowerSpectrum_SDSS_DR12_Z051(MultiDataset):
-    """ Power spectrum for SDSS BOSS DR12 sample for combined NGC and SGC with mean redshift z = 0.61    """
+    """ Power spectrum for SDSS BOSS DR12 sample for combined NGC and SGC with mean redshift z = 0.51    """
 
     def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
         ngc = PowerSpectrum_SDSS_DR12_Z051_NGC(
@@ -70,7 +70,7 @@ class PowerSpectrum_SDSS_DR12_Z051(MultiDataset):
             realisation=realisation,
             fake_diag=fake_diag,
         )
-        sgc = PowerSpectrum_SDSS_DR12_Z051_NGC(
+        sgc = PowerSpectrum_SDSS_DR12_Z051_SGC(
             min_k=min_k,
             max_k=max_k,
             step_size=step_size,

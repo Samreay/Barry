@@ -234,37 +234,8 @@ class PowerSpectrumFit(Model):
 
 
 if __name__ == "__main__":
-    import logging
-
-    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
-    model = PowerSpectrumFit()
-
-    from barry.datasets.mock_power import MockPowerSpectrum
-
-    dataset = MockPowerSpectrum(step_size=2)
-    data = dataset.get_data()
-    model.set_data(data)
-    p = {"om": 0.3, "alpha": 1.0, "sigma_nl": 5, "b": 0, "a1": 0, "a2": 0, "a3": 0, "a4": 0, "a5": 0}
-
-    import timeit
-
-    n = 500
-
-    def test():
-        model.get_posterior(p)
-
-    print("Likelihood takes on average, %.2f milliseconds" % (timeit.timeit(test, number=n) * 1000 / n))
-
-    # if True:
-    #     ks = data["ks"]
-    #     pk = data["pk"]
-    #     pk2 = model.get_model(data, p)
-    #     model.smooth_type = "eh1998"
-    #     pk3 = model.get_model(data, p)
-    #     import matplotlib.pyplot as plt
-    #     plt.errorbar(ks, pk, yerr=np.sqrt(np.diag(data["cov"])), fmt="o", c='k')
-    #     plt.plot(ks, pk2, '.', c='r')
-    #     plt.plot(ks, pk3, '+', c='b')
-    #     plt.xlabel("k")
-    #     plt.ylabel("P(k)")
-    #     plt.show()
+    print("Calling a Generic model class as main does not do anything. Try running one of the Concrete classes: ")
+    print("bao_power_Beutler2017.py")
+    print("bao_power_Ding2018.py")
+    print("bao_power_Noda2019.py")
+    print("bao_power_Seo2016.py")

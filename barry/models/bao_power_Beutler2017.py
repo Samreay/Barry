@@ -72,9 +72,10 @@ class PowerBeutler2017(PowerSpectrumFit):
 if __name__ == "__main__":
     import sys
     import timeit
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z061_NGC
 
     sys.path.append("../..")
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z061_NGC
+
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
