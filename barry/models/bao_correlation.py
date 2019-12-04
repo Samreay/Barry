@@ -1,8 +1,6 @@
 from functools import lru_cache
 import numpy as np
 
-from barry.cosmology.PT_generator import getCambGeneratorAndPT
-from barry.cosmology.camb_generator import Omega_m_z
 from barry.cosmology.pk2xi import PowerToCorrelationGauss
 from barry.cosmology.power_spectrum_smoothing import validate_smooth_method, smooth
 from barry.models.model import Model
