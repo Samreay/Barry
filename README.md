@@ -24,7 +24,7 @@ something working.
 
 ## Barry Paper
 
-Note the internal differentiation; the `configs` directory is used when performing fits and submiting jobs, whilst
+Note the internal differentiation; the `configs` directory is used when performing fits and submitting jobs, whilst
 the `investigations` directory is when performing investigations or tests locally.
 
 * `configs/pk_avg.py`: Generates Figures 1 and 4

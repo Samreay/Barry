@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 from barry.postprocessing.postprocessor import PkPostProcess
 
@@ -64,17 +66,21 @@ class PureBAOExtractor(PkPostProcess):
             result.append(res)
         result = np.array(result)
 
+        if mask is None:
+            mask = np.ones(result.shape).astype(np.bool)
+
         # Plots for debugging purposes to make sure everything looks good
         if self.plot:
             import matplotlib.pyplot as plt
 
             fig, axes = plt.subplots(nrows=2, figsize=(5, 7))
-            axes[0].plot(ks, pk, label="Input")
-            axes[1].plot(ks, result, label="Output")
+            axes[0].plot(ks[mask], ks[mask] * pk[mask], label="Input")
+            axes[1].plot(ks[mask], result[mask], label="Output")
+            axes[0].set_ylabel(r"$k\,P(k)$")
+            axes[0].set_title("Extracted BA0")
+            axes[1].set_ylabel(r"$R(k)$")
+            axes[1].set_xlabel(r"$k$")
             plt.show()
-
-        if mask is None:
-            mask = np.ones(result.shape).astype(np.bool)
 
         # Optionally return the denominator instead
         # Used for manually verifying the correctness of the covariance
@@ -142,39 +148,25 @@ class BAOExtractor(PureBAOExtractor):
 
 
 if __name__ == "__main__":
-    from barry.cosmology import CambGenerator
 
-    camb = CambGenerator(om_resolution=10, h0_resolution=1)
-    ks = camb.ks
-    print(ks.shape)
-    r_s, pk_lin, _ = camb.get_data(0.3, 0.70)
-
-    from scipy.interpolate import splev, splrep
-
-    rep = splrep(ks, pk_lin)
-    # ks2 = np.linspace(ks.min(), 1, 1000)
-    ks2 = np.linspace(0, 0.398, 100)  # Matching the winfit_2 data binning
-    pk_lin2 = splev(ks2, rep)
-
-    print("Got pklin")
-    b = BAOExtractor(r_s)
-    pk_extract = b.postprocess(ks2, pk_lin2)
-    print("Got pk_extract")
-
+    import sys
     import matplotlib.pyplot as plt
+    from scipy.interpolate import splev, splrep
+    from barry.cosmology.camb_generator import getCambGenerator
 
-    fig, axes = plt.subplots(nrows=2, figsize=(5, 9), sharex=True)
-    axes[0].plot(ks2, pk_lin2)
-    axes[0].set_title("pk_lin")
-    axes[1].plot(ks2, pk_extract)
-    axes[1].set_title("Extracted BAO, using winfit_2 bins (0, 0.398, 100)")
-    plt.show()
+    sys.path.append("../..")
+    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
+    logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
-    from barry.datasets.mock_power import MockPowerSpectrum
+    # Apply the BAO extractor to the CAMB power spectrum and plot
+    c = getCambGenerator()
+    ks = c.ks
+    r_s, pk_lin = c.get_data()["r_s"], c.get_data()["pk_lin"]
 
-    dataset = MockPowerSpectrum(name="Recon mean", recon=True, min_k=0.02, step_size=2, postprocess=b)
-    data = dataset.get_data()
-    import seaborn as sb
+    # Bin similar to how we would bin for real data
+    ks2 = np.linspace(0.0, 0.4, 50)
+    pk_lin2 = splev(ks2, splrep(ks, pk_lin))
 
-    sb.heatmap(data["corr"])
-    plt.show()
+    # The plot is included in the PureBAOExtractor class
+    b = PureBAOExtractor(r_s, plot=True)
+    pk_extract = b.postprocess(ks2, pk_lin2, mask=np.where(np.logical_and(ks2 > 0.02, ks2 < 0.3)))
