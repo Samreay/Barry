@@ -69,7 +69,7 @@ if __name__ == "__main__":
         plt.rc("font", family="serif")
 
         res = {}
-        if False and path.exists(pfn + "_alphameans.csv"):
+        if path.exists(pfn + "_alphameans.csv"):
             logging.info("Found alphameans.csv, reading from existing file")
 
             df = pd.read_csv(pfn + "_alphameans.csv")
