@@ -31,7 +31,7 @@ class CorrelationFunction(Dataset, ABC):
 
         self.cov, self.icov, self.data, self.mask = None, None, None, None
         self.set_realisation(realisation)
-        self._compute_cov()
+        self.set_cov()
 
     def set_realisation(self, realisation):
         if realisation is None:
@@ -41,8 +41,24 @@ class CorrelationFunction(Dataset, ABC):
         self.mask = (self.data[:, 0] >= self.min_dist) & (self.data[:, 0] <= self.max_dist)
         self.data = self.data[self.mask, :]
 
-    def set_cov(self, cov):
-        self.cov = cov / self.reduce_cov_factor
+    def set_cov(self):
+        covname = "post-recon cov" if self.recon else "pre-recon cov"
+        if covname in self.data_obj:
+            npoles = self.data.shape[1] - 1
+            nin = len(self.mask)
+            nout = self.data.shape[0]
+            self.cov = np.empty((npoles * nout, npoles * nout))
+            for i in range(npoles):
+                iinlow, iinhigh = i * nin, (i + 1) * nin
+                ioutlow, iouthigh = i * nout, (i + 1) * nout
+                for j in range(npoles):
+                    jinlow, jinhigh = j * nin, (j + 1) * nin
+                    joutlow, jouthigh = j * nout, (j + 1) * nout
+                    self.cov[ioutlow:iouthigh, joutlow:jouthigh] = self.data_obj[covname][iinlow:iinhigh, jinlow:jinhigh][np.ix_(self.mask, self.mask)]
+        else:
+            self._compute_cov()
+        print(self.cov)
+        self.cov /= self.reduce_cov_factor
         self.icov = np.linalg.inv(self.cov)
 
     def _compute_cov(self):
