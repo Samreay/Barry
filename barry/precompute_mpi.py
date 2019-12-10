@@ -3,7 +3,7 @@ import logging
 import argparse
 import numpy as np
 
-sys.path.append("..")
+sys.path.insert(0, "..")
 from barry.models import Model
 from tests.utils import get_concrete
 
@@ -21,6 +21,8 @@ if __name__ == "__main__":
     parser.add_argument("--ns", type=float, default=0.97)
     parser.add_argument("--reconsmoothscale", type=float, default=21.21)
     args = parser.parse_args()
+
+    assert args.model is not None, "This file is invoked by generate.py and requires you to pass in a model name, redshift, om, h0, ob, ns and reconsmoothscale"
 
     # Find the right model
     model = [c() for c in get_concrete(Model) if args.model == c.__name__][0]
