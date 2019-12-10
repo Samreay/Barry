@@ -7,7 +7,19 @@ from barry.datasets.dataset_power_spectrum_abc import PowerSpectrum
 class PowerSpectrum_SDSS_DR12_Z061_NGC(PowerSpectrum):
     """ Power spectrum for SDSS BOSS DR12 sample for NGC with mean redshift z = 0.61    """
 
-    def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
+    def __init__(
+        self,
+        realisation=None,
+        name=None,
+        fake_diag=False,
+        recon=True,
+        min_k=0.02,
+        max_k=0.3,
+        reduce_cov_factor=1,
+        step_size=1,
+        postprocess=None,
+        isotropic=True,
+    ):
         super().__init__(
             "sdss_dr12_z061_pk_ngc.pkl",
             name=name,
@@ -19,13 +31,26 @@ class PowerSpectrum_SDSS_DR12_Z061_NGC(PowerSpectrum):
             postprocess=postprocess,
             realisation=realisation,
             fake_diag=fake_diag,
+            isotropic=isotropic,
         )
 
 
 class PowerSpectrum_SDSS_DR12_Z051_NGC(PowerSpectrum):
     """ Power spectrum for SDSS BOSS DR12 sample for NGC with mean redshift z = 0.51    """
 
-    def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
+    def __init__(
+        self,
+        realisation=None,
+        name=None,
+        fake_diag=False,
+        recon=True,
+        min_k=0.02,
+        max_k=0.3,
+        reduce_cov_factor=1,
+        step_size=1,
+        postprocess=None,
+        isotropic=True,
+    ):
         super().__init__(
             "sdss_dr12_z051_pk_ngc.pkl",
             name=name,
@@ -37,13 +62,26 @@ class PowerSpectrum_SDSS_DR12_Z051_NGC(PowerSpectrum):
             postprocess=postprocess,
             realisation=realisation,
             fake_diag=fake_diag,
+            isotropic=isotropic,
         )
 
 
 class PowerSpectrum_SDSS_DR12_Z051_SGC(PowerSpectrum):
     """ Power spectrum for SDSS BOSS DR12 sample for SGC with mean redshift z = 0.51    """
 
-    def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
+    def __init__(
+        self,
+        realisation=None,
+        name=None,
+        fake_diag=False,
+        recon=True,
+        min_k=0.02,
+        max_k=0.3,
+        reduce_cov_factor=1,
+        step_size=1,
+        postprocess=None,
+        isotropic=True,
+    ):
         super().__init__(
             "sdss_dr12_z051_pk_sgc.pkl",
             name=name,
@@ -55,13 +93,26 @@ class PowerSpectrum_SDSS_DR12_Z051_SGC(PowerSpectrum):
             postprocess=postprocess,
             realisation=realisation,
             fake_diag=fake_diag,
+            isotropic=isotropic,
         )
 
 
 class PowerSpectrum_SDSS_DR12_Z051(MultiDataset):
     """ Power spectrum for SDSS BOSS DR12 sample for combined NGC and SGC with mean redshift z = 0.51    """
 
-    def __init__(self, realisation=None, name=None, fake_diag=False, recon=True, min_k=0.02, max_k=0.3, reduce_cov_factor=1, step_size=1, postprocess=None):
+    def __init__(
+        self,
+        realisation=None,
+        name=None,
+        fake_diag=False,
+        recon=True,
+        min_k=0.02,
+        max_k=0.3,
+        reduce_cov_factor=1,
+        step_size=1,
+        postprocess=None,
+        isotropic=True,
+    ):
         ngc = PowerSpectrum_SDSS_DR12_Z051_NGC(
             min_k=min_k,
             max_k=max_k,
@@ -71,6 +122,7 @@ class PowerSpectrum_SDSS_DR12_Z051(MultiDataset):
             postprocess=postprocess,
             realisation=realisation,
             fake_diag=fake_diag,
+            isotropic=isotropic,
         )
         sgc = PowerSpectrum_SDSS_DR12_Z051_SGC(
             min_k=min_k,
@@ -81,6 +133,7 @@ class PowerSpectrum_SDSS_DR12_Z051(MultiDataset):
             postprocess=postprocess,
             realisation=realisation,
             fake_diag=fake_diag,
+            isotropic=isotropic,
         )
         super().__init__(name, [ngc, sgc])
 

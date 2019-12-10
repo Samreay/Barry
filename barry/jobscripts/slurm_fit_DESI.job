@@ -1,0 +1,25 @@
+#!/bin/bash -l
+#SBATCH -J {name}
+#SBATCH --qos=regular
+#SBATCH --account=desi
+#SBATCH --array=1-{num_tasks}%{num_concurrent}
+#SBATCH --nodes=1
+#SBATCH --tasks-per-node={job_cpus_per_task}
+#SBATCH --mem={job_memory}
+#SBATCH -C haswell
+#SBATCH -t {job_walltime_limit}
+#SBATCH -o {output_dir}/{name}.o%j
+
+IDIR={directory}
+conda deactivate
+source activate {job_conda_env}
+echo $PATH
+echo "Activated python"
+executable=$(which python)
+echo $executable
+
+PROG={executable}
+PARAMS=`expr ${{SLURM_ARRAY_TASK_ID}} - 1`
+cd $IDIR
+sleep $((RANDOM % 5))
+$executable $PROG $PARAMS
