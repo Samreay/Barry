@@ -73,10 +73,12 @@ class CorrelationFunction(Dataset, ABC):
 
     def get_data(self):
         d = {"dist": self.data[:, 0], "cov": self.cov, "icov": self.icov, "name": self.name, "cosmology": self.cosmology, "num_mocks": len(self.all_data)}
-        if self.data.shape[1] > 2:  # Some data has xi, xi0, xi2, xi4, some only has xi0
-            d.update({"xi": self.data[:, 1], "xi0": self.data[:, 2], "xi2": self.data[:, 3], "xi4": self.data[:, 4]})
-        else:
-            d.update({"xi0": self.data[:, 1]})
+        # Some data has xi0, xi0+xi2 or xi0+xi2+xi4
+        d.update({"xi0": self.data[:, 1]})
+        if self.data.shape[1] > 2:
+            d.update({"xi2": self.data[:, 2]})
+            if self.data.shape[1] > 3:
+                d.update({"xi4": self.data[:, 3]})
         return [d]
 
 

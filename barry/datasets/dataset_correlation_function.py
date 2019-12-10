@@ -47,7 +47,7 @@ class CorrelationFunction_ROSS_DR12_Z051(CorrelationFunction):
 
     def __init__(self, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
         super().__init__(
-            "ross_2016_dr12_combined_corr_zbin0p38.pkl",
+            "ross_2016_dr12_combined_corr_zbin0p51.pkl",
             name=name,
             min_dist=min_dist,
             max_dist=max_dist,
@@ -62,7 +62,7 @@ class CorrelationFunction_ROSS_DR12_Z061(CorrelationFunction):
 
     def __init__(self, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
         super().__init__(
-            "ross_2016_dr12_combined_corr_zbin0p38.pkl",
+            "ross_2016_dr12_combined_corr_zbin0p61.pkl",
             name=name,
             min_dist=min_dist,
             max_dist=max_dist,
@@ -103,7 +103,7 @@ if __name__ == "__main__":
             fmt="o",
             c="b",
             zorder=1,
-            label=r"$\xi_{0}$",
+            label=r"$\xi_{2}$",
         )
         plt.xlabel(r"$s$")
         plt.ylabel(r"$s^{2}\xi_{\ell}(s)$")
