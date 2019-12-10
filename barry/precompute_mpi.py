@@ -23,6 +23,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     assert args.model is not None, "This file is invoked by generate.py and requires you to pass in a model name, redshift, om, h0, ob, ns and reconsmoothscale"
+    assert len(get_concrete(Model)) > 0, "get_concrete(Model) reports no subclasses. Send Sam and email, imports are funky."
 
     # Find the right model
     model = [c() for c in get_concrete(Model) if args.model == c.__name__][0]
