@@ -23,6 +23,7 @@ class PowerSpectrum(Dataset, ABC):
         postprocess=None,
         apply_correction=None,
         fake_diag=False,
+        isotropic=True,
     ):
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + f"/../data/{filename}")
@@ -37,6 +38,7 @@ class PowerSpectrum(Dataset, ABC):
         self.max_k = max_k
         self.step_size = step_size
         self.recon = recon
+        self.isotropic = isotropic
         self.realisation = realisation
         self.postprocess = postprocess
 
@@ -173,6 +175,7 @@ class PowerSpectrum(Dataset, ABC):
                 "name": self.name,
                 "cosmology": self.cosmology,
                 "num_mocks": len(self.all_data),
+                "isotropic": self.isotropic,
             }
         ]
 

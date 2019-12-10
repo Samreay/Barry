@@ -10,12 +10,13 @@ from barry.datasets.dataset import Dataset
 
 
 class CorrelationFunction(Dataset, ABC):
-    def __init__(self, filename, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None):
+    def __init__(self, filename, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None, isotropic=False):
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + f"/../data/{filename}")
         self.min_dist = min_dist
         self.max_dist = max_dist
         self.recon = recon
+        self.isotropic = isotropic
 
         with open(self.data_location, "rb") as f:
             self.data_obj = pickle.load(f)
@@ -44,7 +45,7 @@ class CorrelationFunction(Dataset, ABC):
     def set_cov(self):
         covname = "post-recon cov" if self.recon else "pre-recon cov"
         if covname in self.data_obj:
-            npoles = self.data.shape[1] - 1
+            npoles = 1 if self.isotropic else 2
             nin = len(self.mask)
             nout = self.data.shape[0]
             self.cov = np.empty((npoles * nout, npoles * nout))
@@ -57,28 +58,31 @@ class CorrelationFunction(Dataset, ABC):
                     self.cov[ioutlow:iouthigh, joutlow:jouthigh] = self.data_obj[covname][iinlow:iinhigh, jinlow:jinhigh][np.ix_(self.mask, self.mask)]
         else:
             self._compute_cov()
-        print(self.cov)
         self.cov /= self.reduce_cov_factor
         self.icov = np.linalg.inv(self.cov)
 
     def _compute_cov(self):
-        # TODO: Generalise for other multipoles poles
         ad = np.array(self.all_data)
-        if ad.shape[2] > 2:
-            x0 = ad[:, self.mask, 2]
-        else:
+        if self.isotropic:
             x0 = ad[:, self.mask, 1]
-        cov = np.cov(x0.T)
-        self.set_cov(cov)
+        else:
+            x0 = np.concatenate([ad[:, self.mask, 1], ad[:, self.mask, 2]], axis=1)
+        self.cov = np.cov(x0.T)
 
     def get_data(self):
-        d = {"dist": self.data[:, 0], "cov": self.cov, "icov": self.icov, "name": self.name, "cosmology": self.cosmology, "num_mocks": len(self.all_data)}
-        # Some data has xi0, xi0+xi2 or xi0+xi2+xi4
+        d = {
+            "dist": self.data[:, 0],
+            "cov": self.cov,
+            "icov": self.icov,
+            "name": self.name,
+            "cosmology": self.cosmology,
+            "num_mocks": len(self.all_data),
+            "isotropic": self.isotropic,
+        }
+        # Some data has xi0 some has xi0+xi2
         d.update({"xi0": self.data[:, 1]})
-        if self.data.shape[1] > 2:
+        if not self.isotropic:
             d.update({"xi2": self.data[:, 2]})
-            if self.data.shape[1] > 3:
-                d.update({"xi4": self.data[:, 3]})
         return [d]
 
 

@@ -47,7 +47,7 @@ class Model(ABC):
 
     """
 
-    def __init__(self, name, postprocess=None, correction=None):
+    def __init__(self, name, postprocess=None, correction=None, isotropic=True):
         """ Create a new model.
 
         Parameters
@@ -66,6 +66,7 @@ class Model(ABC):
         # For pregeneration
         self.camb = None
         self.cosmology = None
+        self.isotropic = isotropic
         self.pregen = None
         self.pregen_path = None
         current_file = os.path.dirname(inspect.stack()[0][1])
@@ -109,7 +110,7 @@ class Model(ABC):
         """ Sets the models data, including fetching the right cosmology and PT generator.
 
         Note that if you pass in multiple datas (ie a list with more than one element),
-        they need to have the same cosmology.
+        they need to have the same cosmology and must all be isotropic or anisotropic
 
         Parameters
         ----------
@@ -120,6 +121,12 @@ class Model(ABC):
             data = [data]
         self.data = data
         self.set_cosmology(data[0]["cosmology"])
+        if not (data[0]["isotropic"] == self.isotropic):
+            print(
+                "ERROR: Data and model isotropic mismatch: Data is %s while model is %s"
+                % ("isotropic" if data[0]["isotropic"] else "anisotropic", "isotropic" if self.isotropic else "anisotropic")
+            )
+            exit(0)
 
     def add_param(self, name, label, min, max, default):
         p = Param(name, label, min, max, default, name not in self.fix_params)
