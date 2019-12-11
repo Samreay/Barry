@@ -29,6 +29,7 @@ class PowerNoda2019(PowerSpectrumFit):
         postprocess=None,
         smooth=False,
         correction=None,
+        isotropic=True,
     ):
         self.recon = recon
         if gammaval is None:
@@ -37,7 +38,9 @@ class PowerNoda2019(PowerSpectrumFit):
             else:
                 gammaval = 1.0
 
-        super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction)
+        super().__init__(
+            name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction, isotropic=isotropic
+        )
         self.set_default("gamma", gammaval)
 
         self.nmu = 100
@@ -213,61 +216,76 @@ class PowerNoda2019(PowerSpectrumFit):
         self.add_param("gamma", r"$\gamma_{rec}$", 1.0, 8.0, 1.0)  # Describes the sharpening of the BAO post-reconstruction
         self.add_param("A", r"$A$", -10, 30.0, 10)  # Fingers-of-god damping
 
-    def compute_power_spectrum(self, p, smooth=False, shape=True):
-        """ Computes the power spectrum model at k/alpha using the Ding et. al., 2018 EFT0 model
-        
+    def compute_power_spectrum(self, k, p, smooth=False, shape=True):
+        """ Computes the power spectrum model using the LPT based propagators from Seo et. al., 2016 at k/alpha
+
         Parameters
         ----------
+        k : array
+            Array of (undilated) k-values to compute the model at.
         p : dict
             dictionary of parameter names to their values
         smooth : bool, optional
-            Whether or not to return a smooth pk without BAO feature
+            Whether or not to generate a smooth model without the BAO feature
         shape : bool, optional
-            Whether or not to add in shape terms
+            Whether or not to include shape marginalisation terms.
+
 
         Returns
         -------
-        ks : np.ndarray
-            Wavenumbers of the computed pk
-        pk_1d : np.ndarray
-            the ratio (pk_lin / pk_smooth - 1.0),  NOT interpolated to k/alpha.
-        
+        kprime : np.ndarray
+            Dilated wavenumbers of the computed pk
+        pk0 : np.ndarray
+            the model monopole interpolated using the dilation scales.
+        pk2 : np.ndarray
+            the model quadrupole interpolated using the dilation scales. Will be 'None' if the model is isotropic
+
         """
 
         # Get the basic power spectrum components
         ks = self.camb.ks
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
 
-        fog = np.exp(-p["A"] * ks ** 2)
-        pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
+        if self.isotropic:
 
-        # Compute the growth rate depending on what we have left as free parameters
-        growth = p["f"]
-        gamma = p["gamma"]
+            fog = np.exp(-p["A"] * ks ** 2)
+            pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
 
-        # Lets round some things for the sake of numerical speed (to hit the cache more often
-        om = np.round(p["om"], decimals=5)
-        growth = np.round(growth, decimals=5)
-        gamma = np.round(gamma, decimals=5)
+            # Compute the growth rate depending on what we have left as free parameters
+            growth = p["f"]
+            gamma = p["gamma"]
 
-        if self.recon:
-            kaiser_prefac = 1.0 + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel)
+            # Lets round some things for the sake of numerical speed (to hit the cache more often
+            om = np.round(p["om"], decimals=5)
+            growth = np.round(growth, decimals=5)
+            gamma = np.round(gamma, decimals=5)
+
+            if self.recon:
+                kaiser_prefac = 1.0 + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel)
+            else:
+                kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T
+
+            # Compute the non-linear correction to the smooth power spectrum
+            p_dd, p_dt, p_tt = self.get_nonlinear(growth, om)
+            pk_nonlinear = p_dd + p_dt / p["b"] + p_tt / p["b"] ** 2
+
+            # Integrate over mu
+            if smooth:
+                pk1d = integrate.simps(pk_smooth * (kaiser_prefac ** 2 + pk_nonlinear), self.mu, axis=0)
+            else:
+                # Compute the BAO damping/propagator
+                propagator = self.get_damping(growth, om, gamma)
+                pk1d = integrate.simps(pk_smooth * ((1.0 + pk_ratio * propagator) * kaiser_prefac ** 2 + pk_nonlinear), self.mu, axis=0)
+
+                kprime = k / p["alpha"]
+                pk0 = splev(kprime, splrep(ks, pk1d))
+                pk2 = None
+
         else:
-            kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T
 
-        # Compute the non-linear correction to the smooth power spectrum
-        p_dd, p_dt, p_tt = self.get_nonlinear(growth, om)
-        pk_nonlinear = p_dd + p_dt / p["b"] + p_tt / p["b"] ** 2
+            NotImplementedError("2D Seo2016 model not yet implemented")
 
-        # Integrate over mu
-        if smooth:
-            pk1d = integrate.simps(pk_smooth * (kaiser_prefac ** 2 + pk_nonlinear), self.mu, axis=0)
-        else:
-            # Compute the BAO damping/propagator
-            propagator = self.get_damping(growth, om, gamma)
-            pk1d = integrate.simps(pk_smooth * ((1.0 + pk_ratio * propagator) * kaiser_prefac ** 2 + pk_nonlinear), self.mu, axis=0)
-
-        return ks, pk1d
+        return kprime, pk0, pk2
 
 
 if __name__ == "__main__":

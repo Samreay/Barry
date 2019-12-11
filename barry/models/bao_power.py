@@ -138,7 +138,7 @@ class PowerSpectrumFit(Model):
         muprime = self.mu * alpha_perp / (alpha_par * (1.0 + self.mu ** 2 * ((alpha_perp / alpha_par) ** 2 - 1.0)) ** (1.0 / 2.0))
         return muprime
 
-    def compute_power_spectrum(self, p, smooth=False, shape=True):
+    def compute_power_spectrum(self, k, p, smooth=False, shape=True):
         """ Get raw ks and p(k) multipoles for a given parametrisation dilated based on the values of alpha and epsilon
 
         Parameters
@@ -166,7 +166,7 @@ class PowerSpectrumFit(Model):
 
         # Work out the dilated values for the power spectra
         if self.isotropic:
-            kprime = ks / p["alpha"]
+            kprime = k / p["alpha"]
         else:
             kprime = self.get_kprime(p["alpha"], p["epsilon"])
             muprime = self.get_muprime(p["alpha"], p["epsilon"])
@@ -263,10 +263,10 @@ class PowerSpectrumFit(Model):
 
         """
 
-        ks, pk0, pk2 = self.compute_power_spectrum(p, smooth=smooth)
+        ks, pk0, pk2 = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth)
 
         if self.isotropic:
-            pk_generated = splev(d["ks_input"], splrep(ks, pk0))
+            pk_generated = pk0
         else:
             pk_generated = np.concatenate([splev(d["ks_input"], splrep(ks, pk0)), splev(d["ks_input"], splrep(ks, pk2))])
 
