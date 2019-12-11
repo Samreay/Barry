@@ -95,8 +95,9 @@ class PowerSpectrumFit(Model):
         """
         return alpha * (1.0 + epsilon) ** 2, alpha / (1.0 + epsilon)
 
-    def get_kprime(self, k, alpha, epsilon):
-        """ Computes dilated values of k given input values of alpha, epsilon
+    @lru_cache(maxsize=32)
+    def get_kprimefac(self, epsilon):
+        """ Computes the prefactor to dilate a k value given epsilon, such that kprime = k * kprimefac / alpha
 
         Parameters
         ----------
@@ -107,18 +108,18 @@ class PowerSpectrumFit(Model):
 
         Returns
         -------
-        kprime : np.ndarray
-            The dilated k values in a 2D matrix
+        kprimefac : np.ndarray
+            The mu dependent prefactor for dilating a k value
 
         """
         musq = self.mu ** 2
         epsilonsq = (1.0 + epsilon) ** 2
-        kprime = np.outer(k / alpha, np.sqrt(musq / epsilonsq ** 2 * epsilonsq * (1.0 - musq)))
-        return kprime
+        kprimefac = np.sqrt(musq / epsilonsq ** 2 + epsilonsq * (1.0 - musq))
+        return kprimefac
 
     @lru_cache(maxsize=32)
     def get_muprime(self, epsilon):
-        """ Computes dilated values of mu given input values of alpha, epsilon
+        """ Computes dilated values of mu given input values of epsilon
 
         Parameters
         ----------
@@ -130,14 +131,14 @@ class PowerSpectrumFit(Model):
         Returns
         -------
         muprime : np.ndarray
-            The dilated mu values in a 1D array
+            The dilated mu values
 
         """
         musq = self.mu ** 2
         muprime = self.mu / np.sqrt(musq + (1.0 + epsilon) ** 6 * (1.0 - musq))
         return muprime
 
-    def compute_power_spectrum(self, k, p, smooth=False, shape=True):
+    def compute_power_spectrum(self, k, p, smooth=False, shape=True, dilate=True):
         """ Get raw ks and p(k) multipoles for a given parametrisation dilated based on the values of alpha and epsilon
 
         Parameters
@@ -165,10 +166,18 @@ class PowerSpectrumFit(Model):
 
         # Work out the dilated values for the power spectra
         if self.isotropic:
-            kprime = k / p["alpha"]
+            if dilate:
+                kprime = k / p["alpha"]
+            else:
+                kprime = k
         else:
-            kprime = self.get_kprime(p["alpha"], p["epsilon"])
-            muprime = self.get_muprime(p["epsilon"])
+            if dilate:
+                epsilon = np.round(p["epsilon"], decimals=5)
+                kprime = np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
+                muprime = self.get_muprime(epsilon)
+            else:
+                kprime = np.tile(k, (self.nmu, 1))
+                muprime = self.mu
 
         if smooth:
             pkprime = p["b"] ** 2 * splev(kprime, splrep(ks, pk_smooth))
