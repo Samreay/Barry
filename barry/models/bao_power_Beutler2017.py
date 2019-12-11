@@ -46,12 +46,12 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param("a2_4", r"$a2_4$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
             self.add_param("a2_5", r"$a2_5$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
 
-    def compute_power_spectrum(self, k, p, smooth=False, shape=True):
-        """ Computes the power spectrum multipoles for the Beutler et. al., 2017 model at dilated k values
+    def compute_power_spectrum(self, k, p, smooth=False, shape=True, dilate=True):
+        """ Computes the power spectrum model using the Beutler et. al., 2017 method
 
         Parameters
         ----------
-        k : array
+        k : np.ndarray
             Array of (undilated) k-values to compute the model at.
         p : dict
             dictionary of parameter names to their values
@@ -59,16 +59,17 @@ class PowerBeutler2017(PowerSpectrumFit):
             Whether or not to generate a smooth model without the BAO feature
         shape : bool, optional
             Whether or not to include shape marginalisation terms.
-
+        dilate : bool, optional
+            Whether or not to dilate the k-values of the model based on the values of alpha (and epsilon)
 
         Returns
         -------
         kprime : np.ndarray
-            Dilated wavenumbers of the computed pk
+            Wavenumbers of the computed pk
         pk0 : np.ndarray
-            the model monopole interpolated using the dilation scales.
+            the model monopole interpolated to kprime.
         pk2 : np.ndarray
-            the model quadrupole interpolated using the dilation scales. Will be 'None' if the model is isotropic
+            the model quadrupole interpolated to kprime. Will be 'None' if the model is isotropic
 
         """
 
@@ -94,7 +95,10 @@ class PowerBeutler2017(PowerSpectrumFit):
             else:
                 shape = 0
 
-            kprime = k / p["alpha"]
+            if dilate:
+                kprime = k / p["alpha"]
+            else:
+                kprime = k
 
             if smooth:
                 pk0 = splev(kprime, splrep(ks, pk_smooth + shape))
@@ -106,8 +110,12 @@ class PowerBeutler2017(PowerSpectrumFit):
             pk2 = None
 
         else:
-            kprime = self.get_kprime(p["alpha"], p["epsilon"])
-            muprime = self.get_muprime(p["alpha"], p["epsilon"])
+            if dilate:
+                kprime = self.get_kprime(k, p["alpha"], p["epsilon"])
+                muprime = self.get_muprime(p["alpha"], p["epsilon"])
+            else:
+                kprime = np.tile(k, (self.nmu, 1))
+                muprime = self.mu
             sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel))
 
             fog = 1.0 / (1.0 + muprime ** 2 * kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2

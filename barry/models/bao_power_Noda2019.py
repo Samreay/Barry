@@ -216,12 +216,12 @@ class PowerNoda2019(PowerSpectrumFit):
         self.add_param("gamma", r"$\gamma_{rec}$", 1.0, 8.0, 1.0)  # Describes the sharpening of the BAO post-reconstruction
         self.add_param("A", r"$A$", -10, 30.0, 10)  # Fingers-of-god damping
 
-    def compute_power_spectrum(self, k, p, smooth=False, shape=True):
-        """ Computes the power spectrum model using the LPT based propagators from Seo et. al., 2016 at k/alpha
+    def compute_power_spectrum(self, k, p, smooth=False, shape=True, dilate=True):
+        """ Computes the power spectrum model using the model from Noda et. al., 2019
 
         Parameters
         ----------
-        k : array
+        k : np.ndarray
             Array of (undilated) k-values to compute the model at.
         p : dict
             dictionary of parameter names to their values
@@ -229,16 +229,17 @@ class PowerNoda2019(PowerSpectrumFit):
             Whether or not to generate a smooth model without the BAO feature
         shape : bool, optional
             Whether or not to include shape marginalisation terms.
-
+        dilate : bool, optional
+            Whether or not to dilate the k-values of the model based on the values of alpha (and epsilon)
 
         Returns
         -------
         kprime : np.ndarray
-            Dilated wavenumbers of the computed pk
+            Wavenumbers of the computed pk
         pk0 : np.ndarray
-            the model monopole interpolated using the dilation scales.
+            the model monopole interpolated to kprime.
         pk2 : np.ndarray
-            the model quadrupole interpolated using the dilation scales. Will be 'None' if the model is isotropic
+            the model quadrupole interpolated to kprime. Will be 'None' if the model is isotropic
 
         """
 
@@ -277,7 +278,11 @@ class PowerNoda2019(PowerSpectrumFit):
                 propagator = self.get_damping(growth, om, gamma)
                 pk1d = integrate.simps(pk_smooth * ((1.0 + pk_ratio * propagator) * kaiser_prefac ** 2 + pk_nonlinear), self.mu, axis=0)
 
-            kprime = k / p["alpha"]
+            if dilate:
+                kprime = k / p["alpha"]
+            else:
+                kprime = k
+
             pk0 = splev(kprime, splrep(ks, pk1d))
             pk2 = None
 

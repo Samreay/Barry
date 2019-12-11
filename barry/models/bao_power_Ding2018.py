@@ -77,12 +77,12 @@ class PowerDing2018(PowerSpectrumFit):
         self.add_param("a4", r"$a_4$", -200.0, 200.0, 0)  # Polynomial marginalisation 4
         self.add_param("a5", r"$a_5$", -3.0, 3.0, 0)  # Polynomial marginalisation 5
 
-    def compute_power_spectrum(self, k, p, smooth=False, shape=True):
-        """ Computes the power spectrum model using the Ding et. al., 2018 EFT0 model
+    def compute_power_spectrum(self, k, p, smooth=False, shape=True, dilate=True):
+        """ Computes the power spectrum model using the Ding et. al., 2018 EFT0 propagator
 
         Parameters
         ----------
-        k : array
+        k : np.ndarray
             Array of (undilated) k-values to compute the model at.
         p : dict
             dictionary of parameter names to their values
@@ -90,17 +90,17 @@ class PowerDing2018(PowerSpectrumFit):
             Whether or not to generate a smooth model without the BAO feature
         shape : bool, optional
             Whether or not to include shape marginalisation terms.
-
+        dilate : bool, optional
+            Whether or not to dilate the k-values of the model based on the values of alpha (and epsilon)
 
         Returns
         -------
         kprime : np.ndarray
-            Dilated wavenumbers of the computed pk
+            Wavenumbers of the computed pk
         pk0 : np.ndarray
-            the model monopole interpolated using the dilation scales.
+            the model monopole interpolated to kprime.
         pk2 : np.ndarray
-            the model quadrupole interpolated using the dilation scales. Will be 'None' if the model is isotropic
-
+            the model quadrupole interpolated to kprime. Will be 'None' if the model is isotropic
         """
 
         # Get the basic power spectrum components
@@ -153,7 +153,11 @@ class PowerDing2018(PowerSpectrumFit):
 
                 pk1d = integrate.simps((pk_smooth + shape) * (1.0 + pk_ratio * propagator), self.mu, axis=0)
 
-            kprime = k / p["alpha"]
+            if dilate:
+                kprime = k / p["alpha"]
+            else:
+                kprime = k
+
             pk0 = splev(kprime, splrep(ks, pk1d))
             pk2 = None
 

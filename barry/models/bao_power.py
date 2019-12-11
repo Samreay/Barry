@@ -95,8 +95,7 @@ class PowerSpectrumFit(Model):
         """
         return alpha * (1.0 + epsilon) ** 2, alpha / (1.0 + epsilon)
 
-    @lru_cache(maxsize=32)
-    def get_kprime(self, alpha, epsilon):
+    def get_kprime(self, k, alpha, epsilon):
         """ Computes dilated values of k given input values of alpha, epsilon
 
         Parameters
@@ -112,9 +111,8 @@ class PowerSpectrumFit(Model):
             The dilated k values in a 2D matrix
 
         """
-        ks = self.camb.k
         alpha_par, alpha_perp = self.get_alphas(alpha, epsilon)
-        kprime = np.outer(ks / alpha_perp, (1.0 + self.mu ** 2 * ((alpha_perp / alpha_par) ** 2 - 1.0)) ** (1.0 / 2.0))
+        kprime = np.outer(k / alpha_perp, (1.0 + self.mu ** 2 * ((alpha_perp / alpha_par) ** 2 - 1.0)) ** (1.0 / 2.0))
         return kprime
 
     @lru_cache(maxsize=32)
@@ -131,7 +129,7 @@ class PowerSpectrumFit(Model):
         Returns
         -------
         muprime : np.ndarray
-            The dilated k values in a 2D matrix
+            The dilated mu values in a 1D array
 
         """
         alpha_par, alpha_perp = self.get_alphas(alpha, epsilon)
