@@ -111,12 +111,13 @@ class PowerSpectrumFit(Model):
             The dilated k values in a 2D matrix
 
         """
-        alpha_par, alpha_perp = self.get_alphas(alpha, epsilon)
-        kprime = np.outer(k / alpha_perp, (1.0 + self.mu ** 2 * ((alpha_perp / alpha_par) ** 2 - 1.0)) ** (1.0 / 2.0))
+        musq = self.mu ** 2
+        epsilonsq = (1.0 + epsilon) ** 2
+        kprime = np.outer(k / alpha, np.sqrt(musq / epsilonsq ** 2 * epsilonsq * (1.0 - musq)))
         return kprime
 
     @lru_cache(maxsize=32)
-    def get_muprime(self, alpha, epsilon):
+    def get_muprime(self, epsilon):
         """ Computes dilated values of mu given input values of alpha, epsilon
 
         Parameters
@@ -132,8 +133,8 @@ class PowerSpectrumFit(Model):
             The dilated mu values in a 1D array
 
         """
-        alpha_par, alpha_perp = self.get_alphas(alpha, epsilon)
-        muprime = self.mu * alpha_perp / (alpha_par * (1.0 + self.mu ** 2 * ((alpha_perp / alpha_par) ** 2 - 1.0)) ** (1.0 / 2.0))
+        musq = self.mu ** 2
+        muprime = self.mu / np.sqrt(musq + (1.0 + epsilon) ** 6 * (1.0 - musq))
         return muprime
 
     def compute_power_spectrum(self, k, p, smooth=False, shape=True):
@@ -167,7 +168,7 @@ class PowerSpectrumFit(Model):
             kprime = k / p["alpha"]
         else:
             kprime = self.get_kprime(p["alpha"], p["epsilon"])
-            muprime = self.get_muprime(p["alpha"], p["epsilon"])
+            muprime = self.get_muprime(p["epsilon"])
 
         if smooth:
             pkprime = p["b"] ** 2 * splev(kprime, splrep(ks, pk_smooth))

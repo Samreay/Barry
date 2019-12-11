@@ -115,7 +115,7 @@ class PowerBeutler2017(PowerSpectrumFit):
         else:
             if dilate:
                 kprime = self.get_kprime(k, p["alpha"], p["epsilon"])
-                muprime = self.get_muprime(p["alpha"], p["epsilon"])
+                muprime = self.get_muprime(p["epsilon"])
             else:
                 kprime = np.tile(k, (self.nmu, 1))
                 muprime = self.mu
