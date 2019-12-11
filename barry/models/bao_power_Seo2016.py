@@ -178,7 +178,7 @@ class PowerSeo2016(PowerSpectrumFit):
             pk2 = None
 
         else:
-
+            # TODO: Implement 2D Seo 2016 and neaten up overlap (rather than one big if statement)
             NotImplementedError("2D Seo2016 model not yet implemented")
 
         return kprime, pk0, pk2

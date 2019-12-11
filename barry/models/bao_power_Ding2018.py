@@ -158,7 +158,7 @@ class PowerDing2018(PowerSpectrumFit):
             pk2 = None
 
         else:
-
+            # TODO: Implement 2D Ding 2018 and neaten up overlap (rather than one big if statement)
             NotImplementedError("2D Ding2018 model not yet implemented")
 
         return kprime, pk0, pk2

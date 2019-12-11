@@ -265,19 +265,18 @@ class PowerSpectrumFit(Model):
 
         ks, pk0, pk2 = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth)
 
-        if self.isotropic:
-            pk_generated = pk0
-        else:
-            pk_generated = np.concatenate([splev(d["ks_input"], splrep(ks, pk0)), splev(d["ks_input"], splrep(ks, pk2))])
-
         # Morph it into a model representative of our survey and its selection/window/binning effects
         # TODO: Make this window function convolution work for non-isotropic cases
-        pk_model, mask = self.adjust_model_window_effects(pk_generated, d)
-
-        if self.postprocess is not None:
-            pk_model = self.postprocess(ks=d["ks_output"], pk=pk_model, mask=mask)
+        if self.isotropic:
+            pk_model, mask = self.adjust_model_window_effects(pk0, d)
+            if self.postprocess is not None:
+                pk_model = self.postprocess(ks=d["ks_output"], pk=pk_model, mask=mask)
+            else:
+                pk_model = pk_model[mask]
         else:
-            pk_model = pk_model[mask]
+            pk_generated = np.concatenate([pk0, pk2])
+            NotImplementedError("Anisotropic window function nof yet implemented")
+
         return pk_model
 
     def plot(self, params, smooth_params=None):

@@ -282,8 +282,8 @@ class PowerNoda2019(PowerSpectrumFit):
             pk2 = None
 
         else:
-
-            NotImplementedError("2D Seo2016 model not yet implemented")
+            # TODO: Implement 2D Seo 2019 and neaten up overlap (rather than one big if statement)
+            NotImplementedError("2D Noda2019 model not yet implemented")
 
         return kprime, pk0, pk2
 
@@ -299,6 +299,8 @@ if __name__ == "__main__":
     setup_logging()
 
     postprocess = BAOExtractor(147.6)
+
+    # TODO: Make sanity check make sense for BAOEXtracted measurements. Plot is not really useful.
 
     print("Checking pre-recon")
     dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=False, postprocess=postprocess)
