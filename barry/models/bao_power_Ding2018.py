@@ -4,6 +4,7 @@ import numpy as np
 from scipy import integrate
 from scipy.special import jn
 from barry.models.bao_power import PowerSpectrumFit
+from scipy.interpolate import splev, splrep
 
 
 class PowerDing2018(PowerSpectrumFit):
@@ -13,10 +14,22 @@ class PowerDing2018(PowerSpectrumFit):
 
     """
 
-    def __init__(self, name="Pk Ding 2018", fix_params=("om", "f"), smooth_type="hinton2017", recon=False, postprocess=None, smooth=False, correction=None):
+    def __init__(
+        self,
+        name="Pk Ding 2018",
+        fix_params=("om", "f"),
+        smooth_type="hinton2017",
+        recon=False,
+        postprocess=None,
+        smooth=False,
+        correction=None,
+        isotropic=True,
+    ):
         self.recon = recon
         self.recon_smoothing_scale = None
-        super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction)
+        super().__init__(
+            name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction, isotropic=isotropic
+        )
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
@@ -64,26 +77,32 @@ class PowerDing2018(PowerSpectrumFit):
         self.add_param("a4", r"$a_4$", -200.0, 200.0, 0)  # Polynomial marginalisation 4
         self.add_param("a5", r"$a_5$", -3.0, 3.0, 0)  # Polynomial marginalisation 5
 
-    def compute_power_spectrum(self, p, smooth=False, shape=True):
+    def compute_power_spectrum(self, k, p, smooth=False, shape=True):
         """ Computes the power spectrum model using the Ding et. al., 2018 EFT0 model
-        
+
         Parameters
         ----------
+        k : array
+            Array of (undilated) k-values to compute the model at.
         p : dict
             dictionary of parameter names to their values
         smooth : bool, optional
-            Whether or not to return a smooth pk without BAO feature
+            Whether or not to generate a smooth model without the BAO feature
         shape : bool, optional
-            Whether or not to add in shape terms
+            Whether or not to include shape marginalisation terms.
+
 
         Returns
         -------
-        ks : np.ndarray
-            Wavenumbers of the computed pk
-        pk_1d : np.ndarray
-            the ratio (pk_lin / pk_smooth - 1.0),  NOT interpolated to k/alpha.
-        
+        kprime : np.ndarray
+            Dilated wavenumbers of the computed pk
+        pk0 : np.ndarray
+            the model monopole interpolated using the dilation scales.
+        pk2 : np.ndarray
+            the model quadrupole interpolated using the dilation scales. Will be 'None' if the model is isotropic
+
         """
+
         # Get the basic power spectrum components
         ks = self.camb.ks
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
@@ -91,47 +110,58 @@ class PowerDing2018(PowerSpectrumFit):
         # Compute the growth rate depending on what we have left as free parameters
         growth = p["f"]
 
-        # Compute the smooth model
-        fog = 1.0 / (1.0 + np.outer(self.mu ** 2, ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
-        pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
+        if self.isotropic:
+            # Compute the smooth model
+            fog = 1.0 / (1.0 + np.outer(self.mu ** 2, ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
+            pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
 
-        # Polynomial shape
-        if shape:
-            if self.recon:
-                shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
+            # Polynomial shape
+            if shape:
+                if self.recon:
+                    shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
+                else:
+                    shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
             else:
-                shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
-        else:
-            shape = 0  # Its vectorised, don't worry
+                shape = 0  # Its vectorised, don't worry
 
-        if smooth:
-            pk1d = integrate.simps((pk_smooth + shape), self.mu, axis=0)
-        else:
-            # Lets round some things for the sake of numerical speed
-            om = np.round(p["om"], decimals=5)
-            growth = np.round(growth, decimals=5)
-
-            # Compute the BAO damping
-            if self.recon:
-                damping_dd = self.get_damping_dd(growth, om)
-                damping_sd = self.get_damping_sd(growth, om)
-                damping_ss = self.get_damping_ss(om)
-
-                smooth_prefac = np.tile(self.camb.smoothing_kernel / p["b"], (self.nmu, 1))
-                bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
-                kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel) + bdelta_prefac
-                propagator = (
-                    (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping_dd + 2.0 * kaiser_prefac * smooth_prefac * damping_sd + smooth_prefac ** 2 * damping_ss
-                )
+            if smooth:
+                pk1d = integrate.simps((pk_smooth + shape), self.mu, axis=0)
             else:
-                damping = self.get_damping(growth, om)
-                bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
-                kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T + bdelta_prefac
-                propagator = (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping
+                # Lets round some things for the sake of numerical speed
+                om = np.round(p["om"], decimals=5)
+                growth = np.round(growth, decimals=5)
 
-            pk1d = integrate.simps((pk_smooth + shape) * (1.0 + pk_ratio * propagator), self.mu, axis=0)
+                # Compute the BAO damping
+                if self.recon:
+                    damping_dd = self.get_damping_dd(growth, om)
+                    damping_sd = self.get_damping_sd(growth, om)
+                    damping_ss = self.get_damping_ss(om)
 
-        return ks, pk1d
+                    smooth_prefac = np.tile(self.camb.smoothing_kernel / p["b"], (self.nmu, 1))
+                    bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
+                    kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel) + bdelta_prefac
+                    propagator = (
+                        (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping_dd
+                        + 2.0 * kaiser_prefac * smooth_prefac * damping_sd
+                        + smooth_prefac ** 2 * damping_ss
+                    )
+                else:
+                    damping = self.get_damping(growth, om)
+                    bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
+                    kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T + bdelta_prefac
+                    propagator = (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping
+
+                pk1d = integrate.simps((pk_smooth + shape) * (1.0 + pk_ratio * propagator), self.mu, axis=0)
+
+                kprime = k / p["alpha"]
+                pk0 = splev(kprime, splrep(ks, pk1d))
+                pk2 = None
+
+        else:
+
+            NotImplementedError("2D Ding2018 model not yet implemented")
+
+        return kprime, pk0, pk2
 
 
 if __name__ == "__main__":

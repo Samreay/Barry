@@ -46,11 +46,13 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param("a2_4", r"$a2_4$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
             self.add_param("a2_5", r"$a2_5$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
 
-    def compute_power_spectrum(self, p, smooth=False, shape=True):
+    def compute_power_spectrum(self, k, p, smooth=False, shape=True):
         """ Computes the power spectrum multipoles for the Beutler et. al., 2017 model at dilated k values
 
         Parameters
         ----------
+        k : array
+            Array of (undilated) k-values to compute the model at.
         p : dict
             dictionary of parameter names to their values
         smooth : bool, optional
@@ -61,8 +63,8 @@ class PowerBeutler2017(PowerSpectrumFit):
 
         Returns
         -------
-        ks : np.ndarray
-            Wavenumbers of the computed pk
+        kprime : np.ndarray
+            Dilated wavenumbers of the computed pk
         pk0 : np.ndarray
             the model monopole interpolated using the dilation scales.
         pk2 : np.ndarray
@@ -92,13 +94,13 @@ class PowerBeutler2017(PowerSpectrumFit):
             else:
                 shape = 0
 
-            kprime = ks / p["alpha"]
+            kprime = k / p["alpha"]
 
             if smooth:
                 pk0 = splev(kprime, splrep(ks, pk_smooth + shape))
             else:
                 # Compute the propagator
-                C = np.exp(-0.5 * kprime ** 2 * p["sigma_nl"] ** 2)
+                C = np.exp(-0.5 * ks ** 2 * p["sigma_nl"] ** 2)
                 pk0 = splev(kprime, splrep(ks, (pk_smooth + shape) * (1.0 + pk_ratio * C)))
 
             pk2 = None
@@ -134,7 +136,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             pk0 += shape0
             pk2 += shape2
 
-        return ks, pk0, pk2
+        return kprime, pk0, pk2
 
 
 if __name__ == "__main__":
