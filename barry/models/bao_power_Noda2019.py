@@ -277,9 +277,9 @@ class PowerNoda2019(PowerSpectrumFit):
                 propagator = self.get_damping(growth, om, gamma)
                 pk1d = integrate.simps(pk_smooth * ((1.0 + pk_ratio * propagator) * kaiser_prefac ** 2 + pk_nonlinear), self.mu, axis=0)
 
-                kprime = k / p["alpha"]
-                pk0 = splev(kprime, splrep(ks, pk1d))
-                pk2 = None
+            kprime = k / p["alpha"]
+            pk0 = splev(kprime, splrep(ks, pk1d))
+            pk2 = None
 
         else:
 

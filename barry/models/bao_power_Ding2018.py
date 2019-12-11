@@ -153,9 +153,9 @@ class PowerDing2018(PowerSpectrumFit):
 
                 pk1d = integrate.simps((pk_smooth + shape) * (1.0 + pk_ratio * propagator), self.mu, axis=0)
 
-                kprime = k / p["alpha"]
-                pk0 = splev(kprime, splrep(ks, pk1d))
-                pk2 = None
+            kprime = k / p["alpha"]
+            pk0 = splev(kprime, splrep(ks, pk1d))
+            pk2 = None
 
         else:
 
