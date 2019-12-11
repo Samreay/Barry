@@ -101,8 +101,6 @@ class PowerSpectrumFit(Model):
 
         Parameters
         ----------
-        alpha : float
-            The isotropic dilation scale
         epsilon: float
             The anisotropic warping
 
@@ -114,17 +112,15 @@ class PowerSpectrumFit(Model):
         """
         musq = self.mu ** 2
         epsilonsq = (1.0 + epsilon) ** 2
-        kprimefac = np.sqrt(musq / epsilonsq ** 2 + epsilonsq * (1.0 - musq))
+        kprimefac = np.sqrt(musq / epsilonsq ** 2 + (1.0 - musq) * epsilonsq)
         return kprimefac
 
     @lru_cache(maxsize=32)
     def get_muprime(self, epsilon):
-        """ Computes dilated values of mu given input values of epsilon
+        """ Computes dilated values of mu given input values of epsilon for the power spectrum
 
         Parameters
         ----------
-        alpha : float
-            The isotropic dilation scale
         epsilon: float
             The anisotropic warping
 
