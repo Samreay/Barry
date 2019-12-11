@@ -70,6 +70,8 @@ class PowerBeutler2017(PowerSpectrumFit):
             the model monopole interpolated to kprime.
         pk2 : np.ndarray
             the model quadrupole interpolated to kprime. Will be 'None' if the model is isotropic
+        pk4 : np.ndarray
+            the model hexadecapole interpolated to kprime. Will be 'None' if the model is isotropic
 
         """
 
@@ -108,6 +110,7 @@ class PowerBeutler2017(PowerSpectrumFit):
                 pk0 = splev(kprime, splrep(ks, (pk_smooth + shape) * (1.0 + pk_ratio * C)))
 
             pk2 = None
+            pk4 = None
 
         else:
             if dilate:
@@ -120,31 +123,31 @@ class PowerBeutler2017(PowerSpectrumFit):
 
             fog = 1.0 / (1.0 + muprime ** 2 * kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
             kaiser_prefac = (p["b"] ** 2 + p["f"] * muprime ** 2 * (1.0 - sprime)) ** 2
-            pk_smooth = kaiser_prefac * pk_smooth_lin * fog
+            pk_smooth = kaiser_prefac * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
 
             # Compute the propagator
             C = np.exp(-0.5 * kprime ** 2 * (muprime ** 2 * p["sigma_nl_par"] ** 2 + (1.0 - muprime ** 2) * p["sigma_nl_perp"] ** 2))
-            pk2d = pk_smooth * (1.0 + pk_ratio * C)
-
-            pk0 = integrate.simps(pk2d, self.mu, axis=1)
-            pk2 = 2.5 * (3.0 * integrate.simps(pk2d * self.mu ** 2, self.mu, axis=1) - pk0)
+            pk2d = pk_smooth * (1.0 + splev(kprime, splrep(ks, pk_ratio)) * C)
 
             # Polynomial shape
             if shape:
                 if self.recon:
-                    shape0 = p["a0_1"] * ks ** 2 + p["a0_2"] + p["a0_3"] / ks + p["a0_4"] / (ks * ks) + p["a0_5"] / (ks ** 3)
-                    shape2 = p["a2_1"] * ks ** 2 + p["a2_2"] + p["a2_3"] / ks + p["a2_4"] / (ks * ks) + p["a2_5"] / (ks ** 3)
+                    shape0 = p["a0_1"] * k ** 2 + p["a0_2"] + p["a0_3"] / k + p["a0_4"] / (k * k) + p["a0_5"] / (k ** 3)
+                    shape2 = p["a2_1"] * k ** 2 + p["a2_2"] + p["a2_3"] / k + p["a2_4"] / (k * k) + p["a2_5"] / (k ** 3)
                 else:
-                    shape0 = p["a0_1"] * ks + p["a0_2"] + p["a0_3"] / ks + p["a0_4"] / (ks * ks) + p["a0_5"] / (ks ** 3)
-                    shape2 = p["a2_1"] * ks + p["a2_2"] + p["a2_3"] / ks + p["a2_4"] / (ks * ks) + p["a2_5"] / (ks ** 3)
+                    shape0 = p["a0_1"] * k + p["a0_2"] + p["a0_3"] / k + p["a0_4"] / (k * k) + p["a0_5"] / (k ** 3)
+                    shape2 = p["a2_1"] * k + p["a2_2"] + p["a2_3"] / k + p["a2_4"] / (k * k) + p["a2_5"] / (k ** 3)
             else:
                 shape0 = 0
                 shape2 = 0
 
-            pk0 += shape0
-            pk2 += shape2
+            pk0 = integrate.simps(pk2d, self.mu, axis=1)
+            pk2 = 3.0 * integrate.simps(pk2d * self.mu ** 2, self.mu, axis=1)
+            pk4 = 1.125 * (35.0 * integrate.simps(pk2d * self.mu ** 4, self.mu, axis=1) - 10.0 * pk2 + 3.0 * pk0)
+            pk2 = 2.5 * (pk2 - pk0) + shape2
+            pk0 = pk0 + shape0
 
-        return kprime, pk0, pk2
+        return kprime, pk0, pk2, pk4
 
 
 if __name__ == "__main__":

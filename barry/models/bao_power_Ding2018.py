@@ -101,6 +101,9 @@ class PowerDing2018(PowerSpectrumFit):
             the model monopole interpolated to kprime.
         pk2 : np.ndarray
             the model quadrupole interpolated to kprime. Will be 'None' if the model is isotropic
+        pk4 : np.ndarray
+            the model hexadecapole interpolated to kprime. Will be 'None' if the model is isotropic
+
         """
 
         # Get the basic power spectrum components
@@ -160,12 +163,13 @@ class PowerDing2018(PowerSpectrumFit):
 
             pk0 = splev(kprime, splrep(ks, pk1d))
             pk2 = None
+            pk4 = None
 
         else:
             # TODO: Implement 2D Ding 2018 and neaten up overlap (rather than one big if statement)
             NotImplementedError("2D Ding2018 model not yet implemented")
 
-        return kprime, pk0, pk2
+        return kprime, pk0, pk2, pk4
 
 
 if __name__ == "__main__":

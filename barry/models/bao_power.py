@@ -178,14 +178,19 @@ class PowerSpectrumFit(Model):
         if self.isotropic:
             pk0 = pkprime
             pk2 = None
+            pk4 = None
         else:
             growth = p["f"]
             s = self.camb.smoothing_kernel
             kaiser_prefac = 1.0 + growth / p["b"] * np.outer(1.0 - s, muprime ** 2)
-            pk0 = integrate.simps(kaiser_prefac ** 2 * pkprime, self.mu, axis=1)
-            pk2 = 2.5 * (3.0 * integrate.simps(kaiser_prefac ** 2 * pkprime * self.mu ** 2, self.mu, axis=1) - pk0)
+            pk2d = kaiser_prefac * pkprime
 
-        return kprime, pk0, pk2
+            pk0 = integrate.simps(pk2d, self.mu, axis=1)
+            pk2 = 3.0 * integrate.simps(pk2d * self.mu ** 2, self.mu, axis=1)
+            pk4 = 1.125 * (35.0 * integrate.simps(pk2d * self.mu ** 4, self.mu, axis=1) - 10.0 * pk2 + 3.0 * pk0)
+            pk2 = 2.5 * (pk2 - pk0)
+
+        return kprime, pk0, pk2, pk4
 
     def adjust_model_window_effects(self, pk_generated, data):
         """ Take the window effects into account.
