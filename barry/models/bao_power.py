@@ -266,7 +266,7 @@ class PowerSpectrumFit(Model):
 
         """
 
-        ks, pk0, pk2 = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth)
+        ks, pk0, pk2, pk4 = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth)
 
         # Morph it into a model representative of our survey and its selection/window/binning effects
         # TODO: Make this window function convolution work for non-isotropic cases
