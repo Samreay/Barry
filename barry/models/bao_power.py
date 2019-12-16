@@ -284,7 +284,7 @@ class PowerSpectrumFit(Model):
                 pk_model = pk_model[mask]
         else:
             pk_generated = np.concatenate([pk0, pk2])
-            NotImplementedError("Anisotropic window function nof yet implemented")
+            raise NotImplementedError("Anisotropic window function nof yet implemented")
 
         return pk_model
 

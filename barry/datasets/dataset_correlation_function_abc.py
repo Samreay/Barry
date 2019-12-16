@@ -10,7 +10,7 @@ from barry.datasets.dataset import Dataset
 
 
 class CorrelationFunction(Dataset, ABC):
-    def __init__(self, filename, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None, isotropic=False):
+    def __init__(self, filename, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, num_mocks=None, realisation=None, isotropic=False):
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + f"/../data/{filename}")
         self.min_dist = min_dist
@@ -29,6 +29,13 @@ class CorrelationFunction(Dataset, ABC):
         if self.reduce_cov_factor == -1:
             self.reduce_cov_factor = len(self.all_data)
             self.logger.info(f"Setting reduce_cov_factor to {self.reduce_cov_factor}")
+
+        # Some data is just a single set of measurements and a covariance matrix so the number of mocks must be specified
+        # Otherwise we can work out how many mocks by counting the number of data vectors.
+        if num_mocks is None:
+            self.num_mocks = len(self.all_data)
+        else:
+            self.num_mocks = num_mocks
 
         self.cov, self.icov, self.data, self.mask = None, None, None, None
         self.set_realisation(realisation)
@@ -76,13 +83,18 @@ class CorrelationFunction(Dataset, ABC):
             "icov": self.icov,
             "name": self.name,
             "cosmology": self.cosmology,
-            "num_mocks": len(self.all_data),
+            "num_mocks": self.num_mocks,
             "isotropic": self.isotropic,
         }
+
         # Some data has xi0 some has xi0+xi2
         d.update({"xi0": self.data[:, 1]})
-        if not self.isotropic:
+        if self.isotropic:
+            d.update({"xi": self.data[:, 1]})
+        else:
+            d.update({"xi": np.concatenate([self.data[:, 1], self.data[:, 2]])})
             d.update({"xi2": self.data[:, 2]})
+
         return [d]
 
 

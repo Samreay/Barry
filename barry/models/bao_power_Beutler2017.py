@@ -33,6 +33,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param("a4", r"$a_4$", -200.0, 200.0, 0)  # Polynomial marginalisation 4
             self.add_param("a5", r"$a_5$", -3.0, 3.0, 0)  # Polynomial marginalisation 5
         else:
+            self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure
             self.add_param("sigma_nl_par", r"$\Sigma_{nl,||}$", 0.01, 20.0, 10.0)  # BAO damping parallel to LOS
             self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.01, 20.0, 10.0)  # BAO damping perpendicular to LOS
             self.add_param("a0_1", r"$a0_1$", -10000.0, 30000.0, 0)  # Monopole Polynomial marginalisation 1
@@ -46,7 +47,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param("a2_4", r"$a2_4$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
             self.add_param("a2_5", r"$a2_5$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
 
-    def compute_power_spectrum(self, k, p, smooth=False, shape=True, dilate=True):
+    def compute_power_spectrum(self, k, p, smooth=False):
         """ Computes the power spectrum model using the Beutler et. al., 2017 method
 
         Parameters
@@ -57,10 +58,6 @@ class PowerBeutler2017(PowerSpectrumFit):
             dictionary of parameter names to their values
         smooth : bool, optional
             Whether or not to generate a smooth model without the BAO feature
-        shape : bool, optional
-            Whether or not to include shape marginalisation terms.
-        dilate : bool, optional
-            Whether or not to dilate the k-values of the model based on the values of alpha (and epsilon)
 
         Returns
         -------
@@ -85,22 +82,13 @@ class PowerBeutler2017(PowerSpectrumFit):
         # need one interpolation for the whole isotropic monopole, rather than separately for the smooth and wiggle components)
 
         if self.isotropic:
+            kprime = k / p["alpha"]
             fog = 1.0 / (1.0 + ks ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
-            pk_smooth = p["b"] * pk_smooth_lin * fog
-
-            # Polynomial shape
-            if shape:
-                if self.recon:
-                    shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
-                else:
-                    shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
+            pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
+            if self.recon:
+                shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
             else:
-                shape = 0
-
-            if dilate:
-                kprime = k / p["alpha"]
-            else:
-                kprime = k
+                shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
 
             if smooth:
                 pk0 = splev(kprime, splrep(ks, pk_smooth + shape))
@@ -113,34 +101,24 @@ class PowerBeutler2017(PowerSpectrumFit):
             pk4 = None
 
         else:
-            if dilate:
-                epsilon = np.round(p["epsilon"], decimals=5)
-                kprime = np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
-                muprime = self.get_muprime(epsilon)
-            else:
-                kprime = np.tile(k, (self.nmu, 1))
-                muprime = self.mu
-            sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel))
-
+            epsilon = np.round(p["epsilon"], decimals=5)
+            kprime = np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
+            muprime = self.get_muprime(epsilon)
             fog = 1.0 / (1.0 + muprime ** 2 * kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
-            kaiser_prefac = (p["b"] ** 2 + p["f"] * muprime ** 2 * (1.0 - sprime)) ** 2
-            pk_smooth = kaiser_prefac * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+            kaiser_prefac = p["b"] + p["f"] * muprime ** 2 * (1.0 - splev(kprime, splrep(ks, self.camb.smoothing_kernel)))
+            pk_smooth = kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
 
             # Compute the propagator
             C = np.exp(-0.5 * kprime ** 2 * (muprime ** 2 * p["sigma_nl_par"] ** 2 + (1.0 - muprime ** 2) * p["sigma_nl_perp"] ** 2))
             pk2d = pk_smooth * (1.0 + splev(kprime, splrep(ks, pk_ratio)) * C)
 
             # Polynomial shape
-            if shape:
-                if self.recon:
-                    shape0 = p["a0_1"] * k ** 2 + p["a0_2"] + p["a0_3"] / k + p["a0_4"] / (k * k) + p["a0_5"] / (k ** 3)
-                    shape2 = p["a2_1"] * k ** 2 + p["a2_2"] + p["a2_3"] / k + p["a2_4"] / (k * k) + p["a2_5"] / (k ** 3)
-                else:
-                    shape0 = p["a0_1"] * k + p["a0_2"] + p["a0_3"] / k + p["a0_4"] / (k * k) + p["a0_5"] / (k ** 3)
-                    shape2 = p["a2_1"] * k + p["a2_2"] + p["a2_3"] / k + p["a2_4"] / (k * k) + p["a2_5"] / (k ** 3)
+            if self.recon:
+                shape0 = p["a0_1"] * k ** 2 + p["a0_2"] + p["a0_3"] / k + p["a0_4"] / (k * k) + p["a0_5"] / (k ** 3)
+                shape2 = p["a2_1"] * k ** 2 + p["a2_2"] + p["a2_3"] / k + p["a2_4"] / (k * k) + p["a2_5"] / (k ** 3)
             else:
-                shape0 = 0
-                shape2 = 0
+                shape0 = p["a0_1"] * k + p["a0_2"] + p["a0_3"] / k + p["a0_4"] / (k * k) + p["a0_5"] / (k ** 3)
+                shape2 = p["a2_1"] * k + p["a2_2"] + p["a2_3"] / k + p["a2_4"] / (k * k) + p["a2_5"] / (k ** 3)
 
             pk0 = integrate.simps(pk2d, self.mu, axis=1)
             pk2 = 3.0 * integrate.simps(pk2d * self.mu ** 2, self.mu, axis=1)

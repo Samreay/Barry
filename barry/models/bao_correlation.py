@@ -47,6 +47,9 @@ class CorrelationFunctionFit(Model):
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
+        self.pk2xi_0 = None
+        self.pk2xi_2 = None
+        self.pk2xi_4 = None
 
     def set_data(self, data):
         """ Sets the models data, including fetching the right cosmology and PT generator.
@@ -61,8 +64,8 @@ class CorrelationFunctionFit(Model):
         """
         super().set_data(data)
         self.pk2xi_0 = PowerToCorrelationGauss(self.camb.ks, ell=0)
-        self.pk2xi_2 = PowerToCorrelationGauss(self.camb.ks, ell=0)
-        self.pk2xi_4 = PowerToCorrelationGauss(self.camb.ks, ell=0)
+        self.pk2xi_2 = PowerToCorrelationGauss(self.camb.ks, ell=2)
+        self.pk2xi_4 = PowerToCorrelationGauss(self.camb.ks, ell=4)
 
     def declare_parameters(self):
         """ Defines model parameters, their bounds and default value. """
@@ -70,7 +73,7 @@ class CorrelationFunctionFit(Model):
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch for monopole
         self.add_param("b0", r"$b0$", 0.01, 10.0, 1.0)  # Linear galaxy bias for monopole
         if not self.isotropic:
-            self.add_param("epsilon", r"$\epsilon$", 0.8, 1.2, 1.0)  # Stretch for multipoles
+            self.add_param("epsilon", r"$\epsilon$", -0.2, 0.2, 0.0)  # Stretch for multipoles
             self.add_param("b2", r"$b2$", 0.01, 10.0, 1.0)  # Linear galaxy bias for quadrupole
 
     @lru_cache(maxsize=1024)
@@ -165,15 +168,19 @@ class CorrelationFunctionFit(Model):
         ----------
         dist : np.ndarray
             Array of distances in the correlation function to compute
-        params : dict
+        p : dict
             dictionary of parameter name to float value pairs
         smooth : bool, optional
             Whether or not to generate a smooth model without the BAO feature
 
         Returns
         -------
-        xi(dist) : np.ndarray
-            The correlation function power at the requested distances.
+        sprime : np.ndarray
+            distances of the computed xi
+        xi0 : np.ndarray
+            the model monopole interpolated to sprime.
+        xi2 : np.ndarray
+            the model quadrupole interpolated to sprime. Will be 'None' if the model is isotropic
 
         """
         # Generate the power spectrum multipoles at the undilated k-values without shape additions
@@ -224,7 +231,12 @@ class CorrelationFunctionFit(Model):
 
         dist, xi0, xi2 = self.compute_correlation_function(data["dist"], p, smooth=smooth)
 
-        return np.concatenate([xi0, xi2])
+        if self.isotropic:
+            xi_model = xi0
+        else:
+            xi_model = np.concatenate([xi0, xi2])
+
+        return xi_model
 
     def get_likelihood(self, p, d):
         """ Uses the stated likelihood correction and `get_model` to compute the likelihood
@@ -245,7 +257,7 @@ class CorrelationFunctionFit(Model):
 
         xi_model = self.get_model(p, d, smooth=self.smooth)
 
-        diff = d["xi0"] - xi_model
+        diff = d["xi"] - xi_model
         num_mocks = d["num_mocks"]
         num_params = len(self.get_active_params())
         return self.get_chi2_likelihood(diff, d["icov"], num_mocks=num_mocks, num_params=num_params)
@@ -254,14 +266,22 @@ class CorrelationFunctionFit(Model):
         import matplotlib.pyplot as plt
 
         ss = self.data[0]["dist"]
-        xi = self.data[0]["xi0"]
-        err = np.sqrt(np.diag(self.data[0]["cov"]))
-        xi2 = self.get_model(params, self.data[0])
+        xi0 = self.data[0]["xi0"]
+        xi0err = np.sqrt(np.diag(self.data[0]["cov"])[0 : len(ss)])
+        xi0mod = self.get_model(params, self.data[0])[0 : len(ss)]
+        if not self.isotropic:
+            xi2 = self.data[0]["xi2"]
+            xi2err = np.sqrt(np.diag(self.data[0]["cov"])[len(ss) :])
+            xi2mod = self.get_model(params, self.data[0])[len(ss) :]
 
         if smooth_params is not None:
-            smooth = self.get_model(smooth_params, self.data[0], smooth=True)
+            xi0smooth = self.get_model(smooth_params, self.data[0], smooth=True)[: len(ss)]
+            if not self.isotropic:
+                xi2smooth = self.get_model(smooth_params, self.data[0], smooth=True)[len(ss) :]
         else:
-            smooth = self.get_model(params, self.data[0], smooth=True)
+            xi0smooth = self.get_model(params, self.data[0], smooth=True)[: len(ss)]
+            if not self.isotropic:
+                xi2smooth = self.get_model(params, self.data[0], smooth=True)[len(ss) :]
 
         def adj(data, err=False):
             if err:
@@ -271,11 +291,18 @@ class CorrelationFunctionFit(Model):
 
         fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
 
-        axes[0].errorbar(ss, ss * ss * xi, yerr=ss * ss * err, fmt="o", c="k", ms=4, label=self.data[0]["name"])
-        axes[1].errorbar(ss, adj(xi), yerr=adj(err, err=True), fmt="o", c="k", ms=4, label=self.data[0]["name"])
+        axes[0].errorbar(ss, ss * ss * xi0, yerr=ss * ss * xi0err, fmt="o", c="r", ms=4, label=self.data[0]["name"])
+        axes[1].errorbar(ss, xi0 - xi0smooth, yerr=xi0err, fmt="o", c="r", ms=4, label=self.data[0]["name"])
 
-        axes[0].plot(ss, ss * ss * xi2, label=self.get_name())
-        axes[1].plot(ss, adj(xi2), label=self.get_name())
+        axes[0].plot(ss, ss * ss * xi0mod, color="r", label=self.get_name())
+        axes[1].plot(ss, xi0mod - xi0smooth, color="r", label=self.get_name())
+
+        if not self.isotropic:
+            axes[0].errorbar(ss, ss * ss * xi2, yerr=ss * ss * xi2err, fmt="o", c="b", ms=4, label=self.data[0]["name"])
+            axes[1].errorbar(ss, xi2 - xi2smooth, yerr=xi2err, fmt="o", c="b", ms=4, label=self.data[0]["name"])
+
+            axes[0].plot(ss, ss * ss * xi2mod, color="b", label=self.get_name())
+            axes[1].plot(ss, xi2mod - xi2smooth, color="b", label=self.get_name())
 
         string = f"Likelihood: {self.get_likelihood(params, self.data[0]):0.2f}\n"
         string += "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params.items()])

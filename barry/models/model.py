@@ -80,7 +80,7 @@ class Model(ABC):
         self.param_dict = {}
         self.postprocess = postprocess
         if postprocess is not None and not self.isotropic:
-            NotImplementedError("Postprocessing (i.e., BAOExtractor) not implemented for anisotropic fits")
+            raise NotImplementedError("Postprocessing (i.e., BAOExtractor) not implemented for anisotropic fits")
         if correction is None:
             correction = Correction.SELLENTIN
         self.correction = correction

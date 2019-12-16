@@ -20,9 +20,11 @@ class CorrelationFunction_SDSS_DR12_Z061_NGC(CorrelationFunction):
 
 
 class CorrelationFunction_ROSS_DR12_Z038(CorrelationFunction):
-    """ Correlation function for SDSS BOSS DR12 sample for the NGC with mean redshift z = 0.61    """
+    """ Anisotropic Correlation function for SDSS BOSS DR12 sample from Ross 2017 with mean redshift z = 0.38    """
 
-    def __init__(self, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None, isotropic=False):
+    def __init__(self, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None, isotropic=True):
+        if not recon:
+            raise NotImplementedError("Pre-recon data not available for ROSS_DR12_Z038")
         super().__init__(
             "ross_2016_dr12_combined_corr_zbin0p38.pkl",
             name=name,
@@ -30,15 +32,18 @@ class CorrelationFunction_ROSS_DR12_Z038(CorrelationFunction):
             max_dist=max_dist,
             recon=recon,
             reduce_cov_factor=reduce_cov_factor,
+            num_mocks=1000,
             realisation=realisation,
             isotropic=isotropic,
         )
 
 
 class CorrelationFunction_ROSS_DR12_Z051(CorrelationFunction):
-    """ Correlation function for SDSS BOSS DR12 sample for the NGC with mean redshift z = 0.61    """
+    """ Anisotropic Correlation function for SDSS BOSS DR12 sample from Ross 2017 with mean redshift z = 0.51    """
 
-    def __init__(self, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None, isotropic=False):
+    def __init__(self, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None, isotropic=True):
+        if not recon:
+            raise NotImplementedError("Pre-recon data not available for ROSS_DR12_Z051")
         super().__init__(
             "ross_2016_dr12_combined_corr_zbin0p51.pkl",
             name=name,
@@ -46,15 +51,18 @@ class CorrelationFunction_ROSS_DR12_Z051(CorrelationFunction):
             max_dist=max_dist,
             recon=recon,
             reduce_cov_factor=reduce_cov_factor,
+            num_mocks=1000,
             realisation=realisation,
             isotropic=isotropic,
         )
 
 
 class CorrelationFunction_ROSS_DR12_Z061(CorrelationFunction):
-    """ Correlation function for SDSS BOSS DR12 sample for the NGC with mean redshift z = 0.61    """
+    """ Anisotropic Correlation function for SDSS BOSS DR12 sample from Ross 2017 with mean redshift z = 0.61    """
 
-    def __init__(self, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None, isotropic=False):
+    def __init__(self, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None, isotropic=True):
+        if not recon:
+            raise NotImplementedError("Pre-recon data not available for ROSS_DR12_Z061")
         super().__init__(
             "ross_2016_dr12_combined_corr_zbin0p61.pkl",
             name=name,
@@ -62,6 +70,7 @@ class CorrelationFunction_ROSS_DR12_Z061(CorrelationFunction):
             max_dist=max_dist,
             recon=recon,
             reduce_cov_factor=reduce_cov_factor,
+            num_mocks=1000,
             realisation=realisation,
             isotropic=isotropic,
         )
