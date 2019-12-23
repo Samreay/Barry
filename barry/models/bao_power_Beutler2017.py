@@ -156,20 +156,20 @@ if __name__ == "__main__":
 
     print("Checking isotropic mock mean")
     dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True)
-    model_pre = PowerBeutler2017(isotropic=True)
+    model_pre = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
     model_pre.sanity_check(dataset)
 
     print("Checking isotropic data")
     dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True, realisation="data")
-    model_post = PowerBeutler2017(isotropic=True)
+    model_post = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
     model_post.sanity_check(dataset)
 
     print("Checking anisotropic mock mean")
     dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False)
-    model_post = PowerBeutler2017(isotropic=False)
+    model_post = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
     model_post.sanity_check(dataset)
 
     print("Checking anisotropic data")
     dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False, realisation="data")
-    model_post = PowerBeutler2017(isotropic=False)
+    model_post = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
     model_post.sanity_check(dataset)

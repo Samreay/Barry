@@ -84,7 +84,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
             if self.recon:
                 kaiser_prefac = 1.0 + np.outer(p["f"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel)
             else:
-                kaiser_prefac = 1.0 + np.outer(p["f"] * self.mu ** 2)
+                kaiser_prefac = 1.0 + np.tile(p["f"] * self.mu ** 2, (len(ks), 1)).T
             pk_smooth = kaiser_prefac ** 2 * pk_smooth_lin * fog
 
             # Compute the propagator
@@ -132,10 +132,10 @@ if __name__ == "__main__":
 
     print("Checking isotropic")
     dataset = CorrelationFunction_ROSS_DR12_Z061(isotropic=True)
-    model_iso = CorrBeutler2017()
+    model_iso = CorrBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
     model_iso.sanity_check(dataset)
 
     print("Checking anisotropic")
     dataset = CorrelationFunction_ROSS_DR12_Z061(isotropic=False)
-    model_aniso = CorrBeutler2017(isotropic=False)
+    model_aniso = CorrBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
     model_aniso.sanity_check(dataset)
