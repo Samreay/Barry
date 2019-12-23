@@ -47,7 +47,7 @@ class PowerSpectrumFit(Model):
         """ Defines model parameters, their bounds and default value. """
         self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.31)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch for monopole
-        self.add_param("b", r"$b$", 0.1, 12.5, 1.73)  # bias (applied to 2D power, so same for all multipoles)
+        self.add_param("b", r"$b$", 0.1, 8.0, 1.73)  # bias (applied to 2D power, so same for all multipoles)
         if not self.isotropic:
             self.add_param("epsilon", r"$\epsilon$", -0.2, 0.2, 0.0)  # Stretch for multipoles
 
@@ -198,7 +198,7 @@ class PowerSpectrumFit(Model):
 
         return kprime, pk0, pk2, pk4
 
-    def adjust_model_window_effects(self, pk_generated, data):
+    def adjust_model_window_effects(self, pk_generated, data, window=True):
         """ Take the window effects into account.
 
         Parameters
@@ -220,12 +220,34 @@ class PowerSpectrumFit(Model):
             post processing we want to take the powers outside the mask into account
             and *then* mask.
         """
-        p0 = np.sum(data["w_scale"] * pk_generated)
-        integral_constraint = data["w_pk"] * p0
 
-        pk_convolved = np.atleast_2d(pk_generated) @ data["w_transform"]
-        pk_normalised = (pk_convolved - integral_constraint).flatten()
-        # Get the subsection of our model which corresponds to the data k values
+        if self.isotropic:
+            # TODO: For isotropic, incorporate the integral constraint into the window function matrix when the data is pickled
+            # to make the window function correction more similar between this and anisotropic.
+            if window:
+                p0 = np.sum(data["w_scale"] * pk_generated)
+                integral_constraint = data["w_pk"] * p0
+
+                pk_convolved = np.atleast_2d(pk_generated) @ data["w_transform"]
+                pk_normalised = (pk_convolved - integral_constraint).flatten()
+            else:
+                pk_normalised = splev(data["ks_output"], splrep(data["ks_input"], pk_generated))
+
+        else:
+            # Multiply the model by the M matrix to get the 5 multipoles
+            pk_mod = data["m_transform"] @ pk_generated
+
+            if window:
+                # Convolve the model
+                pk_normalised = data["w_transform"] @ pk_mod
+            else:
+                pk_normalised = []
+                for i in range(5):
+                    pk_normalised.append(
+                        splev(data["ks_output"], splrep(data["ks_input"], pk_mod[i * len(data["ks_input"]) : (i + 1) * len(data["ks_input"])]))
+                    )
+                pk_normalised = np.array(pk_normalised).flatten()
+
         return pk_normalised, data["w_mask"]
 
     def get_likelihood(self, p, d):
@@ -245,9 +267,11 @@ class PowerSpectrumFit(Model):
             The corrected log likelihood
         """
         pk_model = self.get_model(p, d, smooth=self.smooth)
+        pk_model_fit = np.concatenate([pk_model[: len(d["ks"])], pk_model[2 * len(d["ks"]) : 3 * len(d["ks"])], pk_model[4 * len(d["ks"]) : 5 * len(d["ks"])]])
+        # pk_model_fit = pk_model
 
         # Compute the chi2
-        diff = d["pk"] - pk_model
+        diff = d["pk"] - pk_model_fit
         num_mocks = d["num_mocks"]
         num_params = len(self.get_active_params())
         return self.get_chi2_likelihood(diff, d["icov"], num_mocks=num_mocks, num_params=num_params)
@@ -275,7 +299,6 @@ class PowerSpectrumFit(Model):
         ks, pk0, pk2, pk4 = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth)
 
         # Morph it into a model representative of our survey and its selection/window/binning effects
-        # TODO: Make this window function convolution work for non-isotropic cases
         if self.isotropic:
             pk_model, mask = self.adjust_model_window_effects(pk0, d)
             if self.postprocess is not None:
@@ -283,8 +306,9 @@ class PowerSpectrumFit(Model):
             else:
                 pk_model = pk_model[mask]
         else:
-            pk_generated = np.concatenate([pk0, pk2])
-            raise NotImplementedError("Anisotropic window function nof yet implemented")
+            pk_generated = np.concatenate([pk0, pk2, pk4])
+            pk_model, mask = self.adjust_model_window_effects(pk_generated, d, window=True)
+            pk_model = pk_model[mask]
 
         return pk_model
 
@@ -292,34 +316,20 @@ class PowerSpectrumFit(Model):
         import matplotlib.pyplot as plt
 
         ks = self.data[0]["ks"]
-        pk = self.data[0]["pk"]
         err = np.sqrt(np.diag(self.data[0]["cov"]))
-        pk2 = self.get_model(params, self.data[0])
+        mod = self.get_model(params, self.data[0])
 
         if smooth_params is not None:
             smooth = self.get_model(smooth_params, self.data[0], smooth=True)
         else:
             smooth = self.get_model(params, self.data[0], smooth=True)
 
-        def adj(data, err=False):
-            if self.postprocess is None:
-                return data / smooth
-            else:
-                if err:
-                    return data / pk
-                else:
-                    return data / pk
-
         fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
 
-        axes[0].errorbar(ks, ks * pk, yerr=ks * err, fmt="o", c="k", ms=4, label=self.data[0]["name"])
-        axes[1].errorbar(ks, adj(pk), yerr=adj(err, err=True), fmt="o", c="k", ms=4, label=self.data[0]["name"])
-
-        # pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(params["om"])
-        # axes[1].plot(ks * params["alpha"], 1 + splev(ks, splrep(self.camb.ks, pk_ratio)), label="pkratio", c="r", ls="--")
-
-        axes[0].plot(ks, ks * pk2, label=self.get_name())
-        axes[1].plot(ks, adj(pk2), label=self.get_name())
+        axes[0].errorbar(ks, ks * self.data[0]["pk0"], yerr=ks * err[: len(ks)], fmt="o", c="k", ms=4, label=r"$P_{0}(k)$")
+        axes[1].errorbar(ks, self.data[0]["pk0"] / smooth[: len(ks)], yerr=(err / smooth)[: len(ks)], fmt="o", c="k", ms=4)
+        axes[0].plot(ks, ks * mod[: len(ks)], c="k")
+        axes[1].plot(ks, (mod / smooth)[: len(ks)], c="k")
 
         string = f"Likelihood: {self.get_likelihood(params, self.data[0]):0.2f}\n"
         string += "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params.items()])
@@ -333,6 +343,52 @@ class PowerSpectrumFit(Model):
         else:
             axes[1].set_ylabel("P(k) / data")
         axes[0].set_ylabel("k * P(k)")
+
+        axes[0].set_title(self.data[0]["name"] + " + " + self.get_name())
+
+        if not self.isotropic:
+            axes[0].errorbar(ks, ks * self.data[0]["pk2"], yerr=ks * err[2 * len(ks) : 3 * len(ks)], fmt="o", c="r", ms=4, label=r"$P_{2}(k)$")
+            axes[1].errorbar(ks, self.data[0]["pk2"] / smooth[2 * len(ks) : 3 * len(ks)], yerr=(err / smooth)[2 * len(ks) : 3 * len(ks)], fmt="o", c="r", ms=4)
+            axes[0].plot(ks, ks * mod[2 * len(ks) : 3 * len(ks)], c="r")
+            axes[1].plot(ks, (mod / smooth)[2 * len(ks) : 3 * len(ks)], c="r")
+
+            axes[0].errorbar(ks, ks * self.data[0]["pk4"], yerr=ks * err[4 * len(ks) :], fmt="o", c="b", ms=4, label=r"$P_{4}(k)$")
+            # axes[1].errorbar(ks, self.data[0]["pk4"] / smooth[4 * len(ks) :], yerr=(err / smooth)[4 * len(ks) :], fmt="o", c="b", ms=4)
+            axes[0].plot(ks, ks * mod[4 * len(ks) :], c="b")
+            # axes[1].plot(ks, (mod / smooth)[4 * len(ks) :], c="b")
+
+        plt.legend()
+
+        if not self.isotropic:
+
+            fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
+
+            axes[0].errorbar(ks, ks * self.data[0]["pk1"], yerr=ks * err[1 * len(ks) : 2 * len(ks)], fmt="o", c="r", ms=4, label=r"$P_{1}(k)$")
+            axes[1].errorbar(ks, self.data[0]["pk1"] - smooth[1 * len(ks) : 2 * len(ks)], yerr=(err)[1 * len(ks) : 2 * len(ks)], fmt="o", c="r", ms=4)
+            axes[0].plot(ks, ks * mod[1 * len(ks) : 2 * len(ks)], c="r")
+            axes[1].plot(ks, (mod - smooth)[1 * len(ks) : 2 * len(ks)], c="r")
+
+            axes[0].errorbar(ks, ks * self.data[0]["pk3"], yerr=ks * err[3 * len(ks) : 4 * len(ks)], fmt="o", c="b", ms=4, label=r"$P_{3}(k)$")
+            axes[1].errorbar(ks, self.data[0]["pk3"] - smooth[3 * len(ks) : 4 * len(ks)], yerr=(err)[3 * len(ks) : 4 * len(ks)], fmt="o", c="b", ms=4)
+            axes[0].plot(ks, ks * mod[3 * len(ks) : 4 * len(ks)], c="b")
+            axes[1].plot(ks, (mod - smooth)[3 * len(ks) : 4 * len(ks)], c="b")
+
+            string = f"Likelihood: {self.get_likelihood(params, self.data[0]):0.2f}\n"
+            string += "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params.items()])
+            va = "center" if self.postprocess is None else "top"
+            ypos = 0.5 if self.postprocess is None else 0.98
+            axes[0].annotate(string, (0.98, ypos), xycoords="axes fraction", horizontalalignment="right", verticalalignment=va)
+            axes[1].legend()
+            axes[1].set_xlabel("k")
+            if self.postprocess is None:
+                axes[1].set_ylabel("P(k) - P_{smooth}(k)")
+            else:
+                axes[1].set_ylabel("P(k) - data")
+            axes[0].set_ylabel("k * Im[P(k)]")
+
+            axes[0].set_title(self.data[0]["name"] + " + " + self.get_name())
+            plt.legend()
+
         plt.show()
 
 

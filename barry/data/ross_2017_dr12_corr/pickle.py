@@ -30,7 +30,7 @@ split = {
     "post-recon": [getdata(xi0file, xi2file)],
     "pre-recon cov": None,
     "post-recon cov": getcov(covfile),
-    "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.61, "ob": 0.04814, "ns": 0.97, "reconsmoothscale": 15},
+    "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.38, "ob": 0.04814, "ns": 0.97, "reconsmoothscale": 15},
     "name": "Ross 2016 Combined z038 corr",
 }
 with open("../ross_2016_dr12_combined_corr_zbin0p38.pkl", "wb") as f:
@@ -46,7 +46,7 @@ split = {
     "post-recon": [getdata(xi0file, xi2file)],
     "pre-recon cov": None,
     "post-recon cov": getcov(covfile),
-    "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.61, "ob": 0.04814, "ns": 0.97, "reconsmoothscale": 15},
+    "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.51, "ob": 0.04814, "ns": 0.97, "reconsmoothscale": 15},
     "name": "Ross 2016 Combined z051 corr",
 }
 

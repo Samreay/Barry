@@ -11,15 +11,13 @@ class CorrBeutler2017(CorrelationFunctionFit):
     """  xi(s) model inspired from Beutler 2017 and Ross 2017.
     """
 
-    def __init__(self, name="Corr Beutler 2017", recon=False, smooth_type="hinton2017", fix_params=("om"), smooth=False, correction=None, isotropic=True):
+    def __init__(self, name="Corr Beutler 2017", recon=False, smooth_type="hinton2017", fix_params=("om", "f"), smooth=False, correction=None, isotropic=True):
         self.recon = recon
         self.recon_smoothing_scale = None
         super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, smooth=smooth, correction=correction, isotropic=isotropic)
-        self.parent = PowerBeutler2017(fix_params=fix_params, smooth_type=smooth_type, recon=recon, correction=correction, isotropic=isotropic)
 
     def set_data(self, data):
         super().set_data(data)
-        self.parent.set_data(data)
 
     def declare_parameters(self):
         super().declare_parameters()
@@ -83,8 +81,11 @@ class CorrBeutler2017(CorrelationFunctionFit):
         else:
             # First compute the undilated pk multipoles
             fog = 1.0 / (1.0 + np.outer(self.mu ** 2, ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
-            kaiser_prefac = 1.0 + np.outer(p["f"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel)
-            pk_smooth = kaiser_prefac * pk_smooth_lin * fog
+            if self.recon:
+                kaiser_prefac = 1.0 + np.outer(p["f"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel)
+            else:
+                kaiser_prefac = 1.0 + np.outer(p["f"] * self.mu ** 2)
+            pk_smooth = kaiser_prefac ** 2 * pk_smooth_lin * fog
 
             # Compute the propagator
             C = np.exp(np.outer(-0.5 * (self.mu ** 2 * p["sigma_nl_par"] ** 2 + (1.0 - self.mu ** 2) * p["sigma_nl_perp"] ** 2), ks ** 2))

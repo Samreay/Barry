@@ -13,7 +13,15 @@ class PowerBeutler2017(PowerSpectrumFit):
     """
 
     def __init__(
-        self, name="Pk Beutler 2017", fix_params=("om"), smooth_type="hinton2017", recon=False, postprocess=None, smooth=False, correction=None, isotropic=True
+        self,
+        name="Pk Beutler 2017",
+        fix_params=("om", "f"),
+        smooth_type="hinton2017",
+        recon=False,
+        postprocess=None,
+        smooth=False,
+        correction=None,
+        isotropic=True,
     ):
         self.recon = recon
         self.recon_smoothing_scale = None
@@ -34,18 +42,23 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param("a5", r"$a_5$", -3.0, 3.0, 0)  # Polynomial marginalisation 5
         else:
             self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure
-            self.add_param("sigma_nl_par", r"$\Sigma_{nl,||}$", 0.01, 20.0, 10.0)  # BAO damping parallel to LOS
-            self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.01, 20.0, 10.0)  # BAO damping perpendicular to LOS
-            self.add_param("a0_1", r"$a0_1$", -10000.0, 30000.0, 0)  # Monopole Polynomial marginalisation 1
-            self.add_param("a0_2", r"$a0_2$", -20000.0, 10000.0, 0)  # Monopole Polynomial marginalisation 2
-            self.add_param("a0_3", r"$a0_3$", -1000.0, 5000.0, 0)  # Monopole Polynomial marginalisation 3
-            self.add_param("a0_4", r"$a0_4$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
-            self.add_param("a0_5", r"$a0_5$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
-            self.add_param("a2_1", r"$a2_1$", -10000.0, 30000.0, 0)  # Monopole Polynomial marginalisation 1
-            self.add_param("a2_2", r"$a2_2$", -20000.0, 10000.0, 0)  # Monopole Polynomial marginalisation 2
-            self.add_param("a2_3", r"$a2_3$", -1000.0, 5000.0, 0)  # Monopole Polynomial marginalisation 3
-            self.add_param("a2_4", r"$a2_4$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
-            self.add_param("a2_5", r"$a2_5$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
+            self.add_param("sigma_nl_par", r"$\Sigma_{nl,||}$", 0.01, 20.0, 8.0)  # BAO damping parallel to LOS
+            self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.01, 20.0, 4.0)  # BAO damping perpendicular to LOS
+            self.add_param("a0_1", r"$a_{0,1}$", -10000.0, 30000.0, 0)  # Monopole Polynomial marginalisation 1
+            self.add_param("a0_2", r"$a_{0,2}$", -20000.0, 10000.0, 0)  # Monopole Polynomial marginalisation 2
+            self.add_param("a0_3", r"$a_{0,3}$", -1000.0, 5000.0, 0)  # Monopole Polynomial marginalisation 3
+            self.add_param("a0_4", r"$a_{0,4}$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
+            self.add_param("a0_5", r"$a_{0,5}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
+            self.add_param("a2_1", r"$a_{2,1}$", -10000.0, 30000.0, 0)  # Quadrupole Polynomial marginalisation 1
+            self.add_param("a2_2", r"$a_{2,2}$", -20000.0, 10000.0, 0)  # Quadrupole Polynomial marginalisation 2
+            self.add_param("a2_3", r"$a_{2,3}$", -1000.0, 5000.0, 0)  # Quadrupole Polynomial marginalisation 3
+            self.add_param("a2_4", r"$a_{2,4}$", -200.0, 200.0, 0)  # Quadrupole Polynomial marginalisation 4
+            self.add_param("a2_5", r"$a_{2,5}$", -3.0, 3.0, 0)  # Quadrupole Polynomial marginalisation 5
+            # self.add_param("a4_1", r"$a_{4,1}$", -10000.0, 30000.0, 0)  # Quadrupole Polynomial marginalisation 1
+            # self.add_param("a4_2", r"$a_{4,2}$", -20000.0, 10000.0, 0)  # Quadrupole Polynomial marginalisation 2
+            # self.add_param("a4_3", r"$a_{4,3}$", -1000.0, 5000.0, 0)  # Quadrupole Polynomial marginalisation 3
+            # self.add_param("a4_4", r"$a_{4,4}$", -200.0, 200.0, 0)  # Quadrupole Polynomial marginalisation 4
+            # self.add_param("a4_5", r"$a_{4,5}$", -3.0, 3.0, 0)  # Quadrupole Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p, smooth=False):
         """ Computes the power spectrum model using the Beutler et. al., 2017 method
@@ -105,7 +118,10 @@ class PowerBeutler2017(PowerSpectrumFit):
             kprime = np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
             muprime = self.get_muprime(epsilon)
             fog = 1.0 / (1.0 + muprime ** 2 * kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
-            kaiser_prefac = p["b"] + p["f"] * muprime ** 2 * (1.0 - splev(kprime, splrep(ks, self.camb.smoothing_kernel)))
+            if self.recon:
+                kaiser_prefac = p["b"] + p["f"] * muprime ** 2 * (1.0 - splev(kprime, splrep(ks, self.camb.smoothing_kernel)))
+            else:
+                kaiser_prefac = p["b"] + p["f"] * muprime ** 2
             pk_smooth = kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
 
             # Compute the propagator
@@ -133,17 +149,27 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z061_NGC
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_SGC
     from barry.config import setup_logging
 
     setup_logging()
 
-    print("Checking pre-recon")
-    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=False)
-    model_pre = PowerBeutler2017(recon=False)
+    print("Checking isotropic mock mean")
+    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True)
+    model_pre = PowerBeutler2017(isotropic=True)
     model_pre.sanity_check(dataset)
 
-    print("Checking post-recon")
-    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=True)
-    model_post = PowerBeutler2017(recon=True)
+    print("Checking isotropic data")
+    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True, realisation="data")
+    model_post = PowerBeutler2017(isotropic=True)
+    model_post.sanity_check(dataset)
+
+    print("Checking anisotropic mock mean")
+    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False)
+    model_post = PowerBeutler2017(isotropic=False)
+    model_post.sanity_check(dataset)
+
+    print("Checking anisotropic data")
+    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False, realisation="data")
+    model_post = PowerBeutler2017(isotropic=False)
     model_post.sanity_check(dataset)

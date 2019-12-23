@@ -20,7 +20,7 @@ class CorrelationFunction(Dataset, ABC):
 
         with open(self.data_location, "rb") as f:
             self.data_obj = pickle.load(f)
-        name = name or self.data_obj["name"] + " Recon" if recon else " Prerecon"
+        name = name or self.data_obj["name"] + " Recon" if recon else self.data_obj["name"] + " Prerecon"
         super().__init__(name)
 
         self.cosmology = self.data_obj["cosmology"]
@@ -43,8 +43,10 @@ class CorrelationFunction(Dataset, ABC):
 
     def set_realisation(self, realisation):
         if realisation is None:
+            self.logger.info(f"Loading data average")
             self.data = np.array(self.all_data).mean(axis=0)
         else:
+            self.logger.info(f"Loading realisation {realisation}")
             self.data = self.all_data[realisation]
         self.mask = (self.data[:, 0] >= self.min_dist) & (self.data[:, 0] <= self.max_dist)
         self.data = self.data[self.mask, :]
@@ -75,6 +77,7 @@ class CorrelationFunction(Dataset, ABC):
         else:
             x0 = np.concatenate([ad[:, self.mask, 1], ad[:, self.mask, 2]], axis=1)
         self.cov = np.cov(x0.T)
+        self.logger.info(f"Computed cov {self.cov.shape}")
 
     def get_data(self):
         d = {
