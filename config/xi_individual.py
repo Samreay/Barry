@@ -65,6 +65,15 @@ if __name__ == "__main__":
             for label in labels:
                 res[label] = df[[label + "_xi_mean", label + "_xi_std", "realisation", label + "_xi_evidence"]].copy()
                 res[label].rename({label + "_xi_mean": "avg", label + "_xi_std": "std", label + "_xi_evidence": "evidence"}, axis="columns", inplace=True)
+
+            # Print out stats
+            if True:
+                cols = [c for c in df.columns if "mean" in c]
+                df_means = df[cols]
+                means = df_means.mean(axis=0)
+                rms = df_means.std(axis=0)
+                for l, m, r in zip(cols, means, rms):
+                    print(f"{l}    ${m:0.3f} \\pm {r:0.3f}$")
         else:
 
             logging.info("Didn't find alphameans.csv, reading chains")
@@ -151,7 +160,7 @@ if __name__ == "__main__":
             fig.savefig(pfn + "_alphahist.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
         # Alpha-alpha comparison
-        if True:
+        if False:
 
             from matplotlib.colors import to_rgb, to_hex
 
@@ -301,7 +310,7 @@ if __name__ == "__main__":
             fig.savefig(pfn + "_alphaerrhist.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
         # Error-error comparison
-        if True:
+        if False:
             from matplotlib.colors import to_rgb, to_hex
 
             def blend_hex(hex1, hex2):
