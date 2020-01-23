@@ -4,7 +4,7 @@ import os
 import logging
 import argparse
 
-sys.path.append("..")
+sys.path.insert(0, os.path.abspath(".."))
 from barry.models import Model
 from barry.config import is_local, get_config
 from barry.cosmology.camb_generator import CambGenerator
