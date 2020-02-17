@@ -3,6 +3,7 @@
 #SBATCH --qos=shared
 #SBATCH --array=1-{num_tasks}%{num_concurrent}
 #SBATCH --ntasks={num_fits_per_job}
+#SBATCH --account=desi
 #SBATCH --cpus-per-task=2
 #SBATCH --nodes=1
 #SBATCH --mem=8GB
