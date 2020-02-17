@@ -1,3 +1,6 @@
+import sys
+
+sys.path.append("..")
 from barry.config import setup
 from barry.fitter import Fitter
 from barry.models.test import TestModel
@@ -5,9 +8,6 @@ from barry.datasets.test import TestDataset
 from barry.samplers import DynestySampler
 
 if __name__ == "__main__":
-    import sys
-
-    sys.path.append("..")
 
     pfn, dir_name, file = setup(__file__)
 
