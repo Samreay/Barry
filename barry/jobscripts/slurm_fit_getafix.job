@@ -1,17 +1,17 @@
 #!/bin/bash -l
 #SBATCH -J {name}
-#SBATCH -p {job_partition}
+#SBATCH -p smp
 #SBATCH --array=1-{num_tasks}%{num_concurrent}
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task={job_cpus_per_task}
+#SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
-#SBATCH --mem={job_memory}
-#SBATCH -t {job_walltime_limit}
+#SBATCH --mem=8GB
+#SBATCH -t 24:00:00
 #SBATCH -o {output_dir}/{name}.o%j
 
 IDIR={directory}
 conda deactivate
-conda activate {job_conda_env}
+conda activate Barry
 echo $PATH
 echo "Activated python"
 executable=$(which python)

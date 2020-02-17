@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -18,6 +20,12 @@ def weighted_avg_and_std(values, weights):
 def create_histogram_plot():
     plt.rc("text", usetex=True)
     plt.rc("font", family="serif")
+
+
+def get_hpc():
+    hpc = os.environ.get("HPC")
+    logging.debug(f"HPC environment key is {hpc}")
+    return hpc
 
 
 def get_model_comparison_dataframe(fitter):

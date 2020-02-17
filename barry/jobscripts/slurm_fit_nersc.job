@@ -1,18 +1,17 @@
 #!/bin/bash -l
 #SBATCH -J {name}
-#SBATCH --qos=regular
-#SBATCH --account=desi
+#SBATCH --qos=shared
 #SBATCH --array=1-{num_tasks}%{num_concurrent}
+#SBATCH --ntasks={num_fits_per_job}
+#SBATCH --cpus-per-task=2
 #SBATCH --nodes=1
-#SBATCH --tasks-per-node={job_cpus_per_task}
-#SBATCH --mem={job_memory}
-#SBATCH -C haswell
-#SBATCH -t {job_walltime_limit}
+#SBATCH --mem=8GB
+#SBATCH -t 24:00:00
 #SBATCH -o {output_dir}/{name}.o%j
 
 IDIR={directory}
 conda deactivate
-source activate {job_conda_env}
+conda activate Barry
 echo $PATH
 echo "Activated python"
 executable=$(which python)
@@ -20,6 +19,11 @@ echo $executable
 
 PROG={executable}
 PARAMS=`expr ${{SLURM_ARRAY_TASK_ID}} - 1`
+END={num_fits_per_job}
+
 cd $IDIR
 sleep $((RANDOM % 5))
-$executable $PROG $PARAMS
+
+for ((i=1;i<=END;i++)); do
+    srun --exclusive --nodes 1 --ntasks 1 $executable $PROG "`expr $PARAMS * $END + $i`" &
+done

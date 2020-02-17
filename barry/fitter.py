@@ -8,6 +8,7 @@ import numpy as np
 from barry.config import get_config
 from barry.doJob import write_jobscript_slurm
 from barry.samplers import DynestySampler
+from barry.utils import get_hpc
 
 
 class Fitter(object):
@@ -180,7 +181,10 @@ class Fitter(object):
                     if self.remove_output:
                         self.logger.info("Deleting %s" % self.temp_dir)
                         shutil.rmtree(self.temp_dir)
-                filename = write_jobscript_slurm(file, name=os.path.basename(file), num_tasks=self.get_num_jobs(), num_concurrent=num_concurrent, delete=False)
+                hpc = get_hpc()
+                filename = write_jobscript_slurm(
+                    file, name=os.path.basename(file), num_tasks=self.get_num_jobs(), num_concurrent=num_concurrent, delete=False, hpc=hpc
+                )
                 self.logger.info("Running batch job at %s" % filename)
                 config = get_config()
                 os.system(f"{config['hpc_submit_command']} {filename}")
