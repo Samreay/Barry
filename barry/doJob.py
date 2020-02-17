@@ -14,6 +14,7 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, 
         raise ValueError("HPC environment veriable is not set. Please set it to an hpc system, like export HPC=nersc")
 
     config = get_config()
+    print("AAA ", config, hpc)
     directory = os.path.dirname(os.path.abspath(filename))
     executable = os.path.basename(filename)
     if name is None:
