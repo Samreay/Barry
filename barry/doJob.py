@@ -14,7 +14,6 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, 
         raise ValueError("HPC environment veriable is not set. Please set it to an hpc system, like export HPC=nersc")
 
     config = get_config()
-    print("AAA ", config, hpc)
     directory = os.path.dirname(os.path.abspath(filename))
     executable = os.path.basename(filename)
     if name is None:
@@ -30,10 +29,11 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, 
         os.makedirs(output_dir, exist_ok=True)
 
     # Factor in jobs executing multiple fits
-    num_tasks = int(np.ceil(num_tasks / config.get(hpc, {}).get("num_fits_per_job", 1)))
+    hpc_config = config.get("hpc", {}).get(hpc, {})
+    num_tasks = int(np.ceil(num_tasks / hpc_config.get("num_fits_per_job", 1)))
 
     d = {"directory": directory, "executable": executable, "name": name, "output_dir": output_dir, "num_concurrent": num_concurrent, "num_tasks": num_tasks}
-    d.update(config.get(hpc))
+    d.update(hpc_config)
 
     slurm_job = os.path.join(os.path.dirname(os.path.abspath(inspect.stack()[0][1])), f"jobscripts/slurm_fit_{hpc}.job")
     with open(slurm_job) as f:
