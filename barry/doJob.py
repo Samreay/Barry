@@ -29,7 +29,7 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, 
         os.makedirs(output_dir, exist_ok=True)
 
     # Factor in jobs executing multiple fits
-    hpc_config = config.get("hpc", {}).get(hpc, {})
+    hpc_config = config.get("hpcs", {}).get(hpc, {})
     num_tasks = int(np.ceil(num_tasks / hpc_config.get("num_fits_per_job", 1)))
     d = {"directory": directory, "executable": executable, "name": name, "output_dir": output_dir, "num_concurrent": num_concurrent, "num_tasks": num_tasks}
     d.update(hpc_config)
