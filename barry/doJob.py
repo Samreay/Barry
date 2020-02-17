@@ -37,8 +37,6 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, 
     slurm_job = os.path.join(os.path.dirname(os.path.abspath(inspect.stack()[0][1])), f"jobscripts/slurm_fit_{hpc}.job")
     with open(slurm_job) as f:
         raw_template = f.read()
-        print(hpc, d)
-        print(raw_template)
     template = raw_template.format(**d)
 
     n = "%s/%s.q" % (q_dir, executable[: executable.index(".py")])

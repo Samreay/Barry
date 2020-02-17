@@ -194,7 +194,7 @@ class Fitter(object):
                     index = int(sys.argv[1])
                 else:
                     index = -1
-                if index != -1:
+                if index != -1 and index < self.get_num_jobs():
                     mi, wi = self._get_indexes_from_index(index)
                     self.logger.info("Running model_dataset %d, walker number %d" % (mi, wi))
                     self._run_fit(mi, wi)
