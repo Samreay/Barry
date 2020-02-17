@@ -31,13 +31,14 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, 
     # Factor in jobs executing multiple fits
     hpc_config = config.get("hpc", {}).get(hpc, {})
     num_tasks = int(np.ceil(num_tasks / hpc_config.get("num_fits_per_job", 1)))
-
     d = {"directory": directory, "executable": executable, "name": name, "output_dir": output_dir, "num_concurrent": num_concurrent, "num_tasks": num_tasks}
     d.update(hpc_config)
 
     slurm_job = os.path.join(os.path.dirname(os.path.abspath(inspect.stack()[0][1])), f"jobscripts/slurm_fit_{hpc}.job")
     with open(slurm_job) as f:
         raw_template = f.read()
+        print(hpc, d)
+        print(raw_template)
     template = raw_template.format(**d)
 
     n = "%s/%s.q" % (q_dir, executable[: executable.index(".py")])
