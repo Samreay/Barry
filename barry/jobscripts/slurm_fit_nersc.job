@@ -32,6 +32,6 @@ for ((i=1;i<=END;i++)); do
     echo "Loop iteration $i"
     ANUM=`expr $PARAMS \* $END + $i`
     echo "Executing $executable $PROG $ANUM"
-    srun -u --exclusive --nodes 1 --ntasks 1 $executable -u $PROG $ANUM 2>&1 > "{output_dir}/{name}_$ANUM.log" &
+    srun -u --exclusive --nodes 1 --ntasks 1 --output "{output_dir}/{name}_$ANUM.log" $executable $PROG $ANUM  &
 done
 wait
