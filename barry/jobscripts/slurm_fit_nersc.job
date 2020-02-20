@@ -26,5 +26,7 @@ cd $IDIR
 sleep $((RANDOM % 5))
 
 for ((i=1;i<=END;i++)); do
-    srun --exclusive --nodes 1 --ntasks 1 $executable $PROG "`expr $PARAMS * $END + $i`" &
+    ANUM=`expr $PARAMS * $END + $i`
+    echo "Executing $executable $PROG $ANUM"
+    srun --exclusive --nodes 1 --ntasks 1 $executable $PROG $ANUM &
 done
