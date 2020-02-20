@@ -32,5 +32,5 @@ for ((i=1;i<=END;i++)); do
     echo "Loop iteration $i"
     ANUM=`expr $PARAMS \* $END + $i`
     echo "Executing $executable $PROG $ANUM"
-    srun --exclusive --nodes 1 --ntasks 1 $executable $PROG $ANUM &
+    srun --exclusive --nodes 1 --ntasks 1 $executable $PROG $ANUM 2>&1 > "{output_dir}/{name}.o%j.$i" &
 done
