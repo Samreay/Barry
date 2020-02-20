@@ -13,7 +13,7 @@
 IDIR={directory}
 conda deactivate
 conda activate Barry
-echo $PATH
+
 echo "Activated python"
 executable=$(which python)
 echo $executable
@@ -22,10 +22,13 @@ PROG={executable}
 PARAMS=`expr ${{SLURM_ARRAY_TASK_ID}} - 1`
 END={num_fits_per_job}
 
+echo "$PROG $PARAMS"
+
 cd $IDIR
 sleep $((RANDOM % 5))
 
 for ((i=1;i<=END;i++)); do
+    echo "Loop iteration $i"
     ANUM=`expr $PARAMS * $END + $i`
     echo "Executing $executable $PROG $ANUM"
     srun --exclusive --nodes 1 --ntasks 1 $executable $PROG $ANUM &
