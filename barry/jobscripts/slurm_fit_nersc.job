@@ -1,6 +1,7 @@
 #!/bin/bash -l
 #SBATCH -J {name}
 #SBATCH --qos=shared
+#SBATCH -C haswell
 #SBATCH --array=1-{num_tasks}%{num_concurrent}
 #SBATCH --ntasks={num_fits_per_job}
 #SBATCH --account=desi
@@ -29,7 +30,7 @@ sleep $((RANDOM % 5))
 
 for ((i=1;i<=END;i++)); do
     echo "Loop iteration $i"
-    ANUM=`expr $PARAMS * $END + $i`
+    ANUM=`expr $PARAMS \* $END + $i`
     echo "Executing $executable $PROG $ANUM"
     srun --exclusive --nodes 1 --ntasks 1 $executable $PROG $ANUM &
 done
