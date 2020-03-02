@@ -58,6 +58,8 @@ class Model(ABC):
             The postprocessing class to apply to the model before computing the likelihood. This is not applied automatically.
         correction : `Correction` class, optional
             Correction to apply to the likelihood. Applied automatically. Defaults to `Correction.SELLENTIN`
+        isotropic: bool, optional
+            Whether or not the model is isotropic. Defaults to True
         """
         self.name = name
         self.logger = logging.getLogger("barry")
@@ -77,6 +79,8 @@ class Model(ABC):
         self.fix_params = []
         self.param_dict = {}
         self.postprocess = postprocess
+        if postprocess is not None and not self.isotropic:
+            raise NotImplementedError("Postprocessing (i.e., BAOExtractor) not implemented for anisotropic fits")
         if correction is None:
             correction = Correction.SELLENTIN
         self.correction = correction
