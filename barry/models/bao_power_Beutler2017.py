@@ -136,11 +136,9 @@ class PowerBeutler2017(PowerSpectrumFit):
                 shape0 = p["a0_1"] * k + p["a0_2"] + p["a0_3"] / k + p["a0_4"] / (k * k) + p["a0_5"] / (k ** 3)
                 shape2 = p["a2_1"] * k + p["a2_2"] + p["a2_3"] / k + p["a2_4"] / (k * k) + p["a2_5"] / (k ** 3)
 
-            pk0 = integrate.simps(pk2d, self.mu, axis=1)
-            pk2 = 3.0 * integrate.simps(pk2d * self.mu ** 2, self.mu, axis=1)
-            pk4 = 1.125 * (35.0 * integrate.simps(pk2d * self.mu ** 4, self.mu, axis=1) - 10.0 * pk2 + 3.0 * pk0)
-            pk2 = 2.5 * (pk2 - pk0) + shape2
-            pk0 = pk0 + shape0
+            pk0, pk2, pk4 = self.integrate_mu(pk2d, self.mu)
+            pk0 += shape0
+            pk2 += shape2
 
         return kprime, pk0, pk2, pk4
 

@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from numpy.random import uniform
 import numpy as np
+from scipy import integrate
+from scipy.integrate import simps
 from scipy.special import loggamma
 from scipy.optimize import basinhopping
 from enum import Enum, unique
@@ -428,6 +430,17 @@ class Model(ABC):
 
         print("Plotting model and data")
         self.plot(p)
+
+    def integrate_mu(self, pk2d, mu, isotropic=False):
+        pk0 = simps(pk2d, mu, axis=1)
+        if isotropic:
+            pk2 = None
+            pk4 = None
+        else:
+            pk2 = 3.0 * simps(pk2d * mu ** 2, mu)
+            pk4 = 1.125 * (35.0 * simps(pk2d * mu ** 4, mu, axis=1) - 10.0 * pk2 + 3.0 * pk0)
+            pk2 = 2.5 * (pk2 - pk0)
+        return pk0, pk2, pk4
 
 
 if __name__ == "__main__":
