@@ -66,53 +66,65 @@ class PowerSeo2016(PowerSpectrumFit):
         R2[index] = 4.0 / 15.0
         return R1, R2
 
-    @lru_cache(maxsize=32)
+    @lru_cache(maxsize=4)
     def get_pt_data(self, om):
         return self.PT.get_data(om=om)
 
-    @lru_cache(maxsize=32)
+    @lru_cache(maxsize=4)
     def get_damping_dd(self, growth, om):
         return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_dd", om) / 2.0)
 
-    @lru_cache(maxsize=32)
+    @lru_cache(maxsize=4)
     def get_damping_aniso_dd_1(self, growth, om):
         return -(1.0 + (2.0 + growth) * growth) * np.tile(self.camb.ks ** 2, (self.nmu, 1)).T * self.get_pregen("sigma_dd", om) / 2.0
 
-    @lru_cache(maxsize=32)
+    @lru_cache(maxsize=4)
     def get_damping_aniso_dd_2(self, growth, om):
         return -(2.0 + (2.0 + growth) * growth) * np.outer(self.camb.ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_dd", om) / 2.0
 
-    @lru_cache(maxsize=32)
+    @lru_cache(maxsize=4)
     def get_damping_aniso_dd_3(self, om):
         return -np.outer(self.camb.ks ** 2, (1.0 - self.mu ** 2) ** 2 / self.mu ** 2) * self.get_pregen("sigma_dd", om) / 2.0
 
-    @lru_cache(maxsize=32)
+    @lru_cache(maxsize=4)
     def get_damping_ss(self, om):
         return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pregen("sigma_ss", om) / 2.0)
 
-    @lru_cache(maxsize=32)
+    @lru_cache(maxsize=4)
     def get_damping_aniso_ss_1(self, om):
         return --np.tile(self.camb.ks ** 2, (self.nmu, 1)).T * self.get_pregen("sigma_ss", om) / 2.0
 
-    @lru_cache(maxsize=32)
+    @lru_cache(maxsize=4)
     def get_damping_aniso_ss_2(self, om):
         return -np.outer(self.camb.ks ** 2, self.mu ** 2) * self.get_pregen("sigma_ss", om) / 2.0
 
-    @lru_cache(maxsize=32)
+    @lru_cache(maxsize=4)
     def get_damping(self, growth, om):
         return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma", om) / 2.0)
 
-    @lru_cache(maxsize=32)
-    def get_damping_aniso_1(self, growth, om):
-        return -(1.0 + (2.0 + growth) * growth) * np.tile(self.camb.ks ** 2, (self.nmu, 1)).T * self.get_pregen("sigma", om) / 2.0
+    @lru_cache(maxsize=4)
+    def get_damping_aniso_1(self, growth, om, data_name=None):
+        if data_name is None:
+            ks = self.camb.ks
+        else:
+            ks = self.data_dict[data_name]["ks_input"]
+        return -(1.0 + (2.0 + growth) * growth) * np.tile(ks ** 2, (self.nmu, 1)).T * self.get_pregen("sigma", om) / 2.0
 
-    @lru_cache(maxsize=32)
-    def get_damping_aniso_2(self, growth, om):
-        return -(2.0 + (2.0 + growth) * growth) * np.outer(self.camb.ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma", om) / 2.0
+    @lru_cache(maxsize=4)
+    def get_damping_aniso_2(self, growth, om, data_name=None):
+        if data_name is None:
+            ks = self.camb.ks
+        else:
+            ks = self.data_dict[data_name]["ks_input"]
+        return -(2.0 + (2.0 + growth) * growth) * np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma", om) / 2.0
 
-    @lru_cache(maxsize=32)
-    def get_damping_aniso_3(self, om):
-        return -np.outer(self.camb.ks ** 2, (1.0 - self.mu ** 2) ** 2 / self.mu ** 2) * self.get_pregen("sigma", om) / 2.0
+    @lru_cache(maxsize=4)
+    def get_damping_aniso_3(self, om, data_name=None):
+        if data_name is None:
+            ks = self.camb.ks
+        else:
+            ks = self.data_dict[data_name]["ks_input"]
+        return -np.outer(ks ** 2, (1.0 - self.mu ** 2) ** 2 / self.mu ** 2) * self.get_pregen("sigma", om) / 2.0
 
     def set_data(self, data):
         super().set_data(data)
@@ -139,7 +151,7 @@ class PowerSeo2016(PowerSpectrumFit):
             self.add_param("a2_4", r"$a_{2,4}$", -200.0, 200.0, 0)  # Quadrupole Polynomial marginalisation 4
             self.add_param("a2_5", r"$a_{2,5}$", -3.0, 3.0, 0)  # Quadrupole Polynomial marginalisation 5
 
-    def compute_power_spectrum(self, k, p, smooth=False):
+    def compute_power_spectrum(self, k, p, smooth=False, data_name=None):
         """ Computes the power spectrum model using the LPT based propagators from Seo et. al., 2016
 
         Parameters
@@ -252,16 +264,10 @@ class PowerSeo2016(PowerSpectrumFit):
                 else:
                     prop_prefac_alpha = np.exp(muprime ** 2 / p["alpha"] ** 2)
                     prop_prefac_epsilon = (1.0 + epsilon) ** 2
-                    print(
-                        np.shape(self.get_damping_aniso_1(growth, om)),
-                        np.shape(self.get_damping_aniso_2(growth, om)),
-                        np.shape(self.get_damping_aniso_3(om)),
-                        np.shape(muprime),
-                    )
                     damping = prop_prefac_alpha * np.exp(
-                        self.get_damping_aniso_1(growth, om) / prop_prefac_epsilon ** 2
-                        + self.get_damping_aniso_2(growth, om) * prop_prefac_epsilon
-                        + self.get_damping_aniso_3(om) * prop_prefac_epsilon ** 4
+                        self.get_damping_aniso_1(growth, om, data_name=data_name) / prop_prefac_epsilon ** 2
+                        + self.get_damping_aniso_2(growth, om, data_name=data_name) * prop_prefac_epsilon
+                        + self.get_damping_aniso_3(om, data_name=data_name) * prop_prefac_epsilon ** 4
                     )
 
                     R1_kprime = splev(kprime, splrep(ks, self.get_pregen("R1", om)))

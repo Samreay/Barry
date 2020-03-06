@@ -66,6 +66,7 @@ class Model(ABC):
         self.name = name
         self.logger = logging.getLogger("barry")
         self.data = None
+        self.data_dict = None
 
         # For pregeneration
         self.camb = None
@@ -126,6 +127,7 @@ class Model(ABC):
         if not isinstance(data, list):
             data = [data]
         self.data = data
+        self.data_dict = dict([(d["name"], d) for d in data])
         self.set_cosmology(data[0]["cosmology"])
         if not (data[0]["isotropic"] == self.isotropic):
             print(

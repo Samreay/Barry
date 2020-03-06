@@ -134,7 +134,7 @@ class PowerSpectrumFit(Model):
         muprime = self.mu / np.sqrt(musq + (1.0 + epsilon) ** 6 * (1.0 - musq))
         return muprime
 
-    def compute_power_spectrum(self, k, p, smooth=False, shape=True, dilate=True):
+    def compute_power_spectrum(self, k, p, smooth=False, shape=True, dilate=True, data_name=None):
         """ Get raw ks and p(k) multipoles for a given parametrisation dilated based on the values of alpha and epsilon
 
         Parameters
@@ -168,7 +168,7 @@ class PowerSpectrumFit(Model):
                 kprime = k
         else:
             if dilate:
-                epsilon = np.round(p["epsilon"], decimals=5)
+                epsilon = p["epsilon"]
                 kprime = np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
                 muprime = self.get_muprime(epsilon)
             else:
@@ -288,6 +288,8 @@ class PowerSpectrumFit(Model):
             have a key of 'dist' which contains the Mpc/h value of distances to compute.
         smooth : bool, optional
             Whether to only generate a smooth model without the BAO feature
+        data_name : str, optional
+            The name used to access precomputed values.
 
         Returns
         -------
@@ -296,7 +298,7 @@ class PowerSpectrumFit(Model):
 
         """
 
-        ks, pk0, pk2, pk4 = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth)
+        ks, pk0, pk2, pk4 = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth, data_name=d["name"])
 
         # Morph it into a model representative of our survey and its selection/window/binning effects
         if self.isotropic:
