@@ -75,12 +75,44 @@ class PowerSeo2016(PowerSpectrumFit):
         return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_dd", om) / 2.0)
 
     @lru_cache(maxsize=32)
+    def get_damping_aniso_dd_1(self, growth, om):
+        return -(1.0 + (2.0 + growth) * growth) * np.tile(self.camb.ks ** 2, (self.nmu, 1)).T * self.get_pregen("sigma_dd", om) / 2.0
+
+    @lru_cache(maxsize=32)
+    def get_damping_aniso_dd_2(self, growth, om):
+        return -(2.0 + (2.0 + growth) * growth) * np.outer(self.camb.ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_dd", om) / 2.0
+
+    @lru_cache(maxsize=32)
+    def get_damping_aniso_dd_3(self, om):
+        return -np.outer(self.camb.ks ** 2, (1.0 - self.mu ** 2) ** 2 / self.mu ** 2) * self.get_pregen("sigma_dd", om) / 2.0
+
+    @lru_cache(maxsize=32)
     def get_damping_ss(self, om):
         return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pregen("sigma_ss", om) / 2.0)
 
     @lru_cache(maxsize=32)
+    def get_damping_aniso_ss_1(self, om):
+        return --np.tile(self.camb.ks ** 2, (self.nmu, 1)).T * self.get_pregen("sigma_ss", om) / 2.0
+
+    @lru_cache(maxsize=32)
+    def get_damping_aniso_ss_2(self, om):
+        return -np.outer(self.camb.ks ** 2, self.mu ** 2) * self.get_pregen("sigma_ss", om) / 2.0
+
+    @lru_cache(maxsize=32)
     def get_damping(self, growth, om):
         return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma", om) / 2.0)
+
+    @lru_cache(maxsize=32)
+    def get_damping_aniso_1(self, growth, om):
+        return -(1.0 + (2.0 + growth) * growth) * np.tile(self.camb.ks ** 2, (self.nmu, 1)).T * self.get_pregen("sigma", om) / 2.0
+
+    @lru_cache(maxsize=32)
+    def get_damping_aniso_2(self, growth, om):
+        return -(2.0 + (2.0 + growth) * growth) * np.outer(self.camb.ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma", om) / 2.0
+
+    @lru_cache(maxsize=32)
+    def get_damping_aniso_3(self, om):
+        return -np.outer(self.camb.ks ** 2, (1.0 - self.mu ** 2) ** 2 / self.mu ** 2) * self.get_pregen("sigma", om) / 2.0
 
     def set_data(self, data):
         super().set_data(data)
@@ -89,13 +121,25 @@ class PowerSeo2016(PowerSpectrumFit):
         super().declare_parameters()
         self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure
         self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
-        self.add_param("a1", r"$a_1$", -20000.0, 15000.0, 0)  # Polynomial marginalisation 1
-        self.add_param("a2", r"$a_2$", -15000.0, 25000.0, 0)  # Polynomial marginalisation 2
-        self.add_param("a3", r"$a_3$", -5000.0, 5000.0, 0)  # Polynomial marginalisation 3
-        self.add_param("a4", r"$a_4$", -200.0, 200.0, 0)  # Polynomial marginalisation 4
-        self.add_param("a5", r"$a_5$", -3.0, 3.0, 0)  # Polynomial marginalisation 5
+        if self.isotropic:
+            self.add_param("a1", r"$a_1$", -10000.0, 30000.0, 0)  # Polynomial marginalisation 1
+            self.add_param("a2", r"$a_2$", -20000.0, 10000.0, 0)  # Polynomial marginalisation 2
+            self.add_param("a3", r"$a_3$", -1000.0, 5000.0, 0)  # Polynomial marginalisation 3
+            self.add_param("a4", r"$a_4$", -200.0, 200.0, 0)  # Polynomial marginalisation 4
+            self.add_param("a5", r"$a_5$", -3.0, 3.0, 0)  # Polynomial marginalisation 5
+        else:
+            self.add_param("a0_1", r"$a_{0,1}$", -10000.0, 30000.0, 0)  # Monopole Polynomial marginalisation 1
+            self.add_param("a0_2", r"$a_{0,2}$", -20000.0, 10000.0, 0)  # Monopole Polynomial marginalisation 2
+            self.add_param("a0_3", r"$a_{0,3}$", -1000.0, 5000.0, 0)  # Monopole Polynomial marginalisation 3
+            self.add_param("a0_4", r"$a_{0,4}$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
+            self.add_param("a0_5", r"$a_{0,5}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
+            self.add_param("a2_1", r"$a_{2,1}$", -10000.0, 30000.0, 0)  # Quadrupole Polynomial marginalisation 1
+            self.add_param("a2_2", r"$a_{2,2}$", -20000.0, 10000.0, 0)  # Quadrupole Polynomial marginalisation 2
+            self.add_param("a2_3", r"$a_{2,3}$", -1000.0, 5000.0, 0)  # Quadrupole Polynomial marginalisation 3
+            self.add_param("a2_4", r"$a_{2,4}$", -200.0, 200.0, 0)  # Quadrupole Polynomial marginalisation 4
+            self.add_param("a2_5", r"$a_{2,5}$", -3.0, 3.0, 0)  # Quadrupole Polynomial marginalisation 5
 
-    def compute_power_spectrum(self, k, p, smooth=False, shape=True, dilate=True):
+    def compute_power_spectrum(self, k, p, smooth=False):
         """ Computes the power spectrum model using the LPT based propagators from Seo et. al., 2016
 
         Parameters
@@ -106,10 +150,6 @@ class PowerSeo2016(PowerSpectrumFit):
             dictionary of parameter names to their values
         smooth : bool, optional
             Whether or not to generate a smooth model without the BAO feature
-        shape : bool, optional
-            Whether or not to include shape marginalisation terms.
-        dilate : bool, optional
-            Whether or not to dilate the k-values of the model based on the values of alpha (and epsilon)
 
         Returns
         -------
@@ -128,9 +168,6 @@ class PowerSeo2016(PowerSpectrumFit):
         ks = self.camb.ks
         pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
 
-        # Compute the growth rate depending on what we have left as free parameters
-        growth = p["f"]
-
         if self.isotropic:
 
             # Compute the smooth model
@@ -138,20 +175,17 @@ class PowerSeo2016(PowerSpectrumFit):
             pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
 
             # Polynomial shape
-            if shape:
-                if self.recon:
-                    shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
-                else:
-                    shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
+            if self.recon:
+                shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
             else:
-                shape = 0
+                shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
 
             if smooth:
                 pk1d = integrate.simps((pk_smooth + shape), self.mu, axis=0)
             else:
                 # Lets round some things for the sake of numerical speed
                 om = np.round(p["om"], decimals=5)
-                growth = np.round(growth, decimals=5)
+                growth = np.round(p["f"], decimals=5)
 
                 # Compute the BAO damping
                 if self.recon:
@@ -176,18 +210,84 @@ class PowerSeo2016(PowerSpectrumFit):
                     propagator = ((prefac_k + prefac_mu) * damping) ** 2
                 pk1d = integrate.simps((pk_smooth + shape) * (1.0 + pk_ratio * propagator), self.mu, axis=0)
 
-            if dilate:
-                kprime = k / p["alpha"]
-            else:
-                kprime = k
-
+            kprime = k / p["alpha"]
             pk0 = splev(kprime, splrep(ks, pk1d))
             pk2 = None
             pk4 = None
 
         else:
-            # TODO: Implement 2D Seo 2016 and neaten up overlap (rather than one big if statement)
-            NotImplementedError("2D Seo2016 model not yet implemented")
+            epsilon = np.round(p["epsilon"], decimals=5)
+            kprime = np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
+            muprime = self.get_muprime(epsilon)
+            fog = 1.0 / (1.0 + muprime ** 2 * kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
+            pk_smooth = p["b"] ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+
+            if smooth:
+                pk2d = pk_smooth
+            else:
+                # Lets round some things for the sake of numerical speed
+                om = np.round(p["om"], decimals=5)
+                growth = np.round(p["f"], decimals=5)
+
+                # Compute the BAO damping
+                if self.recon:
+                    prop_prefac_alpha = np.exp(muprime ** 2 / p["alpha"] ** 2)
+                    prop_prefac_epsilon = (1.0 + epsilon) ** 2
+                    damping_dd = prop_prefac_alpha * np.exp(
+                        self.get_damping_aniso_dd_1(growth, om) / prop_prefac_epsilon ** 2
+                        + self.get_damping_aniso_dd_2(growth, om) * prop_prefac_epsilon
+                        + self.get_damping_aniso_dd_3(om) * prop_prefac_epsilon ** 4
+                    )
+                    prop_prefac_ss = np.exp(prop_prefac_epsilon / p["alpha"] ** 2)
+                    damping_ss = prop_prefac_ss * np.exp(
+                        self.get_damping_aniso_ss_1(om) + self.get_damping_aniso_ss_2(om) * (1.0 / prop_prefac_epsilon ** 3 - 1.0)
+                    )
+                    s = splev(kprime, splrep(ks, self.camb.smoothing_kernel))
+
+                    # Compute propagator
+                    smooth_prefac = s / p["b"]
+                    kaiser_prefac = 1.0 + growth / p["b"] * muprime ** 2 * (1.0 - s)
+
+                    propagator = (kaiser_prefac * damping_dd + smooth_prefac * (damping_ss - damping_dd)) ** 2
+                else:
+                    prop_prefac_alpha = np.exp(muprime ** 2 / p["alpha"] ** 2)
+                    prop_prefac_epsilon = (1.0 + epsilon) ** 2
+                    print(
+                        np.shape(self.get_damping_aniso_1(growth, om)),
+                        np.shape(self.get_damping_aniso_2(growth, om)),
+                        np.shape(self.get_damping_aniso_3(om)),
+                        np.shape(muprime),
+                    )
+                    damping = prop_prefac_alpha * np.exp(
+                        self.get_damping_aniso_1(growth, om) / prop_prefac_epsilon ** 2
+                        + self.get_damping_aniso_2(growth, om) * prop_prefac_epsilon
+                        + self.get_damping_aniso_3(om) * prop_prefac_epsilon ** 4
+                    )
+
+                    R1_kprime = splev(kprime, splrep(ks, self.get_pregen("R1", om)))
+                    R2_kprime = splev(kprime, splrep(ks, self.get_pregen("R2", om)))
+
+                    prefac_k = 1.0 + 3.0 / 7.0 * (R1_kprime * (1.0 - 4.0 / (9.0 * p["b"])) + R2_kprime)
+                    prefac_mu = muprime ** 2 * (
+                        growth / p["b"] + 3.0 / 7.0 * growth * R1_kprime * (2.0 - 1.0 / (3.0 * p["b"])) + 6.0 / 7.0 * growth * R2_kprime
+                    )
+                    propagator = ((prefac_k + prefac_mu) * damping) ** 2
+
+                pk2d = pk_smooth * (1.0 + splev(kprime, splrep(ks, pk_ratio)) * propagator)
+
+            # Polynomial shape
+            if self.recon:
+                shape0 = p["a0_1"] * k ** 2 + p["a0_2"] + p["a0_3"] / k + p["a0_4"] / (k * k) + p["a0_5"] / (k ** 3)
+                shape2 = p["a2_1"] * k ** 2 + p["a2_2"] + p["a2_3"] / k + p["a2_4"] / (k * k) + p["a2_5"] / (k ** 3)
+            else:
+                shape0 = p["a0_1"] * k + p["a0_2"] + p["a0_3"] / k + p["a0_4"] / (k * k) + p["a0_5"] / (k ** 3)
+                shape2 = p["a2_1"] * k + p["a2_2"] + p["a2_3"] / k + p["a2_4"] / (k * k) + p["a2_5"] / (k ** 3)
+
+            pk0 = integrate.simps(pk2d, self.mu, axis=1)
+            pk2 = 3.0 * integrate.simps(pk2d * self.mu ** 2, self.mu, axis=1)
+            pk4 = 1.125 * (35.0 * integrate.simps(pk2d * self.mu ** 4, self.mu, axis=1) - 10.0 * pk2 + 3.0 * pk0)
+            pk2 = 2.5 * (pk2 - pk0) + shape2
+            pk0 = pk0 + shape0
 
         return kprime, pk0, pk2, pk4
 
@@ -196,17 +296,27 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z061_NGC
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_SGC
     from barry.config import setup_logging
 
     setup_logging()
 
-    print("Checking pre-recon")
-    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=False)
-    model_pre = PowerSeo2016(recon=False)
+    """print("Checking isotropic mock mean")
+    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True)
+    model_pre = PowerSeo2016(recon=dataset.recon, isotropic=dataset.isotropic)
     model_pre.sanity_check(dataset)
 
-    print("Checking post-recon")
-    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=True)
-    model_post = PowerSeo2016(recon=True)
+    print("Checking isotropic data")
+    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True, realisation="data")
+    model_post = PowerSeo2016(recon=dataset.recon, isotropic=dataset.isotropic)
+    model_post.sanity_check(dataset)"""
+
+    print("Checking anisotropic mock mean")
+    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False)
+    model_post = PowerSeo2016(recon=dataset.recon, isotropic=dataset.isotropic)
+    model_post.sanity_check(dataset)
+
+    print("Checking anisotropic data")
+    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False, realisation="data")
+    model_post = PowerSeo2016(recon=dataset.recon, isotropic=dataset.isotropic)
     model_post.sanity_check(dataset)

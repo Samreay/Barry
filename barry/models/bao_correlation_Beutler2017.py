@@ -136,6 +136,6 @@ if __name__ == "__main__":
     model_iso.sanity_check(dataset)
 
     print("Checking anisotropic")
-    dataset = CorrelationFunction_ROSS_DR12_Z061(isotropic=False)
+    dataset = CorrelationFunction_ROSS_DR12_Z061(isotropic=False, min_dist=50, max_dist=150)
     model_aniso = CorrBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
     model_aniso.sanity_check(dataset)

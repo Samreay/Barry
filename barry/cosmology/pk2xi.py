@@ -62,7 +62,7 @@ class PowerToCorrelationGauss(PowerToCorrelation):
             if self.ell == 0:
                 bessel = np.sin(z) / s
             elif self.ell == 2:
-                bessel = (3.0 / z ** 2 - 1.0) * np.sin(z) / s - 3.0 * np.cos(z) / (z * s)
+                bessel = (1.0 - 3.0 / z ** 2) * np.sin(z) / s + 3.0 * np.cos(z) / (z * s)
             elif self.ell == 4:
                 bessel = (105.0 / z ** 4 - 45.0 / z ** 2 + 1.0) * np.sin(z) / s - (105.0 / z ** 2 - 10.0) * np.cos(z) / (z * s)
             else:
