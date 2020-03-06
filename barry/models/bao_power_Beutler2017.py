@@ -54,11 +54,6 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param("a2_3", r"$a_{2,3}$", -1000.0, 5000.0, 0)  # Quadrupole Polynomial marginalisation 3
             self.add_param("a2_4", r"$a_{2,4}$", -200.0, 200.0, 0)  # Quadrupole Polynomial marginalisation 4
             self.add_param("a2_5", r"$a_{2,5}$", -3.0, 3.0, 0)  # Quadrupole Polynomial marginalisation 5
-            # self.add_param("a4_1", r"$a_{4,1}$", -10000.0, 30000.0, 0)  # Quadrupole Polynomial marginalisation 1
-            # self.add_param("a4_2", r"$a_{4,2}$", -20000.0, 10000.0, 0)  # Quadrupole Polynomial marginalisation 2
-            # self.add_param("a4_3", r"$a_{4,3}$", -1000.0, 5000.0, 0)  # Quadrupole Polynomial marginalisation 3
-            # self.add_param("a4_4", r"$a_{4,4}$", -200.0, 200.0, 0)  # Quadrupole Polynomial marginalisation 4
-            # self.add_param("a4_5", r"$a_{4,5}$", -3.0, 3.0, 0)  # Quadrupole Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p, smooth=False):
         """ Computes the power spectrum model using the Beutler et. al., 2017 method
