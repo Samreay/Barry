@@ -55,7 +55,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param("a2_4", r"$a_{2,4}$", -200.0, 200.0, 0)  # Quadrupole Polynomial marginalisation 4
             self.add_param("a2_5", r"$a_{2,5}$", -3.0, 3.0, 0)  # Quadrupole Polynomial marginalisation 5
 
-    def compute_power_spectrum(self, k, p, smooth=False):
+    def compute_power_spectrum(self, k, p, smooth=False, dilate=True, data_name=None):
         """ Computes the power spectrum model using the Beutler et. al., 2017 method
 
         Parameters
@@ -147,6 +147,16 @@ if __name__ == "__main__":
 
     setup_logging()
 
+    print("Getting default 1D")
+    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True)
+    model_post = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
+    model_post.plot_default(dataset)
+
+    print("Getting default 2D")
+    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False)
+    model_post = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
+    model_post.plot_default(dataset)
+
     print("Checking isotropic mock mean")
     dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True)
     model_pre = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
@@ -156,7 +166,7 @@ if __name__ == "__main__":
     dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True, realisation="data")
     model_post = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
     model_post.sanity_check(dataset)
-
+    #
     print("Checking anisotropic mock mean")
     dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False)
     model_post = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)

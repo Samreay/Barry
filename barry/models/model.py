@@ -171,6 +171,10 @@ class Model(ABC):
         """ Returns a list of default values for all active parameters """
         return [x.default for x in self.get_active_params()]
 
+    def get_defaults_dict(self):
+        """ Returns a list of default values for all active parameters """
+        return {x.name: x.default for x in self.get_active_params()}
+
     def get_labels(self):
         """ Gets a list of the label for all active parameters """
         return [x.label for x in self.get_active_params()]
@@ -402,6 +406,11 @@ class Model(ABC):
         fs = np.array(fs)
         ps = self.unscale(xs[fs.argmin()])
         return self.get_param_dict(ps), fs.min()
+
+    def plot_default(self, dataset):
+        params = self.get_param_dict(self.get_defaults())
+        self.set_data(dataset.get_data())
+        self.plot(params)
 
     @abstractmethod
     def plot(self, params, smooth_params=None):

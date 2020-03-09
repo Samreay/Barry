@@ -298,7 +298,7 @@ class PowerSpectrumFit(Model):
 
         """
 
-        ks, pk0, pk2, pk4 = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth, data_name=d["name"])
+        ks, pk0, pk2, pk4 = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth, data_name=d["name"], dilate=True)
 
         # Morph it into a model representative of our survey and its selection/window/binning effects
         if self.isotropic:
@@ -315,82 +315,64 @@ class PowerSpectrumFit(Model):
         return pk_model
 
     def plot(self, params, smooth_params=None):
+        self.logger.info("Create plot")
         import matplotlib.pyplot as plt
 
         ks = self.data[0]["ks"]
         err = np.sqrt(np.diag(self.data[0]["cov"]))
         mod = self.get_model(params, self.data[0])
-
         if smooth_params is not None:
             smooth = self.get_model(smooth_params, self.data[0], smooth=True)
         else:
             smooth = self.get_model(params, self.data[0], smooth=True)
 
-        fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
+        # Split up the different multipoles if we have them
+        if len(err) > len(ks):
+            assert len(err) % len(ks) == 0, f"Cannot split your data - have {len(err)} points and {len(ks)} modes"
+        errs = [row for row in err.reshape((-1, len(ks)))]
+        mods = [row for row in mod.reshape((-1, len(ks)))]
+        smooths = [row for row in smooth.reshape((-1, len(ks)))]
+        names = [f"pk{n}" for n in range(len(mods))]
+        labels = [f"$P_{{{n}}}(k)$" for n in range(len(mods))]
+        num_rows = len(names)
+        cs = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00"]
 
-        axes[0].errorbar(ks, ks * self.data[0]["pk0"], yerr=ks * err[: len(ks)], fmt="o", c="k", ms=4, label=r"$P_{0}(k)$")
-        axes[1].errorbar(ks, self.data[0]["pk0"] / smooth[: len(ks)], yerr=(err / smooth)[: len(ks)], fmt="o", c="k", ms=4)
-        axes[0].plot(ks, ks * mod[: len(ks)], c="k")
-        axes[1].plot(ks, (mod / smooth)[: len(ks)], c="k")
+        fig, axes = plt.subplots(figsize=(9, 2 + 1.4 * num_rows), nrows=num_rows, ncols=2, sharex=True, squeeze=False)
+        plt.subplots_adjust(left=0.1, top=0.7 if num_rows == 1 else 0.9, bottom=0.05, right=0.85, hspace=0, wspace=0.3)
+        for ax, err, mod, smooth, name, label, c in zip(axes, errs, mods, smooths, names, labels, cs):
 
-        string = f"Likelihood: {self.get_likelihood(params, self.data[0]):0.2f}\n"
-        string += "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params.items()])
+            # Plot ye old data
+            ax[0].errorbar(ks, ks * self.data[0][name], yerr=ks * err, fmt="o", ms=4, label="Data", c=c)
+            ax[1].errorbar(ks, self.data[0][name] - smooth, yerr=err, fmt="o", ms=4, label="Data", c=c)
+
+            # Plot ye old model
+            ax[0].plot(ks, ks * mod, c=c, label="Model")
+            ax[1].plot(ks, (mod / smooth), c=c, label="Model")
+
+            if name in ["pk1", "pk3"]:
+                ax[0].set_facecolor("#eeeeee")
+                ax[1].set_facecolor("#eeeeee")
+                ax[0].set_ylabel("$ik \\times $ " + label)
+            else:
+                ax[0].set_ylabel("$k \\times $ " + label)
+
+        # Show the model parameters
+        string = f"$\\mathcal{{L}}$: {self.get_likelihood(params, self.data[0]):0.3g}\n"
+        string += "\n".join([f"{self.param_dict[l].label}={v:0.3g}" for l, v in params.items()])
         va = "center" if self.postprocess is None else "top"
         ypos = 0.5 if self.postprocess is None else 0.98
-        axes[0].annotate(string, (0.98, ypos), xycoords="axes fraction", horizontalalignment="right", verticalalignment=va)
-        axes[1].legend()
-        axes[1].set_xlabel("k")
+        axes[0, 1].annotate(string, (0.99, ypos), xycoords="figure fraction", horizontalalignment="right", verticalalignment=va)
+        axes[-1, 0].set_xlabel("k")
+        axes[-1, 1].set_xlabel("k")
+        axes[0, 0].legend(frameon=False)
+
         if self.postprocess is None:
-            axes[1].set_ylabel("P(k) / P_{smooth}(k)")
+            axes[0, 1].set_title("$P(k) - P_{\\rm smooth}(k)$")
         else:
-            axes[1].set_ylabel("P(k) / data")
-        axes[0].set_ylabel("k * P(k)")
+            axes[0, 1].set_title("P(k) - data")
+        axes[0, 0].set_title("P(k)")
 
-        axes[0].set_title(self.data[0]["name"] + " + " + self.get_name())
-
-        if not self.isotropic:
-            axes[0].errorbar(ks, ks * self.data[0]["pk2"], yerr=ks * err[2 * len(ks) : 3 * len(ks)], fmt="o", c="r", ms=4, label=r"$P_{2}(k)$")
-            axes[1].errorbar(ks, self.data[0]["pk2"] / smooth[2 * len(ks) : 3 * len(ks)], yerr=(err / smooth)[2 * len(ks) : 3 * len(ks)], fmt="o", c="r", ms=4)
-            axes[0].plot(ks, ks * mod[2 * len(ks) : 3 * len(ks)], c="r")
-            axes[1].plot(ks, (mod / smooth)[2 * len(ks) : 3 * len(ks)], c="r")
-
-            axes[0].errorbar(ks, ks * self.data[0]["pk4"], yerr=ks * err[4 * len(ks) :], fmt="o", c="b", ms=4, label=r"$P_{4}(k)$")
-            # axes[1].errorbar(ks, self.data[0]["pk4"] / smooth[4 * len(ks) :], yerr=(err / smooth)[4 * len(ks) :], fmt="o", c="b", ms=4)
-            axes[0].plot(ks, ks * mod[4 * len(ks) :], c="b")
-            # axes[1].plot(ks, (mod / smooth)[4 * len(ks) :], c="b")
-
-        plt.legend()
-
-        if not self.isotropic:
-
-            fig, axes = plt.subplots(figsize=(6, 8), nrows=2, sharex=True)
-
-            axes[0].errorbar(ks, ks * self.data[0]["pk1"], yerr=ks * err[1 * len(ks) : 2 * len(ks)], fmt="o", c="r", ms=4, label=r"$P_{1}(k)$")
-            axes[1].errorbar(ks, self.data[0]["pk1"] - smooth[1 * len(ks) : 2 * len(ks)], yerr=(err)[1 * len(ks) : 2 * len(ks)], fmt="o", c="r", ms=4)
-            axes[0].plot(ks, ks * mod[1 * len(ks) : 2 * len(ks)], c="r")
-            axes[1].plot(ks, (mod - smooth)[1 * len(ks) : 2 * len(ks)], c="r")
-
-            axes[0].errorbar(ks, ks * self.data[0]["pk3"], yerr=ks * err[3 * len(ks) : 4 * len(ks)], fmt="o", c="b", ms=4, label=r"$P_{3}(k)$")
-            axes[1].errorbar(ks, self.data[0]["pk3"] - smooth[3 * len(ks) : 4 * len(ks)], yerr=(err)[3 * len(ks) : 4 * len(ks)], fmt="o", c="b", ms=4)
-            axes[0].plot(ks, ks * mod[3 * len(ks) : 4 * len(ks)], c="b")
-            axes[1].plot(ks, (mod - smooth)[3 * len(ks) : 4 * len(ks)], c="b")
-
-            string = f"Likelihood: {self.get_likelihood(params, self.data[0]):0.2f}\n"
-            string += "\n".join([f"{self.param_dict[l].label}={v:0.3f}" for l, v in params.items()])
-            va = "center" if self.postprocess is None else "top"
-            ypos = 0.5 if self.postprocess is None else 0.98
-            axes[0].annotate(string, (0.98, ypos), xycoords="axes fraction", horizontalalignment="right", verticalalignment=va)
-            axes[1].legend()
-            axes[1].set_xlabel("k")
-            if self.postprocess is None:
-                axes[1].set_ylabel("P(k) - P_{smooth}(k)")
-            else:
-                axes[1].set_ylabel("P(k) - data")
-            axes[0].set_ylabel("k * Im[P(k)]")
-
-            axes[0].set_title(self.data[0]["name"] + " + " + self.get_name())
-            plt.legend()
-
+        fig.suptitle(self.data[0]["name"] + " + " + self.get_name())
         plt.show()
 
 

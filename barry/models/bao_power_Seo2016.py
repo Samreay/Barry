@@ -307,6 +307,16 @@ if __name__ == "__main__":
 
     setup_logging()
 
+    print("Getting default 1D")
+    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True)
+    model_post = PowerSeo2016(recon=dataset.recon, isotropic=dataset.isotropic)
+    model_post.plot_default(dataset)
+
+    print("Getting default 2D")
+    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False)
+    model_post = PowerSeo2016(recon=dataset.recon, isotropic=dataset.isotropic)
+    model_post.plot_default(dataset)
+
     """print("Checking isotropic mock mean")
     dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True)
     model_pre = PowerSeo2016(recon=dataset.recon, isotropic=dataset.isotropic)
