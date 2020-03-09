@@ -343,11 +343,11 @@ class PowerSpectrumFit(Model):
 
             # Plot ye old data
             ax[0].errorbar(ks, ks * self.data[0][name], yerr=ks * err, fmt="o", ms=4, label="Data", c=c)
-            ax[1].errorbar(ks, self.data[0][name] - smooth, yerr=err, fmt="o", ms=4, label="Data", c=c)
+            ax[1].errorbar(ks, ks * (self.data[0][name] - smooth), yerr=err, fmt="o", ms=4, label="Data", c=c)
 
             # Plot ye old model
             ax[0].plot(ks, ks * mod, c=c, label="Model")
-            ax[1].plot(ks, (mod / smooth), c=c, label="Model")
+            ax[1].plot(ks, ks * (mod - smooth), c=c, label="Model")
 
             if name in ["pk1", "pk3"]:
                 ax[0].set_facecolor("#eeeeee")
@@ -367,10 +367,10 @@ class PowerSpectrumFit(Model):
         axes[0, 0].legend(frameon=False)
 
         if self.postprocess is None:
-            axes[0, 1].set_title("$P(k) - P_{\\rm smooth}(k)$")
+            axes[0, 1].set_title("$k \\times [P(k) - P_{\\rm smooth}(k)]$")
         else:
-            axes[0, 1].set_title("P(k) - data")
-        axes[0, 0].set_title("P(k)")
+            axes[0, 1].set_title("$k \\times [P(k) - data]$")
+        axes[0, 0].set_title("$k \\times P(k)$")
 
         fig.suptitle(self.data[0]["name"] + " + " + self.get_name())
         plt.show()
