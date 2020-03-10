@@ -5,14 +5,13 @@ from scipy.interpolate import interp1d
 from scipy.stats import norm
 import numpy as np
 
-from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_SGC
 
 sys.path.append("..")
+from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_SGC
 from barry.cosmology.camb_generator import getCambGenerator
-from barry.postprocessing import BAOExtractor, PureBAOExtractor
+from barry.postprocessing import BAOExtractor
 from barry.config import setup
-from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
-from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC
+from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018
 from barry.samplers import DynestySampler
 from barry.fitter import Fitter
 
