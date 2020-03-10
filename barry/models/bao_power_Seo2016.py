@@ -207,7 +207,6 @@ class PowerSeo2016(PowerSpectrumFit):
                 if self.recon:
                     damping_dd = self.get_damping_dd(growth, om)
                     damping_ss = self.get_damping_ss(om)
-                    s = self.camb.smoothing_kernel
 
                     # Compute propagator
                     smooth_prefac = np.tile(s / p["b"], (self.nmu, 1))
@@ -255,11 +254,11 @@ class PowerSeo2016(PowerSpectrumFit):
                     damping_ss = np.exp(
                         self.get_damping_aniso_ss_par(om, data_name=data_name) + self.get_damping_aniso_ss_perp(om, data_name=data_name) * (1.0 + epsilon) ** 6
                     )
-                    s = splev(kprime, splrep(ks, self.camb.smoothing_kernel))
+                    sprime = splev(kprime, splrep(ks, s))
 
                     # Compute propagator
-                    smooth_prefac = s / p["b"]
-                    kaiser_prefac = 1.0 + growth / p["b"] * muprime ** 2 * (1.0 - s)
+                    smooth_prefac = sprime / p["b"]
+                    kaiser_prefac = 1.0 + growth / p["b"] * muprime ** 2 * (1.0 - sprime)
 
                     propagator = prop_prefac * (kaiser_prefac * damping_dd + smooth_prefac * (damping_ss - damping_dd)) ** 2
                 else:
