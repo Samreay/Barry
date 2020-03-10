@@ -344,7 +344,7 @@ class PowerSpectrumFit(Model):
 
             # Plot ye old data
             ax[0].errorbar(ks, ks * self.data[0][name], yerr=ks * err, fmt="o", ms=4, label="Data", c=c)
-            ax[1].errorbar(ks, ks * (self.data[0][name] - smooth), yerr=err, fmt="o", ms=4, label="Data", c=c)
+            ax[1].errorbar(ks, ks * (self.data[0][name] - smooth), yerr=ks * err, fmt="o", ms=4, label="Data", c=c)
 
             # Plot ye old model
             ax[0].plot(ks, ks * mod, c=c, label="Model")
