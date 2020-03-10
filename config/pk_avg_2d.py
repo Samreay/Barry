@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     for r in [False]:
         t = "Recon" if r else "Prerecon"
-        ls = "-" if r else "--"
+        ls = "-"  # if r else "--"
         d = PowerSpectrum_Beutler2019_Z061_SGC(recon=r, isotropic=False)
 
         # Fix sigma_nl for one of the Beutler models
@@ -37,7 +37,7 @@ if __name__ == "__main__":
         sigma_nl = 6.0 if r else 9.3
         model.set_default("sigma_nl_par", 14.1)
         model.set_default("sigma_nl_perp", 2.64)
-        model.set_fix_params(["om", "sigma_nl_par", "sigma_nl_perp"])
+        model.set_fix_params(["om", "f", "sigma_nl_par", "sigma_nl_perp"])
 
         fitter.add_model_and_dataset(PowerBeutler2017(recon=r, isotropic=False), d, name=f"Beutler 2017 {t}", linestyle=ls, color=cs[0])
         fitter.add_model_and_dataset(model, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}", linestyle=ls, color=cs[0])
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         fitter.add_model_and_dataset(PowerDing2018(recon=r, isotropic=False), d, name=f"Ding 2018 {t}", linestyle=ls, color=cs[2])
 
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(5)
+    fitter.set_num_walkers(10)
     fitter.fit(file)
 
     if fitter.should_plot():
@@ -61,6 +61,7 @@ if __name__ == "__main__":
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0}
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth=truth)
-        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=["$\\alpha$", "$A$", "$b$"])
+        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=3)
+        c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour.pdf"], truth=truth, parameters=10)
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth={"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0})
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
