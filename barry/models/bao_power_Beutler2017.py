@@ -175,9 +175,9 @@ if __name__ == "__main__":
     dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True, realisation="data")
     model_post = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
     model_post.sanity_check(dataset)
-    #
+
     print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False)
+    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False, recon=True)
     model_post = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
     model_post.sanity_check(dataset)
 
