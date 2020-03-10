@@ -235,12 +235,13 @@ class PowerSpectrumFit(Model):
 
         else:
             # Multiply the model by the M matrix to get the 5 multipoles
-            pk_mod = data["m_transform"] @ pk_generated
 
             if window:
                 # Convolve the model
-                pk_normalised = data["w_transform"] @ pk_mod
+                pk_normalised = data["w_m_transform"] @ pk_generated
             else:
+                pk_mod = data["m_transform"] @ pk_generated
+
                 pk_normalised = []
                 for i in range(5):
                     pk_normalised.append(

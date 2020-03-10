@@ -72,6 +72,7 @@ class PowerSpectrum(Dataset, ABC):
         self._load_winfit()
         self._load_winpk_file()
         self.m_transform = None
+        self.m_w_transform = None
         if not self.isotropic:
             self._load_comp_file()
 
@@ -213,6 +214,7 @@ class PowerSpectrum(Dataset, ABC):
 
     def _load_comp_file(self):
         self.m_transform = self.data_obj["m_mat"]
+        self.m_w_transform = self.w_transform @ self.m_transform
         self.logger.info(f"Compression matrix has shape {self.m_transform.shape}")
 
     def get_data(self):
@@ -231,6 +233,7 @@ class PowerSpectrum(Dataset, ABC):
             "num_mocks": self.num_mocks,
             "isotropic": self.isotropic,
             "m_transform": self.m_transform,
+            "w_m_transform": self.m_w_transform,
         }
 
         # Some data has pk0 some has pk0 to pk4

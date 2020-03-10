@@ -32,13 +32,13 @@ class PowerSeo2016(PowerSpectrumFit):
         r1, r2 = self.get_Rs()
 
         # R_1/P_lin, R_2/P_lin
-        R1 = ks ** 2 * integrate.simps(pk_lin * r1, ks, axis=1) / (4.0 * np.pi ** 2)
-        R2 = ks ** 2 * integrate.simps(pk_lin * r2, ks, axis=1) / (4.0 * np.pi ** 2)
+        R1 = ks ** 2 * integrate.simps(pk_lin * r1, x=ks, axis=1) / (4.0 * np.pi ** 2)
+        R2 = ks ** 2 * integrate.simps(pk_lin * r2, x=ks, axis=1) / (4.0 * np.pi ** 2)
 
         return {
-            "sigma": integrate.simps(pk_lin, ks) / (6.0 * np.pi ** 2),
-            "sigma_dd": integrate.simps(pk_lin * (1.0 - s) ** 2, ks) / (6.0 * np.pi ** 2),
-            "sigma_ss": integrate.simps(pk_lin * s ** 2, ks) / (6.0 * np.pi ** 2),
+            "sigma": integrate.simps(pk_lin, x=ks) / (6.0 * np.pi ** 2),
+            "sigma_dd": integrate.simps(pk_lin * (1.0 - s) ** 2, x=ks) / (6.0 * np.pi ** 2),
+            "sigma_ss": integrate.simps(pk_lin * s ** 2, x=ks) / (6.0 * np.pi ** 2),
             "R1": R1,
             "R2": R2,
         }
@@ -315,7 +315,7 @@ if __name__ == "__main__":
     model_post = PowerSeo2016(recon=dataset.recon, isotropic=dataset.isotropic)
     model_post.plot_default(dataset)
 
-    """print("Checking isotropic mock mean")
+    print("Checking isotropic mock mean")
     dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True)
     model_pre = PowerSeo2016(recon=dataset.recon, isotropic=dataset.isotropic)
     model_pre.sanity_check(dataset)
@@ -323,8 +323,8 @@ if __name__ == "__main__":
     print("Checking isotropic data")
     dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True, realisation="data")
     model_post = PowerSeo2016(recon=dataset.recon, isotropic=dataset.isotropic)
-    model_post.sanity_check(dataset)"""
-
+    model_post.sanity_check(dataset)
+    #
     print("Checking anisotropic mock mean")
     dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False)
     model_post = PowerSeo2016(recon=dataset.recon, isotropic=dataset.isotropic)

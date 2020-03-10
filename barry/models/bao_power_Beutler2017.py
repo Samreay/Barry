@@ -148,9 +148,18 @@ if __name__ == "__main__":
     setup_logging()
 
     print("Getting default 1D")
-    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True)
+    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False)
     model_post = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
     model_post.plot_default(dataset)
+
+    # def timing():
+    #     params = model_post.get_raw_start()
+    #     posterior = model_post.get_posterior(params)
+    #
+    # import timeit
+    # model_post.set_data(dataset.get_data())
+    # niter = 6000
+    # print("Model posterior takes on average, %.2f milliseconds" % (timeit.timeit(timing, number=niter) * 1000 / niter))
 
     print("Getting default 2D")
     dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False)
