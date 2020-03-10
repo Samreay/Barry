@@ -75,56 +75,60 @@ class PowerSeo2016(PowerSpectrumFit):
         return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_dd", om) / 2.0)
 
     @lru_cache(maxsize=4)
-    def get_damping_aniso_dd_1(self, growth, om):
-        return -(1.0 + (2.0 + growth) * growth) * np.tile(self.camb.ks ** 2, (self.nmu, 1)).T * self.get_pregen("sigma_dd", om) / 2.0
+    def get_damping_aniso_dd_par(self, growth, om, data_name=None):
+        if data_name is None:
+            ks = self.camb.ks
+        else:
+            ks = self.data_dict[data_name]["ks_input"]
+        return -(1.0 + (2.0 + growth) * growth) * np.outer(ks ** 2, self.mu ** 2) * self.get_pregen("sigma_dd", om) / 2.0
 
     @lru_cache(maxsize=4)
-    def get_damping_aniso_dd_2(self, growth, om):
-        return -(2.0 + (2.0 + growth) * growth) * np.outer(self.camb.ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_dd", om) / 2.0
-
-    @lru_cache(maxsize=4)
-    def get_damping_aniso_dd_3(self, om):
-        return -np.outer(self.camb.ks ** 2, (1.0 - self.mu ** 2) ** 2 / self.mu ** 2) * self.get_pregen("sigma_dd", om) / 2.0
+    def get_damping_aniso_dd_perp(self, om, data_name=None):
+        if data_name is None:
+            ks = self.camb.ks
+        else:
+            ks = self.data_dict[data_name]["ks_input"]
+        return -np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_dd", om) / 2.0
 
     @lru_cache(maxsize=4)
     def get_damping_ss(self, om):
         return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pregen("sigma_ss", om) / 2.0)
 
     @lru_cache(maxsize=4)
-    def get_damping_aniso_ss_1(self, om):
-        return --np.tile(self.camb.ks ** 2, (self.nmu, 1)).T * self.get_pregen("sigma_ss", om) / 2.0
+    def get_damping_aniso_ss_par(self, om, data_name=None):
+        if data_name is None:
+            ks = self.camb.ks
+        else:
+            ks = self.data_dict[data_name]["ks_input"]
+        return -np.outer(ks ** 2, self.mu ** 2) * self.get_pregen("sigma_ss", om) / 2.0
 
     @lru_cache(maxsize=4)
-    def get_damping_aniso_ss_2(self, om):
-        return -np.outer(self.camb.ks ** 2, self.mu ** 2) * self.get_pregen("sigma_ss", om) / 2.0
+    def get_damping_aniso_ss_perp(self, om, data_name=None):
+        if data_name is None:
+            ks = self.camb.ks
+        else:
+            ks = self.data_dict[data_name]["ks_input"]
+        return -np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_ss", om) / 2.0
 
     @lru_cache(maxsize=4)
     def get_damping(self, growth, om):
         return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma", om) / 2.0)
 
     @lru_cache(maxsize=4)
-    def get_damping_aniso_1(self, growth, om, data_name=None):
+    def get_damping_aniso_par(self, growth, om, data_name=None):
         if data_name is None:
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return -(1.0 + (2.0 + growth) * growth) * np.tile(ks ** 2, (self.nmu, 1)).T * self.get_pregen("sigma", om) / 2.0
+        return -(1.0 + (2.0 + growth) * growth) * np.outer(ks ** 2, self.mu ** 2) * self.get_pregen("sigma", om) / 2.0
 
     @lru_cache(maxsize=4)
-    def get_damping_aniso_2(self, growth, om, data_name=None):
+    def get_damping_aniso_perp(self, om, data_name=None):
         if data_name is None:
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return -(2.0 + (2.0 + growth) * growth) * np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma", om) / 2.0
-
-    @lru_cache(maxsize=4)
-    def get_damping_aniso_3(self, om, data_name=None):
-        if data_name is None:
-            ks = self.camb.ks
-        else:
-            ks = self.data_dict[data_name]["ks_input"]
-        return -np.outer(ks ** 2, (1.0 - self.mu ** 2) ** 2 / self.mu ** 2) * self.get_pregen("sigma", om) / 2.0
+        return -np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma", om) / 2.0
 
     def set_data(self, data):
         super().set_data(data)
@@ -151,7 +155,7 @@ class PowerSeo2016(PowerSpectrumFit):
             self.add_param("a2_4", r"$a_{2,4}$", -200.0, 200.0, 0)  # Quadrupole Polynomial marginalisation 4
             self.add_param("a2_5", r"$a_{2,5}$", -3.0, 3.0, 0)  # Quadrupole Polynomial marginalisation 5
 
-    def compute_power_spectrum(self, k, p, smooth=False, data_name=None):
+    def compute_power_spectrum(self, k, p, smooth=False, dilate=True, data_name=None):
         """ Computes the power spectrum model using the LPT based propagators from Seo et. al., 2016
 
         Parameters
@@ -243,16 +247,13 @@ class PowerSeo2016(PowerSpectrumFit):
 
                 # Compute the BAO damping
                 if self.recon:
-                    prop_prefac_alpha = np.exp(muprime ** 2 / p["alpha"] ** 2)
-                    prop_prefac_epsilon = (1.0 + epsilon) ** 2
-                    damping_dd = prop_prefac_alpha * np.exp(
-                        self.get_damping_aniso_dd_1(growth, om) / prop_prefac_epsilon ** 2
-                        + self.get_damping_aniso_dd_2(growth, om) * prop_prefac_epsilon
-                        + self.get_damping_aniso_dd_3(om) * prop_prefac_epsilon ** 4
+                    prop_prefac = np.exp(2.0 / (p["alpha"] ** 2 * (1.0 + epsilon) ** 4))
+                    damping_dd = np.exp(
+                        self.get_damping_aniso_dd_par(growth, om, data_name=data_name)
+                        + self.get_damping_aniso_dd_perp(om, data_name=data_name) * (1.0 + epsilon) ** 6
                     )
-                    prop_prefac_ss = np.exp(prop_prefac_epsilon / p["alpha"] ** 2)
-                    damping_ss = prop_prefac_ss * np.exp(
-                        self.get_damping_aniso_ss_1(om) + self.get_damping_aniso_ss_2(om) * (1.0 / prop_prefac_epsilon ** 3 - 1.0)
+                    damping_ss = np.exp(
+                        self.get_damping_aniso_ss_par(om, data_name=data_name) + self.get_damping_aniso_ss_perp(om, data_name=data_name) * (1.0 + epsilon) ** 6
                     )
                     s = splev(kprime, splrep(ks, self.camb.smoothing_kernel))
 
@@ -260,14 +261,12 @@ class PowerSeo2016(PowerSpectrumFit):
                     smooth_prefac = s / p["b"]
                     kaiser_prefac = 1.0 + growth / p["b"] * muprime ** 2 * (1.0 - s)
 
-                    propagator = (kaiser_prefac * damping_dd + smooth_prefac * (damping_ss - damping_dd)) ** 2
+                    propagator = prop_prefac * (kaiser_prefac * damping_dd + smooth_prefac * (damping_ss - damping_dd)) ** 2
                 else:
-                    prop_prefac_alpha = np.exp(muprime ** 2 / p["alpha"] ** 2)
-                    prop_prefac_epsilon = (1.0 + epsilon) ** 2
-                    damping = prop_prefac_alpha * np.exp(
-                        self.get_damping_aniso_1(growth, om, data_name=data_name) / prop_prefac_epsilon ** 2
-                        + self.get_damping_aniso_2(growth, om, data_name=data_name) * prop_prefac_epsilon
-                        + self.get_damping_aniso_3(om, data_name=data_name) * prop_prefac_epsilon ** 4
+                    prop_prefac = np.exp(2.0 / (p["alpha"] ** 2 * (1.0 + epsilon) ** 4))
+                    damping = np.exp(
+                        self.get_damping_aniso_par(growth, om, data_name=data_name)
+                        + self.get_damping_aniso_perp(om, data_name=data_name) * (1.0 + epsilon) ** 6
                     )
 
                     R1_kprime = splev(kprime, splrep(ks, self.get_pregen("R1", om)))
@@ -277,7 +276,7 @@ class PowerSeo2016(PowerSpectrumFit):
                     prefac_mu = muprime ** 2 * (
                         growth / p["b"] + 3.0 / 7.0 * growth * R1_kprime * (2.0 - 1.0 / (3.0 * p["b"])) + 6.0 / 7.0 * growth * R2_kprime
                     )
-                    propagator = ((prefac_k + prefac_mu) * damping) ** 2
+                    propagator = prop_prefac * ((prefac_k + prefac_mu) * damping) ** 2
 
                 pk2d = pk_smooth * (1.0 + splev(kprime, splrep(ks, pk_ratio)) * propagator)
 
