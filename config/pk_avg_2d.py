@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
-    for r in [True, False]:
+    for r in [False]:
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
         d = PowerSpectrum_Beutler2019_Z061_SGC(recon=r, isotropic=False)
@@ -35,8 +35,8 @@ if __name__ == "__main__":
         # Fix sigma_nl for one of the Beutler models
         model = PowerBeutler2017(recon=r, isotropic=False)
         sigma_nl = 6.0 if r else 9.3
-        model.set_default("sigma_nl_par", 8.4 if r else 14.1)
-        model.set_default("sigma_nl_perp", 3.3 if r else 2.64)
+        model.set_default("sigma_nl_par", 14.1)
+        model.set_default("sigma_nl_perp", 2.64)
         model.set_fix_params(["om", "sigma_nl_par", "sigma_nl_perp"])
 
         fitter.add_model_and_dataset(PowerBeutler2017(recon=r, isotropic=False), d, name=f"Beutler 2017 {t}", linestyle=ls, color=cs[0])
