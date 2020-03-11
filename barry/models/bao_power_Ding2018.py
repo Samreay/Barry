@@ -57,7 +57,7 @@ class PowerDing2018(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return -(1.0 + (2.0 + growth) * growth) * np.outer(ks ** 2, self.mu ** 2) * self.get_pregen("sigma_dd_nl", om)
+        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_dd_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_dd_perp(self, om, data_name=None):
@@ -65,7 +65,7 @@ class PowerDing2018(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return -np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_dd_nl", om)
+        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_dd_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_sd(self, growth, om):
@@ -77,7 +77,7 @@ class PowerDing2018(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return -(1.0 + growth) * np.outer(ks ** 2, self.mu ** 2) * self.get_pregen("sigma_sd_nl", om)
+        return np.exp(-np.outer((1.0 + growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_sd_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_sd_perp(self, om, data_name=None):
@@ -85,7 +85,7 @@ class PowerDing2018(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return -np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_sd_nl", om)
+        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_sd_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_ss(self, om):
@@ -97,7 +97,7 @@ class PowerDing2018(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return -np.outer(ks ** 2, self.mu ** 2) * self.get_pregen("sigma_ss_nl", om)
+        return np.exp(-np.outer(ks ** 2, self.mu ** 2) * self.get_pregen("sigma_ss_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_ss_perp(self, om, data_name=None):
@@ -105,7 +105,7 @@ class PowerDing2018(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return -np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_dd_nl", om)
+        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_ss_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping(self, growth, om):
@@ -117,7 +117,7 @@ class PowerDing2018(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return -(1.0 + (2.0 + growth) * growth) * np.outer(ks ** 2, self.mu ** 2) * self.get_pregen("sigma_nl", om)
+        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_perp(self, om, data_name=None):
@@ -125,7 +125,7 @@ class PowerDing2018(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return -np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_nl", om)
+        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_nl", om))
 
     def declare_parameters(self):
         super().declare_parameters()
@@ -210,9 +210,9 @@ class PowerDing2018(PowerSpectrumFit):
                     damping_sd = self.get_damping_sd(growth, om)
                     damping_ss = self.get_damping_ss(om)
 
-                    smooth_prefac = np.tile(s / p["b"], (self.nmu, 1))
+                    smooth_prefac = np.tile(self.camb.smoothing_kernel / p["b"], (self.nmu, 1))
                     bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
-                    kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - s) + bdelta_prefac
+                    kaiser_prefac = 1.0 - smooth_prefac + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel) + bdelta_prefac
                     propagator = (
                         (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping_dd
                         + 2.0 * kaiser_prefac * smooth_prefac * damping_sd
@@ -250,18 +250,20 @@ class PowerDing2018(PowerSpectrumFit):
                 growth = np.round(p["f"], decimals=5)
 
                 # Compute the BAO damping
+                power_par = 1.0 / (p["alpha"] ** 2 * (1.0 + epsilon) ** 4)
+                power_perp = (1.0 + epsilon) ** 2 / p["alpha"] ** 2
                 if self.recon:
-                    prop_prefac = np.exp(1.0 / (p["alpha"] ** 2 * (1.0 + epsilon) ** 4))
-                    damping_dd = np.exp(
-                        self.get_damping_aniso_dd_par(growth, om, data_name=data_name)
-                        + self.get_damping_aniso_dd_perp(om, data_name=data_name) * (1.0 + epsilon) ** 6
+                    damping_dd = (
+                        self.get_damping_aniso_dd_par(growth, om, data_name=data_name) ** power_par
+                        * self.get_damping_aniso_dd_perp(om, data_name=data_name) ** power_perp
                     )
-                    damping_sd = np.exp(
-                        self.get_damping_aniso_sd_par(growth, om, data_name=data_name)
-                        + self.get_damping_aniso_sd_perp(om, data_name=data_name) * (1.0 + epsilon) ** 6
+                    damping_sd = (
+                        self.get_damping_aniso_sd_par(growth, om, data_name=data_name) ** power_par
+                        * self.get_damping_aniso_sd_perp(om, data_name=data_name) ** power_perp
                     )
-                    damping_ss = np.exp(
-                        self.get_damping_aniso_ss_par(om, data_name=data_name) + self.get_damping_aniso_ss_perp(om, data_name=data_name) * (1.0 + epsilon) ** 6
+                    damping_ss = (
+                        self.get_damping_aniso_ss_par(om, data_name=data_name) ** power_par
+                        * self.get_damping_aniso_ss_perp(om, data_name=data_name) ** power_perp
                     )
                     sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel))
 
@@ -269,22 +271,21 @@ class PowerDing2018(PowerSpectrumFit):
                     smooth_prefac = sprime / p["b"]
                     bdelta_prefac = 0.5 * p["b_delta"] / p["b"] * kprime ** 2
                     kaiser_prefac = 1.0 - smooth_prefac + growth / p["b"] * muprime ** 2 * (1.0 - sprime) + bdelta_prefac
-                    propagator = prop_prefac * (
+                    propagator = (
                         (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping_dd
                         + 2.0 * kaiser_prefac * smooth_prefac * damping_sd
                         + smooth_prefac ** 2 * damping_ss
                     )
                 else:
-                    prop_prefac = np.exp(1.0 / (p["alpha"] ** 2 * (1.0 + epsilon) ** 4))
-                    damping = np.exp(
-                        self.get_damping_aniso_par(growth, om, data_name=data_name)
-                        + self.get_damping_aniso_perp(om, data_name=data_name) * (1.0 + epsilon) ** 6
+                    damping = (
+                        self.get_damping_aniso_par(growth, om, data_name=data_name) ** power_par
+                        * self.get_damping_aniso_perp(om, data_name=data_name) ** power_perp
                     )
 
                     # Compute propagator
                     bdelta_prefac = 0.5 * p["b_delta"] / p["b"] * kprime ** 2
                     kaiser_prefac = 1.0 + growth / p["b"] * muprime ** 2 + bdelta_prefac
-                    propagator = prop_prefac * ((kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping)
+                    propagator = (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping
 
                 pk2d = pk_smooth * (1.0 + splev(kprime, splrep(ks, pk_ratio)) * propagator)
 
