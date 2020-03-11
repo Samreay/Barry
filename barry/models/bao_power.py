@@ -309,7 +309,11 @@ class PowerSpectrumFit(Model):
             else:
                 pk_model = pk_model[mask]
         else:
-            pk_generated = np.concatenate([pk0, pk2, pk4])
+            # Determine if transformation needs pk4 or not
+            if d["w_m_transform"].shape[1] // d["ks_input"].size == 2:
+                pk_generated = np.concatenate([pk0, pk])
+            else:
+                pk_generated = np.concatenate([pk0, pk2, pk4])
             pk_model, mask = self.adjust_model_window_effects(pk_generated, d, window=True)
             pk_model = pk_model[mask]
 

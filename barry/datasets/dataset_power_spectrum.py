@@ -371,6 +371,42 @@ class PowerSpectrum_Beutler2019_Z061(MultiDataset):
         super().__init__(name, [ngc, sgc])
 
 
+class PowerSpectrum_DESIMockChallenge0_Z01(PowerSpectrum):
+    """ Power spectrum from Beutler 2019 for DR12 sample for SGC with mean redshift z = 0.61    """
+
+    def __init__(
+        self,
+        name=None,
+        min_k=0.02,
+        max_k=0.30,
+        step_size=None,
+        recon=False,
+        reduce_cov_factor=1,
+        num_mocks=None,
+        postprocess=None,
+        fake_diag=False,
+        realisation=None,
+        isotropic=True,
+    ):
+        if recon:
+            raise NotImplementedError("Post-recon data not available for Beutler2019_DR12_Z061")
+
+        super().__init__(
+            "desi_mock_challenge_0.pkl",
+            name=name,
+            min_k=min_k,
+            max_k=max_k,
+            step_size=step_size,
+            recon=recon,
+            reduce_cov_factor=reduce_cov_factor,
+            num_mocks=num_mocks,
+            postprocess=postprocess,
+            fake_diag=fake_diag,
+            realisation=realisation,
+            isotropic=isotropic,
+        )
+
+
 if __name__ == "__main__":
 
     import matplotlib.pyplot as plt

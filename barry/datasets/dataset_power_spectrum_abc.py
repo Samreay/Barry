@@ -73,8 +73,10 @@ class PowerSpectrum(Dataset, ABC):
         self._load_winpk_file()
         self.m_transform = None
         self.m_w_transform = None
+        self.hexadecapole = False
         if not self.isotropic:
             self._load_comp_file()
+            self.hexadecapole = self.m_w_transform.shape[1] // self.w_ks_input.shape >= 3
 
         self.cov, self.cov_fit, self.corr, self.icov, self.data = None, None, None, None, None
         self.set_realisation(realisation)
