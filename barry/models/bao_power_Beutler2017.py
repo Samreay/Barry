@@ -157,6 +157,7 @@ if __name__ == "__main__":
     #     posterior = model_post.get_posterior(params)
     #
     # import timeit
+    #
     # model_post.set_data(dataset.get_data())
     # niter = 6000
     # print("Model posterior takes on average, %.2f milliseconds" % (timeit.timeit(timing, number=niter) * 1000 / niter))

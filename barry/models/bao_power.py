@@ -7,6 +7,8 @@ from barry.cosmology.power_spectrum_smoothing import smooth, validate_smooth_met
 from barry.models.model import Model
 import numpy as np
 
+from barry.utils import break_vector_and_get_blocks
+
 
 class PowerSpectrumFit(Model):
     """ Generic power spectrum model """
@@ -243,7 +245,7 @@ class PowerSpectrumFit(Model):
                 pk_mod = data["m_transform"] @ pk_generated
 
                 pk_normalised = []
-                for i in range(5):
+                for i in range(len(data["poles"])):
                     pk_normalised.append(
                         splev(data["ks_output"], splrep(data["ks_input"], pk_mod[i * len(data["ks_input"]) : (i + 1) * len(data["ks_input"])]))
                     )
@@ -268,7 +270,7 @@ class PowerSpectrumFit(Model):
             The corrected log likelihood
         """
         pk_model = self.get_model(p, d, smooth=self.smooth)
-        pk_model_fit = np.concatenate([pk_model[: len(d["ks"])], pk_model[2 * len(d["ks"]) : 3 * len(d["ks"])], pk_model[4 * len(d["ks"]) : 5 * len(d["ks"])]])
+        pk_model_fit = break_vector_and_get_blocks(pk_model, len(d["poles"]), d["fit_pole_indices"])
         # pk_model_fit = pk_model
 
         # Compute the chi2
@@ -310,10 +312,10 @@ class PowerSpectrumFit(Model):
                 pk_model = pk_model[mask]
         else:
             # Determine if transformation needs pk4 or not
-            if d["w_m_transform"].shape[1] // d["ks_input"].size == 2:
-                pk_generated = np.concatenate([pk0, pk])
-            else:
+            if 4 in d["poles"]:
                 pk_generated = np.concatenate([pk0, pk2, pk4])
+            else:
+                pk_generated = np.concatenate([pk0, pk2])
             pk_model, mask = self.adjust_model_window_effects(pk_generated, d, window=True)
             pk_model = pk_model[mask]
 
@@ -337,13 +339,13 @@ class PowerSpectrumFit(Model):
         errs = [row for row in err.reshape((-1, len(ks)))]
         mods = [row for row in mod.reshape((-1, len(ks)))]
         smooths = [row for row in smooth.reshape((-1, len(ks)))]
-        names = [f"pk{n}" for n in range(len(mods))]
+        names = [f"pk{n}" for n in self.data[0]["poles"]]
         labels = [f"$P_{{{n}}}(k)$" for n in range(len(mods))]
         num_rows = len(names)
         cs = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00"]
 
         fig, axes = plt.subplots(figsize=(9, 2 + 1.4 * num_rows), nrows=num_rows, ncols=2, sharex=True, squeeze=False)
-        plt.subplots_adjust(left=0.1, top=0.7 if num_rows == 1 else 0.9, bottom=0.05, right=0.85, hspace=0, wspace=0.3)
+        plt.subplots_adjust(left=0.1, top=0.7 if num_rows < 3 else 0.9, bottom=0.05, right=0.85, hspace=0, wspace=0.3)
         for ax, err, mod, smooth, name, label, c in zip(axes, errs, mods, smooths, names, labels, cs):
 
             # Plot ye old data
@@ -354,19 +356,19 @@ class PowerSpectrumFit(Model):
             ax[0].plot(ks, ks * mod, c=c, label="Model")
             ax[1].plot(ks, ks * (mod - smooth), c=c, label="Model")
 
-            if name in ["pk1", "pk3"]:
-                ax[0].set_facecolor("#eeeeee")
-                ax[1].set_facecolor("#eeeeee")
-                ax[0].set_ylabel("$ik \\times $ " + label)
-            else:
+            if name in [f"pk{n}" for n in self.data[0]["fit_poles"]]:
                 ax[0].set_ylabel("$k \\times $ " + label)
+            else:
+                ax[0].set_facecolor("#e1e1e1")
+                ax[1].set_facecolor("#e1e1e1")
+                ax[0].set_ylabel("$ik \\times $ " + label)
 
         # Show the model parameters
         string = f"$\\mathcal{{L}}$: {self.get_likelihood(params, self.data[0]):0.3g}\n"
         string += "\n".join([f"{self.param_dict[l].label}={v:0.3g}" for l, v in params.items()])
         va = "center" if self.postprocess is None else "top"
         ypos = 0.5 if self.postprocess is None else 0.98
-        axes[0, 1].annotate(string, (0.99, ypos), xycoords="figure fraction", horizontalalignment="right", verticalalignment=va)
+        fig.text(0.99, ypos, string, horizontalalignment="right", verticalalignment=va)
         axes[-1, 0].set_xlabel("k")
         axes[-1, 1].set_xlabel("k")
         axes[0, 0].legend(frameon=False)

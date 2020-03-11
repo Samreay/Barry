@@ -7,6 +7,7 @@ from abc import ABC
 import numpy as np
 
 from barry.datasets.dataset import Dataset, MultiDataset
+from barry.utils import break2d_into_blocks, break_matrix_and_get_blocks, break_vector_and_get_blocks
 
 
 class PowerSpectrum(Dataset, ABC):
@@ -46,6 +47,11 @@ class PowerSpectrum(Dataset, ABC):
         self.true_data = self.data_obj[dataname] if dataname in self.data_obj else None
         self.mock_data = self.data_obj["post-recon mocks"] if recon else self.data_obj["pre-recon mocks"]
         self.reduce_cov_factor = reduce_cov_factor
+
+        self.poles = [int(c.replace("pk", "")) for c in (self.true_data or self.mock_data)[0].columns if c.startswith("pk")]
+        self.fit_poles = [x for x in self.poles if x % 2 == 0]
+        self.fit_pole_indices = np.where([i in self.fit_poles for i in self.poles])[0]
+
         if self.reduce_cov_factor == -1:
             self.reduce_cov_factor = len(self.mock_data)
             self.logger.info(f"Setting reduce_cov_factor to {self.reduce_cov_factor}")
@@ -53,7 +59,7 @@ class PowerSpectrum(Dataset, ABC):
         # Some data is just a single set of measurements and a covariance matrix so the number of mocks must be specified
         # Otherwise we can work out how many mocks by counting the number of data vectors.
         if num_mocks is None:
-            self.num_mocks = len(self.mock_data)
+            self.num_mocks = 0 if self.mock_data is None else len(self.mock_data)
         else:
             self.num_mocks = num_mocks
 
@@ -73,10 +79,8 @@ class PowerSpectrum(Dataset, ABC):
         self._load_winpk_file()
         self.m_transform = None
         self.m_w_transform = None
-        self.hexadecapole = False
         if not self.isotropic:
             self._load_comp_file()
-            self.hexadecapole = self.m_w_transform.shape[1] // self.w_ks_input.shape >= 3
 
         self.cov, self.cov_fit, self.corr, self.icov, self.data = None, None, None, None, None
         self.set_realisation(realisation)
@@ -85,31 +89,35 @@ class PowerSpectrum(Dataset, ABC):
     def set_realisation(self, realisation):
         if realisation is None:
             self.logger.info(f"Loading mock average")
+            assert self.mock_data is not None, "Passing in None for the realisations means the mock means, but you have no mocks!"
             self.data = np.array(self.mock_data).mean(axis=0)
-        elif type(realisation) is int and realisation < 0:
-            self.logger.info(f"Loading data")
-            self.data = self.true_data[0]
         elif str(realisation).lower() == "data":
+            assert self.true_data is not None, "Requested data but this dataset doesn't have data set!"
             self.logger.info(f"Loading data")
             self.data = self.true_data[0]
         else:
+            assert self.mock_data is not None, "You asked for a mock realisation, but this dataset has no mocks!"
             self.logger.info(f"Loading mock {realisation}")
             self.data = self.mock_data[realisation]
 
     def set_cov(self, fake_diag=False):
         covname = "post-recon cov" if self.recon else "pre-recon cov"
         if covname in self.data_obj:
-            npoles = 1 if self.isotropic else 5
+            npoles = len(self.poles)
             nin = len(self.w_mask)
             nout = self.data.shape[0]
             self.cov = np.empty((npoles * nout, npoles * nout))
+            w_mask_indices = np.ix_(self.w_mask, self.w_mask)
             for i in range(npoles):
                 iinlow, iinhigh = i * nin, (i + 1) * nin
                 ioutlow, iouthigh = i * nout, (i + 1) * nout
                 for j in range(npoles):
                     jinlow, jinhigh = j * nin, (j + 1) * nin
                     joutlow, jouthigh = j * nout, (j + 1) * nout
-                    self.cov[ioutlow:iouthigh, joutlow:jouthigh] = self.data_obj[covname][iinlow:iinhigh, jinlow:jinhigh][np.ix_(self.w_mask, self.w_mask)]
+                    subset = self.data_obj[covname][iinlow:iinhigh, jinlow:jinhigh][w_mask_indices]
+                    self.cov[ioutlow:iouthigh, joutlow:jouthigh] = subset
+
+            self.cov_fit = break_matrix_and_get_blocks(self.cov, len(self.poles), self.fit_pole_indices)
         else:
             self._compute_cov()
         if fake_diag:
@@ -162,7 +170,11 @@ class PowerSpectrum(Dataset, ABC):
         return k_rebinned, pk_rebinned, mask
 
     def _rebin_data(self, dataframe):
-        poles = ["pk0"] if self.isotropic else ["pk0", "pk1", "pk2", "pk3", "pk4"]
+        poles = self.poles
+        if self.isotropic:
+            poles = [p for p in self.poles if p == 0]
+            assert len(poles) == 1, "Could not find 'pk0' pole"
+
         k_rebinned, pk0_rebinned, mask = self._agg_data(dataframe, "pk0")
         if self.postprocess is not None:
             pk0_rebinned = self.postprocess(ks=k_rebinned, pk=pk0_rebinned, mask=mask)
@@ -174,7 +186,7 @@ class PowerSpectrum(Dataset, ABC):
             pk_rebinned = np.empty((len(pk0_rebinned), len(poles)))
             pk_rebinned[:, 0] = pk0_rebinned
             for i, pole in enumerate(poles[1:]):
-                k_rebinned, pkpole_rebinned, mask = self._agg_data(dataframe, pole)
+                k_rebinned, pkpole_rebinned, mask = self._agg_data(dataframe, f"pk{pole}")
                 pk_rebinned[:, i + 1] = pkpole_rebinned[mask]
         return k_rebinned[mask], pk_rebinned
 
@@ -236,6 +248,9 @@ class PowerSpectrum(Dataset, ABC):
             "isotropic": self.isotropic,
             "m_transform": self.m_transform,
             "w_m_transform": self.m_w_transform,
+            "poles": self.poles,
+            "fit_poles": self.fit_poles,
+            "fit_pole_indices": self.fit_pole_indices,
         }
 
         # Some data has pk0 some has pk0 to pk4
@@ -244,10 +259,10 @@ class PowerSpectrum(Dataset, ABC):
             d.update({"pk0": self.data})
             d.update({"pk": self.data})
         else:
-            d.update({"w_mask": np.tile(self.w_mask, 5)})
-            d.update({"pk": np.concatenate([self.data[:, 0], self.data[:, 2], self.data[:, 4]])})
-            d.update({"pk0": self.data[:, 0], "pk1": self.data[:, 1], "pk2": self.data[:, 2], "pk3": self.data[:, 3], "pk4": self.data[:, 4]})
 
+            d.update({"w_mask": np.tile(self.w_mask, len(self.poles))})
+            d.update({"pk": break_vector_and_get_blocks(self.data.flatten(), len(d["poles"]), d["fit_pole_indices"])})
+            d.update({f"pk{d}": self.data[:, i] for i, d in enumerate(self.poles)})
         return [d]
 
 

@@ -17,6 +17,27 @@ def weighted_avg_and_std(values, weights):
     return average, np.sqrt(variance)
 
 
+def break_vector_and_get_blocks(x, number_breaks, keep_indices):
+    return np.array(np.split(x, number_breaks))[keep_indices, :].flatten()
+
+
+def break_matrix_and_get_blocks(matrix, number_breaks, keep_indices):
+    x = break2d_into_blocks(matrix, number_breaks)
+    reduced = x[keep_indices, :, :, :][:, keep_indices, :, :]
+    result = stitch_blocks_together(reduced)
+    return result
+
+
+def break2d_into_blocks(x, number_breaks):
+    num_elem = int(np.sqrt(x.size / (number_breaks ** 2)))
+    return x.reshape((number_breaks, num_elem, number_breaks, num_elem)).transpose(0, 2, 1, 3)
+
+
+def stitch_blocks_together(x):
+    n = int(np.sqrt(x.size))
+    return x.transpose(0, 2, 1, 3).reshape((n, n))
+
+
 def create_histogram_plot():
     plt.rc("text", usetex=True)
     plt.rc("font", family="serif")
