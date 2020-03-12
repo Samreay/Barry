@@ -94,7 +94,7 @@ class PowerSpectrum(Dataset, ABC):
         elif str(realisation).lower() == "data":
             assert self.true_data is not None, "Requested data but this dataset doesn't have data set!"
             self.logger.info(f"Loading data")
-            self.data = self.true_data[0]
+            self.data = self.true_data[0].to_numpy()
         else:
             assert self.mock_data is not None, "You asked for a mock realisation, but this dataset has no mocks!"
             self.logger.info(f"Loading mock {realisation}")
@@ -259,7 +259,8 @@ class PowerSpectrum(Dataset, ABC):
         else:
 
             d.update({"w_mask": np.tile(self.w_mask, len(self.poles))})
-            d.update({"pk": break_vector_and_get_blocks(self.data.flatten(), len(d["poles"]), d["fit_pole_indices"])})
+            pk_fit = self.data[:, self.fit_pole_indices].T.flatten()
+            d.update({"pk": pk_fit})
             d.update({f"pk{d}": self.data[:, i] for i, d in enumerate(self.poles)})
         return [d]
 
