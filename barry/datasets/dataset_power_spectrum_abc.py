@@ -116,10 +116,11 @@ class PowerSpectrum(Dataset, ABC):
                     joutlow, jouthigh = j * nout, (j + 1) * nout
                     subset = self.data_obj[covname][iinlow:iinhigh, jinlow:jinhigh][w_mask_indices]
                     self.cov[ioutlow:iouthigh, joutlow:jouthigh] = subset
-
-            self.cov_fit = break_matrix_and_get_blocks(self.cov, len(self.poles), self.fit_pole_indices)
         else:
             self._compute_cov()
+
+        self.cov_fit = break_matrix_and_get_blocks(self.cov, len(self.poles), self.fit_pole_indices)
+
         if fake_diag:
             self.cov_fit = np.diag(np.diag(self.cov_fit))
         self.cov /= self.reduce_cov_factor
@@ -136,12 +137,9 @@ class PowerSpectrum(Dataset, ABC):
         ad = np.array(self.mock_data)
         if self.isotropic:
             x0 = ad[:]
-            x0fit = x0
         else:
             x0 = np.concatenate([ad[:, :, 0], ad[:, :, 1], ad[:, :, 2], ad[:, :, 3], ad[:, :, 4]], axis=1)
-            x0fit = np.concatenate([ad[:, :, 0], ad[:, :, 2], ad[:, :, 4]], axis=1)
         self.cov = np.cov(x0.T)
-        self.cov_fit = np.cov(x0fit.T)
         self.logger.info(f"Computed cov {self.cov.shape}")
 
     def _agg_data(self, dataframe, pole):
