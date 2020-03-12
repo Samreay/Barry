@@ -129,12 +129,10 @@ class Model(ABC):
         self.data = data
         self.data_dict = dict([(d["name"], d) for d in data])
         self.set_cosmology(data[0]["cosmology"])
-        if not (data[0]["isotropic"] == self.isotropic):
-            print(
-                "ERROR: Data and model isotropic mismatch: Data is %s while model is %s"
-                % ("isotropic" if data[0]["isotropic"] else "anisotropic", "isotropic" if self.isotropic else "anisotropic")
-            )
-            exit(0)
+        assert data[0]["isotropic"] == self.isotropic, "ERROR: Data and model isotropic mismatch: Data is %s while model is %s" % (
+            "isotropic" if data[0]["isotropic"] else "anisotropic",
+            "isotropic" if self.isotropic else "anisotropic",
+        )
 
     def add_param(self, name, label, min, max, default):
         p = Param(name, label, min, max, default, name not in self.fix_params)
