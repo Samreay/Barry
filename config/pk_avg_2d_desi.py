@@ -14,6 +14,7 @@ from barry.config import setup
 from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018
 from barry.samplers import DynestySampler
 from barry.fitter import Fitter
+from barry.models.model import Correction
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
@@ -30,15 +31,17 @@ if __name__ == "__main__":
     for r in [False]:
         t = "Recon" if r else "Prerecon"
         ls = "-"  # if r else "--"
-        d = PowerSpectrum_DESIMockChallenge0_Z01(recon=r, isotropic=False)
+        d = PowerSpectrum_DESIMockChallenge0_Z01(recon=r, isotropic=False, realisation="data")
 
         # Fix sigma_nl for one of the Beutler models
-        model = PowerBeutler2017(recon=r, isotropic=False)
+        model = PowerBeutler2017(recon=r, isotropic=False, correction=Correction.NONE)
         model.set_default("sigma_nl_par", 8.9)
         model.set_default("sigma_nl_perp", 7.5)
         model.set_fix_params(["om", "f", "sigma_nl_par", "sigma_nl_perp"])
 
-        fitter.add_model_and_dataset(PowerBeutler2017(recon=r, isotropic=False), d, name=f"Beutler 2017 {t}", linestyle=ls, color=cs[0])
+        fitter.add_model_and_dataset(
+            PowerBeutler2017(recon=r, isotropic=False, correction=Correction.NONE), d, name=f"Beutler 2017 {t}", linestyle=ls, color=cs[0]
+        )
         fitter.add_model_and_dataset(model, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}", linestyle=ls, color=cs[0])
         # fitter.add_model_and_dataset(PowerSeo2016(recon=r, isotropic=False), d, name=f"Seo 2016 {t}", linestyle=ls, color=cs[1])
         # fitter.add_model_and_dataset(PowerDing2018(recon=r, isotropic=False), d, name=f"Ding 2018 {t}", linestyle=ls, color=cs[2])
