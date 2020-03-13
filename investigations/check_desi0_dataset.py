@@ -14,7 +14,8 @@ if __name__ == "__main__":
     dataset = PowerSpectrum_DESIMockChallenge0_Z01(recon=False, isotropic=False, realisation="data")
     data = dataset.get_data()
 
-    model.sanity_check(dataset, figname="desi_mock0_optimised_bestfit.png", niter=1000, maxiter=1000)
+    for i in range(20):
+        model.sanity_check(dataset, figname="desi_mock0_optimised_bestfit.png", niter=200)
     # print(likelihood)
     #
     # model.plot_default(dataset)
