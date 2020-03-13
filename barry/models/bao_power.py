@@ -321,7 +321,7 @@ class PowerSpectrumFit(Model):
 
         return pk_model
 
-    def plot(self, params, smooth_params=None):
+    def plot(self, params, smooth_params=None, figname=None):
         self.logger.info("Create plot")
         import matplotlib.pyplot as plt
 
@@ -340,12 +340,14 @@ class PowerSpectrumFit(Model):
         mods = [row for row in mod.reshape((-1, len(ks)))]
         smooths = [row for row in smooth.reshape((-1, len(ks)))]
         names = [f"pk{n}" for n in self.data[0]["poles"]]
-        labels = [f"$P_{{{n}}}(k)$" for n in range(len(mods))]
+        labels = [f"$P_{{{n}}}(k)$" for n in self.data[0]["poles"]]
         num_rows = len(names)
         cs = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00"]
+        height = 2 + 1.4 * num_rows
 
-        fig, axes = plt.subplots(figsize=(9, 2 + 1.4 * num_rows), nrows=num_rows, ncols=2, sharex=True, squeeze=False)
-        plt.subplots_adjust(left=0.1, top=0.7 if num_rows < 3 else 0.9, bottom=0.05, right=0.85, hspace=0, wspace=0.3)
+        fig, axes = plt.subplots(figsize=(9, height), nrows=num_rows, ncols=2, sharex=True, squeeze=False)
+        ratio = (height - 1) / height
+        plt.subplots_adjust(left=0.1, top=ratio, bottom=0.05, right=0.85, hspace=0, wspace=0.3)
         for ax, err, mod, smooth, name, label, c in zip(axes, errs, mods, smooths, names, labels, cs):
 
             # Plot ye old data
@@ -365,7 +367,7 @@ class PowerSpectrumFit(Model):
 
         # Show the model parameters
         string = f"$\\mathcal{{L}}$: {self.get_likelihood(params, self.data[0]):0.3g}\n"
-        string += "\n".join([f"{self.param_dict[l].label}={v:0.3g}" for l, v in params.items()])
+        string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items()])
         va = "center" if self.postprocess is None else "top"
         ypos = 0.5 if self.postprocess is None else 0.98
         fig.text(0.99, ypos, string, horizontalalignment="right", verticalalignment=va)
@@ -380,6 +382,8 @@ class PowerSpectrumFit(Model):
         axes[0, 0].set_title("$k \\times P(k)$")
 
         fig.suptitle(self.data[0]["name"] + " + " + self.get_name())
+        if figname is not None:
+            fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
         plt.show()
 
 

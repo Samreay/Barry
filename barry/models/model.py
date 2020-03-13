@@ -413,11 +413,11 @@ class Model(ABC):
         self.plot(params)
 
     @abstractmethod
-    def plot(self, params, smooth_params=None):
+    def plot(self, params, smooth_params=None, figname=None):
         """ Plots the predictions given some input parameter dictionary. """
         pass
 
-    def sanity_check(self, dataset, niter=200):
+    def sanity_check(self, dataset, niter=200, maxiter=1000, figname=None):
         import timeit
 
         print(f"Using dataset {str(dataset)}")
@@ -438,11 +438,11 @@ class Model(ABC):
         print("Model posterior takes on average, %.2f milliseconds" % (timeit.timeit(timing, number=niter) * 1000 / niter))
 
         print("Starting model optimisation. This may take some time.")
-        p, minv = self.optimize()
+        p, minv = self.optimize(niter=niter, maxiter=maxiter)
         print(f"Model optimisation with value {minv:0.3f} has parameters are {dict(p)}")
 
         print("Plotting model and data")
-        self.plot(p)
+        self.plot(p, figname=figname)
 
     def integrate_mu(self, pk2d, mu, isotropic=False):
         pk0 = simps(pk2d, mu, axis=1)
