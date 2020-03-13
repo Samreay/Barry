@@ -94,7 +94,7 @@ class PowerSpectrum(Dataset, ABC):
         elif str(realisation).lower() == "data":
             assert self.true_data is not None, "Requested data but this dataset doesn't have data set!"
             self.logger.info(f"Loading data")
-            self.data = self.true_data[0].to_numpy()
+            self.data = self.true_data[0]
         else:
             assert self.mock_data is not None, "You asked for a mock realisation, but this dataset has no mocks!"
             self.logger.info(f"Loading mock {realisation}")

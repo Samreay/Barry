@@ -217,6 +217,8 @@ class Model(ABC):
         """
         chi2 = diff.T @ icov @ diff
 
+        if self.correction in [Correction.HARTLAP, Correction.SELLENTIN]:
+            assert num_mocks > 0, "Cannot use HARTLAP  or SELLENTIN correction with covariance not determined from mocks. Set correction to Correction.NONE"
         if self.correction is Correction.HARTLAP:  # From Hartlap 2007
             chi2 *= (num_mocks - diff.shape - 2) / (num_mocks - 1)
 
@@ -426,6 +428,8 @@ class Model(ABC):
         p_dict = self.get_param_dict(p)
         posterior = self.get_posterior(p)
         print(f"Posterior {posterior:0.3f} for defaults {dict(p_dict)}")
+
+        assert not np.isnan(posterior), "Posterior should not be nan"
 
         def timing():
             params = self.get_raw_start()
