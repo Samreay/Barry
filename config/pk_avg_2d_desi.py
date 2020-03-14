@@ -34,8 +34,8 @@ if __name__ == "__main__":
 
         # Fix sigma_nl for one of the Beutler models
         model = PowerBeutler2017(recon=r, isotropic=False, correction=Correction.NONE)
-        model.set_default("sigma_nl_par", 10)
-        model.set_default("sigma_nl_perp", 7.2)
+        model.set_default("sigma_nl_par", 10.9)
+        model.set_default("sigma_nl_perp", 5.98)
         model.set_fix_params(["om", "sigma_nl_par", "sigma_nl_perp"])
 
         fitter.add_model_and_dataset(PowerBeutler2017(recon=r, isotropic=False, correction=Correction.NONE, fix_params=["om"]), d, name=f"Beutler 2017 {t}")
@@ -57,6 +57,10 @@ if __name__ == "__main__":
         c = ChainConsumer()
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
+            max_post = posterior.argmax()
+            ps = chain[max_post, :]
+            for l, p in zip(model.get_labels(), ps):
+                print(l, p)
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0}
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth=truth)
