@@ -249,6 +249,8 @@ class PowerSpectrum(Dataset, ABC):
             "poles": self.poles,
             "fit_poles": self.fit_poles,
             "fit_pole_indices": self.fit_pole_indices,
+            "min_k": self.min_k,
+            "max_k": self.max_k,
         }
 
         # Some data has pk0 some has pk0 to pk4

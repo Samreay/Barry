@@ -76,7 +76,6 @@ class PowerSpectrumFit(Model):
         pk_ratio = res["pk_lin"] / pk_smooth_lin - 1.0  # Get the ratio
         return pk_smooth_lin, pk_ratio
 
-    @lru_cache(maxsize=32)
     def get_alphas(self, alpha, epsilon):
         """ Computes values of alpha_par and alpha_perp from the input values of alpha and epsilon
 

@@ -5,13 +5,14 @@ from scipy.interpolate import interp1d
 from scipy.stats import norm
 import numpy as np
 
+from barry.utils import weighted_avg_and_std
 
 sys.path.append("..")
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESIMockChallenge0_Z01
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
 from barry.config import setup
-from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018
+from barry.models import PowerBeutler2017
 from barry.samplers import DynestySampler
 from barry.fitter import Fitter
 from barry.models.model import Correction
@@ -52,14 +53,43 @@ if __name__ == "__main__":
 
         from chainconsumer import ChainConsumer
 
+        output = []
         c = ChainConsumer()
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
-            c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
+
+            df = pd.DataFrame(chain, columns=model.get_labels())
+            alpha = df["$\\alpha$"].to_numpy()
+            epsilon = df["$\\epsilon$"].to_numpy()
+            alpha_par, alpha_perp = model.get_alphas(alpha, epsilon)
+            df["$\\alpha_\\parallel$"] = alpha_par
+            df["$\\alpha_\\perp$"] = alpha_perp
+
+            c.add_chain(df, weights=weight, **extra)
+
             max_post = posterior.argmax()
+            chi2 = -2 * posterior[max_post]
+
+            dof = data[0]["pk"].shape[0] - 1 - len(df.columns)
             ps = chain[max_post, :]
+            best_fit = {}
             for l, p in zip(model.get_labels(), ps):
-                print(l, p)
-        c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
+                best_fit[l] = p
+
+            mean_par, std_par = weighted_avg_and_std(alpha_par, weight)
+            mean_per, std_per = weighted_avg_and_std(alpha_perp, weight)
+
+            c2 = ChainConsumer()
+            c2.add_chain(df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$"]], weights=weight)
+            _, corr = c2.analysis.get_correlations()
+            corr = corr[1, 0]
+            output.append(
+                f"{data[0]['min_k']:5.2f}, {data[0]['max_k']:5.2f}, {mean_par:5.3f}, {mean_per:5.3f}, {std_par:5.3f}, {std_per:5.3f}, {corr:5.3f}, {r_s:6.3f}, {chi2:5.3f}, {dof:4d}, {chi2/dof:5.2f}"
+            )
+
+        with open(pfn + "_BAO_fitting_DC.v0.Barry", "w") as f:
+            for l in output:
+                f.write(l + "\n")
+        c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4, statistics="mean")
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0}
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth=truth)
         c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=3)
