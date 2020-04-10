@@ -27,10 +27,10 @@ if __name__ == "__main__":
 
     d = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data")
 
-    fitter.add_model_and_dataset(PowerBeutler2017(fix_params=("om", "f")), d, name=f"Beutler 2017 Prerecon", color=cs[0])
-    fitter.add_model_and_dataset(PowerSeo2016(fix_params=("om", "f")), d, name=f"Seo 2016 Prerecon", color=cs[1])
-    fitter.add_model_and_dataset(PowerDing2018(fix_params=("om", "f")), d, name=f"Ding 2018 Prerecon", color=cs[2])
-    fitter.add_model_and_dataset(PowerNoda2019(fix_params=("om", "f")), d, name=f"Noda 2019 Prerecon", color=cs[3])
+    fitter.add_model_and_dataset(PowerBeutler2017(fix_params=("om", "f"), isotropic=False), d, name=f"Beutler 2017 Prerecon", color=cs[0])
+    fitter.add_model_and_dataset(PowerSeo2016(fix_params=("om", "f"), isotropic=False), d, name=f"Seo 2016 Prerecon", color=cs[1])
+    fitter.add_model_and_dataset(PowerDing2018(fix_params=("om", "f"), isotropic=False), d, name=f"Ding 2018 Prerecon", color=cs[2])
+    fitter.add_model_and_dataset(PowerNoda2019(fix_params=("om", "f"), isotropic=False), d, name=f"Noda 2019 Prerecon", color=cs[3])
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
