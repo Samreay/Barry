@@ -76,7 +76,9 @@ if __name__ == "__main__":
     # Ensure all cosmologies exist
     for c in cosmologies:
         logging.info(f"Ensuring cosmology {c} is generated")
-        generator = CambGenerator(om_resolution=101, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"], mnu=c["mnu"])
+        mnu = c.get("mnu", 0.0)
+        print(mnu)
+        generator = CambGenerator(om_resolution=101, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"], mnu=mnu)
         generator.load_data(can_generate=True)
 
     # For each cosmology, ensure that each model pregens the right data
