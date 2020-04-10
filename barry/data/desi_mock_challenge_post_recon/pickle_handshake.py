@@ -5,25 +5,14 @@ import os
 
 
 def getdf(loc):
-    df = pd.read_csv(
-        loc,
-        comment="#",
-        skiprows=10,
-        delim_whitespace=True,
-        names=["k", "keff", "pk0", "pk2", "pk4", "nk", "shot"],
-    )
+    df = pd.read_csv(loc, comment="#", skiprows=10, delim_whitespace=True, names=["k", "keff", "pk0", "pk2", "pk4", "nk", "shot"])
     mask = df["nk"] >= 0
     masked = df.loc[mask, ["k", "pk0", "pk2", "pk4", "nk"]]
     return masked.astype(np.float32)
 
 
 def getwin(ks):
-    res = {
-        "w_ks_input": ks.copy(),
-        "w_k0_scale": np.zeros(ks.size),
-        "w_transform": np.eye(2 * ks.size),
-        "w_ks_output": ks.copy(),
-    }
+    res = {"w_ks_input": ks.copy(), "w_k0_scale": np.zeros(ks.size), "w_transform": np.eye(2 * ks.size), "w_ks_output": ks.copy()}
     return {1: res}  # Step size is one
 
 
@@ -47,7 +36,7 @@ if __name__ == "__main__":
 
     res = {f.lower(): getdf(f) for f in files}
     split = {
-        "pre-recon data": [data],
+        "pre-recon data": data,
         "pre-recon cov": cov,
         "post-recon data": None,
         "post-recon cov": None,
