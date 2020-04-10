@@ -19,17 +19,29 @@ if __name__ == "__main__":
     parser.add_argument("--h0", type=float, default=0.676)
     parser.add_argument("--ob", type=float, default=0.04814)
     parser.add_argument("--ns", type=float, default=0.97)
+    parser.add_argument("--mnu", type=float, default=0.0)
     parser.add_argument("--reconsmoothscale", type=float, default=21.21)
     args = parser.parse_args()
 
-    assert args.model is not None, "This file is invoked by generate.py and requires you to pass in a model name, redshift, om, h0, ob, ns and reconsmoothscale"
+    assert (
+        args.model is not None
+    ), "This file is invoked by generate.py and requires you to pass in a model name, redshift, om, h0, ob, ns and reconsmoothscale"
     assert len(get_concrete(Model)) > 0, "get_concrete(Model) reports no subclasses. Send Sam and email, imports are funky."
 
     # Find the right model
     model = [c() for c in get_concrete(Model) if args.model == c.__name__][0]
     logging.info(f"Model found is {model}")
     model.set_cosmology(
-        {"z": args.redshift, "h0": args.h0, "om": args.om, "ob": args.ob, "ns": args.ns, "reconsmoothscale": args.reconsmoothscale}, load_pregen=False
+        {
+            "z": args.redshift,
+            "h0": args.h0,
+            "om": args.om,
+            "ob": args.ob,
+            "ns": args.ns,
+            "mnu": args.mnu,
+            "reconsmoothscale": args.reconsmoothscale,
+        },
+        load_pregen=False,
     )
 
     from mpi4py import MPI

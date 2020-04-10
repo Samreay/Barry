@@ -14,4 +14,4 @@ echo "Activated python"
 echo `which python`
 
 cd {path}
-mpirun python precompute_mpi.py --model {model} --reconsmoothscale {reconsmoothscale} --redshift {z} --om {om} --h0 {h0} --ob {ob} --ns {ns}
+mpirun python precompute_mpi.py --model {model} --reconsmoothscale {reconsmoothscale} --redshift {z} --om {om} --h0 {h0} --ob {ob} --ns {ns} --mnu {mnu}
