@@ -10,11 +10,14 @@ from barry.config import is_local, get_config
 from barry.cosmology.camb_generator import CambGenerator
 from barry.datasets.dataset import Dataset
 from tests.utils import get_concrete
+from barry.utils import get_hpc
 
 
-def setup_ptgenerator_slurm(model, c):
+def setup_ptgenerator_slurm(model, c, hpc="getafix"):
+    if hpc is None:
+        raise ValueError("HPC environment veriable is not set. Please set it to an hpc system, like export HPC=nersc")
     config = get_config()
-    job_path = os.path.join(os.path.dirname(inspect.stack()[0][1]), "jobscripts/slurm_pt_generator.job")
+    job_path = os.path.join(os.path.dirname(inspect.stack()[0][1]), f"jobscripts/slurm_pt_generator_{hpc}.job")
     python_path = os.path.abspath(os.path.dirname(inspect.stack()[0][1]))
     unique_name = model.__class__.__name__ + "_" + ("".join([k + str(c[k]) for k in sorted(c.keys())])) + ".job"
     job_dir = os.path.abspath("jobs")
@@ -67,6 +70,7 @@ if __name__ == "__main__":
 
     # This should be run on a HPC for the PTGenerator side of things.
     assert not is_local(), "Please run this on your HPC system"
+    hpc = get_hpc()
 
     datasets = [c(realisation="data") for c in get_concrete(Dataset) if "DESI" in c.__name__]
 
@@ -92,4 +96,4 @@ if __name__ == "__main__":
                     logging.info("But going to refresh tme anyway!")
                     assert not args.refresh, "Refreshing anyway!"
             except AssertionError:
-                setup_ptgenerator_slurm(m, c)
+                setup_ptgenerator_slurm(m, c, hpc=hpc)
