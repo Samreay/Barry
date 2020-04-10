@@ -35,7 +35,7 @@ def getcomp(ks):
 if __name__ == "__main__":
 
     ds = f"/global/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/EZmocks/pk_EZmocks/"
-    files = [ds + f for k, f in os.listdir(ds) if "Power_Spectrum" in k]
+    files = [ds + f for f in os.listdir(ds) if "Power_Spectrum" in f]
     print(files)
 
     pk_filename = f"/global/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/pk/Power_Spectrum_UNIT_HODsnap97_ELGv1_redshift.txt"
