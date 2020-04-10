@@ -68,7 +68,7 @@ if __name__ == "__main__":
     # This should be run on a HPC for the PTGenerator side of things.
     assert not is_local(), "Please run this on your HPC system"
 
-    datasets = [c() for c in get_concrete(Dataset) if "DESI" in c.__name__]
+    datasets = [c(realisation="data") for c in get_concrete(Dataset) if "DESI" in c.__name__]
 
     cosmologies = get_cosmologies(datasets)
     logging.info(f"Have {len(cosmologies)} cosmologies")
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         generator.load_data(can_generate=True)
 
     # For each cosmology, ensure that each model pregens the right data
-    models = [c() for c in get_concrete(Model) if "DESI" in c.__name__]
+    models = [c() for c in get_concrete(Model)]
     for m in models:
         for c in cosmologies:
             try:
