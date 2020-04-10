@@ -15,6 +15,7 @@ from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018
 from barry.samplers import DynestySampler
 from barry.fitter import Fitter
 from barry.models.model import Correction
+from barry.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
@@ -39,7 +40,7 @@ if __name__ == "__main__":
         model.set_default("sigma_s", 0.0)
         model.set_fix_params(["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"])
 
-        fitter.add_model_and_dataset(model, d, name=f"Beutler 2017 New $\\Sigma_{{nl}}$ {t}")
+        fitter.add_model_and_dataset(model, d, name=f"Hee-Jong $\\Sigma_{{nl}}$")
 
         # Now change linear and smooth spectra to Hee-Jong's inputs
         pklin = np.array(pd.read_csv("../barry/data/desi_mock_challenge_0/mylinearmatterpkL900.dat", delim_whitespace=True, header=None))
@@ -51,10 +52,23 @@ if __name__ == "__main__":
         model2.set_fix_params(["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"])
         model2.set_data(d.get_data())
         model2.kvals = pklin[:, 0]
-        model2.pkratio = pklin[:, 1] / pksmooth[:, 1] - 1.0
-        model2.pksmooth = pksmooth[:, 1]
+        model2.pksmooth = smooth(model2.kvals, pklin[:, 1])
+        model2.pkratio = pklin[:, 1] / model2.pksmooth - 1.0
 
-        fitter.add_model_and_dataset(model2, d, name=f"Beutler 2017 New Template$ {t}")
+        fitter.add_model_and_dataset(model2, d, name=f"Hee-Jong Pk")
+
+        # Now change linear and smooth spectra to Hee-Jong's inputs
+        model3 = PowerBeutler2017(recon=False, isotropic=False, correction=Correction.NONE)
+        model3.set_default("sigma_nl_par", 6.2)
+        model3.set_default("sigma_nl_perp", 2.9)
+        model3.set_default("sigma_s", 0.0)
+        model3.set_fix_params(["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"])
+        model3.set_data(d.get_data())
+        model3.kvals = pklin[:, 0]
+        model3.pkratio = pklin[:, 1] / pksmooth[:, 1] - 1.0
+        model3.pksmooth = pksmooth[:, 1]
+
+        fitter.add_model_and_dataset(model3, d, name=f"Hee-Jong Pk+Pk$_{{sm}}$")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
@@ -79,11 +93,11 @@ if __name__ == "__main__":
             ps = chain_conv[max_post, :]
             for l, p in zip(parameters, ps):
                 print(l, p)
-        c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
+        c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4, legend_kwargs={"fontsize": 8})
         # truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0}
-        truth = {"$\\Omega_m$": 0.3121, "$\\alpha_{par}$": 1.0, "$\\alpha_{perp}$": 1.0}
+        truth = {"$\\Omega_m$": 0.3121, "$\\alpha_{par}$": 1.102, "$\\alpha_{perp}$": 1.034}
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth=truth)
-        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=3)
+        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=["$\\alpha_{par}$", "$\\alpha_{perp}$"])
         c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour.pdf"], truth=truth, parameters=10)
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth=truth)
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
