@@ -399,7 +399,12 @@ class Model(ABC):
             if close_default:
                 start = [(s + p.default * close_default) / (1 + close_default) for s, p in zip(start, self.get_active_params())]
             res = basinhopping(
-                minimise, self.scale(start), niter_success=10, niter=niter, stepsize=0.05, minimizer_kwargs={"method": m, "options": {"maxiter": maxiter}}
+                minimise,
+                self.scale(start),
+                niter_success=10,
+                niter=niter,
+                stepsize=0.05,
+                minimizer_kwargs={"method": m, "options": {"maxiter": maxiter, "fatol": 1.0e-8, "xatol": 1.0e-8}},
             )
             fs.append(res.fun)
             xs.append(res.x)

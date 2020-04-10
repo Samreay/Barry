@@ -29,10 +29,14 @@ class PowerBeutler2017(PowerSpectrumFit):
             name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction, isotropic=isotropic
         )
 
+        self.kvals = None
+        self.pksmooth = None
+        self.pkratio = None
+
     def declare_parameters(self):
         super().declare_parameters()
         # print(self.isotropic)
-        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 20.0, 10.0)  # Fingers-of-god damping
+        self.add_param("sigma_s", r"$\Sigma_s$", 0.0, 20.0, 10.0)  # Fingers-of-god damping
         if self.isotropic:
             self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 20.0, 10.0)  # BAO damping
             self.add_param("a1", r"$a_1$", -10000.0, 30000.0, 0)  # Polynomial marginalisation 1
@@ -81,8 +85,12 @@ class PowerBeutler2017(PowerSpectrumFit):
         """
 
         # Get the basic power spectrum components
-        ks = self.camb.ks
-        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
+        if self.kvals is None or self.pksmooth is None or self.pkratio is None:
+            ks = self.camb.ks
+            pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
+        else:
+            ks = self.kvals
+            pk_smooth_lin, pk_ratio = self.pksmooth, self.pkratio
 
         # We split for isotropic and anisotropic here for consistency with our previous isotropic convention, which
         # differs from our implementation of the Beutler2017 isotropic model quite a bit. This results in some duplication

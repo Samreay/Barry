@@ -5,9 +5,9 @@ from scipy.interpolate import interp1d
 from scipy.stats import norm
 import numpy as np
 
-from barry.utils import weighted_avg_and_std
 
 sys.path.append("..")
+from barry.utils import weighted_avg_and_std
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESIMockChallenge0_Z01
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
@@ -54,8 +54,20 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         output = []
+        bestfit_model = []
+        pks = []
         c = ChainConsumer()
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
+
+            model.set_data(data)
+            p = model.get_param_dict(chain[np.argmax(posterior)])
+            print(p, model.get_alphas(p["alpha"], p["epsilon"]))
+            bestfit = model.get_model(p, data[0])
+            pk_smooth_lin, pk_ratio = model.compute_basic_power_spectrum(p["om"])
+            pks.append((pk_smooth_lin * (1.0 + pk_ratio), pk_smooth_lin))
+            bestfit_model.append((data[0]["ks"], bestfit))
+            strout = str(pfn + "_bestfit_%3.2lf_%3.2lf.pdf" % (data[0]["min_k"], data[0]["max_k"]))
+            model.plot(p, figname=strout)
 
             df = pd.DataFrame(chain, columns=model.get_labels())
             alpha = df["$\\alpha$"].to_numpy()
@@ -86,7 +98,16 @@ if __name__ == "__main__":
                 f"{data[0]['min_k']:5.2f}, {data[0]['max_k']:5.2f}, {mean_par:5.3f}, {mean_per:5.3f}, {std_par:5.3f}, {std_per:5.3f}, {corr:5.3f}, {r_s:6.3f}, {chi2:5.3f}, {dof:4d}, {chi2/dof:5.2f}"
             )
 
-        with open(pfn + "_BAO_fitting_DC.v0.Barry", "w") as f:
+        np.savetxt(pfn + "_Pk_linear_CAMB.dat", np.c_[model.camb.ks, pks[0][0]], fmt="%g        %g", header="k     pk")
+        np.savetxt(pfn + "_Pk_linear_CAMB_smooth.dat", np.c_[model.camb.ks, pks[0][1]], fmt="%g     %g", header="k     pk_smooth")
+        np.savetxt(
+            pfn + "_bestfit_model.dat",
+            np.c_[bestfit_model[0][0], bestfit_model[0][1][: len(bestfit_model[0][0])], bestfit_model[0][1][len(bestfit_model[0][0]) :]],
+            fmt="%g  %g  %g",
+            header="k     pk0     pk2",
+        )
+
+        """with open(pfn + "_BAO_fitting_DC.v0.Barry", "w") as f:
             for l in output:
                 f.write(l + "\n")
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4, statistics="mean")
@@ -95,4 +116,4 @@ if __name__ == "__main__":
         c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=3)
         c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour.pdf"], truth=truth, parameters=10)
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth=truth)
-        c.analysis.get_latex_table(filename=pfn + "_params.txt")
+        c.analysis.get_latex_table(filename=pfn + "_params.txt")"""

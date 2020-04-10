@@ -30,18 +30,31 @@ if __name__ == "__main__":
 
     for r in [False]:
         t = "Recon" if r else "Prerecon"
-        d = PowerSpectrum_DESIMockChallenge0_Z01(recon=r, isotropic=False, realisation="data")
 
-        # Fix sigma_nl for one of the Beutler models
+        # Changing fitting range and sigma values to match Hee-Jong
+        d = PowerSpectrum_DESIMockChallenge0_Z01(recon=r, isotropic=False, realisation="data", min_k=0.001, max_k=0.30)
         model = PowerBeutler2017(recon=r, isotropic=False, correction=Correction.NONE)
-        model.set_default("sigma_nl_par", 10.9)
-        model.set_default("sigma_nl_perp", 5.98)
-        model.set_fix_params(["om", "sigma_nl_par", "sigma_nl_perp"])
+        model.set_default("sigma_nl_par", 6.2)
+        model.set_default("sigma_nl_perp", 2.9)
+        model.set_default("sigma_s", 0.0)
+        model.set_fix_params(["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"])
 
-        fitter.add_model_and_dataset(PowerBeutler2017(recon=r, isotropic=False, correction=Correction.NONE, fix_params=["om"]), d, name=f"Beutler 2017 {t}")
-        fitter.add_model_and_dataset(model, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}")
-        # fitter.add_model_and_dataset(PowerSeo2016(recon=r, isotropic=False), d, name=f"Seo 2016 {t}", linestyle=ls, color=cs[1])
-        # fitter.add_model_and_dataset(PowerDing2018(recon=r, isotropic=False), d, name=f"Ding 2018 {t}", linestyle=ls, color=cs[2])
+        fitter.add_model_and_dataset(model, d, name=f"Beutler 2017 New $\\Sigma_{{nl}}$ {t}")
+
+        # Now change linear and smooth spectra to Hee-Jong's inputs
+        pklin = np.array(pd.read_csv("../barry/data/desi_mock_challenge_0/mylinearmatterpkL900.dat", delim_whitespace=True, header=None))
+        pksmooth = np.array(pd.read_csv("../barry/data/desi_mock_challenge_0/Psh_mylinearmatterpkL900.dat", delim_whitespace=True, header=None, skiprows=2))
+        model2 = PowerBeutler2017(recon=False, isotropic=False, correction=Correction.NONE)
+        model2.set_default("sigma_nl_par", 6.2)
+        model2.set_default("sigma_nl_perp", 2.9)
+        model2.set_default("sigma_s", 0.0)
+        model2.set_fix_params(["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"])
+        model2.set_data(d.get_data())
+        model2.kvals = pklin[:, 0]
+        model2.pkratio = pklin[:, 1] / pksmooth[:, 1] - 1.0
+        model2.pksmooth = pksmooth[:, 1]
+
+        fitter.add_model_and_dataset(model2, d, name=f"Beutler 2017 New Template$ {t}")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
