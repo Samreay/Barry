@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     res = {f.lower(): getdf(f) for f in files}
     split = {
-        "pre-recon data": data,
+        "pre-recon data": [data],
         "pre-recon cov": cov,
         "post-recon data": None,
         "post-recon cov": None,
