@@ -1,10 +1,15 @@
 #!/bin/bash -l
 #SBATCH -J {name}
-#SBATCH -o {output}.o%j
-#SBATCH -p smp
+#SBATCH --qos=shared
+#SBATCH -C haswell
+#SBATCH --ntasks=20
+#SBATCH --account=desi
+#SBATCH --cpus-per-task=1
+#SBATCH --nodes=1
 #SBATCH --mem-per-cpu=4GB
 #SBATCH -t 04:00:00
 #SBATCH -n 20
+#SBATCH -o {output}.o%j
 
 module load {mpi_module}
 module load {fort_compile_module}
