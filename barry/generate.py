@@ -24,7 +24,6 @@ def setup_ptgenerator_slurm(model, c, hpc="getafix"):
     output = os.path.join(job_dir, "zlog")
     d = {
         "name": unique_name,
-        "conda_env": config["job_conda_env"],
         "mpi_module": config["mpi_module"],
         "fort_compile_module": config["fort_compile_module"],
         "path": python_path,

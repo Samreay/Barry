@@ -14,7 +14,7 @@
 module load {mpi_module}
 module load {fort_compile_module}
 conda deactivate
-conda activate {conda_env}
+conda activate Barry
 echo "Activated python"
 echo `which python`
 
