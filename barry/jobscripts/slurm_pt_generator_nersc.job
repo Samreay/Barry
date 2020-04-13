@@ -11,6 +11,8 @@
 #SBATCH -n 20
 #SBATCH -o {output}.o%j
 
+source ~/.bashrc.ext
+mydesienv
 module load {mpi_module}
 module load {fort_compile_module}
 conda deactivate
