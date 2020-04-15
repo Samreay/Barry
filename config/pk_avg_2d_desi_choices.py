@@ -44,7 +44,9 @@ if __name__ == "__main__":
 
         # Now change linear and smooth spectra to Hee-Jong's inputs
         pklin = np.array(pd.read_csv("../barry/data/desi_mock_challenge_0/mylinearmatterpkL900.dat", delim_whitespace=True, header=None))
-        pksmooth = np.array(pd.read_csv("../barry/data/desi_mock_challenge_0/Psh_mylinearmatterpkL900.dat", delim_whitespace=True, header=None, skiprows=2))
+        pksmooth = np.array(
+            pd.read_csv("../barry/data/desi_mock_challenge_0/Psh_mylinearmatterpkL900.dat", delim_whitespace=True, header=None, skiprows=2)
+        )
         model2 = PowerBeutler2017(recon=False, isotropic=False, correction=Correction.NONE)
         model2.set_default("sigma_nl_par", 6.2)
         model2.set_default("sigma_nl_perp", 2.9)
@@ -97,7 +99,9 @@ if __name__ == "__main__":
         # truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0}
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha_{par}$": 1.102, "$\\alpha_{perp}$": 1.034}
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth=truth)
-        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=["$\\alpha_{par}$", "$\\alpha_{perp}$"])
+        c.plotter.plot(
+            filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=["$\\alpha_{par}$", "$\\alpha_{perp}$"]
+        )
         c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour.pdf"], truth=truth, parameters=10)
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth=truth)
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
