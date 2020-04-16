@@ -178,7 +178,7 @@ class CambGenerator(object):
         # If omch2 == self.omch2s[-1] we can get an index out of bounds later due to rounding errors, so we
         # manually set the edge cases
         if omch2 >= self.omch2s[-1]:
-            omch2_index = self.om_resolution - 1 - 1.0e6
+            omch2_index = self.om_resolution - 1 - 1.0e-6
 
         if self.h0_resolution == 1:
             h0_index = 0
@@ -188,7 +188,7 @@ class CambGenerator(object):
             # If h0 == self.h0s[-1] we can get an index out of bounds later due to rounding errors, so we
             # manually set the edge cases
             if h0 == self.h0s[-1]:
-                h0_index = self.h0_resolution - 1 - 1.0e6
+                h0_index = self.h0_resolution - 1 - 1.0e-6
 
         x = omch2_index - np.floor(omch2_index)
         y = h0_index - np.floor(h0_index)
