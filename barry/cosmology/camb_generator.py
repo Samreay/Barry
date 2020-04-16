@@ -11,14 +11,7 @@ import logging
 
 @lru_cache(maxsize=32)
 def getCambGenerator(
-    redshift=0.51,
-    om_resolution=101,
-    h0_resolution=1,
-    h0=0.676,
-    ob=0.04814,
-    ns=0.97,
-    mnu=0.0,
-    recon_smoothing_scale=21.21,
+    redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21
 ):
     return CambGenerator(
         redshift=redshift,
@@ -67,15 +60,7 @@ class CambGenerator(object):
     """
 
     def __init__(
-        self,
-        redshift=0.61,
-        om_resolution=101,
-        h0_resolution=1,
-        h0=0.676,
-        ob=0.04814,
-        ns=0.97,
-        mnu=0.0,
-        recon_smoothing_scale=21.21,
+        self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21
     ):
         """ 
         Precomputes CAMB for efficiency. Access ks via self.ks, and use get_data for an array
@@ -87,23 +72,19 @@ class CambGenerator(object):
         self.h0 = h0
         self.redshift = redshift
 
-        self.data_dir = os.path.normpath(
-            os.path.dirname(inspect.stack()[0][1]) + "/../generated/"
-        )
+        self.data_dir = os.path.normpath(os.path.dirname(inspect.stack()[0][1]) + "/../generated/")
         hh = int(h0 * 10000)
-        self.filename_unique = f"{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}"
+        self.filename_unique = (
+            f"{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}"
+        )
         self.filename = self.data_dir + f"/camb_{self.filename_unique}.npy"
 
         self.k_min = 1e-4
         self.k_max = 5
         self.k_num = 2000
-        self.ks = np.logspace(
-            np.log(self.k_min), np.log(self.k_max), self.k_num, base=np.e
-        )
+        self.ks = np.logspace(np.log(self.k_min), np.log(self.k_max), self.k_num, base=np.e)
         self.recon_smoothing_scale = recon_smoothing_scale
-        self.smoothing_kernel = np.exp(
-            -self.ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0
-        )
+        self.smoothing_kernel = np.exp(-self.ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0)
 
         self.omch2s = np.linspace(0.05, 0.3, self.om_resolution)
         self.omega_b = ob
@@ -115,9 +96,7 @@ class CambGenerator(object):
             self.h0s = np.linspace(0.6, 0.8, self.h0_resolution)
 
         self.data = None
-        self.logger.info(
-            f"Creating CAMB data with {self.om_resolution} x {self.h0_resolution}"
-        )
+        self.logger.info(f"Creating CAMB data with {self.om_resolution} x {self.h0_resolution}")
 
     def load_data(self, can_generate=False):
         if not os.path.exists(self.filename):
@@ -149,9 +128,7 @@ class CambGenerator(object):
         }
 
     def _generate_data(self):
-        self.logger.info(
-            f"Generating CAMB data with {self.om_resolution} x {self.h0_resolution}"
-        )
+        self.logger.info(f"Generating CAMB data with {self.om_resolution} x {self.h0_resolution}")
         os.makedirs(self.data_dir, exist_ok=True)
         import camb
 
@@ -179,14 +156,10 @@ class CambGenerator(object):
                 results = camb.get_results(pars)
                 params = results.get_derived_params()
                 rdrag = params["rdrag"]
-                kh, z, pk_lin = results.get_matter_power_spectrum(
-                    minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num
-                )
+                kh, z, pk_lin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
                 pars.NonLinear = camb.model.NonLinear_pk
                 results.calc_power_spectra(pars)
-                kh, z, pk_nonlin = results.get_matter_power_spectrum(
-                    minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num
-                )
+                kh, z, pk_nonlin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
                 data[i, j, 0] = rdrag
                 data[i, j, 1 : 1 + self.k_num] = pk_lin[1, :]
                 data[i, j, 1 + self.k_num :] = pk_nonlin.flatten()
@@ -200,22 +173,22 @@ class CambGenerator(object):
 
     def _interpolate(self, omch2, h0, data=None):
         """ Performs bilinear interpolation on the entire pk array """
-        omch2_index = (
-            1.0
-            * (self.om_resolution - 1)
-            * (omch2 - self.omch2s[0])
-            / (self.omch2s[-1] - self.omch2s[0])
-        )
+        omch2_index = 1.0 * (self.om_resolution - 1) * (omch2 - self.omch2s[0]) / (self.omch2s[-1] - self.omch2s[0])
+
+        # If omch2 == self.omch2s[-1] we can get an index out of bounds later due to rounding errors, so we
+        # manually set the edge cases
+        if omch2 >= self.omch2s[-1]:
+            omch2_index = self.om_resolution - 1 - 1.0e6
 
         if self.h0_resolution == 1:
             h0_index = 0
         else:
-            h0_index = (
-                1.0
-                * (self.h0_resolution - 1)
-                * (h0 - self.h0s[0])
-                / (self.h0s[-1] - self.h0s[0])
-            )
+            h0_index = 1.0 * (self.h0_resolution - 1) * (h0 - self.h0s[0]) / (self.h0s[-1] - self.h0s[0])
+
+            # If h0 == self.h0s[-1] we can get an index out of bounds later due to rounding errors, so we
+            # manually set the edge cases
+            if h0 == self.h0s[-1]:
+                h0_index = self.h0_resolution - 1 - 1.0e6
 
         x = omch2_index - np.floor(omch2_index)
         y = h0_index - np.floor(h0_index)
@@ -230,12 +203,7 @@ class CambGenerator(object):
         else:
             v3 = data[int(np.floor(omch2_index)), int(np.ceil(h0_index))]  # 10
             v4 = data[int(np.ceil(omch2_index)), int(np.ceil(h0_index))]  # 11
-            final = (
-                v1 * (1 - x) * (1 - y)
-                + v2 * x * (1 - y)
-                + v3 * y * (1 - x)
-                + v4 * x * y
-            )
+            final = v1 * (1 - x) * (1 - y) + v2 * x * (1 - y) + v3 * y * (1 - x) + v4 * x * y
         return final
 
 
@@ -254,47 +222,18 @@ if __name__ == "__main__":
     import timeit
     import matplotlib.pyplot as plt
 
-    logging.basicConfig(
-        level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s"
-    )
+    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
     c = getCambGenerator()
 
     n = 10000
-    print(
-        "Takes on average, %.1f microseconds"
-        % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n)
-    )
+    print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
 
-    plt.plot(
-        c.ks,
-        c.get_data(0.2)["pk_lin"],
-        color="b",
-        linestyle="-",
-        label=r"$\mathrm{Linear}\,\Omega_{m}=0.2$",
-    )
-    plt.plot(
-        c.ks,
-        c.get_data(0.3)["pk_lin"],
-        color="r",
-        linestyle="-",
-        label=r"$\mathrm{Linear}\,\Omega_{m}=0.3$",
-    )
-    plt.plot(
-        c.ks,
-        c.get_data(0.2)["pk_nl_z"],
-        color="b",
-        linestyle="--",
-        label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$",
-    )
-    plt.plot(
-        c.ks,
-        c.get_data(0.3)["pk_nl_z"],
-        color="r",
-        linestyle="--",
-        label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$",
-    )
+    plt.plot(c.ks, c.get_data(0.2)["pk_lin"], color="b", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.2$")
+    plt.plot(c.ks, c.get_data(0.3)["pk_lin"], color="r", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.3$")
+    plt.plot(c.ks, c.get_data(0.2)["pk_nl_z"], color="b", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
+    plt.plot(c.ks, c.get_data(0.3)["pk_nl_z"], color="r", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()
