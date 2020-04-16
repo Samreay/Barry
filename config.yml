@@ -4,6 +4,7 @@ hpc_submit_command: sbatch
 # Determine job run time and resources
 hpcs:
   getafix:
+    conda_env: Barry
     job_script_name: getafix
     num_fits_per_job: 1
     mpi_module: rocks-openmpi
