@@ -17,7 +17,7 @@ def getwin(ks):
 
 
 def getcomp(ks):
-    matrix = np.eye(2 * ks.size)
+    matrix = np.eye(3 * ks.size)
     return matrix
 
 
