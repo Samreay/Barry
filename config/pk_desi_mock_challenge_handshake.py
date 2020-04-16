@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
-    d = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data")
+    d = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2])
 
     fitter.add_model_and_dataset(PowerBeutler2017(fix_params=("om", "f"), isotropic=False), d, name=f"Beutler 2017 Prerecon", color=cs[0])
     fitter.add_model_and_dataset(PowerSeo2016(fix_params=("om", "f"), isotropic=False), d, name=f"Seo 2016 Prerecon", color=cs[1])
