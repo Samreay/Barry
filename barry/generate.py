@@ -67,23 +67,22 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--refresh", action="store_true", default=False)
     args = parser.parse_args()
 
-    # This should be run on a HPC for the PTGenerator side of things.
-    assert not is_local(), "Please run this on your HPC system"
-    hpc = get_hpc()
-
     datasets = [c(realisation="data") for c in get_concrete(Dataset) if "DESI" in c.__name__]
 
     cosmologies = get_cosmologies(datasets)
     logging.info(f"Have {len(cosmologies)} cosmologies")
 
     # Ensure all cosmologies exist
-    if hpc is "getafix":
-        for c in cosmologies:
-            logging.info(f"Ensuring cosmology {c} is generated")
-            mnu = c.get("mnu", 0.0)
-            print(mnu)
-            generator = CambGenerator(om_resolution=101, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"], mnu=mnu)
-            generator.load_data(can_generate=True)
+    for c in cosmologies:
+        logging.info(f"Ensuring cosmology {c} is generated")
+        mnu = c.get("mnu", 0.0)
+        print(mnu)
+        generator = CambGenerator(om_resolution=101, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"], mnu=mnu)
+        generator.load_data(can_generate=True)
+
+    # This part should be run on a HPC for the PTGenerator side of things.
+    assert not is_local(), "CAMB has been generated, but please upload and run again on your HPC system"
+    hpc = get_hpc()
 
     # For each cosmology, ensure that each model pregens the right data
     models = [c() for c in get_concrete(Model)]
