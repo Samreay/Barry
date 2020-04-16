@@ -12,7 +12,7 @@ def getdf(loc):
 
 
 def getwin(ks):
-    res = {"w_ks_input": ks.copy(), "w_k0_scale": np.zeros(ks.size), "w_transform": np.eye(2 * ks.size), "w_ks_output": ks.copy()}
+    res = {"w_ks_input": ks.copy(), "w_k0_scale": np.zeros(ks.size), "w_transform": np.eye(3 * ks.size), "w_ks_output": ks.copy()}
     return {1: res}  # Step size is one
 
 
