@@ -25,6 +25,7 @@ class PowerSpectrum(Dataset, ABC):
         fake_diag=False,
         realisation=None,
         isotropic=True,
+        fit_poles=None,
     ):
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + f"/../data/{filename}")
@@ -49,7 +50,13 @@ class PowerSpectrum(Dataset, ABC):
         self.reduce_cov_factor = reduce_cov_factor
 
         self.poles = [int(c.replace("pk", "")) for c in (self.true_data or self.mock_data)[0].columns if c.startswith("pk")]
-        self.fit_poles = [x for x in self.poles if x % 2 == 0]
+        if fit_poles is None:
+            if isotropic:
+                self.fit_poles = [0]
+            else:
+                self.fit_poles = [x for x in self.poles if x % 2 == 0]
+        else:
+            self.fit_poles = fit_poles
         self.fit_pole_indices = np.where([i in self.fit_poles for i in self.poles])[0]
 
         if self.reduce_cov_factor == -1:

@@ -19,6 +19,7 @@ class PowerSpectrum_SDSS_DR12_Z061_NGC(PowerSpectrum):
         step_size=1,
         postprocess=None,
         isotropic=True,
+        fit_poles=None,
     ):
         super().__init__(
             "sdss_dr12_z061_pk_ngc.pkl",
@@ -32,6 +33,7 @@ class PowerSpectrum_SDSS_DR12_Z061_NGC(PowerSpectrum):
             realisation=realisation,
             fake_diag=fake_diag,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
 
 
@@ -50,6 +52,7 @@ class PowerSpectrum_SDSS_DR12_Z051_NGC(PowerSpectrum):
         step_size=1,
         postprocess=None,
         isotropic=True,
+        fit_poles=None,
     ):
         super().__init__(
             "sdss_dr12_z051_pk_ngc.pkl",
@@ -63,6 +66,7 @@ class PowerSpectrum_SDSS_DR12_Z051_NGC(PowerSpectrum):
             realisation=realisation,
             fake_diag=fake_diag,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
 
 
@@ -81,6 +85,7 @@ class PowerSpectrum_SDSS_DR12_Z051_SGC(PowerSpectrum):
         step_size=1,
         postprocess=None,
         isotropic=True,
+        fit_poles=None,
     ):
         super().__init__(
             "sdss_dr12_z051_pk_sgc.pkl",
@@ -94,6 +99,7 @@ class PowerSpectrum_SDSS_DR12_Z051_SGC(PowerSpectrum):
             realisation=realisation,
             fake_diag=fake_diag,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
 
 
@@ -112,6 +118,7 @@ class PowerSpectrum_SDSS_DR12_Z051(MultiDataset):
         step_size=1,
         postprocess=None,
         isotropic=True,
+        fit_poles=None,
     ):
         ngc = PowerSpectrum_SDSS_DR12_Z051_NGC(
             min_k=min_k,
@@ -123,6 +130,7 @@ class PowerSpectrum_SDSS_DR12_Z051(MultiDataset):
             realisation=realisation,
             fake_diag=fake_diag,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
         sgc = PowerSpectrum_SDSS_DR12_Z051_SGC(
             min_k=min_k,
@@ -134,6 +142,7 @@ class PowerSpectrum_SDSS_DR12_Z051(MultiDataset):
             realisation=realisation,
             fake_diag=fake_diag,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
         super().__init__(name, [ngc, sgc])
 
@@ -154,6 +163,7 @@ class PowerSpectrum_Beutler2019_Z038_NGC(PowerSpectrum):
         fake_diag=False,
         realisation=None,
         isotropic=True,
+        fit_poles=None,
     ):
 
         if recon:
@@ -172,6 +182,7 @@ class PowerSpectrum_Beutler2019_Z038_NGC(PowerSpectrum):
             fake_diag=fake_diag,
             realisation=realisation,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
 
 
@@ -191,6 +202,7 @@ class PowerSpectrum_Beutler2019_Z038_SGC(PowerSpectrum):
         fake_diag=False,
         realisation=None,
         isotropic=True,
+        fit_poles=None,
     ):
         if recon:
             raise NotImplementedError("Post-recon data not available for Beutler2019_DR12_Z038")
@@ -208,6 +220,7 @@ class PowerSpectrum_Beutler2019_Z038_SGC(PowerSpectrum):
             fake_diag=fake_diag,
             realisation=realisation,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
 
 
@@ -227,6 +240,7 @@ class PowerSpectrum_Beutler2019_Z038(MultiDataset):
         fake_diag=False,
         realisation=None,
         isotropic=True,
+        fit_poles=None,
     ):
         ngc = PowerSpectrum_Beutler2019_Z038_NGC(
             min_k=min_k,
@@ -239,6 +253,7 @@ class PowerSpectrum_Beutler2019_Z038(MultiDataset):
             fake_diag=fake_diag,
             realisation=realisation,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
         sgc = PowerSpectrum_Beutler2019_Z038_SGC(
             min_k=min_k,
@@ -251,6 +266,7 @@ class PowerSpectrum_Beutler2019_Z038(MultiDataset):
             fake_diag=fake_diag,
             realisation=realisation,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
         super().__init__(name, [ngc, sgc])
 
@@ -271,6 +287,7 @@ class PowerSpectrum_Beutler2019_Z061_NGC(PowerSpectrum):
         fake_diag=False,
         realisation=None,
         isotropic=True,
+        fit_poles=None,
     ):
         if recon:
             raise NotImplementedError("Post-recon data not available for Beutler2019_DR12_Z061")
@@ -288,6 +305,7 @@ class PowerSpectrum_Beutler2019_Z061_NGC(PowerSpectrum):
             fake_diag=fake_diag,
             realisation=realisation,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
 
 
@@ -307,6 +325,7 @@ class PowerSpectrum_Beutler2019_Z061_SGC(PowerSpectrum):
         fake_diag=False,
         realisation=None,
         isotropic=True,
+        fit_poles=None,
     ):
         if recon:
             raise NotImplementedError("Post-recon data not available for Beutler2019_DR12_Z061")
@@ -324,6 +343,7 @@ class PowerSpectrum_Beutler2019_Z061_SGC(PowerSpectrum):
             fake_diag=fake_diag,
             realisation=realisation,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
 
 
@@ -343,6 +363,7 @@ class PowerSpectrum_Beutler2019_Z061(MultiDataset):
         fake_diag=False,
         realisation=None,
         isotropic=True,
+        fit_poles=None,
     ):
         ngc = PowerSpectrum_Beutler2019_Z061_NGC(
             min_k=min_k,
@@ -355,6 +376,7 @@ class PowerSpectrum_Beutler2019_Z061(MultiDataset):
             fake_diag=fake_diag,
             realisation=realisation,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
         sgc = PowerSpectrum_Beutler2019_Z061_SGC(
             min_k=min_k,
@@ -367,6 +389,7 @@ class PowerSpectrum_Beutler2019_Z061(MultiDataset):
             fake_diag=fake_diag,
             realisation=realisation,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
         super().__init__(name, [ngc, sgc])
 
@@ -387,6 +410,7 @@ class PowerSpectrum_DESIMockChallenge0_Z01(PowerSpectrum):
         fake_diag=False,
         realisation=None,
         isotropic=True,
+        fit_poles=None,
     ):
         if recon:
             raise NotImplementedError("Post-recon data not available for Beutler2019_DR12_Z061")
@@ -404,6 +428,7 @@ class PowerSpectrum_DESIMockChallenge0_Z01(PowerSpectrum):
             fake_diag=fake_diag,
             realisation=realisation,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
 
 
@@ -423,6 +448,7 @@ class PowerSpectrum_DESIMockChallenge_Handshake(PowerSpectrum):
         fake_diag=False,
         realisation=None,
         isotropic=False,
+        fit_poles=None,
     ):
         if recon:
             raise NotImplementedError("Post-recon data not available for DESIMockChallenge_Handshake")
@@ -440,6 +466,7 @@ class PowerSpectrum_DESIMockChallenge_Handshake(PowerSpectrum):
             fake_diag=fake_diag,
             realisation=realisation,
             isotropic=isotropic,
+            fit_poles=fit_poles,
         )
 
 

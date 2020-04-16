@@ -26,7 +26,13 @@ class PowerBeutler2017(PowerSpectrumFit):
         self.recon = recon
         self.recon_smoothing_scale = None
         super().__init__(
-            name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction, isotropic=isotropic
+            name=name,
+            fix_params=fix_params,
+            smooth_type=smooth_type,
+            postprocess=postprocess,
+            smooth=smooth,
+            correction=correction,
+            isotropic=isotropic,
         )
 
         self.kvals = None
@@ -150,15 +156,10 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_SGC
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESIMockChallenge_Handshake
     from barry.config import setup_logging
 
     setup_logging()
-
-    print("Getting default 1D")
-    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False)
-    model_post = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
-    model_post.plot_default(dataset)
 
     # def timing():
     #     params = model_post.get_raw_start()
@@ -170,27 +171,14 @@ if __name__ == "__main__":
     # niter = 6000
     # print("Model posterior takes on average, %.2f milliseconds" % (timeit.timeit(timing, number=niter) * 1000 / niter))
 
-    print("Getting default 2D")
-    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False)
+    print("Checking isotropic model and data")
+    dataset = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=True, realisation="data")
     model_pre = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
     model_pre.plot_default(dataset)
-
-    print("Checking isotropic mock mean")
-    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True)
-    model_pre = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
     model_pre.sanity_check(dataset)
 
-    print("Checking isotropic data")
-    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=True, realisation="data")
+    print("Checking anisotropic model and data")
+    dataset = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2])
     model_pre = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
-    model_pre.sanity_check(dataset)
-
-    print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False)
-    model_pre = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
-    model_pre.sanity_check(dataset)
-
-    print("Checking anisotropic data")
-    dataset = PowerSpectrum_Beutler2019_Z061_SGC(isotropic=False, realisation="data")
-    model_pre = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
+    model_pre.plot_default(dataset)
     model_pre.sanity_check(dataset)

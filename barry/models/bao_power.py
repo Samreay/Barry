@@ -13,7 +13,9 @@ from barry.utils import break_vector_and_get_blocks
 class PowerSpectrumFit(Model):
     """ Generic power spectrum model """
 
-    def __init__(self, name="Pk Basic", smooth_type="hinton2017", fix_params=("om"), postprocess=None, smooth=False, correction=None, isotropic=True):
+    def __init__(
+        self, name="Pk Basic", smooth_type="hinton2017", fix_params=("om"), postprocess=None, smooth=False, correction=None, isotropic=True
+    ):
         """ Generic power spectrum function model
 
         Parameters
@@ -72,7 +74,9 @@ class PowerSpectrumFit(Model):
         """
         # Get base linear power spectrum from camb
         res = self.camb.get_data(om=om, h0=self.camb.h0)
-        pk_smooth_lin = smooth(self.camb.ks, res["pk_lin"], method=self.smooth_type, om=om, h0=self.camb.h0)  # Get the smoothed power spectrum
+        pk_smooth_lin = smooth(
+            self.camb.ks, res["pk_lin"], method=self.smooth_type, om=om, h0=self.camb.h0
+        )  # Get the smoothed power spectrum
         pk_ratio = res["pk_lin"] / pk_smooth_lin - 1.0  # Get the ratio
         return pk_smooth_lin, pk_ratio
 
@@ -246,7 +250,9 @@ class PowerSpectrumFit(Model):
                 pk_normalised = []
                 for i in range(len(data["poles"])):
                     pk_normalised.append(
-                        splev(data["ks_output"], splrep(data["ks_input"], pk_mod[i * len(data["ks_input"]) : (i + 1) * len(data["ks_input"])]))
+                        splev(
+                            data["ks_output"], splrep(data["ks_input"], pk_mod[i * len(data["ks_input"]) : (i + 1) * len(data["ks_input"])])
+                        )
                     )
                 pk_normalised = np.array(pk_normalised).flatten()
 
@@ -269,8 +275,10 @@ class PowerSpectrumFit(Model):
             The corrected log likelihood
         """
         pk_model = self.get_model(p, d, smooth=self.smooth)
-        pk_model_fit = break_vector_and_get_blocks(pk_model, len(d["poles"]), d["fit_pole_indices"])
-        # pk_model_fit = pk_model
+        if self.isotropic:
+            pk_model_fit = pk_model
+        else:
+            pk_model_fit = break_vector_and_get_blocks(pk_model, len(d["poles"]), d["fit_pole_indices"])
 
         # Compute the chi2
         diff = d["pk"] - pk_model_fit
@@ -338,7 +346,10 @@ class PowerSpectrumFit(Model):
         errs = [row for row in err.reshape((-1, len(ks)))]
         mods = [row for row in mod.reshape((-1, len(ks)))]
         smooths = [row for row in smooth.reshape((-1, len(ks)))]
-        names = [f"pk{n}" for n in self.data[0]["poles"]]
+        if self.isotropic:
+            names = [f"pk0"]
+        else:
+            names = [f"pk{n}" for n in self.data[0]["poles"]]
         labels = [f"$P_{{{n}}}(k)$" for n in self.data[0]["poles"]]
         num_rows = len(names)
         cs = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00"]
@@ -357,12 +368,14 @@ class PowerSpectrumFit(Model):
             ax[0].plot(ks, ks * mod, c=c, label="Model")
             ax[1].plot(ks, ks * (mod - smooth), c=c, label="Model")
 
-            if name in [f"pk{n}" for n in self.data[0]["fit_poles"]]:
+            if name in [f"pk{n}" for n in self.data[0]["poles"] if n % 2 == 0]:
                 ax[0].set_ylabel("$k \\times $ " + label)
             else:
+                ax[0].set_ylabel("$ik \\times $ " + label)
+
+            if name not in [f"pk{n}" for n in self.data[0]["fit_poles"]]:
                 ax[0].set_facecolor("#e1e1e1")
                 ax[1].set_facecolor("#e1e1e1")
-                ax[0].set_ylabel("$ik \\times $ " + label)
 
         # Show the model parameters
         string = f"$\\mathcal{{L}}$: {self.get_likelihood(params, self.data[0]):0.3g}\n"
@@ -375,9 +388,9 @@ class PowerSpectrumFit(Model):
         axes[0, 0].legend(frameon=False)
 
         if self.postprocess is None:
-            axes[0, 1].set_title("$k \\times [P(k) - P_{\\rm smooth}(k)]$")
+            axes[0, 1].set_title("$P(k) - P_{\\rm smooth}(k)$")
         else:
-            axes[0, 1].set_title("$k \\times [P(k) - data]$")
+            axes[0, 1].set_title("$P(k) - data$")
         axes[0, 0].set_title("$k \\times P(k)$")
 
         fig.suptitle(self.data[0]["name"] + " + " + self.get_name())
