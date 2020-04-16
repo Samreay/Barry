@@ -15,7 +15,7 @@ from barry.utils import get_hpc
 
 def setup_ptgenerator_slurm(model, c, hpc="getafix"):
     if hpc is None:
-        raise ValueError("HPC environment veriable is not set. Please set it to an hpc system, like export HPC=nersc")
+        raise ValueError("HPC environment variable is not set. Please set it to an hpc system, like export HPC=nersc")
     config = get_config()
     hpc_config = config.get("hpcs", {}).get(hpc, {})
     job_path = os.path.join(os.path.dirname(inspect.stack()[0][1]), f"jobscripts/slurm_pt_generator_{hpc}.job")
@@ -76,13 +76,14 @@ if __name__ == "__main__":
     cosmologies = get_cosmologies(datasets)
     logging.info(f"Have {len(cosmologies)} cosmologies")
 
-    """# Ensure all cosmologies exist
-    for c in cosmologies:
-        logging.info(f"Ensuring cosmology {c} is generated")
-        mnu = c.get("mnu", 0.0)
-        print(mnu)
-        generator = CambGenerator(om_resolution=101, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"], mnu=mnu)
-        generator.load_data(can_generate=True)"""
+    # Ensure all cosmologies exist
+    if hpc is "getafix":
+        for c in cosmologies:
+            logging.info(f"Ensuring cosmology {c} is generated")
+            mnu = c.get("mnu", 0.0)
+            print(mnu)
+            generator = CambGenerator(om_resolution=101, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"], mnu=mnu)
+            generator.load_data(can_generate=True)
 
     # For each cosmology, ensure that each model pregens the right data
     models = [c() for c in get_concrete(Model)]
