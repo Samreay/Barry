@@ -64,6 +64,11 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param("a2_3", r"$a_{2,3}$", -1000.0, 5000.0, 0)  # Quadrupole Polynomial marginalisation 3
             self.add_param("a2_4", r"$a_{2,4}$", -200.0, 200.0, 0)  # Quadrupole Polynomial marginalisation 4
             self.add_param("a2_5", r"$a_{2,5}$", -3.0, 3.0, 0)  # Quadrupole Polynomial marginalisation 5
+            self.add_param("a4_1", r"$a_{4,1}$", -10000.0, 30000.0, 0)  # Quadrupole Polynomial marginalisation 1
+            self.add_param("a4_2", r"$a_{4,2}$", -20000.0, 10000.0, 0)  # Quadrupole Polynomial marginalisation 2
+            self.add_param("a4_3", r"$a_{4,3}$", -1000.0, 5000.0, 0)  # Quadrupole Polynomial marginalisation 3
+            self.add_param("a4_4", r"$a_{4,4}$", -200.0, 200.0, 0)  # Quadrupole Polynomial marginalisation 4
+            self.add_param("a4_5", r"$a_{4,5}$", -3.0, 3.0, 0)  # Quadrupole Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p, smooth=False, dilate=True, data_name=None):
         """ Computes the power spectrum model using the Beutler et. al., 2017 method
@@ -134,20 +139,26 @@ class PowerBeutler2017(PowerSpectrumFit):
             pk_smooth = kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
 
             # Compute the propagator
-            C = np.exp(-0.5 * kprime ** 2 * (muprime ** 2 * p["sigma_nl_par"] ** 2 + (1.0 - muprime ** 2) * p["sigma_nl_perp"] ** 2))
-            pk2d = pk_smooth * (1.0 + splev(kprime, splrep(ks, pk_ratio)) * C)
+            if smooth:
+                pk2d = pk_smooth
+            else:
+                C = np.exp(-0.5 * kprime ** 2 * (muprime ** 2 * p["sigma_nl_par"] ** 2 + (1.0 - muprime ** 2) * p["sigma_nl_perp"] ** 2))
+                pk2d = pk_smooth * (1.0 + splev(kprime, splrep(ks, pk_ratio)) * C)
 
             # Polynomial shape
             if self.recon:
                 shape0 = p["a0_1"] * k ** 2 + p["a0_2"] + p["a0_3"] / k + p["a0_4"] / (k * k) + p["a0_5"] / (k ** 3)
                 shape2 = p["a2_1"] * k ** 2 + p["a2_2"] + p["a2_3"] / k + p["a2_4"] / (k * k) + p["a2_5"] / (k ** 3)
+                shape4 = p["a4_1"] * k ** 2 + p["a4_2"] + p["a4_3"] / k + p["a4_4"] / (k * k) + p["a4_5"] / (k ** 3)
             else:
                 shape0 = p["a0_1"] * k + p["a0_2"] + p["a0_3"] / k + p["a0_4"] / (k * k) + p["a0_5"] / (k ** 3)
                 shape2 = p["a2_1"] * k + p["a2_2"] + p["a2_3"] / k + p["a2_4"] / (k * k) + p["a2_5"] / (k ** 3)
+                shape4 = p["a4_1"] * k + p["a4_2"] + p["a4_3"] / k + p["a4_4"] / (k * k) + p["a4_5"] / (k ** 3)
 
             pk0, pk2, pk4 = self.integrate_mu(pk2d, self.mu)
             pk0 += shape0
             pk2 += shape2
+            pk4 += shape4
 
         return kprime, pk0, pk2, pk4
 
@@ -179,6 +190,15 @@ if __name__ == "__main__":
 
     print("Checking anisotropic model and data")
     dataset = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2])
-    model_pre = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
+    model_pre = PowerBeutler2017(
+        recon=dataset.recon, isotropic=dataset.isotropic, fix_params=("om", "f", "a4_1", "a4_2", "a4_3", "a4_4", "a4_5")
+    )
+    model_pre.plot_default(dataset)
+    model_pre.sanity_check(dataset)
+
+    dataset = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2, 4])
+    model_pre = PowerBeutler2017(
+        recon=dataset.recon, isotropic=dataset.isotropic, fix_params=("om", "f", "a4_1", "a4_2", "a4_3", "a4_4", "a4_5")
+    )
     model_pre.plot_default(dataset)
     model_pre.sanity_check(dataset)

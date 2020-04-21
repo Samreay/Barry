@@ -26,11 +26,14 @@ if __name__ == "__main__":
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
     d = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2])
+    d2 = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2, 4])
+    fix = ("om", "f", "a4_1", "a4_2", "a4_3", "a4_4", "a4_5")
 
-    fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False), d, name=f"Beutler 2017 Prerecon", color=cs[0])
-    fitter.add_model_and_dataset(PowerSeo2016(isotropic=False), d, name=f"Seo 2016 Prerecon", color=cs[1])
-    fitter.add_model_and_dataset(PowerDing2018(isotropic=False), d, name=f"Ding 2018 Prerecon", color=cs[2])
-    fitter.add_model_and_dataset(PowerNoda2019(isotropic=False), d, name=f"Noda 2019 Prerecon", color=cs[3])
+    fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False, fix_params=fix), d, name=r"$P_{0}$+P_{2}$", color=cs[0])
+    fitter.add_model_and_dataset(
+        PowerBeutler2017(isotropic=False, fix_params=fix), d2, name=r"$P_{0}$+P_{2}+P_{4},\,No\,a_{4}\,poly$", color=cs[0]
+    )
+    fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False), d2, name=r"$P_{0}$+P_{2}+P_{4}$", color=cs[0])
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
@@ -114,8 +117,8 @@ if __name__ == "__main__":
                 axes.spines["right"].set_color("none")
                 axes.tick_params(axis="both", which="both", labelcolor="none", top=False, bottom=False, left=False, right=False)
 
-                mfcs = ["#666666", "w"]
-                lines = ["-", "--"]
+                mfcs = ["#666666", "#A9A9A9", "w"]
+                lines = ["-", "--", ":"]
                 inner = gridspec.GridSpecFromSubplotSpec(1, len(names), subplot_spec=axes2[counter], wspace=0.08)
                 for i, (inn, err, mod, smooth, name, line, mfc) in enumerate(zip(inner, errs, mods, smooths, names, lines, mfcs)):
 
@@ -134,6 +137,8 @@ if __name__ == "__main__":
                             ax2.set_title(r"$P_{0}(k)$")
                         elif i == 1:
                             ax2.set_title(r"$P_{2}(k)$")
+                        else:
+                            ax2.set_title(r"$P_{4}(k)$")
                     if counter != (len(res) - 1):
                         ax2.tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
 
