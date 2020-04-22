@@ -33,7 +33,7 @@ if __name__ == "__main__":
     fitter.add_model_and_dataset(
         PowerBeutler2017(isotropic=False, fix_params=fix), d2, name=r"$P_{0}$+P_{2}+P_{4},\,No\,a_{4}\,poly$", color=cs[0]
     )
-    fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False), d2, name=r"$P_{0}$+P_{2}+P_{4}$", color=cs[0])
+    fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False, fix_params=("om", "f")), d2, name=r"$P_{0}$+P_{2}+P_{4}$", color=cs[0])
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
