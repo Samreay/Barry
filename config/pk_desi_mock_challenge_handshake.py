@@ -10,7 +10,7 @@ sys.path.append("..")
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESIMockChallenge_Handshake
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.config import setup
-from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
+from barry.models import PowerSpectrumFit, PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
 from barry.samplers import DynestySampler
 from barry.fitter import Fitter
 
@@ -26,6 +26,17 @@ if __name__ == "__main__":
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
     d = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2])
+
+    """m = PowerSpectrumFit(isotropic=False)
+    m.set_data(d.get_data())
+    om = m.get_param(m.data_dict, "om")
+    pksmooth, pkratio = m.compute_basic_power_spectrum(om)
+    np.savetxt(
+        "/Volumes/Work/UQ/Barry/barry/data/desi_mock_challenge_post_recon/pk_lin.dat",
+        np.c_[m.camb.ks, pksmooth * (1.0 + pkratio), pksmooth],
+        fmt="%g  %g  %g",
+        header="k      pk_lin      pk_smooth",
+    )"""
 
     fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False), d, name=f"Beutler 2017 Prerecon", color=cs[0])
     fitter.add_model_and_dataset(PowerSeo2016(isotropic=False), d, name=f"Seo 2016 Prerecon", color=cs[1])

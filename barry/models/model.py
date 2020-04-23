@@ -89,7 +89,9 @@ class Model(ABC):
         self.correction = correction
         self.correction_data = {}  # Empty dict to store correction specific data for speeding up computation
         assert isinstance(self.correction, Correction), "Correction should be an enum of Correction"
-        self.logger.info(f"Created model {name} of {self.__class__.__name__} with correction {correction} and postprocess {str(postprocess)}")
+        self.logger.info(
+            f"Created model {name} of {self.__class__.__name__} with correction {correction} and postprocess {str(postprocess)}"
+        )
 
     def get_name(self):
         return self.name
@@ -106,7 +108,9 @@ class Model(ABC):
             self.logger.info(f"Setting default growth rate of structure to f={f:0.5f}")
 
         if self.cosmology != c:
-            self.camb = getCambGenerator(h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], recon_smoothing_scale=c["reconsmoothscale"])
+            self.camb = getCambGenerator(
+                h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], mnu=c["mnu"], recon_smoothing_scale=c["reconsmoothscale"]
+            )
             self.set_default("om", c["om"])
             self.pregen_path = os.path.abspath(os.path.join(self.data_location, self.get_unique_cosmo_name()))
             self.cosmology = c
@@ -218,7 +222,9 @@ class Model(ABC):
         chi2 = diff.T @ icov @ diff
 
         if self.correction in [Correction.HARTLAP, Correction.SELLENTIN]:
-            assert num_mocks > 0, "Cannot use HARTLAP  or SELLENTIN correction with covariance not determined from mocks. Set correction to Correction.NONE"
+            assert (
+                num_mocks > 0
+            ), "Cannot use HARTLAP  or SELLENTIN correction with covariance not determined from mocks. Set correction to Correction.NONE"
         if self.correction is Correction.HARTLAP:  # From Hartlap 2007
             chi2 *= (num_mocks - diff.shape - 2) / (num_mocks - 1)
 
@@ -226,7 +232,9 @@ class Model(ABC):
             key = f"{num_mocks}_{num_params}"
             if key not in self.correction_data:
                 self.correction_data[key] = (
-                    loggamma(num_mocks / 2).real - (num_params / 2) * np.log(np.pi * (num_mocks - 1)) - loggamma((num_mocks - num_params) * 0.5).real
+                    loggamma(num_mocks / 2).real
+                    - (num_params / 2) * np.log(np.pi * (num_mocks - 1))
+                    - loggamma((num_mocks - num_params) * 0.5).real
                 )
             c_p = self.correction_data[key]
             log_likelihood = c_p - (num_mocks / 2) * np.log(1 + chi2 / (num_mocks - 1))
@@ -311,7 +319,12 @@ class Model(ABC):
 
         self.logger.info("Starting basin hopping to find a good starting point")
         res = basinhopping(
-            minimise, self.scale(start_close), niter_success=3, niter=30, stepsize=0.05, minimizer_kwargs={"method": "Nelder-Mead", "options": {"maxiter": 600}}
+            minimise,
+            self.scale(start_close),
+            niter_success=3,
+            niter=30,
+            stepsize=0.05,
+            minimizer_kwargs={"method": "Nelder-Mead", "options": {"maxiter": 600}},
         )
 
         scaled_start = res.x
