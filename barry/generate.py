@@ -76,7 +76,6 @@ if __name__ == "__main__":
     for c in cosmologies:
         logging.info(f"Ensuring cosmology {c} is generated")
         mnu = c.get("mnu", 0.0)
-        print(mnu)
         generator = CambGenerator(om_resolution=101, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"], mnu=mnu)
         generator.load_data(can_generate=True)
 
@@ -88,6 +87,8 @@ if __name__ == "__main__":
     models = [c() for c in get_concrete(Model)]
     for m in models:
         for c in cosmologies:
+            mnu = c.get("mnu", 0.0)
+            c["mnu"] = mnu
             try:
                 m.set_cosmology(c)
                 logging.info(f"Model {m.__class__.__name__} already has pregenerated data for {m.camb.filename_unique}")
