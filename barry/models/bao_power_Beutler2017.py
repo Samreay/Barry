@@ -64,10 +64,10 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param("a2_3", r"$a_{2,3}$", -1000.0, 5000.0, 0)  # Quadrupole Polynomial marginalisation 3
             self.add_param("a2_4", r"$a_{2,4}$", -200.0, 200.0, 0)  # Quadrupole Polynomial marginalisation 4
             self.add_param("a2_5", r"$a_{2,5}$", -3.0, 3.0, 0)  # Quadrupole Polynomial marginalisation 5
-            self.add_param("a4_1", r"$a_{4,1}$", -10000.0, 30000.0, 0)  # Quadrupole Polynomial marginalisation 1
-            self.add_param("a4_2", r"$a_{4,2}$", -20000.0, 10000.0, 0)  # Quadrupole Polynomial marginalisation 2
-            self.add_param("a4_3", r"$a_{4,3}$", -1000.0, 5000.0, 0)  # Quadrupole Polynomial marginalisation 3
-            self.add_param("a4_4", r"$a_{4,4}$", -200.0, 200.0, 0)  # Quadrupole Polynomial marginalisation 4
+            self.add_param("a4_1", r"$a_{4,1}$", -3000.0, 3000.0, 0)  # Quadrupole Polynomial marginalisation 1
+            self.add_param("a4_2", r"$a_{4,2}$", -1000.0, 1000.0, 0)  # Quadrupole Polynomial marginalisation 2
+            self.add_param("a4_3", r"$a_{4,3}$", -100.0, 500.0, 0)  # Quadrupole Polynomial marginalisation 3
+            self.add_param("a4_4", r"$a_{4,4}$", -20.0, 20.0, 0)  # Quadrupole Polynomial marginalisation 4
             self.add_param("a4_5", r"$a_{4,5}$", -3.0, 3.0, 0)  # Quadrupole Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p, smooth=False, dilate=True, data_name=None):
@@ -197,8 +197,6 @@ if __name__ == "__main__":
     model_pre.sanity_check(dataset)
 
     dataset = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2, 4])
-    model_pre = PowerBeutler2017(
-        recon=dataset.recon, isotropic=dataset.isotropic, fix_params=("om", "f", "a4_1", "a4_2", "a4_3", "a4_4", "a4_5")
-    )
+    model_pre = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=("om", "f"))
     model_pre.plot_default(dataset)
     model_pre.sanity_check(dataset)
