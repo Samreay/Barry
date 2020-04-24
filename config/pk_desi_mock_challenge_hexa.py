@@ -27,13 +27,10 @@ if __name__ == "__main__":
 
     d = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2])
     d2 = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2, 4])
-    fix = ("om", "f", "a4_1", "a4_2", "a4_3", "a4_4", "a4_5")
 
-    fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False, fix_params=fix), d, name=r"$P_{0}$+P_{2}$", color=cs[0])
-    fitter.add_model_and_dataset(
-        PowerBeutler2017(isotropic=False, fix_params=fix), d2, name=r"$P_{0}$+P_{2}+P_{4},\,No\,a_{4}\,poly$", color=cs[0]
-    )
-    fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False, fix_params=("om", "f")), d2, name=r"$P_{0}$+P_{2}+P_{4}$", color=cs[0])
+    fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False), d, name=r"$P_{0}$+P_{2}$", color=cs[0])
+    fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False), d2, name=r"$P_{0}$+P_{2}+P_{4},\,No\,a_{4}\,poly$", color=cs[1])
+    fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False, poly_poles=[0, 2, 4]), d2, name=r"$P_{0}$+P_{2}+P_{4}$", color=cs[2])
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)

@@ -108,6 +108,8 @@ class Model(ABC):
             self.logger.info(f"Setting default growth rate of structure to f={f:0.5f}")
 
         if self.cosmology != c:
+            mnu = c.get("mnu", 0.0)
+            c["mnu"] = mnu
             self.camb = getCambGenerator(
                 h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], mnu=c["mnu"], recon_smoothing_scale=c["reconsmoothscale"]
             )
