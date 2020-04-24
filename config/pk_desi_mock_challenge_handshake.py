@@ -17,9 +17,6 @@ from barry.fitter import Fitter
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
-    c = getCambGenerator()
-    r_s = c.get_data()["r_s"]
-
     sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
     fitter = Fitter(dir_name)
 
@@ -27,16 +24,43 @@ if __name__ == "__main__":
 
     d = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2])
 
-    """m = PowerSpectrumFit(isotropic=False)
+    pklin = np.array(pd.read_csv("../barry/data/desi_mock_challenge_post_recon/Pk_Planck15_Table4.txt", delim_whitespace=True, header=None))
+    print(pklin)
+
+    m = PowerSpectrumFit(isotropic=False)
     m.set_data(d.get_data())
     om = m.get_param(m.data_dict, "om")
+    print(om)
     pksmooth, pkratio = m.compute_basic_power_spectrum(om)
     np.savetxt(
         "/Volumes/Work/UQ/Barry/barry/data/desi_mock_challenge_post_recon/pk_lin.dat",
         np.c_[m.camb.ks, pksmooth * (1.0 + pkratio), pksmooth],
         fmt="%g  %g  %g",
         header="k      pk_lin      pk_smooth",
-    )"""
+    )
+    print(m.camb.get_data(om)["r_s"])
+
+    import matplotlib.pyplot as plt
+    from scipy.interpolate import splrep, splev
+
+    fig = plt.figure(0)
+    ax = fig.add_axes([0.13, 0.13, 0.85, 0.85])
+    ax.plot(pklin[:, 0], pklin[:, 0] * pklin[:, 1], label="Albert")
+    ax.plot(m.camb.ks, m.camb.ks * pksmooth * (1.0 + pkratio), label="Cullan")
+    ax.set_xlim(0.0, 1.0)
+    ax.legend()
+
+    fig = plt.figure(1)
+    ax = fig.add_axes([0.13, 0.13, 0.85, 0.85])
+    ax.plot(pklin[:, 0], pklin[:, 1] / splev(pklin[:, 0], splrep(m.camb.ks, pksmooth * (1.0 + pkratio))))
+    print(m.cosmology["z"])
+    ax.axhline(y=1.0 / get_growth_factor_Linder(om, m.cosmology["z"]))
+    ax.set_xlim(0.0, 1.0)
+    ax.legend()
+    plt.show()
+    plt.show()
+
+    exit()
 
     fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False), d, name=f"Beutler 2017 Prerecon", color=cs[0])
     fitter.add_model_and_dataset(PowerSeo2016(isotropic=False), d, name=f"Seo 2016 Prerecon", color=cs[1])

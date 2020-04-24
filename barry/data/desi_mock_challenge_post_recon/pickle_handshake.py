@@ -43,7 +43,7 @@ if __name__ == "__main__":
         "pre-recon mocks": [v for k, v in res.items()],
         "post-recon mocks": None,
         "cosmology": {
-            "om": (0.1188 + 0.02230) / 0.6774 ** 2 + 0.00064,
+            "om": (0.1188 + 0.02230 + 0.00064) / 0.6774 ** 2,
             "h0": 0.6774,
             "z": 0.9873,
             "ob": 0.02230 / 0.6774 ** 2,

@@ -139,7 +139,7 @@ class PowerSpectrumFit(Model):
         muprime = self.mu / np.sqrt(musq + (1.0 + epsilon) ** 6 * (1.0 - musq))
         return muprime
 
-    def compute_power_spectrum(self, k, p, smooth=False, shape=True, dilate=True, data_name=None):
+    def compute_power_spectrum(self, k, p, smooth=False, dilate=True, data_name=None):
         """ Get raw ks and p(k) multipoles for a given parametrisation dilated based on the values of alpha and epsilon
 
         Parameters
