@@ -13,6 +13,7 @@ from barry.config import setup
 from barry.models import PowerSpectrumFit, PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
 from barry.samplers import DynestySampler
 from barry.fitter import Fitter
+from barry.cosmology.power_spectrum_smoothing import smooth
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
@@ -24,10 +25,18 @@ if __name__ == "__main__":
 
     d = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2])
 
-    fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False), d, name=f"Beutler 2017 Prerecon", color=cs[0])
-    fitter.add_model_and_dataset(PowerSeo2016(isotropic=False), d, name=f"Seo 2016 Prerecon", color=cs[1])
-    fitter.add_model_and_dataset(PowerDing2018(isotropic=False), d, name=f"Ding 2018 Prerecon", color=cs[2])
-    fitter.add_model_and_dataset(PowerNoda2019(isotropic=False), d, name=f"Noda 2019 Prerecon", color=cs[3])
+    fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False), d, name=f"Cullan's Pk", color=cs[0])
+
+    # Re-do the desi fits, but now using the linear pk provided by Lado
+    pklin = np.array(pd.read_csv("../barry/data/desi_mock_challenge_post_recon/Pk_Planck15_Table4.txt", delim_whitespace=True, header=None))
+    model = PowerBeutler2017(isotropic=False)
+    model.set_fix_params(["om"])
+    model.set_data(d.get_data())
+    model.kvals = pklin[:, 0]
+    model.pksmooth = smooth(model.kvals, pklin[:, 1])
+    model.pkratio = pklin[:, 1] / model.pksmooth - 1.0
+
+    fitter.add_model_and_dataset(model, d, name=f"UNIT Pk", color=cs[1])
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
