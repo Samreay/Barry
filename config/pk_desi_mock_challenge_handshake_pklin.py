@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     fitter.add_model_and_dataset(PowerBeutler2017(isotropic=False), d, name=f"Cullan's Pk", color=cs[0])
 
-    # Re-do the desi fits, but now using the linear pk provided by Lado
+    # Re-do the desi fits, but now using the linear pk provided for the UNIT sim
     pklin = np.array(pd.read_csv("../barry/data/desi_mock_challenge_post_recon/Pk_Planck15_Table4.txt", delim_whitespace=True, header=None))
     model = PowerBeutler2017(isotropic=False)
     model.set_fix_params(["om"])
@@ -98,7 +98,6 @@ if __name__ == "__main__":
             for posterior, weight, chain, evidence, model, data, extra in res:
                 ks = data[0]["ks"]
                 err = np.sqrt(np.diag(data[0]["cov"]))
-                print(err)
                 model.set_data(data)
                 p = model.get_param_dict(chain[np.argmax(posterior)])
                 mod = model.get_model(p, data[0])

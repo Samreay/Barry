@@ -85,7 +85,7 @@ if __name__ == "__main__":
             parameters = model.get_labels()
             parameters[0] = r"$\alpha_{par}$"
             parameters[2] = r"$\alpha_{perp}$"
-            c.add_chain(chain, weights=weight, parameters=parameters, **extra)
+            c.add_chain(chain_conv, weights=weight, parameters=parameters, **extra)
             max_post = posterior.argmax()
             ps = chain_conv[max_post, :]
             for l, p in zip(parameters, ps):
@@ -96,6 +96,6 @@ if __name__ == "__main__":
         c.plotter.plot(
             filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=["$\\alpha_{par}$", "$\\alpha_{perp}$"]
         )
-        c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour.pdf"], truth=truth, parameters=10)
+        c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"], truth=truth, parameters=10)
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth=truth)
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
