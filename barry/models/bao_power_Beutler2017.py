@@ -15,7 +15,7 @@ class PowerBeutler2017(PowerSpectrumFit):
     def __init__(
         self,
         name="Pk Beutler 2017",
-        fix_params=("om", "f"),
+        fix_params=["om", "f"],
         smooth_type="hinton2017",
         recon=False,
         postprocess=None,
@@ -23,10 +23,13 @@ class PowerBeutler2017(PowerSpectrumFit):
         correction=None,
         isotropic=True,
         poly_poles=[0, 2],
+        marg=False,
     ):
         self.recon = recon
         self.recon_smoothing_scale = None
-        self.poly_poles = poly_poles
+        if marg:
+            for pole in poly_poles:
+                fix_params.extend([f"a{{{pole}}}_1", f"a{{{pole}}}_2", f"a{{{pole}}}_3", f"a{{{pole}}}_4", f"a{{{pole}}}_5"])
         super().__init__(
             name=name,
             fix_params=fix_params,
@@ -35,7 +38,16 @@ class PowerBeutler2017(PowerSpectrumFit):
             smooth=smooth,
             correction=correction,
             isotropic=isotropic,
+            poly_poles=poly_poles,
+            marg=marg,
         )
+        if self.marg:
+            for pole in self.poly_poles:
+                self.set_default(f"a{{{pole}}}_1", 0.0)
+                self.set_default(f"a{{{pole}}}_2", 0.0)
+                self.set_default(f"a{{{pole}}}_3", 0.0)
+                self.set_default(f"a{{{pole}}}_4", 0.0)
+                self.set_default(f"a{{{pole}}}_5", 0.0)
 
         self.kvals = None
         self.pksmooth = None
@@ -163,13 +175,27 @@ class PowerBeutler2017(PowerSpectrumFit):
 
         return kprime, pk[0], pk[1], pk[2]
 
+    def compute_poly(self, k):
+
+        npoly = 5 * len(self.poly_poles)
+        poly = np.zeros((3, npoly, len(k)))
+        for pole in self.poly_poles:
+            npole = int(pole / 2)
+            if self.recon:
+                poly[npole, 5 * npole : 5 * (npole + 1)] = [k ** 2, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
+            else:
+                poly[npole, 5 * npole : 5 * (npole + 1)] = [k, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
+
+        return npoly, poly
+
 
 if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESIMockChallenge_Handshake
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_NGC
     from barry.config import setup_logging
+    from barry.models.model import Correction
 
     setup_logging()
 
@@ -183,7 +209,7 @@ if __name__ == "__main__":
     # niter = 6000
     # print("Model posterior takes on average, %.2f milliseconds" % (timeit.timeit(timing, number=niter) * 1000 / niter))
 
-    print("Checking isotropic model and data")
+    """print("Checking isotropic model and data")
     dataset = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=True, realisation="data")
     model_pre = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
     model_pre.plot_default(dataset)
@@ -198,4 +224,12 @@ if __name__ == "__main__":
     dataset = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2, 4])
     model_pre = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, poly_poles=[0, 2, 4])
     model_pre.plot_default(dataset)
-    model_pre.sanity_check(dataset)
+    model_pre.sanity_check(dataset)"""
+
+    print("Checking anisotropic mock mean")
+    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False)
+    model = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, correction=Correction.HARTLAP)
+    model_marg = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, marg=True, correction=Correction.HARTLAP)
+    print(model.get_active_params(), model_marg.get_active_params())
+    model.sanity_check(dataset)
+    model_marg.sanity_check(dataset)

@@ -14,7 +14,16 @@ class PowerSpectrumFit(Model):
     """ Generic power spectrum model """
 
     def __init__(
-        self, name="Pk Basic", smooth_type="hinton2017", fix_params=("om"), postprocess=None, smooth=False, correction=None, isotropic=True
+        self,
+        name="Pk Basic",
+        smooth_type="hinton2017",
+        fix_params=("om"),
+        postprocess=None,
+        smooth=False,
+        correction=None,
+        isotropic=True,
+        poly_poles=[0, 2],
+        marg=False,
     ):
         """ Generic power spectrum function model
 
@@ -33,12 +42,16 @@ class PowerSpectrumFit(Model):
         correction : `Correction` enum.
             Defaults to `Correction.SELLENTIN
         """
-        super().__init__(name, postprocess=postprocess, correction=correction, isotropic=isotropic)
+        super().__init__(name, postprocess=postprocess, correction=correction, isotropic=isotropic, marg=marg)
+        self.poly_poles = poly_poles
         self.smooth_type = smooth_type.lower()
         if not validate_smooth_method(smooth_type):
             exit(0)
 
         self.declare_parameters()
+        if self.marg:
+            self.set_default("b", 1.0)
+            fix_params.extend(["b"])
         self.set_fix_params(fix_params)
 
         # Set up data structures for model fitting
@@ -51,7 +64,7 @@ class PowerSpectrumFit(Model):
         """ Defines model parameters, their bounds and default value. """
         self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.31)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch for monopole
-        self.add_param("b", r"$b$", 0.1, 8.0, 1.73)  # bias (applied to 2D power, so same for all multipoles)
+        self.add_param("b", r"$b$", 0.1, 8.0, 1.0)  # bias (applied to 2D power, so same for all multipoles)
         if not self.isotropic:
             self.add_param("epsilon", r"$\epsilon$", -0.2, 0.2, 0.0)  # Stretch for multipoles
 
@@ -203,6 +216,10 @@ class PowerSpectrumFit(Model):
 
         return kprime, pk0, pk2, pk4
 
+    def compute_poly(self, k):
+
+        return np.zeros((len(self.poly_poles), 5 * len(self.poly_poles), len(k)))
+
     def adjust_model_window_effects(self, pk_generated, data, window=True):
         """ Take the window effects into account.
 
@@ -280,11 +297,15 @@ class PowerSpectrumFit(Model):
         else:
             pk_model_fit = break_vector_and_get_blocks(pk_model, len(d["poles"]), d["fit_pole_indices"])
 
-        # Compute the chi2
-        diff = d["pk"] - pk_model_fit
-        num_mocks = d["num_mocks"]
-        num_params = len(self.get_active_params())
-        return self.get_chi2_likelihood(diff, d["icov"], num_mocks=num_mocks, num_params=num_params)
+        if self.marg:
+            poly_model = self.get_poly(d)
+            num_mocks = d["num_mocks"]
+            return self.get_chi2_marg_likelihood(pk_model_fit, poly_model, d["pk"], d["icov"], num_mocks=num_mocks)
+        else:
+            diff = d["pk"] - pk_model_fit
+            num_mocks = d["num_mocks"]
+            num_params = len(self.get_active_params())
+            return self.get_chi2_likelihood(diff, d["icov"], num_mocks=num_mocks, num_params=num_params)
 
     def get_model(self, p, d, smooth=False):
         """ Gets the model prediction using the data passed in and parameter location specified
@@ -327,6 +348,36 @@ class PowerSpectrumFit(Model):
             pk_model = pk_model[mask]
 
         return pk_model
+
+    def get_poly(self, d):
+        """ Gets any polynomial terms used in the model prediction
+
+        Parameters
+        ----------
+        data : dict
+            A specific set of data to compute the model for. For correlation functions, this needs to
+            have a key of 'dist' which contains the Mpc/h value of distances to compute.
+
+        Returns
+        -------
+        poly_model : np.ndarray
+            The polynomial terms for each multipole, k values correspond to d['ks_output']
+
+        """
+        npoly, poly = self.compute_poly(d["ks_input"])
+
+        # Add in the survey window function for the poly terms and reshape into a useful shape
+        # Determine if transformation needs pk4 or not
+        poly_model = np.empty((npoly, len(d["pk"])))
+        for n in range(npoly):
+            if 4 in d["poles"]:
+                poly_generated = np.concatenate([poly[0, n], poly[1, n], poly[2, n]])
+            else:
+                poly_generated = np.concatenate([poly[0, n], poly[1, n]])
+            poly_model_long, mask = self.adjust_model_window_effects(poly_generated, d, window=True)
+            poly_model[n] = break_vector_and_get_blocks(poly_model_long[mask], len(d["poles"]), d["fit_pole_indices"])
+
+        return poly_model
 
     def plot(self, params, smooth_params=None, figname=None):
         self.logger.info("Create plot")

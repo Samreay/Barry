@@ -8,7 +8,7 @@ from numpy.random import uniform
 import numpy as np
 from scipy import integrate
 from scipy.integrate import simps
-from scipy.special import loggamma
+from scipy.special import loggamma, erfc
 from scipy.optimize import basinhopping
 from enum import Enum, unique
 from dataclasses import dataclass
@@ -49,7 +49,7 @@ class Model(ABC):
 
     """
 
-    def __init__(self, name, postprocess=None, correction=None, isotropic=True):
+    def __init__(self, name, postprocess=None, correction=None, isotropic=True, marg=False):
         """ Create a new model.
 
         Parameters
@@ -92,6 +92,13 @@ class Model(ABC):
         self.logger.info(
             f"Created model {name} of {self.__class__.__name__} with correction {correction} and postprocess {str(postprocess)}"
         )
+
+        self.marg = marg
+        if self.marg:
+            assert (
+                self.correction != Correction.SELLENTIN
+            ), "ERROR: SELLENTIN covariance matrix correction not compatible with analytic marginalisation. Switch to Correction.HARTLAP or use marg=false"
+            assert self.isotropic == False, "ERROR: analytic marginalisation only supported for anisotropic fits currently"
 
     def get_name(self):
         return self.name
@@ -228,7 +235,7 @@ class Model(ABC):
                 num_mocks > 0
             ), "Cannot use HARTLAP  or SELLENTIN correction with covariance not determined from mocks. Set correction to Correction.NONE"
         if self.correction is Correction.HARTLAP:  # From Hartlap 2007
-            chi2 *= (num_mocks - diff.shape - 2) / (num_mocks - 1)
+            chi2 *= (num_mocks - len(diff) - 2) / (num_mocks - 1)
 
         if self.correction is Correction.SELLENTIN:  # From Sellentin 2016
             key = f"{num_mocks}_{num_params}"
@@ -244,9 +251,52 @@ class Model(ABC):
         else:
             return -0.5 * chi2
 
-    @abstractmethod
-    def get_likelihood(self, params, data):
-        raise NotImplementedError("You need to set your likelihood")
+    def get_chi2_marg_likelihood(self, model, marg_model, data, icov, num_mocks=None):
+        """ Computes the chi2 corrected likelihood.
+
+        Parameters
+        ----------
+        model : np.ndarray
+            The model predictions without any nuisance parameters
+        marg_model : np.ndarray
+            The parts of the model that depend on nuisance parameters
+        data : np.ndarray
+            The data vector
+        icov : np.ndarray
+            Inverted covariance matrix.
+        num_mocks : int, optional
+            The number of mocks used to estimate the covariance. Used for corrections.
+        num_params : int, optional
+            The number of parameters in the model. Used for corrections.
+
+        Returns
+        -------
+        log_likelihood : float
+            The (corrected) log-likelihood value from the computed chi2.
+        """
+        icov_corr = icov
+        if self.correction in [Correction.HARTLAP]:
+            assert (
+                num_mocks > 0
+            ), "Cannot use HARTLAP  or SELLENTIN correction with covariance not determined from mocks. Set correction to Correction.NONE"
+        if self.correction is Correction.HARTLAP:  # From Hartlap 2007
+            icov_corr *= (num_mocks - len(data) - 2) / (num_mocks - 1)
+
+        F00 = model @ icov_corr @ model
+        F01 = model @ icov_corr @ data
+        F02 = data @ icov_corr @ data
+        F11 = marg_model @ icov_corr @ data
+        F12 = marg_model @ icov_corr @ model
+        F2 = marg_model @ icov_corr @ marg_model.T
+        F2inv = np.linalg.inv(F2)
+
+        A = F00 - F12 @ F2inv @ F12
+        B = F12 @ F2inv @ F11 - F01
+
+        chi2 = F11 @ F2inv @ F11 - F02 - np.log(np.linalg.det(F2))
+        marg_corr = 0.5 * (B ** 2 / A - np.log(A)) + np.log(erfc(B / np.sqrt(2.0 * A)))
+
+        return 0.5 * chi2 + marg_corr
 
     def get_raw_start(self):
         """ Gets a uniformly distributed starting point between parameter min and max constraints """

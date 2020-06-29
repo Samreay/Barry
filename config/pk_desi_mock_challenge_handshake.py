@@ -52,8 +52,9 @@ if __name__ == "__main__":
             c.add_chain(chain_conv, weights=weight, parameters=parameters, **extra)
             max_post = posterior.argmax()
             ps = chain_conv[max_post, :]
-            for l, p in zip(parameters, ps):
-                print(l, p)
+            if extra["name"] == "Beutler 2017 Prerecon":
+                for l, p in zip(parameters, ps):
+                    print(l, p)
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4, legend_kwargs={"fontsize": 8})
         truth = {"$\\alpha_{par}$": 1.0, "$\\alpha_{perp}$": 1.0}
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth=truth)
@@ -89,11 +90,28 @@ if __name__ == "__main__":
             for posterior, weight, chain, evidence, model, data, extra in res:
                 ks = data[0]["ks"]
                 err = np.sqrt(np.diag(data[0]["cov"]))
-                print(err)
                 model.set_data(data)
                 p = model.get_param_dict(chain[np.argmax(posterior)])
                 mod = model.get_model(p, data[0])
                 smooth = model.get_model(p, data[0], smooth=True)
+
+                """if extra["name"] == "Beutler 2017 Prerecon":
+                    print(ks, mod[: len(ks)], mod[len(ks) :])
+                    np.savetxt(
+                        "Barry_bestfit_model.txt",
+                        np.c_[ks, mod[: len(ks)], mod[len(ks) : 2 * len(ks)], mod[2 * len(ks) :]],
+                        fmt="%g  %g  %g  %g",
+                        header="k      P0      P2       P4",
+                    )
+
+                from barry.utils import break_vector_and_get_blocks
+
+                pk_model_fit = break_vector_and_get_blocks(mod, len(data[0]["poles"]), data[0]["fit_pole_indices"])
+                diff = data[0]["pk"] - pk_model_fit
+                chi2 = diff.T @ data[0]["icov"] @ diff
+                print(chi2, (data[0]["num_mocks"] / 2) * np.log(1 + chi2 / (data[0]["num_mocks"] - 1)))
+                exit()"""
+
                 # Split up the different multipoles if we have them
                 if len(err) > len(ks):
                     assert len(err) % len(ks) == 0, f"Cannot split your data - have {len(err)} points and {len(ks)} modes"
