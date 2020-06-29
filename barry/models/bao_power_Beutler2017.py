@@ -227,7 +227,7 @@ if __name__ == "__main__":
     model_pre.sanity_check(dataset)"""
 
     print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False)
+    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, fit_poles=[0, 2])
     model = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, correction=Correction.HARTLAP)
     model_marg = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, marg=True, correction=Correction.HARTLAP)
     print(model.get_active_params(), model_marg.get_active_params())

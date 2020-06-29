@@ -31,7 +31,7 @@ if __name__ == "__main__":
     for r in [False]:
         t = "Recon" if r else "Prerecon"
         ls = "-"  # if r else "--"
-        d = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False)
+        d = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 2])
 
         # Fix sigma_nl for one of the Beutler models
         model = PowerBeutler2017(recon=r, isotropic=False, fix_params=["om"], correction=Correction.HARTLAP)
