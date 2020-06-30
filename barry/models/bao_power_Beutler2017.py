@@ -116,7 +116,7 @@ class PowerBeutler2017(PowerSpectrumFit):
         if self.isotropic:
             kprime = k / p["alpha"]
             fog = 1.0 / (1.0 + ks ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
-            pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
+            pk_smooth = p["b"] * pk_smooth_lin * fog
             if self.recon:
                 shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
             else:
@@ -139,10 +139,12 @@ class PowerBeutler2017(PowerSpectrumFit):
             muprime = self.get_muprime(epsilon)
             fog = 1.0 / (1.0 + muprime ** 2 * kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
             if self.recon:
-                kaiser_prefac = p["b"] + p["f"] * muprime ** 2 * (1.0 - splev(kprime, splrep(ks, self.camb.smoothing_kernel)))
+                kaiser_prefac = 1.0 + p["f"] / np.sqrt(p["b"]) * muprime ** 2 * (
+                    1.0 - splev(kprime, splrep(ks, self.camb.smoothing_kernel))
+                )
             else:
-                kaiser_prefac = p["b"] + p["f"] * muprime ** 2
-            pk_smooth = kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+                kaiser_prefac = 1.0 + p["f"] / np.sqrt(p["b"]) * muprime ** 2
+            pk_smooth = p["b"] * kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
 
             # Compute the propagator
             if smooth:

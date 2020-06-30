@@ -64,7 +64,7 @@ class PowerSpectrumFit(Model):
         """ Defines model parameters, their bounds and default value. """
         self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.31)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch for monopole
-        self.add_param("b", r"$b$", 0.1, 8.0, 1.0)  # bias (applied to 2D power, so same for all multipoles)
+        self.add_param("b", r"$b$", 0.1, 8.0, 1.0)  # bias squared (applied to 2D power, so same for all multipoles)
         if not self.isotropic:
             self.add_param("epsilon", r"$\epsilon$", -0.2, 0.2, 0.0)  # Stretch for multipoles
 
@@ -194,9 +194,9 @@ class PowerSpectrumFit(Model):
                 muprime = self.mu
 
         if smooth:
-            pkprime = p["b"] ** 2 * splev(kprime, splrep(ks, pk_smooth))
+            pkprime = p["b"] * splev(kprime, splrep(ks, pk_smooth))
         else:
-            pkprime = p["b"] ** 2 * splev(kprime, splrep(ks, pk_smooth * (1 + pk_ratio)))
+            pkprime = p["b"] * splev(kprime, splrep(ks, pk_smooth * (1 + pk_ratio)))
 
         # Get the multipoles
         if self.isotropic:
@@ -206,7 +206,7 @@ class PowerSpectrumFit(Model):
         else:
             growth = p["f"]
             s = self.camb.smoothing_kernel
-            kaiser_prefac = 1.0 + growth / p["b"] * np.outer(1.0 - s, muprime ** 2)
+            kaiser_prefac = 1.0 + growth / np.sqrt(p["b"]) * np.outer(1.0 - s, muprime ** 2)
             pk2d = kaiser_prefac * pkprime
 
             pk0 = integrate.simps(pk2d, self.mu, axis=1)

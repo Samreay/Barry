@@ -237,6 +237,8 @@ class Model(ABC):
         if self.correction is Correction.HARTLAP:  # From Hartlap 2007
             chi2 *= (num_mocks - len(diff) - 2) / (num_mocks - 1)
 
+        print(-0.5 * chi2)
+
         if self.correction is Correction.SELLENTIN:  # From Sellentin 2016
             key = f"{num_mocks}_{num_params}"
             if key not in self.correction_data:
@@ -280,7 +282,7 @@ class Model(ABC):
                 num_mocks > 0
             ), "Cannot use HARTLAP  or SELLENTIN correction with covariance not determined from mocks. Set correction to Correction.NONE"
         if self.correction is Correction.HARTLAP:  # From Hartlap 2007
-            icov_corr *= (num_mocks - len(data) - 2) / (num_mocks - 1)
+            icov_corr = icov * (num_mocks - len(data) - 2) / (num_mocks - 1)
 
         F00 = model @ icov_corr @ model
         F01 = model @ icov_corr @ data
