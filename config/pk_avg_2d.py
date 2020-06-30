@@ -40,9 +40,22 @@ if __name__ == "__main__":
         model_fixed = PowerBeutler2017(
             recon=r,
             isotropic=False,
-            fix_params=["om", "f", "b", "a0_1", "a0_2", "a0_3", "a0_4", "a0_5", "a2_1", "a2_2", "a2_3", "a2_4", "a2_5"],
+            fix_params=[
+                "om",
+                "f",
+                "b",
+                f"a{{0}}_1",
+                f"a{{0}}_2",
+                f"a{{0}}_3",
+                f"a{{0}}_4",
+                f"a{{0}}_5",
+                f"a{{2}}_1",
+                f"a{{2}}_2",
+                f"a{{2}}_3",
+                f"a{{2}}_4",
+                f"a{{2}}_5",
+            ],
             correction=Correction.HARTLAP,
-            marg=True,
         )
 
         fitter.add_model_and_dataset(model, d, name=f"Beutler 2017 {t}", linestyle=ls, color=cs[1])
@@ -69,7 +82,7 @@ if __name__ == "__main__":
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0}
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth=truth)
-        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=3)
-        c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour.pdf"], truth=truth)
+        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters={"$\\alpha$", "$\\epsilon$"})
+        c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"], truth=truth)
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth=truth)
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
