@@ -21,4 +21,4 @@ PROG={executable}
 PARAMS=`expr ${{SLURM_ARRAY_TASK_ID}} - 1`
 cd $IDIR
 sleep $((RANDOM % 5))
-$executable $PROG $PARAMS
+time $executable $PROG $PARAMS

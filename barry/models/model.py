@@ -237,8 +237,6 @@ class Model(ABC):
         if self.correction is Correction.HARTLAP:  # From Hartlap 2007
             chi2 *= (num_mocks - len(diff) - 2) / (num_mocks - 1)
 
-        print(-0.5 * chi2)
-
         if self.correction is Correction.SELLENTIN:  # From Sellentin 2016
             key = f"{num_mocks}_{num_params}"
             if key not in self.correction_data:

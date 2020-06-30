@@ -12,7 +12,7 @@ from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
 from barry.config import setup
 from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018
-from barry.samplers import DynestySampler, EnsembleSampler
+from barry.samplers import DynestySampler, Local_Emcee
 from barry.fitter import Fitter
 from barry.models.model import Correction
 
@@ -23,8 +23,9 @@ if __name__ == "__main__":
     r_s = c.get_data()["r_s"]
     p = BAOExtractor(r_s)
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
     # sampler = EnsembleSampler(temp_dir=dir_name, num_steps=5000)
+    # sampler = Local_Emcee(temp_dir=dir_name)
     fitter = Fitter(dir_name)
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
