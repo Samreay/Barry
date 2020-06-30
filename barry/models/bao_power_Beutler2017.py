@@ -167,6 +167,13 @@ class PowerBeutler2017(PowerSpectrumFit):
                         + p[f"a{{{pole}}}_5"] / (k ** 3)
                     )
                 else:
+                    print(
+                        p[f"a{{{pole}}}_1"] * k
+                        + p[f"a{{{pole}}}_2"]
+                        + p[f"a{{{pole}}}_3"] / k
+                        + p[f"a{{{pole}}}_4"] / (k * k)
+                        + p[f"a{{{pole}}}_5"] / (k ** 3)
+                    )
                     pk[int(pole / 2)] += (
                         p[f"a{{{pole}}}_1"] * k
                         + p[f"a{{{pole}}}_2"]
