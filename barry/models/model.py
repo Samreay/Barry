@@ -94,11 +94,11 @@ class Model(ABC):
         )
 
         self.marg = marg
-        if self.marg:
+        """if self.marg:
             assert (
                 self.correction != Correction.SELLENTIN
             ), "ERROR: SELLENTIN covariance matrix correction not compatible with analytic marginalisation. Switch to Correction.HARTLAP or use marg=false"
-            assert self.isotropic == False, "ERROR: analytic marginalisation only supported for anisotropic fits currently"
+            assert self.isotropic == False, "ERROR: analytic marginalisation only supported for anisotropic fits currently"""
 
     def get_name(self):
         return self.name

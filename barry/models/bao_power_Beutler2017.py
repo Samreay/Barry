@@ -15,20 +15,24 @@ class PowerBeutler2017(PowerSpectrumFit):
     def __init__(
         self,
         name="Pk Beutler 2017",
-        fix_params=["om", "f"],
+        fix_params=("om", "f"),
         smooth_type="hinton2017",
         recon=False,
         postprocess=None,
         smooth=False,
         correction=None,
         isotropic=True,
-        poly_poles=[0, 2],
+        poly_poles=(0, 2),
         marg=False,
     ):
+
         self.recon = recon
         self.recon_smoothing_scale = None
+        if isotropic:
+            poly_poles = [0]
         if marg:
             for pole in poly_poles:
+                fix_params = list(fix_params)
                 fix_params.extend([f"a{{{pole}}}_1", f"a{{{pole}}}_2", f"a{{{pole}}}_3", f"a{{{pole}}}_4", f"a{{{pole}}}_5"])
         super().__init__(
             name=name,
@@ -59,21 +63,16 @@ class PowerBeutler2017(PowerSpectrumFit):
         self.add_param("sigma_s", r"$\Sigma_s$", 0.0, 20.0, 10.0)  # Fingers-of-god damping
         if self.isotropic:
             self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 20.0, 10.0)  # BAO damping
-            self.add_param("a1", r"$a_1$", -10000.0, 30000.0, 0)  # Polynomial marginalisation 1
-            self.add_param("a2", r"$a_2$", -20000.0, 10000.0, 0)  # Polynomial marginalisation 2
-            self.add_param("a3", r"$a_3$", -1000.0, 5000.0, 0)  # Polynomial marginalisation 3
-            self.add_param("a4", r"$a_4$", -200.0, 200.0, 0)  # Polynomial marginalisation 4
-            self.add_param("a5", r"$a_5$", -3.0, 3.0, 0)  # Polynomial marginalisation 5
         else:
             self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure
             self.add_param("sigma_nl_par", r"$\Sigma_{nl,||}$", 0.01, 20.0, 8.0)  # BAO damping parallel to LOS
             self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.01, 20.0, 4.0)  # BAO damping perpendicular to LOS
-            for pole in self.poly_poles:
-                self.add_param(f"a{{{pole}}}_1", f"$a_{{{pole},1}}$", -10000.0, 30000.0, 0)  # Monopole Polynomial marginalisation 1
-                self.add_param(f"a{{{pole}}}_2", f"$a_{{{pole},2}}$", -20000.0, 10000.0, 0)  # Monopole Polynomial marginalisation 2
-                self.add_param(f"a{{{pole}}}_3", f"$a_{{{pole},3}}$", -1000.0, 5000.0, 0)  # Monopole Polynomial marginalisation 3
-                self.add_param(f"a{{{pole}}}_4", f"$a_{{{pole},4}}$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
-                self.add_param(f"a{{{pole}}}_5", f"$a_{{{pole},5}}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
+        for pole in self.poly_poles:
+            self.add_param(f"a{{{pole}}}_1", f"$a_{{{pole},1}}$", -10000.0, 30000.0, 0)  # Monopole Polynomial marginalisation 1
+            self.add_param(f"a{{{pole}}}_2", f"$a_{{{pole},2}}$", -20000.0, 10000.0, 0)  # Monopole Polynomial marginalisation 2
+            self.add_param(f"a{{{pole}}}_3", f"$a_{{{pole},3}}$", -1000.0, 5000.0, 0)  # Monopole Polynomial marginalisation 3
+            self.add_param(f"a{{{pole}}}_4", f"$a_{{{pole},4}}$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
+            self.add_param(f"a{{{pole}}}_5", f"$a_{{{pole},5}}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p, smooth=False, dilate=True, data_name=None):
         """ Computes the power spectrum model using the Beutler et. al., 2017 method
@@ -97,7 +96,8 @@ class PowerBeutler2017(PowerSpectrumFit):
             the model quadrupole interpolated to kprime. Will be 'None' if the model is isotropic
         pk4 : np.ndarray
             the model hexadecapole interpolated to kprime. Will be 'None' if the model is isotropic
-
+        poly: np.ndarray
+            the additive terms in the model, necessary for analytical marginalisation
         """
 
         # Get the basic power spectrum components
@@ -113,14 +113,16 @@ class PowerBeutler2017(PowerSpectrumFit):
         # of code and a few nested if statements, but it's perhaps more readable and a little faster (because we only
         # need one interpolation for the whole isotropic monopole, rather than separately for the smooth and wiggle components)
 
+        poly = None
+
         if self.isotropic:
             kprime = k / p["alpha"]
             fog = 1.0 / (1.0 + ks ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
             pk_smooth = p["b"] * pk_smooth_lin * fog
             if self.recon:
-                shape = p["a1"] * ks ** 2 + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
+                shape = p["a{0}_1"] * ks ** 2 + p["a{0}_2"] + p["a{0}_3"] / ks + p["a{0}_4"] / (ks * ks) + p["a{0}_5"] / (ks ** 3)
             else:
-                shape = p["a1"] * ks + p["a2"] + p["a3"] / ks + p["a4"] / (ks * ks) + p["a5"] / (ks ** 3)
+                shape = p["a{0}_1"] * ks + p["a{0}_2"] + p["a{0}_3"] / ks + p["a{0}_4"] / (ks * ks) + p["a{0}_5"] / (ks ** 3)
 
             if smooth:
                 pk0 = splev(kprime, splrep(ks, pk_smooth + shape))
@@ -132,6 +134,13 @@ class PowerBeutler2017(PowerSpectrumFit):
             pk2 = None
             pk4 = None
             pk = [pk0, pk2, pk4]
+
+            if self.marg:
+                prefac = np.ones(len(kprime)) if smooth else splev(kprime, splrep(ks, 1.0 + pk_ratio * C))
+                if self.recon:
+                    poly = prefac * [kprime ** 2, np.ones(len(kprime)), 1.0 / kprime, 1.0 / (kprime * kprime), 1.0 / (kprime ** 3)]
+                else:
+                    poly = prefac * [kprime, np.ones(len(kprime)), 1.0 / kprime, 1.0 / (kprime * kprime), 1.0 / (kprime ** 3)]
 
         else:
             epsilon = np.round(p["epsilon"], decimals=5)
@@ -175,20 +184,16 @@ class PowerBeutler2017(PowerSpectrumFit):
                         + p[f"a{{{pole}}}_5"] / (k ** 3)
                     )
 
-        return kprime, pk[0], pk[1], pk[2]
+            if self.marg:
+                poly = np.zeros((5 * len(self.poly_poles), 3, len(k)))
+                for pole in self.poly_poles:
+                    npole = int(pole / 2)
+                    if self.recon:
+                        poly[5 * npole : 5 * (npole + 1), npole] = [k ** 2, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
+                    else:
+                        poly[5 * npole : 5 * (npole + 1), npole] = [k, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
 
-    def compute_poly(self, k):
-
-        npoly = 5 * len(self.poly_poles)
-        poly = np.zeros((3, npoly, len(k)))
-        for pole in self.poly_poles:
-            npole = int(pole / 2)
-            if self.recon:
-                poly[npole, 5 * npole : 5 * (npole + 1)] = [k ** 2, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
-            else:
-                poly[npole, 5 * npole : 5 * (npole + 1)] = [k, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
-
-        return npoly, poly
+        return kprime, pk[0], pk[1], pk[2], poly
 
 
 if __name__ == "__main__":
@@ -211,27 +216,16 @@ if __name__ == "__main__":
     # niter = 6000
     # print("Model posterior takes on average, %.2f milliseconds" % (timeit.timeit(timing, number=niter) * 1000 / niter))
 
-    """print("Checking isotropic model and data")
-    dataset = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=True, realisation="data")
-    model_pre = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
-    model_pre.plot_default(dataset)
-    model_pre.sanity_check(dataset)
-
-    print("Checking anisotropic model and data")
-    dataset = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2])
-    model_pre = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
-    model_pre.plot_default(dataset)
-    model_pre.sanity_check(dataset)
-
-    dataset = PowerSpectrum_DESIMockChallenge_Handshake(min_k=0.005, max_k=0.3, isotropic=False, realisation="data", fit_poles=[0, 2, 4])
-    model_pre = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, poly_poles=[0, 2, 4])
-    model_pre.plot_default(dataset)
-    model_pre.sanity_check(dataset)"""
+    print("Checking isotropic mock mean")
+    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=True)
+    model = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, correction=Correction.HARTLAP)
+    model_marg = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, marg=True, correction=Correction.HARTLAP)
+    model.sanity_check(dataset)
+    model_marg.sanity_check(dataset)
 
     print("Checking anisotropic mock mean")
     dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, fit_poles=[0, 2])
     model = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, correction=Correction.HARTLAP)
     model_marg = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, marg=True, correction=Correction.HARTLAP)
-    print(model.get_active_params(), model_marg.get_active_params())
     model.sanity_check(dataset)
     model_marg.sanity_check(dataset)

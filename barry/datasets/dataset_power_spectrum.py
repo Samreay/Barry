@@ -479,7 +479,7 @@ if __name__ == "__main__":
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
     # Plot the data and mock average for the Beutler 2019 spectra
-    for isotropic in [False]:
+    for isotropic in [True, False]:
         datasets = [
             PowerSpectrum_Beutler2019_Z038_NGC(isotropic=isotropic),
             PowerSpectrum_Beutler2019_Z038_SGC(isotropic=isotropic),
@@ -494,7 +494,9 @@ if __name__ == "__main__":
                 fmt = "o" if i == 0 else "None"
                 ls = "None" if i == 0 else "-"
                 if isotropic:
-                    yerr = data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"])) if i == 0 else np.zeros(len(data[0]["ks"]))
+                    yerr = (
+                        data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[0 : len(data[0]["ks"])] if i == 0 else np.zeros(len(data[0]["ks"]))
+                    )
                     plt.errorbar(
                         data[0]["ks"], data[0]["ks"] * data[0]["pk0"], yerr=yerr, marker=fmt, ls=ls, c="r", zorder=i, label=label[0]
                     )

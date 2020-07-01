@@ -22,7 +22,7 @@ class PowerSpectrumFit(Model):
         smooth=False,
         correction=None,
         isotropic=True,
-        poly_poles=[0, 2],
+        poly_poles=(0, 2),
         marg=False,
     ):
         """ Generic power spectrum function model
@@ -178,6 +178,8 @@ class PowerSpectrumFit(Model):
         ks = self.camb.ks
         pk_smooth, pk_ratio = self.compute_basic_power_spectrum(p["om"])
 
+        poly = None
+
         # Work out the dilated values for the power spectra
         if self.isotropic:
             if dilate:
@@ -214,11 +216,7 @@ class PowerSpectrumFit(Model):
             pk4 = 1.125 * (35.0 * integrate.simps(pk2d * self.mu ** 4, self.mu, axis=1) - 10.0 * pk2 + 3.0 * pk0)
             pk2 = 2.5 * (pk2 - pk0)
 
-        return kprime, pk0, pk2, pk4
-
-    def compute_poly(self, k):
-
-        return np.zeros((len(self.poly_poles), 5 * len(self.poly_poles), len(k)))
+        return kprime, pk0, pk2, pk4, poly
 
     def adjust_model_window_effects(self, pk_generated, data, window=True):
         """ Take the window effects into account.
@@ -291,19 +289,17 @@ class PowerSpectrumFit(Model):
         log_likelihood : float
             The corrected log likelihood
         """
-        pk_model = self.get_model(p, d, smooth=self.smooth)
+        pk_model, poly_model = self.get_model(p, d, smooth=self.smooth)
         if self.isotropic:
             pk_model_fit = pk_model
         else:
             pk_model_fit = break_vector_and_get_blocks(pk_model, len(d["poles"]), d["fit_pole_indices"])
 
+        num_mocks = d["num_mocks"]
         if self.marg:
-            poly_model = self.get_poly(d)
-            num_mocks = d["num_mocks"]
             return self.get_chi2_marg_likelihood(pk_model_fit, poly_model, d["pk"], d["icov"], num_mocks=num_mocks)
         else:
             diff = d["pk"] - pk_model_fit
-            num_mocks = d["num_mocks"]
             num_params = len(self.get_active_params())
             return self.get_chi2_likelihood(diff, d["icov"], num_mocks=num_mocks, num_params=num_params)
 
@@ -326,10 +322,12 @@ class PowerSpectrumFit(Model):
         -------
         pk_model : np.ndarray
             The p(k) predictions given p and data, k values correspond to d['ks_output']
-
+        poly_model : np.ndarray
+            the functions describing any polynomial terms, used for analytical marginalisation
+            k values correspond to d['ks_output']
         """
 
-        ks, pk0, pk2, pk4 = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth, data_name=d["name"], dilate=True)
+        ks, pk0, pk2, pk4, poly = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth, data_name=d["name"], dilate=True)
 
         # Morph it into a model representative of our survey and its selection/window/binning effects
         if self.isotropic:
@@ -347,37 +345,22 @@ class PowerSpectrumFit(Model):
             pk_model, mask = self.adjust_model_window_effects(pk_generated, d, window=True)
             pk_model = pk_model[mask]
 
-        return pk_model
+        poly_model = None
+        if self.marg:
+            poly_model = np.empty((np.shape(poly)[0], len(d["pk"])))
+            for n in range(np.shape(poly)[0]):
+                if self.isotropic:
+                    poly_model_long, mask = self.adjust_model_window_effects(poly[n], d)
+                    poly_model[n] = poly_model_long[mask]
+                else:
+                    if 4 in d["poles"]:
+                        poly_generated = np.concatenate([poly[n, 0], poly[n, 1], poly[n, 2]])
+                    else:
+                        poly_generated = np.concatenate([poly[n, 0], poly[n, 1]])
+                    poly_model_long, mask = self.adjust_model_window_effects(poly_generated, d, window=True)
+                    poly_model[n] = break_vector_and_get_blocks(poly_model_long[mask], len(d["poles"]), d["fit_pole_indices"])
 
-    def get_poly(self, d):
-        """ Gets any polynomial terms used in the model prediction
-
-        Parameters
-        ----------
-        data : dict
-            A specific set of data to compute the model for. For correlation functions, this needs to
-            have a key of 'dist' which contains the Mpc/h value of distances to compute.
-
-        Returns
-        -------
-        poly_model : np.ndarray
-            The polynomial terms for each multipole, k values correspond to d['ks_output']
-
-        """
-        npoly, poly = self.compute_poly(d["ks_input"])
-
-        # Add in the survey window function for the poly terms and reshape into a useful shape
-        # Determine if transformation needs pk4 or not
-        poly_model = np.empty((npoly, len(d["pk"])))
-        for n in range(npoly):
-            if 4 in d["poles"]:
-                poly_generated = np.concatenate([poly[0, n], poly[1, n], poly[2, n]])
-            else:
-                poly_generated = np.concatenate([poly[0, n], poly[1, n]])
-            poly_model_long, mask = self.adjust_model_window_effects(poly_generated, d, window=True)
-            poly_model[n] = break_vector_and_get_blocks(poly_model_long[mask], len(d["poles"]), d["fit_pole_indices"])
-
-        return poly_model
+        return pk_model, poly_model
 
     def plot(self, params, smooth_params=None, figname=None):
         self.logger.info("Create plot")
@@ -385,11 +368,11 @@ class PowerSpectrumFit(Model):
 
         ks = self.data[0]["ks"]
         err = np.sqrt(np.diag(self.data[0]["cov"]))
-        mod = self.get_model(params, self.data[0])
+        mod = self.get_model(params, self.data[0])[0]
         if smooth_params is not None:
-            smooth = self.get_model(smooth_params, self.data[0], smooth=True)
+            smooth = self.get_model(smooth_params, self.data[0], smooth=True)[0]
         else:
-            smooth = self.get_model(params, self.data[0], smooth=True)
+            smooth = self.get_model(params, self.data[0], smooth=True)[0]
 
         # Split up the different multipoles if we have them
         if len(err) > len(ks):

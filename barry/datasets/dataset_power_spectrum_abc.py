@@ -142,10 +142,7 @@ class PowerSpectrum(Dataset, ABC):
 
     def _compute_cov(self):
         ad = np.array(self.mock_data)
-        if self.isotropic:
-            x0 = ad[:]
-        else:
-            x0 = np.concatenate([ad[:, :, 0], ad[:, :, 1], ad[:, :, 2], ad[:, :, 3], ad[:, :, 4]], axis=1)
+        x0 = np.concatenate([ad[:, :, pole] for pole in self.poles], axis=1)
         self.cov = np.cov(x0.T)
         self.logger.info(f"Computed cov {self.cov.shape}")
 
@@ -176,23 +173,20 @@ class PowerSpectrum(Dataset, ABC):
 
     def _rebin_data(self, dataframe):
         poles = self.poles
-        if self.isotropic:
-            poles = [p for p in self.poles if p == 0]
-            assert len(poles) == 1, "Could not find 'pk0' pole"
+        # if self.isotropic:
+        #    poles = [p for p in self.poles if p == 0]
+        #    assert len(poles) == 1, "Could not find 'pk0' pole"
 
         k_rebinned, pk0_rebinned, mask = self._agg_data(dataframe, "pk0")
         if self.postprocess is not None:
             pk0_rebinned = self.postprocess(ks=k_rebinned, pk=pk0_rebinned, mask=mask)
         else:
             pk0_rebinned = pk0_rebinned[mask]
-        if self.isotropic:
-            pk_rebinned = pk0_rebinned
-        else:
-            pk_rebinned = np.empty((len(pk0_rebinned), len(poles)))
-            pk_rebinned[:, 0] = pk0_rebinned
-            for i, pole in enumerate(poles[1:]):
-                k_rebinned, pkpole_rebinned, mask = self._agg_data(dataframe, f"pk{pole}")
-                pk_rebinned[:, i + 1] = pkpole_rebinned[mask]
+        pk_rebinned = np.empty((len(pk0_rebinned), len(poles)))
+        pk_rebinned[:, 0] = pk0_rebinned
+        for i, pole in enumerate(poles[1:]):
+            k_rebinned, pkpole_rebinned, mask = self._agg_data(dataframe, f"pk{pole}")
+            pk_rebinned[:, i + 1] = pkpole_rebinned[mask]
         return k_rebinned[mask], pk_rebinned
 
     def _load_winfit(self):
@@ -263,14 +257,11 @@ class PowerSpectrum(Dataset, ABC):
         # Some data has pk0 some has pk0 to pk4
         if self.isotropic:
             d.update({"w_mask": self.w_mask})
-            d.update({"pk0": self.data})
-            d.update({"pk": self.data})
+            d.update({"pk": self.data[:, 0]})
         else:
-
             d.update({"w_mask": np.tile(self.w_mask, len(self.poles))})
-            pk_fit = self.data[:, self.fit_pole_indices].T.flatten()
-            d.update({"pk": pk_fit})
-            d.update({f"pk{d}": self.data[:, i] for i, d in enumerate(self.poles)})
+            d.update({"pk": self.data[:, self.fit_pole_indices].T.flatten()})
+        d.update({f"pk{d}": self.data[:, i] for i, d in enumerate(self.poles)})
         return [d]
 
 
