@@ -32,9 +32,9 @@ class DynestySampler(Sampler):
             save_dims = num_dim
         self.logger.debug("Fitting framework with %d dimensions" % num_dim)
         self.logger.info("Using dynesty Sampler")
-        sampler = dynesty.NestedSampler(log_likelihood, prior_transform, num_dim, nlive=self.nlive)
+        sampler = dynesty.DynamicNestedSampler(log_likelihood, prior_transform, num_dim)
 
-        sampler.run_nested(maxiter=self.max_iter, print_progress=False)
+        sampler.run_nested(maxiter=self.max_iter, print_progress=False, nlive_init=self.nlive, nlive_batch=200)
 
         self.logger.debug("Fit finished")
 

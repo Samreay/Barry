@@ -23,8 +23,8 @@ if __name__ == "__main__":
     r_s = c.get_data()["r_s"]
     p = BAOExtractor(r_s)
 
-    # sampler = DynestySampler(temp_dir=dir_name, nlive=500)
-    sampler = EnsembleSampler(temp_dir=dir_name, num_steps=5000)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
+    # sampler = EnsembleSampler(temp_dir=dir_name, num_steps=5000)
     fitter = Fitter(dir_name)
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
@@ -58,9 +58,9 @@ if __name__ == "__main__":
             correction=Correction.HARTLAP,
         )
 
-        fitter.add_model_and_dataset(model, d, name=f"Beutler 2017 {t}", linestyle=ls, color=cs[1])
-        fitter.add_model_and_dataset(model_marg, d, name=f"Beutler 2017 {t} Marg", linestyle=ls, color=cs[2])
-        fitter.add_model_and_dataset(model_fixed, d, name=f"Beutler 2017 {t} Fixed", linestyle=ls, color=cs[3])
+        fitter.add_model_and_dataset(model, d, name=f"Full Fit", linestyle=ls, color=cs[1])
+        fitter.add_model_and_dataset(model_marg, d, name=f"Marginalised", linestyle=ls, color=cs[2])
+        fitter.add_model_and_dataset(model_fixed, d, name=f"Fixed Nuisance", linestyle=ls, color=cs[3])
         # fitter.add_model_and_dataset(model, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}", linestyle=ls, color=cs[0])
         # fitter.add_model_and_dataset(PowerSeo2016(recon=r, isotropic=False), d, name=f"Seo 2016 {t}", linestyle=ls, color=cs[1])
         # fitter.add_model_and_dataset(PowerDing2018(recon=r, isotropic=False), d, name=f"Ding 2018 {t}", linestyle=ls, color=cs[2])
@@ -82,7 +82,32 @@ if __name__ == "__main__":
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0}
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth=truth)
-        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters={"$\\alpha$", "$\\epsilon$"})
-        c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"], truth=truth)
+        c.plotter.plot(
+            filename=[pfn + "_contour.png", pfn + "_contour.pdf"],
+            truth=truth,
+            parameters=["$\\alpha$", "$\\epsilon$", "$\\Sigma_s$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$"],
+        )
+        c.plotter.plot(
+            filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"],
+            truth=truth,
+            parameters=[
+                "$\\alpha$",
+                "$\\epsilon$",
+                "$\\Sigma_s$",
+                "$\\Sigma_{nl,||}$",
+                "$\\Sigma_{nl,\\perp}$",
+                "$b$",
+                "$a_{0,1}$",
+                "$a_{0,2}$",
+                "$a_{0,3}$",
+                "$a_{0,4}$",
+                "$a_{0,5}$",
+                "$a_{2,1}$",
+                "$a_{2,2}$",
+                "$a_{2,3}$",
+                "$a_{2,4}$",
+                "$a_{2,5}$",
+            ],
+        )
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth=truth)
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
