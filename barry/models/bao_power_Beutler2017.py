@@ -15,7 +15,7 @@ class PowerBeutler2017(PowerSpectrumFit):
     def __init__(
         self,
         name="Pk Beutler 2017",
-        fix_params=("om", "f"),
+        fix_params=("om"),
         smooth_type="hinton2017",
         recon=False,
         postprocess=None,

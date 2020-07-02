@@ -35,12 +35,12 @@ if __name__ == "__main__":
         d = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=True, reduce_cov_factor=np.sqrt(2000.0))
 
         # Fix sigma_nl for one of the Beutler models
-        model = PowerBeutler2017(recon=r, isotropic=d.isotropic, fix_params=["om", "f"], correction=Correction.HARTLAP)
-        model_marg = PowerBeutler2017(recon=r, isotropic=d.isotropic, fix_params=["om", "f"], correction=Correction.HARTLAP, marg=True)
+        model = PowerBeutler2017(recon=r, isotropic=d.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
+        model_marg = PowerBeutler2017(recon=r, isotropic=d.isotropic, fix_params=["om"], correction=Correction.HARTLAP, marg=True)
         model_fixed = PowerBeutler2017(
             recon=r,
             isotropic=d.isotropic,
-            fix_params=["om", "f", "b", f"a{{0}}_1", f"a{{0}}_2", f"a{{0}}_3", f"a{{0}}_4", f"a{{0}}_5"],
+            fix_params=["om", "b", f"a{{0}}_1", f"a{{0}}_2", f"a{{0}}_3", f"a{{0}}_4", f"a{{0}}_5"],
             correction=Correction.HARTLAP,
         )
 
