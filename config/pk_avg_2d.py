@@ -35,14 +35,13 @@ if __name__ == "__main__":
         d = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 2], reduce_cov_factor=np.sqrt(2000.0))
 
         # Fix sigma_nl for one of the Beutler models
-        model = PowerBeutler2017(recon=r, isotropic=False, fix_params=["om", "f"], correction=Correction.HARTLAP)
-        model_marg = PowerBeutler2017(recon=r, isotropic=False, fix_params=["om", "f"], correction=Correction.HARTLAP, marg=True)
-        model_fixed = PowerBeutler2017(
+        model = PowerBeutler2017(recon=r, isotropic=False, fix_params=["om"], correction=Correction.HARTLAP)
+        model_marg = PowerBeutler2017(recon=r, isotropic=False, fix_params=["om"], correction=Correction.HARTLAP, marg=True)
+        """model_fixed = PowerBeutler2017(
             recon=r,
             isotropic=False,
             fix_params=[
                 "om",
-                "f",
                 "b",
                 f"a{{0}}_1",
                 f"a{{0}}_2",
@@ -57,10 +56,21 @@ if __name__ == "__main__":
             ],
             correction=Correction.HARTLAP,
         )
+        model_fixed.set_default("b", 4.10)
+        model_fixed.set_default(f"a{{0}}_1", -6200)
+        model_fixed.set_default(f"a{{0}}_2", 4470)
+        model_fixed.set_default(f"a{{0}}_3", -570)
+        model_fixed.set_default(f"a{{0}}_4", 16.9)
+        model_fixed.set_default(f"a{{0}}_5", -0.019)
+        model_fixed.set_default(f"a{{2}}_1", -6820)
+        model_fixed.set_default(f"a{{2}}_2", 3430)
+        model_fixed.set_default(f"a{{2}}_3", -579)
+        model_fixed.set_default(f"a{{2}}_4", 17.9)
+        model_fixed.set_default(f"a{{2}}_5", -0.0096)"""
 
         fitter.add_model_and_dataset(model, d, name=f"Full Fit", linestyle=ls, color=cs[1])
         fitter.add_model_and_dataset(model_marg, d, name=f"Marginalised", linestyle=ls, color=cs[2])
-        fitter.add_model_and_dataset(model_fixed, d, name=f"Fixed Nuisance", linestyle=ls, color=cs[3])
+        # fitter.add_model_and_dataset(model_fixed, d, name=f"Fixed Nuisance", linestyle=ls, color=cs[3])
         # fitter.add_model_and_dataset(model, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}", linestyle=ls, color=cs[0])
         # fitter.add_model_and_dataset(PowerSeo2016(recon=r, isotropic=False), d, name=f"Seo 2016 {t}", linestyle=ls, color=cs[1])
         # fitter.add_model_and_dataset(PowerDing2018(recon=r, isotropic=False), d, name=f"Ding 2018 {t}", linestyle=ls, color=cs[2])
