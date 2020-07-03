@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
         fitter.add_model_and_dataset(model, d, name=f"Full Fit", linestyle=ls, color=cs[1])
         fitter.add_model_and_dataset(model_marg, d, name=f"Marginalised", linestyle=ls, color=cs[2])
-        fitter.add_model_and_dataset(model_fixed, d, name=f"Fixed Nuisance", linestyle=ls, color=cs[3])
+        # fitter.add_model_and_dataset(model_fixed, d, name=f"Fixed Nuisance", linestyle=ls, color=cs[3])
         # fitter.add_model_and_dataset(model, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}", linestyle=ls, color=cs[0])
         # fitter.add_model_and_dataset(PowerSeo2016(recon=r, isotropic=False), d, name=f"Seo 2016 {t}", linestyle=ls, color=cs[1])
         # fitter.add_model_and_dataset(PowerDing2018(recon=r, isotropic=False), d, name=f"Ding 2018 {t}", linestyle=ls, color=cs[2])
