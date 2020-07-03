@@ -64,7 +64,7 @@ class PowerBeutler2017(PowerSpectrumFit):
         if self.isotropic:
             self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 20.0, 10.0)  # BAO damping
         else:
-            self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure
+            self.add_param("beta", r"$beta$", 0.01, 1.0, 0.5)  # RSD parameter f/b
             self.add_param("sigma_nl_par", r"$\Sigma_{nl,||}$", 0.01, 20.0, 8.0)  # BAO damping parallel to LOS
             self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.01, 20.0, 4.0)  # BAO damping perpendicular to LOS
         for pole in self.poly_poles:
@@ -148,11 +148,9 @@ class PowerBeutler2017(PowerSpectrumFit):
             muprime = self.get_muprime(epsilon)
             fog = 1.0 / (1.0 + muprime ** 2 * kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
             if self.recon:
-                kaiser_prefac = 1.0 + p["f"] / np.sqrt(p["b"]) * muprime ** 2 * (
-                    1.0 - splev(kprime, splrep(ks, self.camb.smoothing_kernel))
-                )
+                kaiser_prefac = 1.0 + p["beta"] * muprime ** 2 * (1.0 - splev(kprime, splrep(ks, self.camb.smoothing_kernel)))
             else:
-                kaiser_prefac = 1.0 + p["f"] / np.sqrt(p["b"]) * muprime ** 2
+                kaiser_prefac = 1.0 + p["beta"] * muprime ** 2
             pk_smooth = p["b"] * kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
 
             # Compute the propagator

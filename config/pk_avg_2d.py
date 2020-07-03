@@ -23,7 +23,7 @@ if __name__ == "__main__":
     r_s = c.get_data()["r_s"]
     p = BAOExtractor(r_s)
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
     # sampler = EnsembleSampler(temp_dir=dir_name, num_steps=5000)
     fitter = Fitter(dir_name)
 
@@ -95,7 +95,7 @@ if __name__ == "__main__":
         c.plotter.plot(
             filename=[pfn + "_contour.png", pfn + "_contour.pdf"],
             truth=truth,
-            parameters=["$\\alpha$", "$\\epsilon$", "$\\Sigma_s$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$"],
+            parameters=["$\\alpha$", "$\\epsilon$", "$\\Sigma_s$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$beta$"],
         )
         c.plotter.plot(
             filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"],
@@ -106,7 +106,7 @@ if __name__ == "__main__":
                 "$\\Sigma_s$",
                 "$\\Sigma_{nl,||}$",
                 "$\\Sigma_{nl,\\perp}$",
-                "$b$",
+                "$f$" "$b$",
                 "$a_{0,1}$",
                 "$a_{0,2}$",
                 "$a_{0,3}$",
