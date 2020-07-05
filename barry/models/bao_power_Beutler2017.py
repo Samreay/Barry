@@ -59,7 +59,7 @@ class PowerBeutler2017(PowerSpectrumFit):
     def declare_parameters(self):
         super().declare_parameters()
         # print(self.isotropic)
-        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 20.0, 10.0)  # Fingers-of-god damping
+        self.add_param("sigma_s", r"$\Sigma_s$", 4.0, 20.0, 10.0)  # Fingers-of-god damping
         if self.isotropic:
             self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 20.0, 10.0)  # BAO damping
         else:
@@ -67,9 +67,9 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param("sigma_nl_par", r"$\Sigma_{nl,||}$", 0.01, 20.0, 8.0)  # BAO damping parallel to LOS
             self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.01, 20.0, 4.0)  # BAO damping perpendicular to LOS
         for pole in self.poly_poles:
-            self.add_param(f"a{{{pole}}}_1", f"$a_{{{pole},1}}$", -10000.0, 30000.0, 0)  # Monopole Polynomial marginalisation 1
-            self.add_param(f"a{{{pole}}}_2", f"$a_{{{pole},2}}$", -20000.0, 10000.0, 0)  # Monopole Polynomial marginalisation 2
-            self.add_param(f"a{{{pole}}}_3", f"$a_{{{pole},3}}$", -1000.0, 5000.0, 0)  # Monopole Polynomial marginalisation 3
+            self.add_param(f"a{{{pole}}}_1", f"$a_{{{pole},1}}$", -20000.0, 20000.0, 0)  # Monopole Polynomial marginalisation 1
+            self.add_param(f"a{{{pole}}}_2", f"$a_{{{pole},2}}$", -20000.0, 20000.0, 0)  # Monopole Polynomial marginalisation 2
+            self.add_param(f"a{{{pole}}}_3", f"$a_{{{pole},3}}$", -5000.0, 5000.0, 0)  # Monopole Polynomial marginalisation 3
             self.add_param(f"a{{{pole}}}_4", f"$a_{{{pole},4}}$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
             self.add_param(f"a{{{pole}}}_5", f"$a_{{{pole},5}}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
 

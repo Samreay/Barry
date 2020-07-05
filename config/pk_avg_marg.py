@@ -43,12 +43,12 @@ if __name__ == "__main__":
             fix_params=["om", "b", f"a{{0}}_1", f"a{{0}}_2", f"a{{0}}_3", f"a{{0}}_4", f"a{{0}}_5"],
             correction=Correction.HARTLAP,
         )
-        model_fixed.set_default("b", 1.531)
-        model_fixed.set_default(f"a{{0}}_1", 4171.0)
-        model_fixed.set_default(f"a{{0}}_2", -4575.0)
-        model_fixed.set_default(f"a{{0}}_3", 2078.0)
-        model_fixed.set_default(f"a{{0}}_4", -22.85)
-        model_fixed.set_default(f"a{{0}}_5", 0.01346)
+        model_fixed.set_default("b", 1.591)
+        model_fixed.set_default(f"a{{0}}_1", 4651.0)
+        model_fixed.set_default(f"a{{0}}_2", -4882.0)
+        model_fixed.set_default(f"a{{0}}_3", 2137.0)
+        model_fixed.set_default(f"a{{0}}_4", -25.43)
+        model_fixed.set_default(f"a{{0}}_5", 0.01628)
 
         fitter.add_model_and_dataset(model, d, name=f"Full Fit", linestyle=ls, color=cs[1])
         fitter.add_model_and_dataset(model_marg, d, name=f"Marginalised", linestyle=ls, color=cs[2])
@@ -70,35 +70,27 @@ if __name__ == "__main__":
 
         c = ChainConsumer()
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
+            print(chain[np.argmax(posterior)])
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
-        truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0}
+        truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0}
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth=truth)
         c.plotter.plot(
-            filename=[pfn + "_contour.png", pfn + "_contour.pdf"],
-            truth=truth,
-            parameters=["$\\alpha$", "$\\epsilon$", "$\\Sigma_s$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$"],
+            filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=["$\\alpha$", "$\\Sigma_s$", "$\\Sigma_{nl}$"]
         )
         c.plotter.plot(
             filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"],
             truth=truth,
             parameters=[
                 "$\\alpha$",
-                "$\\epsilon$",
                 "$\\Sigma_s$",
-                "$\\Sigma_{nl,||}$",
-                "$\\Sigma_{nl,\\perp}$",
+                "$\\Sigma_{nl}$",
                 "$b$",
                 "$a_{0,1}$",
                 "$a_{0,2}$",
                 "$a_{0,3}$",
                 "$a_{0,4}$",
                 "$a_{0,5}$",
-                "$a_{2,1}$",
-                "$a_{2,2}$",
-                "$a_{2,3}$",
-                "$a_{2,4}$",
-                "$a_{2,5}$",
             ],
         )
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth=truth)
