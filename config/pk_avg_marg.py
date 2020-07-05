@@ -83,12 +83,9 @@ if __name__ == "__main__":
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0}
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True)
-        c.plotter.plot(
-            filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=["$\\alpha$", "$\\Sigma_s$", "$\\Sigma_{nl}$"]
-        )
+        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], parameters=["$\\alpha$", "$\\Sigma_s$", "$\\Sigma_{nl}$"])
         c.plotter.plot(
             filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"],
-            truth=truth,
             parameters=[
                 "$\\alpha$",
                 "$\\Sigma_s$",
