@@ -61,11 +61,10 @@ if __name__ == "__main__":
         model_fixed_poly.set_default(f"a{{0}}_4", -25.43)
         model_fixed_poly.set_default(f"a{{0}}_5", 0.01628)
 
-        fitter.add_model_and_dataset(model, d, name=f"Full Fit", linestyle=ls, color=cs[1])
-        fitter.add_model_and_dataset(model_marg, d, name=f"Analytic", linestyle=ls, color=cs[2])
+        fitter.add_model_and_dataset(model, d, name=f"Full Fit", linestyle=ls, color=cs[0])
+        fitter.add_model_and_dataset(model_marg, d, name=f"Analytic", linestyle=ls, color=cs[1])
+        fitter.add_model_and_dataset(model_fixed_poly, d, name=f"Fixed Poly", linestyle=ls, color=cs[2])
         fitter.add_model_and_dataset(model_fixed, d, name=f"Fixed Bias+Poly", linestyle=ls, color=cs[3])
-        fitter.add_model_and_dataset(model_fixed_poly, d, name=f"Fixed Poly", linestyle=ls, color=cs[3])
-
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
     fitter.fit(file)
@@ -83,7 +82,7 @@ if __name__ == "__main__":
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0}
-        c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth=truth)
+        c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True)
         c.plotter.plot(
             filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=["$\\alpha$", "$\\Sigma_s$", "$\\Sigma_{nl}$"]
         )
@@ -102,5 +101,5 @@ if __name__ == "__main__":
                 "$a_{0,5}$",
             ],
         )
-        c.plotter.plot_walks(filename=pfn + "_walks.png", truth=truth)
+        c.plotter.plot_walks(filename=pfn + "_walks.png")
         c.analysis.get_latex_table(filename=pfn + "_params.txt")
