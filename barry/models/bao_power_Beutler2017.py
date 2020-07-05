@@ -1,5 +1,4 @@
 import numpy as np
-
 from barry.models.bao_power import PowerSpectrumFit
 from scipy.interpolate import splev, splrep
 from scipy import integrate
@@ -60,11 +59,11 @@ class PowerBeutler2017(PowerSpectrumFit):
     def declare_parameters(self):
         super().declare_parameters()
         # print(self.isotropic)
-        self.add_param("sigma_s", r"$\Sigma_s$", 0.0, 20.0, 10.0)  # Fingers-of-god damping
+        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 20.0, 10.0)  # Fingers-of-god damping
         if self.isotropic:
             self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 20.0, 10.0)  # BAO damping
         else:
-            self.add_param("beta", r"$beta$", 0.01, 1.0, 0.5)  # RSD parameter f/b
+            self.add_param("beta", r"$\beta$", 0.01, 1.0, 0.5)  # RSD parameter f/b
             self.add_param("sigma_nl_par", r"$\Sigma_{nl,||}$", 0.01, 20.0, 8.0)  # BAO damping parallel to LOS
             self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.01, 20.0, 4.0)  # BAO damping perpendicular to LOS
         for pole in self.poly_poles:
@@ -214,16 +213,47 @@ if __name__ == "__main__":
     # niter = 6000
     # print("Model posterior takes on average, %.2f milliseconds" % (timeit.timeit(timing, number=niter) * 1000 / niter))
 
-    print("Checking isotropic mock mean")
-    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=True)
-    model = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, correction=Correction.HARTLAP)
-    model_marg = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, marg=True, correction=Correction.HARTLAP)
-    model.sanity_check(dataset)
-    model_marg.sanity_check(dataset)
+    # print("Checking isotropic mock mean")
+    # dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=True)
+    # model = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
+    # model_marg = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, marg=True, correction=Correction.HARTLAP)
+    # model.sanity_check(dataset)
+    # model_marg.sanity_check(dataset)
 
     print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, fit_poles=[0, 2])
+    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, fit_poles=[0, 2], reduce_cov_factor=np.sqrt(2000.0))
     model = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, correction=Correction.HARTLAP)
-    model_marg = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, marg=True, correction=Correction.HARTLAP)
+    # model_marg = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, marg=True, correction=Correction.HARTLAP)
+    """model_fixed = PowerBeutler2017(
+        recon=False,
+        isotropic=False,
+        fix_params=[
+            "om",
+            "b",
+            f"a{{0}}_1",
+            f"a{{0}}_2",
+            f"a{{0}}_3",
+            f"a{{0}}_4",
+            f"a{{0}}_5",
+            f"a{{2}}_1",
+            f"a{{2}}_2",
+            f"a{{2}}_3",
+            f"a{{2}}_4",
+            f"a{{2}}_5",
+        ],
+        correction=Correction.HARTLAP,
+    )
+    model_fixed.set_default("b", 4.398)
+    model_fixed.set_default(f"a{{0}}_1", -6427)
+    model_fixed.set_default(f"a{{0}}_2", 4593)
+    model_fixed.set_default(f"a{{0}}_3", -599.1)
+    model_fixed.set_default(f"a{{0}}_4", 18.19)
+    model_fixed.set_default(f"a{{0}}_5", -0.02162)
+    model_fixed.set_default(f"a{{2}}_1", -5420)
+    model_fixed.set_default(f"a{{2}}_2", 2551)
+    model_fixed.set_default(f"a{{2}}_3", -282.9)
+    model_fixed.set_default(f"a{{2}}_4", 15.86)
+    model_fixed.set_default(f"a{{2}}_5", -0.01816)"""
     model.sanity_check(dataset)
-    model_marg.sanity_check(dataset)
+    # model_marg.sanity_check(dataset)
+    # model_fixed.sanity_check(dataset)

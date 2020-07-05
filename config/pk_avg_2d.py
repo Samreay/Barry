@@ -56,17 +56,17 @@ if __name__ == "__main__":
             ],
             correction=Correction.HARTLAP,
         )
-        model_fixed.set_default("b", 4.10)
-        model_fixed.set_default(f"a{{0}}_1", -6200)
-        model_fixed.set_default(f"a{{0}}_2", 4470)
-        model_fixed.set_default(f"a{{0}}_3", -570)
-        model_fixed.set_default(f"a{{0}}_4", 16.9)
-        model_fixed.set_default(f"a{{0}}_5", -0.019)
-        model_fixed.set_default(f"a{{2}}_1", -6820)
-        model_fixed.set_default(f"a{{2}}_2", 3430)
-        model_fixed.set_default(f"a{{2}}_3", -579)
-        model_fixed.set_default(f"a{{2}}_4", 17.9)
-        model_fixed.set_default(f"a{{2}}_5", -0.0096)"""
+        model_fixed.set_default("b", 4.398)
+        model_fixed.set_default(f"a{{0}}_1", -6427)
+        model_fixed.set_default(f"a{{0}}_2", 4593)
+        model_fixed.set_default(f"a{{0}}_3", -599.1)
+        model_fixed.set_default(f"a{{0}}_4", 18.19)
+        model_fixed.set_default(f"a{{0}}_5", -0.02162)
+        model_fixed.set_default(f"a{{2}}_1", -5420)
+        model_fixed.set_default(f"a{{2}}_2", 2551)
+        model_fixed.set_default(f"a{{2}}_3", -282.9)
+        model_fixed.set_default(f"a{{2}}_4", 15.86)
+        model_fixed.set_default(f"a{{2}}_5", -0.01816)"""
 
         fitter.add_model_and_dataset(model, d, name=f"Full Fit", linestyle=ls, color=cs[1])
         fitter.add_model_and_dataset(model_marg, d, name=f"Marginalised", linestyle=ls, color=cs[2])
@@ -88,6 +88,7 @@ if __name__ == "__main__":
 
         c = ChainConsumer()
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
+            print(np.amax(weight), np.amax(posterior), chain[np.argmax(weight)], chain[np.argmax(posterior)])
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0}
@@ -95,7 +96,7 @@ if __name__ == "__main__":
         c.plotter.plot(
             filename=[pfn + "_contour.png", pfn + "_contour.pdf"],
             truth=truth,
-            parameters=["$\\alpha$", "$\\epsilon$", "$\\Sigma_s$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$beta$"],
+            parameters=["$\\alpha$", "$\\epsilon$", "$\\Sigma_s$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\beta$"],
         )
         c.plotter.plot(
             filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"],
@@ -106,7 +107,8 @@ if __name__ == "__main__":
                 "$\\Sigma_s$",
                 "$\\Sigma_{nl,||}$",
                 "$\\Sigma_{nl,\\perp}$",
-                "$f$" "$b$",
+                "$\\beta$",
+                "$b$",
                 "$a_{0,1}$",
                 "$a_{0,2}$",
                 "$a_{0,3}$",

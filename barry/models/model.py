@@ -475,7 +475,7 @@ class Model(ABC):
             xs.append(res.x)
         fs = np.array(fs)
         ps = self.unscale(xs[fs.argmin()])
-        return self.get_param_dict(ps), fs.min()
+        return self.get_param_dict(ps), -fs.min()
 
     def plot_default(self, dataset):
         params = self.get_param_dict(self.get_defaults())
@@ -487,7 +487,7 @@ class Model(ABC):
         """ Plots the predictions given some input parameter dictionary. """
         pass
 
-    def sanity_check(self, dataset, niter=200, maxiter=1000, figname=None):
+    def sanity_check(self, dataset, niter=200, maxiter=10000, figname=None):
         import timeit
 
         print(f"Using dataset {str(dataset)}")
