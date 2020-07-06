@@ -56,17 +56,17 @@ if __name__ == "__main__":
             ],
             correction=Correction.HARTLAP,
         )
-        model_fixed.set_default("b", 4.398)
-        model_fixed.set_default(f"a{{0}}_1", -6427)
-        model_fixed.set_default(f"a{{0}}_2", 4593)
-        model_fixed.set_default(f"a{{0}}_3", -599.1)
-        model_fixed.set_default(f"a{{0}}_4", 18.19)
-        model_fixed.set_default(f"a{{0}}_5", -0.02162)
-        model_fixed.set_default(f"a{{2}}_1", -5420)
-        model_fixed.set_default(f"a{{2}}_2", 2551)
-        model_fixed.set_default(f"a{{2}}_3", -282.9)
-        model_fixed.set_default(f"a{{2}}_4", 15.86)
-        model_fixed.set_default(f"a{{2}}_5", -0.01816)
+        model_fixed.set_default("b", 4.379)
+        model_fixed.set_default(f"a{{0}}_1", -6278)
+        model_fixed.set_default(f"a{{0}}_2", 4569)
+        model_fixed.set_default(f"a{{0}}_3", -539.8)
+        model_fixed.set_default(f"a{{0}}_4", 17.44)
+        model_fixed.set_default(f"a{{0}}_5", -0.02013)
+        model_fixed.set_default(f"a{{2}}_1", -6055)
+        model_fixed.set_default(f"a{{2}}_2", 2977)
+        model_fixed.set_default(f"a{{2}}_3", -138.4)
+        model_fixed.set_default(f"a{{2}}_4", 15.64)
+        model_fixed.set_default(f"a{{2}}_5", -0.01151)
         """model_fixed_poly = PowerBeutler2017(
             recon=r,
             isotropic=False,
@@ -119,6 +119,7 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
             print(np.amax(weight), np.amax(posterior), chain[np.argmax(weight)], chain[np.argmax(posterior)])
             c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
+        print(c.analysis.get_summary())
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0}
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True, truth=truth)
