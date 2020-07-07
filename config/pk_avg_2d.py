@@ -23,7 +23,7 @@ if __name__ == "__main__":
     r_s = c.get_data()["r_s"]
     p = BAOExtractor(r_s)
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
     # sampler = EnsembleSampler(temp_dir=dir_name, num_steps=5000)
     fitter = Fitter(dir_name)
 
