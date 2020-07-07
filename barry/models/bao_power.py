@@ -290,15 +290,15 @@ class PowerSpectrumFit(Model):
             The corrected log likelihood
         """
         pk_model, poly_model = self.get_model(p, d, smooth=self.smooth)
-        if self.isotropic:
-            pk_model_fit = pk_model
-        else:
-            pk_model_fit = break_vector_and_get_blocks(pk_model, len(d["poles"]), d["fit_pole_indices"])
 
         num_mocks = d["num_mocks"]
         if self.marg:
-            return self.get_chi2_marg_likelihood(pk_model_fit, poly_model, d["pk"], d["icov"], num_mocks=num_mocks)
+            return self.get_chi2_marg_likelihood(poly_model, d["pk"], d["icov"], num_mocks=num_mocks)
         else:
+            if self.isotropic:
+                pk_model_fit = pk_model
+            else:
+                pk_model_fit = break_vector_and_get_blocks(pk_model, len(d["poles"]), d["fit_pole_indices"])
             diff = d["pk"] - pk_model_fit
             num_params = len(self.get_active_params())
             return self.get_chi2_likelihood(diff, d["icov"], num_mocks=num_mocks, num_params=num_params)
@@ -330,21 +330,7 @@ class PowerSpectrumFit(Model):
         ks, pk0, pk2, pk4, poly = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth, data_name=d["name"], dilate=True)
 
         # Morph it into a model representative of our survey and its selection/window/binning effects
-        if self.isotropic:
-            pk_model, mask = self.adjust_model_window_effects(pk0, d)
-            if self.postprocess is not None:
-                pk_model = self.postprocess(ks=d["ks_output"], pk=pk_model, mask=mask)
-            else:
-                pk_model = pk_model[mask]
-        else:
-            # Determine if transformation needs pk4 or not
-            if 4 in d["poles"]:
-                pk_generated = np.concatenate([pk0, pk2, pk4])
-            else:
-                pk_generated = np.concatenate([pk0, pk2])
-            pk_model, mask = self.adjust_model_window_effects(pk_generated, d, window=True)
-            pk_model = pk_model[mask]
-
+        pk_model = None
         poly_model = None
         if self.marg:
             poly_model = np.empty((np.shape(poly)[0], len(d["pk"])))
@@ -359,6 +345,22 @@ class PowerSpectrumFit(Model):
                         poly_generated = np.concatenate([poly[n, 0], poly[n, 1]])
                     poly_model_long, mask = self.adjust_model_window_effects(poly_generated, d, window=True)
                     poly_model[n] = break_vector_and_get_blocks(poly_model_long[mask], len(d["poles"]), d["fit_pole_indices"])
+
+        else:
+            if self.isotropic:
+                pk_model, mask = self.adjust_model_window_effects(pk0, d)
+                if self.postprocess is not None:
+                    pk_model = self.postprocess(ks=d["ks_output"], pk=pk_model, mask=mask)
+                else:
+                    pk_model = pk_model[mask]
+            else:
+                # Determine if transformation needs pk4 or not
+                if 4 in d["poles"]:
+                    pk_generated = np.concatenate([pk0, pk2, pk4])
+                else:
+                    pk_generated = np.concatenate([pk0, pk2])
+                pk_model, mask = self.adjust_model_window_effects(pk_generated, d, window=True)
+                pk_model = pk_model[mask]
 
         return pk_model, poly_model
 

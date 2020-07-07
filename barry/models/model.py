@@ -251,7 +251,7 @@ class Model(ABC):
         else:
             return -0.5 * chi2
 
-    def get_chi2_marg_likelihood(self, model, marg_model, data, icov, num_mocks=None):
+    def get_chi2_marg_likelihood(self, marg_model, data, icov, num_mocks=None):
         """ Computes the chi2 corrected likelihood.
 
         Parameters
@@ -282,7 +282,7 @@ class Model(ABC):
         if self.correction is Correction.HARTLAP:  # From Hartlap 2007
             icov_corr = icov * (num_mocks - len(data) - 2) / (num_mocks - 1)
 
-        F00 = model @ icov_corr @ model
+        """F00 = model @ icov_corr @ model
         F01 = model @ icov_corr @ data
         F02 = data @ icov_corr @ data
         F11 = marg_model @ icov_corr @ data
@@ -296,7 +296,14 @@ class Model(ABC):
         chi2 = F11 @ F2inv @ F11 - F02 - np.log(np.linalg.det(F2))
         marg_corr = 0.5 * (B ** 2 / A - np.log(A)) + np.log(erfc(B / np.sqrt(2.0 * A)))
 
-        return 0.5 * chi2 + marg_corr
+        return 0.5 * chi2 + marg_corr"""
+
+        F02 = data @ icov_corr @ data
+        F11 = marg_model @ icov_corr @ data
+        F2 = marg_model @ icov_corr @ marg_model.T
+        F2inv = np.linalg.inv(F2)
+        chi2 = F02 - F11 @ F2inv @ F11
+        return -0.5 * (chi2 + np.log(np.linalg.det(F2)))
 
     def get_raw_start(self):
         """ Gets a uniformly distributed starting point between parameter min and max constraints """

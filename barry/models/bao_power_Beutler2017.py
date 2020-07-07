@@ -59,7 +59,7 @@ class PowerBeutler2017(PowerSpectrumFit):
     def declare_parameters(self):
         super().declare_parameters()
         # print(self.isotropic)
-        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 20.0, 10.0)  # Fingers-of-god damping
+        self.add_param("sigma_s", r"$\Sigma_s$", 4.0, 20.0, 10.0)  # Fingers-of-god damping
         if self.isotropic:
             self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 20.0, 10.0)  # BAO damping
         else:
@@ -130,16 +130,24 @@ class PowerBeutler2017(PowerSpectrumFit):
                 C = np.exp(-0.5 * ks ** 2 * p["sigma_nl"] ** 2)
                 pk0 = splev(kprime, splrep(ks, (pk_smooth + shape) * (1.0 + pk_ratio * C)))
 
-            pk2 = None
-            pk4 = None
-            pk = [pk0, pk2, pk4]
-
             if self.marg:
                 prefac = np.ones(len(kprime)) if smooth else splev(kprime, splrep(ks, 1.0 + pk_ratio * C))
+                poly = prefac * [
+                    splev(kprime, splrep(ks, pk_smooth)),
+                    kprime ** 2,
+                    np.ones(len(kprime)),
+                    1.0 / kprime,
+                    1.0 / (kprime * kprime),
+                    1.0 / (kprime ** 3),
+                ]
                 if self.recon:
-                    poly = prefac * [kprime ** 2, np.ones(len(kprime)), 1.0 / kprime, 1.0 / (kprime * kprime), 1.0 / (kprime ** 3)]
-                else:
-                    poly = prefac * [kprime, np.ones(len(kprime)), 1.0 / kprime, 1.0 / (kprime * kprime), 1.0 / (kprime ** 3)]
+                    poly[1] *= kprime
+
+                return kprime, np.zeros(len(k)), np.zeros(len(k)), np.zeros(len(k)), poly
+
+            else:
+
+                return kprime, pk0, None, None, poly
 
         else:
             epsilon = np.round(p["epsilon"], decimals=5)
@@ -162,35 +170,39 @@ class PowerBeutler2017(PowerSpectrumFit):
             pk0, pk2, pk4 = self.integrate_mu(pk2d, self.mu)
 
             # Polynomial shape
-            pk = [pk0, pk2, pk4]
-            for pole in self.poly_poles:
-                if self.recon:
-                    pk[int(pole / 2)] += (
-                        p[f"a{{{pole}}}_1"] * k ** 2
-                        + p[f"a{{{pole}}}_2"]
-                        + p[f"a{{{pole}}}_3"] / k
-                        + p[f"a{{{pole}}}_4"] / (k * k)
-                        + p[f"a{{{pole}}}_5"] / (k ** 3)
-                    )
-                else:
-                    pk[int(pole / 2)] += (
-                        p[f"a{{{pole}}}_1"] * k
-                        + p[f"a{{{pole}}}_2"]
-                        + p[f"a{{{pole}}}_3"] / k
-                        + p[f"a{{{pole}}}_4"] / (k * k)
-                        + p[f"a{{{pole}}}_5"] / (k ** 3)
-                    )
-
             if self.marg:
-                poly = np.zeros((5 * len(self.poly_poles), 3, len(k)))
+                poly = np.zeros((5 * len(self.poly_poles) + 1, 3, len(k)))
                 for pole in self.poly_poles:
                     npole = int(pole / 2)
+                    poly[0, :, :] = [pk0, pk2, pk4]
                     if self.recon:
                         poly[5 * npole : 5 * (npole + 1), npole] = [k ** 2, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
                     else:
                         poly[5 * npole : 5 * (npole + 1), npole] = [k, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
 
-        return kprime, pk[0], pk[1], pk[2], poly
+                return kprime, np.zeros(len(k)), np.zeros(len(k)), np.zeros(len(k)), poly
+
+            else:
+                pk = [pk0, pk2, pk4]
+                for pole in self.poly_poles:
+                    if self.recon:
+                        pk[int(pole / 2)] += (
+                            p[f"a{{{pole}}}_1"] * k ** 2
+                            + p[f"a{{{pole}}}_2"]
+                            + p[f"a{{{pole}}}_3"] / k
+                            + p[f"a{{{pole}}}_4"] / (k * k)
+                            + p[f"a{{{pole}}}_5"] / (k ** 3)
+                        )
+                    else:
+                        pk[int(pole / 2)] += (
+                            p[f"a{{{pole}}}_1"] * k
+                            + p[f"a{{{pole}}}_2"]
+                            + p[f"a{{{pole}}}_3"] / k
+                            + p[f"a{{{pole}}}_4"] / (k * k)
+                            + p[f"a{{{pole}}}_5"] / (k ** 3)
+                        )
+
+                return kprime, pk[0], pk[1], pk[2], poly
 
 
 if __name__ == "__main__":
