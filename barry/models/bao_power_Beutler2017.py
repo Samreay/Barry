@@ -59,7 +59,7 @@ class PowerBeutler2017(PowerSpectrumFit):
     def declare_parameters(self):
         super().declare_parameters()
         # print(self.isotropic)
-        self.add_param("sigma_s", r"$\Sigma_s$", 4.0, 20.0, 10.0)  # Fingers-of-god damping
+        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 20.0, 10.0)  # Fingers-of-god damping
         if self.isotropic:
             self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 20.0, 10.0)  # BAO damping
         else:
@@ -116,30 +116,36 @@ class PowerBeutler2017(PowerSpectrumFit):
 
         if self.isotropic:
             kprime = k / p["alpha"]
-            fog = 1.0 / (1.0 + ks ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
-            pk_smooth = p["b"] * pk_smooth_lin * fog
+            fog = 1.0 / (1.0 + kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
+            pk_smooth = p["b"] * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
             if self.recon:
-                shape = p["a{0}_1"] * ks ** 2 + p["a{0}_2"] + p["a{0}_3"] / ks + p["a{0}_4"] / (ks * ks) + p["a{0}_5"] / (ks ** 3)
+                shape = (
+                    p["a{0}_1"] * kprime ** 2
+                    + p["a{0}_2"]
+                    + p["a{0}_3"] / kprime
+                    + p["a{0}_4"] / (kprime * kprime)
+                    + p["a{0}_5"] / (kprime ** 3)
+                )
             else:
-                shape = p["a{0}_1"] * ks + p["a{0}_2"] + p["a{0}_3"] / ks + p["a{0}_4"] / (ks * ks) + p["a{0}_5"] / (ks ** 3)
+                shape = (
+                    p["a{0}_1"] * kprime
+                    + p["a{0}_2"]
+                    + p["a{0}_3"] / kprime
+                    + p["a{0}_4"] / (kprime * kprime)
+                    + p["a{0}_5"] / (kprime ** 3)
+                )
 
             if smooth:
-                pk0 = splev(kprime, splrep(ks, pk_smooth + shape))
+                pk0 = pk_smooth + shape
             else:
                 # Compute the propagator
                 C = np.exp(-0.5 * ks ** 2 * p["sigma_nl"] ** 2)
-                pk0 = splev(kprime, splrep(ks, (pk_smooth + shape) * (1.0 + pk_ratio * C)))
+                propagator = splev(kprime, splrep(ks, (1.0 + pk_ratio * C)))
+                pk0 = (pk_smooth + shape) * propagator
 
             if self.marg:
-                prefac = np.ones(len(kprime)) if smooth else splev(kprime, splrep(ks, 1.0 + pk_ratio * C))
-                poly = prefac * [
-                    splev(kprime, splrep(ks, pk_smooth)),
-                    kprime ** 2,
-                    np.ones(len(kprime)),
-                    1.0 / kprime,
-                    1.0 / (kprime * kprime),
-                    1.0 / (kprime ** 3),
-                ]
+                prefac = np.ones(len(kprime)) if smooth else propagator
+                poly = prefac * [pk_smooth, kprime, np.ones(len(kprime)), 1.0 / kprime, 1.0 / (kprime * kprime), 1.0 / (kprime ** 3)]
                 if self.recon:
                     poly[1] *= kprime
 
