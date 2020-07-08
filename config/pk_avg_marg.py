@@ -51,7 +51,7 @@ if __name__ == "__main__":
         model_fixed.set_default(f"a{{0}}_5", 0.01628)
 
         fitter.add_model_and_dataset(model, d, name=f"Full Fit", linestyle=ls, color=cs[0])
-        fitter.add_model_and_dataset(model_marg, d, name=f"Analytic", linestyle=ls, color=cs[1])
+        fitter.add_model_and_dataset(model_marg, d, name=f"Analytic", linestyle=ls, color=cs[2])
         fitter.add_model_and_dataset(model_fixed, d, name=f"Fixed Bias+Poly", linestyle=ls, color=cs[3])
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
