@@ -182,9 +182,9 @@ class PowerBeutler2017(PowerSpectrumFit):
                     npole = int(pole / 2)
                     poly[0, :, :] = [pk0, pk2, pk4]
                     if self.recon:
-                        poly[5 * npole : 5 * (npole + 1), npole] = [k ** 2, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
+                        poly[5 * npole + 1 : 5 * (npole + 1) + 1, npole] = [k ** 2, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
                     else:
-                        poly[5 * npole : 5 * (npole + 1), npole] = [k, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
+                        poly[5 * npole + 1 : 5 * (npole + 1) + 1, npole] = [k, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
 
                 return kprime, np.zeros(len(k)), np.zeros(len(k)), np.zeros(len(k)), poly
 
@@ -231,47 +231,21 @@ if __name__ == "__main__":
     # niter = 6000
     # print("Model posterior takes on average, %.2f milliseconds" % (timeit.timeit(timing, number=niter) * 1000 / niter))
 
-    # print("Checking isotropic mock mean")
-    # dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=True)
-    # model = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
-    # model_marg = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, marg=True, correction=Correction.HARTLAP)
-    # model.sanity_check(dataset)
-    # model_marg.sanity_check(dataset)
+    print("Checking isotropic mock mean")
+    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=True)
+    model = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
+    model_marg = PowerBeutler2017(
+        recon=dataset.recon, isotropic=dataset.isotropic, marg=True, fix_params=["om"], correction=Correction.HARTLAP
+    )
+    model.sanity_check(dataset, niter=10000)
+    model_marg.sanity_check(dataset, niter=10000)
 
     print("Checking anisotropic mock mean")
     dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, fit_poles=[0, 2], reduce_cov_factor=np.sqrt(2000.0))
-    model = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, correction=Correction.HARTLAP)
-    # model_marg = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, marg=True, correction=Correction.HARTLAP)
-    """model_fixed = PowerBeutler2017(
-        recon=False,
-        isotropic=False,
-        fix_params=[
-            "om",
-            "b",
-            f"a{{0}}_1",
-            f"a{{0}}_2",
-            f"a{{0}}_3",
-            f"a{{0}}_4",
-            f"a{{0}}_5",
-            f"a{{2}}_1",
-            f"a{{2}}_2",
-            f"a{{2}}_3",
-            f"a{{2}}_4",
-            f"a{{2}}_5",
-        ],
-        correction=Correction.HARTLAP,
+    model = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
+    model_marg = PowerBeutler2017(
+        recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], marg=True, correction=Correction.HARTLAP
     )
-    model_fixed.set_default("b", 4.398)
-    model_fixed.set_default(f"a{{0}}_1", -6427)
-    model_fixed.set_default(f"a{{0}}_2", 4593)
-    model_fixed.set_default(f"a{{0}}_3", -599.1)
-    model_fixed.set_default(f"a{{0}}_4", 18.19)
-    model_fixed.set_default(f"a{{0}}_5", -0.02162)
-    model_fixed.set_default(f"a{{2}}_1", -5420)
-    model_fixed.set_default(f"a{{2}}_2", 2551)
-    model_fixed.set_default(f"a{{2}}_3", -282.9)
-    model_fixed.set_default(f"a{{2}}_4", 15.86)
-    model_fixed.set_default(f"a{{2}}_5", -0.01816)"""
-    model.sanity_check(dataset)
-    # model_marg.sanity_check(dataset)
+    model.sanity_check(dataset, niter=10000)
+    model_marg.sanity_check(dataset, niter=10000)
     # model_fixed.sanity_check(dataset)
