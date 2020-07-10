@@ -178,9 +178,9 @@ class PowerBeutler2017(PowerSpectrumFit):
             # Polynomial shape
             if self.marg:
                 poly = np.zeros((5 * len(self.poly_poles) + 1, 3, len(k)))
+                poly[0, :, :] = [pk0, pk2, pk4]
                 for pole in self.poly_poles:
                     npole = int(pole / 2)
-                    poly[0, :, :] = [pk0, pk2, pk4]
                     if self.recon:
                         poly[5 * npole + 1 : 5 * (npole + 1) + 1, npole] = [k ** 2, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
                     else:
@@ -237,8 +237,8 @@ if __name__ == "__main__":
     model_marg = PowerBeutler2017(
         recon=dataset.recon, isotropic=dataset.isotropic, marg=True, fix_params=["om"], correction=Correction.HARTLAP
     )
-    model.sanity_check(dataset, niter=10000)
-    model_marg.sanity_check(dataset, niter=10000)
+    model.sanity_check(dataset)
+    model_marg.sanity_check(dataset)
 
     print("Checking anisotropic mock mean")
     dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, fit_poles=[0, 2], reduce_cov_factor=np.sqrt(2000.0))
@@ -246,6 +246,6 @@ if __name__ == "__main__":
     model_marg = PowerBeutler2017(
         recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], marg=True, correction=Correction.HARTLAP
     )
-    model.sanity_check(dataset, niter=10000)
-    model_marg.sanity_check(dataset, niter=10000)
+    model.sanity_check(dataset)
+    model_marg.sanity_check(dataset)
     # model_fixed.sanity_check(dataset)
