@@ -27,7 +27,7 @@ if __name__ == "__main__":
     # sampler = EnsembleSampler(temp_dir=dir_name, num_steps=5000)
     fitter = Fitter(dir_name)
 
-    cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
+    cs = ["#262232", "#116A71", "#48AB75"]
 
     for r in [False]:
         t = "Recon" if r else "Prerecon"
@@ -51,8 +51,8 @@ if __name__ == "__main__":
         model_fixed.set_default(f"a{{0}}_5", 0.01628)
 
         fitter.add_model_and_dataset(model, d, name=f"Full Fit", linestyle=ls, color=cs[0])
-        fitter.add_model_and_dataset(model_marg, d, name=f"Analytic", linestyle=ls, color=cs[2])
-        fitter.add_model_and_dataset(model_fixed, d, name=f"Fixed Bias+Poly", linestyle=ls, color=cs[3])
+        fitter.add_model_and_dataset(model_marg, d, name=f"Analytic", linestyle=ls, color=cs[1])
+        fitter.add_model_and_dataset(model_fixed, d, name=f"Fixed Bias+Poly", linestyle=ls, color=cs[2])
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
     fitter.fit(file)
@@ -67,24 +67,45 @@ if __name__ == "__main__":
         c = ChainConsumer()
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
             print(chain[np.argmax(posterior)])
-            c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
-        c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4)
-        truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0}
+            params = model.get_labels()
+            if len(params) == 9:
+                params[1] = "$b^{2}$"
+                params[4:] = ["$a^{1}_{0}$", "$a^{2}_{0}$", "$a^{3}_{0}$", "$a^{4}_{0}$", "$a^{5}_{0}$"]
+            c.add_chain(chain, weights=weight, parameters=params, **extra)
+        c.configure(shade=True, legend_artists=True, max_ticks=4, sigmas=[0, 1, 2, 3], label_font_size=16, tick_font_size=12, kde=True)
+        truth = {"$\\alpha$": 1.0}
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True)
-        c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], parameters=["$\\alpha$", "$\\Sigma_s$", "$\\Sigma_{nl}$"])
         c.plotter.plot(
+            figsize="COLUMN",
+            filename=[pfn + "_contour.png", pfn + "_contour.pdf"],
+            parameters=["$\\alpha$", "$\\Sigma_s$", "$\\Sigma_{nl}$"],
+            extents={"$\\alpha$": (0.985, 1.020), "$\\Sigma_s$": (4.0, 16.0), "$\\Sigma_{nl}$": (8.0, 11.0)},
+        )
+        c.plotter.plot(
+            figsize="PAGE",
             filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"],
             parameters=[
                 "$\\alpha$",
                 "$\\Sigma_s$",
                 "$\\Sigma_{nl}$",
-                "$b$",
-                "$a_{0,1}$",
-                "$a_{0,2}$",
-                "$a_{0,3}$",
-                "$a_{0,4}$",
-                "$a_{0,5}$",
+                "$b^{2}$",
+                "$a^{1}_{0}$",
+                "$a^{2}_{0}$",
+                "$a^{3}_{0}$",
+                "$a^{4}_{0}$",
+                "$a^{5}_{0}$",
             ],
+            extents={
+                "$\\alpha$": (0.985, 1.020),
+                "$\\Sigma_s$": (4.0, 16.0),
+                "$\\Sigma_{nl}$": (8.0, 11.0),
+                "$b^{2}$": (0.8, 2.4),
+                "$a^{1}_{0}$": (-4000.0, 10000.0),
+                "$a^{2}_{0}$": (-8000.0, 1000.0),
+                "$a^{3}_{0}$": (1000.0, 2800.0),
+                "$a^{4}_{0}$": (-60.0, 20.0),
+                "$a^{5}_{0}$": (-0.03, 0.05),
+            },
         )
         c.plotter.plot_walks(filename=pfn + "_walks.png")
         c.analysis.get_latex_table(filename=pfn + "_params.txt")

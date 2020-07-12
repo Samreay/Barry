@@ -249,6 +249,8 @@ class Model(ABC):
             log_likelihood = c_p - (num_mocks / 2) * np.log(1 + chi2 / (num_mocks - 1))
             return log_likelihood
         else:
+            if np.random.rand() < 0.01:
+                print(chi2)
             return -0.5 * chi2
 
     def get_chi2_marg_likelihood(self, marg_model, data, icov, num_mocks=None):
@@ -476,7 +478,7 @@ class Model(ABC):
                 niter_success=10,
                 niter=niter,
                 stepsize=0.05,
-                minimizer_kwargs={"method": m, "options": {"maxiter": maxiter, "fatol": 1.0e-8, "xatol": 1.0e-8}},
+                minimizer_kwargs={"method": m, "options": {"maxiter": maxiter, "fatol": 1.0e-5, "xatol": 1.0e-5}},
             )
             fs.append(res.fun)
             xs.append(res.x)
