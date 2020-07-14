@@ -18,7 +18,7 @@ from barry.models.model import Correction
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
-    dir_name = dir_name + "nlive_1500/"
+    # dir_name = dir_name + "nlive_1500/"
 
     c = getCambGenerator()
     r_s = c.get_data()["r_s"]
