@@ -231,21 +231,18 @@ if __name__ == "__main__":
     # niter = 6000
     # print("Model posterior takes on average, %.2f milliseconds" % (timeit.timeit(timing, number=niter) * 1000 / niter))
 
-    print("Checking isotropic mock mean")
-    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=True)
-    model = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
-    model_marg = PowerBeutler2017(
-        recon=dataset.recon, isotropic=dataset.isotropic, marg=True, fix_params=["om"], correction=Correction.HARTLAP
-    )
-    model.sanity_check(dataset)
-    model_marg.sanity_check(dataset)
+    # print("Checking isotropic mock mean")
+    # dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=True)
+    # model = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
+    # model_marg = PowerBeutler2017(
+    #    recon=dataset.recon, isotropic=dataset.isotropic, marg=True, fix_params=["om"], correction=Correction.HARTLAP
+    # )
+    # model.sanity_check(dataset)
+    # model_marg.sanity_check(dataset)
 
     print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, fit_poles=[0, 2], reduce_cov_factor=np.sqrt(2000.0))
-    model = PowerBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
+    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, fit_poles=[0, 2, 4], reduce_cov_factor=np.sqrt(2000.0))
     model_marg = PowerBeutler2017(
-        recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], marg=True, correction=Correction.HARTLAP
+        recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], poly_poles=[0, 2, 4], marg=True, correction=Correction.HARTLAP
     )
-    model.sanity_check(dataset)
-    model_marg.sanity_check(dataset)
-    # model_fixed.sanity_check(dataset)
+    model_marg.sanity_check(dataset, niter=10000)

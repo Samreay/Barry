@@ -249,8 +249,6 @@ class Model(ABC):
             log_likelihood = c_p - (num_mocks / 2) * np.log(1 + chi2 / (num_mocks - 1))
             return log_likelihood
         else:
-            if np.random.rand() < 0.01:
-                print(chi2)
             return -0.5 * chi2
 
     def get_chi2_marg_likelihood(self, marg_model, data, icov, num_mocks=None):

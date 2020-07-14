@@ -66,13 +66,13 @@ if __name__ == "__main__":
 
         c = ChainConsumer()
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
-            print(chain[np.argmax(posterior)])
+            print(chain[np.argmax(posterior)], evidence.max())
             params = model.get_labels()
             if len(params) == 9:
                 params[1] = "$b^{2}$"
                 params[4:] = ["$a^{1}_{0}$", "$a^{2}_{0}$", "$a^{3}_{0}$", "$a^{4}_{0}$", "$a^{5}_{0}$"]
             c.add_chain(chain, weights=weight, parameters=params, **extra)
-        c.configure(shade=True, legend_artists=True, max_ticks=4, sigmas=[0, 1, 2, 3], label_font_size=16, tick_font_size=12, kde=True)
+        c.configure(shade=True, legend_artists=True, max_ticks=4, sigmas=[0, 1, 2, 3], label_font_size=16, tick_font_size=12)
         truth = {"$\\alpha$": 1.0}
         c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True)
         c.plotter.plot(
