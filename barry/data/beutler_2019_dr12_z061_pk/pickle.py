@@ -56,9 +56,9 @@ def getcomp(compfile):
 
 if __name__ == "__main__":
 
-    for gc in ["NGC", "SGC"]:
-        mfile = f"M2D_pk_BOSS_DR12_{gc}_z3_1_1_1_1_1_10_10.dat"
-        wfile = f"W2D_pk_BOSS_DR12_{gc}_z3_1_1_1_1_1_10_10.dat"
+    for gc in ["NGC"]:
+        mfile = f"M_BOSS_DR12_{gc}_z3_V6C_1_1_1_1_1_2000_1200.matrix-1"
+        wfile = f"W_BOSS_DR12_{gc}_z3_V6C_1_1_1_1_1_10_200_2000_averaged_v1.matrix"
         ds = [f"pre_recon_{gc}/"]  # Don't have post-recon files
         files = [d + f for d in ds for f in os.listdir(d)]
         print(files)

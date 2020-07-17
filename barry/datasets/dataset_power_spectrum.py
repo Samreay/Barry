@@ -480,12 +480,7 @@ if __name__ == "__main__":
 
     # Plot the data and mock average for the Beutler 2019 spectra
     for isotropic in [True, False]:
-        datasets = [
-            PowerSpectrum_Beutler2019_Z038_NGC(isotropic=isotropic),
-            PowerSpectrum_Beutler2019_Z038_SGC(isotropic=isotropic),
-            PowerSpectrum_Beutler2019_Z061_NGC(isotropic=isotropic),
-            PowerSpectrum_Beutler2019_Z061_SGC(isotropic=isotropic),
-        ]
+        datasets = [PowerSpectrum_Beutler2019_Z061_NGC(isotropic=isotropic)]
         for dataset in datasets:
             for i, realisation in enumerate([None, "data"]):
                 dataset.set_realisation(realisation)

@@ -36,7 +36,10 @@ if __name__ == "__main__":
 
         # Fix sigma_nl for one of the Beutler models
         model = PowerBeutler2017(recon=r, isotropic=d.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
-        model_marg = PowerBeutler2017(recon=r, isotropic=d.isotropic, fix_params=["om"], correction=Correction.HARTLAP, marg=True)
+        model_marg_full = PowerBeutler2017(recon=r, isotropic=d.isotropic, fix_params=["om"], correction=Correction.HARTLAP, marg="full")
+        model_marg_partial = PowerBeutler2017(
+            recon=r, isotropic=d.isotropic, fix_params=["om"], correction=Correction.HARTLAP, marg="partial"
+        )
         model_fixed = PowerBeutler2017(
             recon=r,
             isotropic=d.isotropic,
@@ -51,7 +54,8 @@ if __name__ == "__main__":
         model_fixed.set_default(f"a{{0}}_5", 0.01628)
 
         fitter.add_model_and_dataset(model, d, name=f"Full Fit", linestyle=ls, color=cs[0])
-        fitter.add_model_and_dataset(model_marg, d, name=f"Analytic", linestyle=ls, color=cs[1])
+        fitter.add_model_and_dataset(model_marg_full, d, name=f"Full Analytic", linestyle=ls, color=cs[1])
+        fitter.add_model_and_dataset(model_marg_partial, d, name=f"Partial Analytic", linestyle=ls, color=cs[2])
         fitter.add_model_and_dataset(model_fixed, d, name=f"Fixed Bias+Poly", linestyle=ls, color=cs[2])
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
@@ -71,6 +75,11 @@ if __name__ == "__main__":
             if len(params) == 9:
                 params[1] = "$b^{2}$"
                 params[4:] = ["$a^{1}_{0}$", "$a^{2}_{0}$", "$a^{3}_{0}$", "$a^{4}_{0}$", "$a^{5}_{0}$"]
+                params[2] = "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$"
+                params[3] = "$\\Sigma_{nl}\,(h^{-1}\mathrm{Mpc})$"
+            else:
+                params[1] = "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$"
+                params[2] = "$\\Sigma_{nl}\,(h^{-1}\mathrm{Mpc})$"
             c.add_chain(chain, weights=weight, parameters=params, **extra)
         c.configure(shade=True, legend_artists=True, max_ticks=4, sigmas=[0, 1, 2, 3], label_font_size=16, tick_font_size=12)
         truth = {"$\\alpha$": 1.0}
@@ -78,16 +87,20 @@ if __name__ == "__main__":
         c.plotter.plot(
             figsize="COLUMN",
             filename=[pfn + "_contour.png", pfn + "_contour.pdf"],
-            parameters=["$\\alpha$", "$\\Sigma_s$", "$\\Sigma_{nl}$"],
-            extents={"$\\alpha$": (0.985, 1.020), "$\\Sigma_s$": (4.0, 16.0), "$\\Sigma_{nl}$": (8.0, 11.0)},
+            parameters=["$\\alpha$", "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$", "$\\Sigma_{nl}\,(h^{-1}\mathrm{Mpc})$"],
+            extents={
+                "$\\alpha$": (0.985, 1.020),
+                "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$": (4.0, 16.0),
+                "$\\Sigma_{nl}\,(h^{-1}\mathrm{Mpc})$": (8.0, 11.0),
+            },
         )
         c.plotter.plot(
             figsize="PAGE",
             filename=[pfn + "_contour2.png", pfn + "_contour2.pdf"],
             parameters=[
                 "$\\alpha$",
-                "$\\Sigma_s$",
-                "$\\Sigma_{nl}$",
+                "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$",
+                "$\\Sigma_{nl}\,(h^{-1}\mathrm{Mpc})$",
                 "$b^{2}$",
                 "$a^{1}_{0}$",
                 "$a^{2}_{0}$",
@@ -97,8 +110,8 @@ if __name__ == "__main__":
             ],
             extents={
                 "$\\alpha$": (0.985, 1.020),
-                "$\\Sigma_s$": (4.0, 16.0),
-                "$\\Sigma_{nl}$": (8.0, 11.0),
+                "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$": (4.0, 16.0),
+                "$\\Sigma_{nl}\,(h^{-1}\mathrm{Mpc})$": (8.0, 11.0),
                 "$b^{2}$": (0.8, 2.4),
                 "$a^{1}_{0}$": (-4000.0, 10000.0),
                 "$a^{2}_{0}$": (-8000.0, 1000.0),

@@ -63,21 +63,16 @@ if __name__ == "__main__":
             c = ChainConsumer()
             for posterior, weight, chain, evidence, model, data, extra in fitter.load():
                 c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
-            c.configure(shade=True, legend_artists=True, max_ticks=4, sigmas=[0, 1, 2, 3], label_font_size=16, tick_font_size=12)
-            truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0}
+            c.configure(shade=True, legend_artists=True, max_ticks=4, sigmas=[0, 1, 2], label_font_size=12, tick_font_size=12, kde=True)
+            truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0.0}
             c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True)
             c.plotter.plot(
-                figsize="PAGE",
+                figsize="COLUMN",
                 filename=[pfn + "_contour.png", pfn + "_contour.pdf"],
-                parameters=["$\\alpha$", "$\\epsilon$", "$\\Sigma_s$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\beta$"],
-                extents={
-                    "$\\alpha$": (0.98, 1.01),
-                    "$\\epsilon$": (-0.025, 0.02),
-                    "$\\Sigma_s$": (0.0, 5.5),
-                    "$\\Sigma_{nl,||}$": (4.0, 16.0),
-                    "$\\Sigma_{nl,\\perp}$": (5.0, 11.0),
-                    "$\\beta$": (0.0, 0.65),
-                },
+                parameters=["$\\alpha$", "$\\epsilon$"],
+                extents={"$\\alpha$": (0.980, 1.015), "$\\epsilon$": (-0.02, 0.035)},
+                truth=truth,
+                chains=[f"Mono+Quad", f"Mono+Quad+Hexa With Poly", f"Mono+Quad+Hexa Without Poly"],
             )
 
         if False:

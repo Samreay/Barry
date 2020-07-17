@@ -124,20 +124,36 @@ if __name__ == "__main__":
                 print(evidence.max())
                 if extra["name"] == f"Fixed Bias+Poly":
                     continue
-                c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
-            c.configure(shade=True, legend_artists=True, max_ticks=4, sigmas=[0, 1, 2, 3], label_font_size=16, tick_font_size=12)
+                params = model.get_labels()
+                if len(params) == 17:
+                    params[3] = "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$"
+                    params[5] = "$\\Sigma_{nl,||}\,(h^{-1}\mathrm{Mpc})$"
+                    params[6] = "$\\Sigma_{nl,\\perp}\,(h^{-1}\mathrm{Mpc})$"
+                else:
+                    params[2] = "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$"
+                    params[4] = "$\\Sigma_{nl,||}\,(h^{-1}\mathrm{Mpc})$"
+                    params[5] = "$\\Sigma_{nl,\\perp}\,(h^{-1}\mathrm{Mpc})$"
+                c.add_chain(chain, weights=weight, parameters=params, **extra)
+            c.configure(shade=True, legend_artists=True, max_ticks=4, sigmas=[0, 1, 2, 3], label_font_size=14, tick_font_size=12)
             truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0}
             c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True)
             c.plotter.plot(
                 figsize="PAGE",
                 filename=[pfn + "_contour.png", pfn + "_contour.pdf"],
-                parameters=["$\\alpha$", "$\\epsilon$", "$\\Sigma_s$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\beta$"],
+                parameters=[
+                    "$\\alpha$",
+                    "$\\epsilon$",
+                    "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$",
+                    "$\\Sigma_{nl,||}\,(h^{-1}\mathrm{Mpc})$",
+                    "$\\Sigma_{nl,\\perp}\,(h^{-1}\mathrm{Mpc})$",
+                    "$\\beta$",
+                ],
                 extents={
                     "$\\alpha$": (0.98, 1.01),
                     "$\\epsilon$": (-0.025, 0.02),
-                    "$\\Sigma_s$": (0.0, 5.5),
-                    "$\\Sigma_{nl,||}$": (4.0, 16.0),
-                    "$\\Sigma_{nl,\\perp}$": (5.0, 11.0),
+                    "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$": (0.0, 5.5),
+                    "$\\Sigma_{nl,||}\,(h^{-1}\mathrm{Mpc})$": (4.0, 16.0),
+                    "$\\Sigma_{nl,\\perp}\,(h^{-1}\mathrm{Mpc})$": (5.0, 11.0),
                     "$\\beta$": (0.0, 0.65),
                 },
             )
@@ -147,9 +163,9 @@ if __name__ == "__main__":
                 parameters=[
                     "$\\alpha$",
                     "$\\epsilon$",
-                    "$\\Sigma_s$",
-                    "$\\Sigma_{nl,||}$",
-                    "$\\Sigma_{nl,\\perp}$",
+                    "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$",
+                    "$\\Sigma_{nl,||}\,(h^{-1}\mathrm{Mpc})$",
+                    "$\\Sigma_{nl,\\perp}\,(h^{-1}\mathrm{Mpc})$",
                     "$\\beta$",
                     "$b$",
                     "$a_{0,1}$",
@@ -167,7 +183,7 @@ if __name__ == "__main__":
             c.plotter.plot_walks(filename=pfn + "_walks.png", truth=truth)
             c.analysis.get_latex_table(filename=pfn + "_params.txt")
 
-        if False:
+        if True:
             import matplotlib
             import matplotlib.pyplot as plt
             import matplotlib.gridspec as gridspec
@@ -212,11 +228,11 @@ if __name__ == "__main__":
             ax1.set_ylabel(r"$k \times P(k)\,(h^{-2}\,\mathrm{Mpc^{2}})$", fontsize=14)
             ax1.tick_params(labelsize=12)
             ax1.annotate(
-                r"$\boldsymbol{\mathrm{BOSS-DR12\,Mocks}}$"
+                r"$\boldsymbol{\mathrm{BOSS-DR12\,NGC\,Mocks}}$"
                 "\n"
                 r"$\boldsymbol{\mathrm{Pre-reconstruction}}$"
                 "\n"
-                r"$\boldsymbol{0.5 < z < 0.7}$",
+                r"$\boldsymbol{0.5 < z < 0.75}$",
                 xy=(0.98, 0.97),
                 xycoords="axes fraction",
                 ha="right",

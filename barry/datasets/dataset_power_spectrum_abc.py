@@ -89,7 +89,8 @@ class PowerSpectrum(Dataset, ABC):
         if not self.isotropic:
             self._load_comp_file()
 
-        self.cov, self.cov_fit, self.corr, self.icov, self.data = None, None, None, None, None
+        self.icov, self.icov_w, self.icov_ww = None, None, None
+        self.cov, self.cov_fit, self.corr, self.data = None, None, None, None
         self.set_realisation(realisation)
         self.set_cov(fake_diag=fake_diag)
 
@@ -132,13 +133,24 @@ class PowerSpectrum(Dataset, ABC):
             self.cov_fit = np.diag(np.diag(self.cov_fit))
         self.cov /= self.reduce_cov_factor
         self.cov_fit /= self.reduce_cov_factor
+
+        # Run some checks
         v = np.diag(self.cov_fit @ np.linalg.inv(self.cov_fit))
         if not np.all(np.isclose(v, 1)):
             self.logger.error("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
             self.logger.error(f"These should all be 1: {v}")
+
         d = np.sqrt(np.diag(self.cov))
         self.corr = self.cov / (d * np.atleast_2d(d).T)
         self.icov = np.linalg.inv(self.cov_fit)
+        if self.m_w_transform is not None:
+            w_mask_poles = [self.w_mask] * len(self.poles)
+            for i in self.poles:
+                if i not in self.fit_pole_indices:
+                    w_mask_poles[i] = np.zeros(len(self.w_mask), dtype=bool)
+            w_mask_poles = np.concatenate(w_mask_poles)
+            self.icov_w = self.m_w_transform[w_mask_poles, :].T @ self.icov
+            self.icov_ww = self.icov_w @ self.m_w_transform[w_mask_poles, :]
 
     def _compute_cov(self):
         ad = np.array(self.mock_data)
@@ -236,6 +248,8 @@ class PowerSpectrum(Dataset, ABC):
             "ks": self.ks,
             "cov": self.cov,
             "icov": self.icov,
+            "icov_w": self.icov_w,
+            "icov_ww": self.icov_ww,
             "ks_input": self.w_ks_input,
             "w_scale": self.w_k0_scale,
             "w_transform": self.w_transform,
