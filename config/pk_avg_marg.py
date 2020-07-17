@@ -28,6 +28,7 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name)
 
     cs = ["#262232", "#116A71", "#48AB75"]
+    # cs = ["#262232", "#294D5F", "#197D7A", "#48AC7C"]
 
     for r in [False]:
         t = "Recon" if r else "Prerecon"
@@ -56,7 +57,7 @@ if __name__ == "__main__":
         fitter.add_model_and_dataset(model, d, name=f"Full Fit", linestyle=ls, color=cs[0])
         fitter.add_model_and_dataset(model_marg_full, d, name=f"Full Analytic", linestyle=ls, color=cs[1])
         fitter.add_model_and_dataset(model_marg_partial, d, name=f"Partial Analytic", linestyle=ls, color=cs[2])
-        fitter.add_model_and_dataset(model_fixed, d, name=f"Fixed Bias+Poly", linestyle=ls, color=cs[2])
+        # fitter.add_model_and_dataset(model_fixed, d, name=f"Fixed Bias+Poly", linestyle=ls, color=cs[2])
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
     fitter.fit(file)
@@ -88,11 +89,11 @@ if __name__ == "__main__":
             figsize="COLUMN",
             filename=[pfn + "_contour.png", pfn + "_contour.pdf"],
             parameters=["$\\alpha$", "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$", "$\\Sigma_{nl}\,(h^{-1}\mathrm{Mpc})$"],
-            extents={
-                "$\\alpha$": (0.985, 1.020),
-                "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$": (4.0, 16.0),
-                "$\\Sigma_{nl}\,(h^{-1}\mathrm{Mpc})$": (8.0, 11.0),
-            },
+            # extents={
+            #    "$\\alpha$": (0.985, 1.020),
+            #    "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$": (4.0, 16.0),
+            #    "$\\Sigma_{nl}\,(h^{-1}\mathrm{Mpc})$": (8.0, 11.0),
+            # },
         )
         c.plotter.plot(
             figsize="PAGE",
@@ -108,17 +109,17 @@ if __name__ == "__main__":
                 "$a^{4}_{0}$",
                 "$a^{5}_{0}$",
             ],
-            extents={
-                "$\\alpha$": (0.985, 1.020),
-                "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$": (4.0, 16.0),
-                "$\\Sigma_{nl}\,(h^{-1}\mathrm{Mpc})$": (8.0, 11.0),
-                "$b^{2}$": (0.8, 2.4),
-                "$a^{1}_{0}$": (-4000.0, 10000.0),
-                "$a^{2}_{0}$": (-8000.0, 1000.0),
-                "$a^{3}_{0}$": (1000.0, 2800.0),
-                "$a^{4}_{0}$": (-60.0, 20.0),
-                "$a^{5}_{0}$": (-0.03, 0.05),
-            },
+            # extents={
+            #    "$\\alpha$": (0.985, 1.020),
+            #    "$\\Sigma_s\,(h^{-1}\mathrm{Mpc})$": (4.0, 16.0),
+            #    "$\\Sigma_{nl}\,(h^{-1}\mathrm{Mpc})$": (8.0, 11.0),
+            #    "$b^{2}$": (0.8, 2.4),
+            #    "$a^{1}_{0}$": (-4000.0, 10000.0),
+            #    "$a^{2}_{0}$": (-8000.0, 1000.0),
+            #    "$a^{3}_{0}$": (1000.0, 2800.0),
+            #    "$a^{4}_{0}$": (-60.0, 20.0),
+            #    "$a^{5}_{0}$": (-0.03, 0.05),
+            # },
         )
         c.plotter.plot_walks(filename=pfn + "_walks.png")
         c.analysis.get_latex_table(filename=pfn + "_params.txt")

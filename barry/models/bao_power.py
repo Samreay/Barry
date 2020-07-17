@@ -49,7 +49,7 @@ class PowerSpectrumFit(Model):
             exit(0)
 
         self.declare_parameters()
-        if self.marg is not None:
+        if self.marg:
             self.set_default("b", 1.0)
             fix_params.extend(["b"])
         self.set_fix_params(fix_params)
