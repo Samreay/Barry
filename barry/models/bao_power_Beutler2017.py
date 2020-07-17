@@ -59,7 +59,7 @@ class PowerBeutler2017(PowerSpectrumFit):
     def declare_parameters(self):
         super().declare_parameters()
         # print(self.isotropic)
-        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 20.0, 10.0)  # Fingers-of-god damping
+        self.add_param("sigma_s", r"$\Sigma_s$", 4.0, 20.0, 10.0)  # Fingers-of-god damping
         if self.isotropic:
             self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 20.0, 10.0)  # BAO damping
         else:
