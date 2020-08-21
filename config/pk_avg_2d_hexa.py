@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
-    for r in [True, False]:
+    for r in [False]:
         t = "Recon" if r else "Prerecon"
         ls = "-"  # if r else "--"
         d_quad = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 2], reduce_cov_factor=np.sqrt(2000.0))
@@ -55,7 +55,7 @@ if __name__ == "__main__":
         fitter.add_model_and_dataset(model_quad, d_quad, name=f"P_{{0}}+P_{{2}}", linestyle=ls, color=cs[0])
         fitter.add_model_and_dataset(model_odd, d_odd, name=f"P_{{0}}+P_{{1}}+P_{{2}}", linestyle=ls, color=cs[1])
         fitter.add_model_and_dataset(model_hexa, d_hexa, name=f"P_{{0}}+P_{{2}}+P_{{4}}", linestyle=ls, color=cs[2])
-        fitter.add_model_and_dataset(model_all, d_all, name=f"P_{{0}}+P_{{1}}+P_{{2}}+P_{{3}}+P_{{4}}", linestyle=ls, color=cs[2])
+        fitter.add_model_and_dataset(model_all, d_all, name=f"P_{{0}}+P_{{1}}+P_{{2}}+P_{{3}}+P_{{4}}", linestyle=ls, color=cs[3])
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
@@ -82,7 +82,12 @@ if __name__ == "__main__":
                 parameters=["$\\alpha$", "$\\epsilon$"],
                 extents={"$\\alpha$": (0.980, 1.015), "$\\epsilon$": (-0.02, 0.035)},
                 truth=truth,
-                chains=[f"P_{{0}}+P_{{2}}", f"Mono+Quad+Hexa With Poly", f"Mono+Quad+Hexa Without Poly"],
+                chains=[
+                    f"P_{{0}}+P_{{2}}",
+                    f"P_{{0}}+P_{{1}}+P_{{2}}",
+                    f"P_{{0}}+P_{{2}}+P_{{4}}",
+                    f"P_{{0}}+P_{{1}}+P_{{2}}+P_{{3}}+P_{{4}}",
+                ],
             )
 
         if False:
