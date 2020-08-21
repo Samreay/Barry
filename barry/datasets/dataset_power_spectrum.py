@@ -289,8 +289,6 @@ class PowerSpectrum_Beutler2019_Z061_NGC(PowerSpectrum):
         isotropic=True,
         fit_poles=None,
     ):
-        if recon:
-            raise NotImplementedError("Post-recon data not available for Beutler2019_DR12_Z061")
 
         super().__init__(
             "beutler_2019_dr12_z061_pk_ngc.pkl",
@@ -327,8 +325,6 @@ class PowerSpectrum_Beutler2019_Z061_SGC(PowerSpectrum):
         isotropic=True,
         fit_poles=None,
     ):
-        if recon:
-            raise NotImplementedError("Post-recon data not available for Beutler2019_DR12_Z061")
 
         super().__init__(
             "beutler_2019_dr12_z061_pk_sgc.pkl",

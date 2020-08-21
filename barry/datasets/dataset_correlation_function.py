@@ -90,9 +90,9 @@ if __name__ == "__main__":
 
     isotropic = False
     datasets = [
-        CorrelationFunction_ROSS_DR12_Z038(isotropic=isotropic),
-        CorrelationFunction_ROSS_DR12_Z051(isotropic=isotropic),
-        CorrelationFunction_ROSS_DR12_Z061(isotropic=isotropic),
+        CorrelationFunction_ROSS_DR12_Z038(isotropic=isotropic, realisation="data"),
+        CorrelationFunction_ROSS_DR12_Z051(isotropic=isotropic, realisation="data"),
+        CorrelationFunction_ROSS_DR12_Z061(isotropic=isotropic, realisation="data"),
     ]
     for dataset in datasets:
         data = dataset.get_data()
@@ -121,7 +121,7 @@ if __name__ == "__main__":
         plt.legend()
         plt.show()
 
-    if True:
+    if False:
         for r in [True, False]:
             t = "Recon" if r else "Prerecon"
             datasets = [CorrelationFunction_SDSS_DR12_Z061_NGC(recon=r), CorrelationFunction_SDSS_DR12_Z061_NGC(recon=r)]

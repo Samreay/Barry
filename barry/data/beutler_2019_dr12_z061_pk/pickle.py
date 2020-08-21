@@ -5,10 +5,11 @@ import os
 
 
 def getdf(loc):
+    skip = 34 if "post_recon" in loc else 31
     df = pd.read_csv(
         loc,
         comment="#",
-        skiprows=31,
+        skiprows=skip,
         delim_whitespace=True,
         names=["k", "kmean", "pk0", "sigma_pk0", "pk1", "sigma_pk1", "pk2", "sigma_pk2", "pk3", "sigma_pk3", "pk4", "sigma_pk4", "nk"],
     )
@@ -59,16 +60,15 @@ if __name__ == "__main__":
     for gc in ["NGC"]:
         mfile = f"M_BOSS_DR12_{gc}_z3_V6C_1_1_1_1_1_2000_1200.matrix-1"
         wfile = f"W_BOSS_DR12_{gc}_z3_V6C_1_1_1_1_1_10_200_2000_averaged_v1.matrix"
-        ds = [f"pre_recon_{gc}/"]  # Don't have post-recon files
+        ds = [f"pre_recon_{gc}/", f"post_recon_{gc}/"]  # Don't have post-recon files
         files = [d + f for d in ds for f in os.listdir(d)]
-        print(files)
 
         res = {f.lower(): getdf(f) for f in files}
         split = {
             "pre-recon data": [v for k, v in res.items() if "pre_recon" in k and "patchy" not in k],
             "post-recon data": None,
             "pre-recon mocks": [v for k, v in res.items() if "pre_recon" in k and "patchy" in k],
-            "post-recon mocks": None,
+            "post-recon mocks": [v for k, v in res.items() if "post_recon" in k and "patchy" in k],
             "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.61, "ob": 0.04814, "ns": 0.97, "reconsmoothscale": 15},
             "name": f"Beutler 2019 Z0.61 Pk {gc}",
             "winfit": getwin(wfile),

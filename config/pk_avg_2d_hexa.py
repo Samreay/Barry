@@ -30,22 +30,32 @@ if __name__ == "__main__":
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
-    for r in [False]:
+    for r in [True, False]:
         t = "Recon" if r else "Prerecon"
         ls = "-"  # if r else "--"
         d_quad = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 2], reduce_cov_factor=np.sqrt(2000.0))
+        d_odd = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 1, 2], reduce_cov_factor=np.sqrt(2000.0))
         d_hexa = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 2, 4], reduce_cov_factor=np.sqrt(2000.0))
+        d_all = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 1, 2, 3, 4], reduce_cov_factor=np.sqrt(2000.0))
 
         # Fix sigma_nl for one of the Beutler models
-        model_quad = PowerBeutler2017(recon=r, isotropic=False, fix_params=["om"], correction=Correction.HARTLAP, marg=True)
-        model_hexa = PowerBeutler2017(recon=r, isotropic=False, fix_params=["om"], correction=Correction.HARTLAP, marg=True)
-        model_hexa_poly = PowerBeutler2017(
+        model_quad = PowerBeutler2017(
+            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.HARTLAP, marg="full"
+        )
+        model_odd = PowerBeutler2017(
+            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 1, 2], correction=Correction.HARTLAP, marg="full"
+        )
+        model_hexa = PowerBeutler2017(
             recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 2, 4], correction=Correction.HARTLAP, marg=True
         )
+        model_all = PowerBeutler2017(
+            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 1, 2, 3, 4], correction=Correction.HARTLAP, marg=True
+        )
 
-        fitter.add_model_and_dataset(model_quad, d_quad, name=f"Mono+Quad", linestyle=ls, color=cs[0])
-        fitter.add_model_and_dataset(model_hexa, d_hexa, name=f"Mono+Quad+Hexa Without Poly", linestyle=ls, color=cs[1])
-        fitter.add_model_and_dataset(model_hexa_poly, d_hexa, name=f"Mono+Quad+Hexa With Poly", linestyle=ls, color=cs[2])
+        fitter.add_model_and_dataset(model_quad, d_quad, name=f"P_{{0}}+P_{{2}}", linestyle=ls, color=cs[0])
+        fitter.add_model_and_dataset(model_odd, d_odd, name=f"P_{{0}}+P_{{1}}+P_{{2}}", linestyle=ls, color=cs[1])
+        fitter.add_model_and_dataset(model_hexa, d_hexa, name=f"P_{{0}}+P_{{2}}+P_{{4}}", linestyle=ls, color=cs[2])
+        fitter.add_model_and_dataset(model_all, d_all, name=f"P_{{0}}+P_{{1}}+P_{{2}}+P_{{3}}+P_{{4}}", linestyle=ls, color=cs[2])
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
@@ -72,7 +82,7 @@ if __name__ == "__main__":
                 parameters=["$\\alpha$", "$\\epsilon$"],
                 extents={"$\\alpha$": (0.980, 1.015), "$\\epsilon$": (-0.02, 0.035)},
                 truth=truth,
-                chains=[f"Mono+Quad", f"Mono+Quad+Hexa With Poly", f"Mono+Quad+Hexa Without Poly"],
+                chains=[f"P_{{0}}+P_{{2}}", f"Mono+Quad+Hexa With Poly", f"Mono+Quad+Hexa Without Poly"],
             )
 
         if False:

@@ -6,9 +6,7 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from numpy.random import uniform
 import numpy as np
-from scipy import integrate
-from scipy.integrate import simps
-from scipy.special import loggamma, erfc
+from scipy.special import loggamma
 from scipy.optimize import basinhopping
 from enum import Enum, unique
 from dataclasses import dataclass
@@ -214,7 +212,7 @@ class Model(ABC):
                 return -np.inf
         return 0
 
-    def get_chi2_likelihood(self, data, model, icov, icov_w, icov_ww, num_mocks=None, num_params=None):
+    def get_chi2_likelihood(self, data, model, model_odd, icov, icov_m_w, num_mocks=None, num_params=None):
         """ Computes the chi2 corrected likelihood.
 
         Parameters
@@ -234,11 +232,18 @@ class Model(ABC):
             The (corrected) log-likelihood value from the computed chi2.
         """
 
-        if icov_ww is None:
-            diff = data - model
+        if icov_m_w[0] is None:
+            diff = data - (model + model_odd)
             chi2 = diff.T @ icov @ diff
         else:
-            chi2 = data.T @ icov @ data - 2.0 * model.T @ icov_w @ data + model.T @ icov_ww @ model
+            chi2 = (
+                data.T @ icov @ data
+                - 2.0 * model_odd.T @ icov_m_w[0] @ data
+                - 2.0 * model.T @ icov_m_w[1] @ data
+                + model_odd.T @ icov_m_w[2] @ model_odd
+                + 2.0 * model.T @ icov_m_w[3] @ model_odd
+                + model.T @ icov_m_w[4] @ model.T
+            )
 
         if self.correction in [Correction.HARTLAP, Correction.SELLENTIN]:
             assert (
@@ -261,7 +266,7 @@ class Model(ABC):
         else:
             return -0.5 * chi2
 
-    def get_chi2_marg_likelihood(self, marg_model, data, icov, icov_w, icov_ww, num_mocks=None):
+    def get_chi2_marg_likelihood(self, data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w, num_mocks=None):
         """ Computes the chi2 corrected likelihood.
 
         Parameters
@@ -285,15 +290,37 @@ class Model(ABC):
             The (corrected) log-likelihood value from the computed chi2.
         """
 
-        if icov_ww is None:
-            F02 = data @ icov @ data
-            F11 = marg_model @ icov @ data
+        if icov_m_w[0] is None:
+            model += model_odd
+            marg_model += marg_model_odd
+            diff = data - model
+            F02 = diff @ icov @ diff
+            F11 = marg_model @ icov @ diff
             F2 = marg_model @ icov @ marg_model.T
             F2inv = np.linalg.inv(F2)
         else:
-            F02 = data @ icov @ data
-            F11 = marg_model @ icov_w @ data
-            F2 = marg_model @ icov_ww @ marg_model.T
+            F02 = (
+                data @ icov @ data
+                - 2.0 * model_odd @ icov_m_w[0] @ data
+                - 2.0 * model @ icov_m_w[1] @ data
+                + model_odd @ icov_m_w[2] @ model_odd
+                + 2.0 * model @ icov_m_w[3] @ model_odd
+                + model @ icov_m_w[4] @ model
+            )
+            F11 = (
+                marg_model_odd @ icov_m_w[0] @ data
+                + marg_model @ icov_m_w[1] @ data
+                - marg_model_odd @ icov_m_w[2] @ model_odd
+                - marg_model @ icov_m_w[3] @ model_odd
+                - marg_model_odd @ icov_m_w[3].T @ model
+                - marg_model @ icov_m_w[4] @ model
+            )
+            F2 = (
+                marg_model_odd @ icov_m_w[2] @ marg_model_odd.T
+                + marg_model @ icov_m_w[3] @ marg_model_odd.T
+                + marg_model_odd @ icov_m_w[3].T @ marg_model.T
+                + marg_model @ icov_m_w[4] @ marg_model.T
+            )
             F2inv = np.linalg.inv(F2)
         chi2 = F02 - F11 @ F2inv @ F11
 
@@ -306,7 +333,9 @@ class Model(ABC):
 
         return -0.5 * (chi2 + np.log(np.linalg.det(F2)))
 
-    def get_chi2_partial_marg_likelihood(self, marg_model, data, icov, icov_w, icov_ww, num_mocks=None):
+    def get_chi2_partial_marg_likelihood(
+        self, data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w, num_mocks=None, num_params=None
+    ):
         """ Computes the chi2 corrected likelihood.
 
         Parameters
@@ -329,41 +358,44 @@ class Model(ABC):
         log_likelihood : float
             The (corrected) log-likelihood value from the computed chi2.
         """
-        icov_corr = icov
-        if self.correction in [Correction.HARTLAP]:
-            assert (
-                num_mocks > 0
-            ), "Cannot use HARTLAP  or SELLENTIN correction with covariance not determined from mocks. Set correction to Correction.NONE"
-        if self.correction is Correction.HARTLAP:  # From Hartlap 2007
-            icov_corr = icov * (num_mocks - len(data) - 2) / (num_mocks - 1)
 
-        # First compute the MLE values for the broad-band terms
-        if icov_ww is None:
-            F11 = marg_model @ icov @ data
-            F2 = marg_model @ icov @ marg_model.T
+        # First compute the MLE values for the nuisance parameters
+        bband = self.get_ML_nuisance(data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w)
+
+        # Add these on to the models
+        model += bband @ marg_model
+        model_odd += bband @ marg_model_odd
+
+        return self.get_chi2_likelihood(data, model, model_odd, icov, icov_m_w, num_mocks=num_mocks, num_params=num_params)
+
+    def get_ML_nuisance(self, data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w):
+
+        if icov_m_w[0] is None:
+            full_model = model + model_odd
+            full_marg_model = marg_model + marg_model_odd
+            F11 = full_marg_model @ icov @ (data - full_model)
+            F2 = full_marg_model @ icov @ full_marg_model.T
             F2inv = np.linalg.inv(F2)
         else:
-            F11 = marg_model @ icov_w @ data
-            F2 = marg_model @ icov_ww @ marg_model.T
+            F11 = (
+                marg_model_odd @ icov_m_w[0] @ data
+                + marg_model @ icov_m_w[1] @ data
+                - marg_model_odd @ icov_m_w[2] @ model_odd
+                - marg_model @ icov_m_w[3] @ model_odd
+                - marg_model_odd @ icov_m_w[3].T @ model
+                - marg_model @ icov_m_w[4] @ model
+            )
+            F2 = (
+                marg_model_odd @ icov_m_w[2] @ marg_model_odd.T
+                + 2.0 * marg_model @ icov_m_w[3] @ marg_model_odd.T
+                + marg_model @ icov_m_w[4] @ marg_model.T
+            )
+            # print(F2)
             F2inv = np.linalg.inv(F2)
 
         bband = F2inv @ F11
-        model = bband @ marg_model
 
-        if icov_ww is None:
-            diff = data - model
-            chi2 = diff.T @ icov @ diff
-        else:
-            chi2 = data.T @ icov @ data - 2.0 * model.T @ icov_w @ data + model.T @ icov_ww @ model
-
-        if self.correction in [Correction.HARTLAP]:
-            assert (
-                num_mocks > 0
-            ), "Cannot use HARTLAP correction with covariance not determined from mocks. Set correction to Correction.NONE"
-        if self.correction is Correction.HARTLAP:  # From Hartlap 2007
-            chi2 *= (num_mocks - len(data) - 2) / (num_mocks - 1)
-
-        return -0.5 * chi2
+        return bband
 
     def get_raw_start(self):
         """ Gets a uniformly distributed starting point between parameter min and max constraints """
@@ -576,22 +608,38 @@ class Model(ABC):
 
         print("Starting model optimisation. This may take some time.")
         p, minv = self.optimize(niter=niter, maxiter=maxiter)
+        """p = {
+            "alpha": 1.0003412648322056,
+            "epsilon": 0.0009635935148214203,
+            "sigma_s": 4.739041790619367,
+            "beta": 0.42748392149657716,
+            "sigma_nl_par": 5.699808860145836,
+            "sigma_nl_perp": 5.155833618659709,
+            "a{2}_5": 0.0,
+            "a{0}_1": 0.0,
+            "a{0}_5": 0.0,
+            "a{2}_2": 0.0,
+            "a{1}_4": 0.0,
+            "b": 1.0,
+            "a{0}_2": 0.0,
+            "a{0}_3": 0.0,
+            "a{1}_2": 0.0,
+            "a{1}_5": 0.0,
+            "om": 0.31,
+            "a{2}_1": 0.0,
+            "a{1}_1": 0.0,
+            "a{2}_3": 0.0,
+            "a{2}_4": 0.0,
+            "a{0}_4": 0.0,
+            "a{1}_3": 0.0,
+        }
+        minv = 19.782"""
+
         print(f"Model optimisation with value {minv:0.3f} has parameters are {dict(p)}")
 
         if plot:
             print("Plotting model and data")
             self.plot(p, figname=figname)
-
-    def integrate_mu(self, pk2d, mu, isotropic=False):
-        pk0 = simps(pk2d, mu, axis=1)
-        if isotropic:
-            pk2 = None
-            pk4 = None
-        else:
-            pk2 = 3.0 * simps(pk2d * mu ** 2, mu)
-            pk4 = 1.125 * (35.0 * simps(pk2d * mu ** 4, mu, axis=1) - 10.0 * pk2 + 3.0 * pk0)
-            pk2 = 2.5 * (pk2 - pk0)
-        return pk0, pk2, pk4
 
 
 if __name__ == "__main__":

@@ -86,10 +86,11 @@ class PowerSpectrum(Dataset, ABC):
         self._load_winpk_file()
         self.m_transform = None
         self.m_w_transform = None
+        self.m_w_mask = None
         if not self.isotropic:
             self._load_comp_file()
 
-        self.icov, self.icov_w, self.icov_ww = None, None, None
+        self.icov, self.icov_w, self.icov_mw, self.icov_ww, self.icov_mww, self.icov_mwmw = None, None, None, None, None, None
         self.cov, self.cov_fit, self.corr, self.data = None, None, None, None
         self.set_realisation(realisation)
         self.set_cov(fake_diag=fake_diag)
@@ -149,8 +150,12 @@ class PowerSpectrum(Dataset, ABC):
                 if i not in self.fit_pole_indices:
                     w_mask_poles[i] = np.zeros(len(self.w_mask), dtype=bool)
             w_mask_poles = np.concatenate(w_mask_poles)
-            self.icov_w = self.m_w_transform[w_mask_poles, :].T @ self.icov
-            self.icov_ww = self.icov_w @ self.m_w_transform[w_mask_poles, :]
+            self.icov_w = self.w_transform[w_mask_poles, :].T @ self.icov
+            self.icov_mw = self.m_w_transform[w_mask_poles, :].T @ self.icov
+            self.icov_ww = self.icov_w @ self.w_transform[w_mask_poles, :]
+            self.icov_mww = self.icov_mw @ self.w_transform[w_mask_poles, :]
+            self.icov_mwmw = self.icov_mw @ self.m_w_transform[w_mask_poles, :]
+            self.m_w_mask = w_mask_poles
 
     def _compute_cov(self):
         ad = np.array(self.mock_data)
@@ -248,8 +253,7 @@ class PowerSpectrum(Dataset, ABC):
             "ks": self.ks,
             "cov": self.cov,
             "icov": self.icov,
-            "icov_w": self.icov_w,
-            "icov_ww": self.icov_ww,
+            "icov_m_w": [self.icov_w, self.icov_mw, self.icov_ww, self.icov_mww, self.icov_mwmw],
             "ks_input": self.w_ks_input,
             "w_scale": self.w_k0_scale,
             "w_transform": self.w_transform,
@@ -271,9 +275,11 @@ class PowerSpectrum(Dataset, ABC):
         # Some data has pk0 some has pk0 to pk4
         if self.isotropic:
             d.update({"w_mask": self.w_mask})
+            d.update({"m_w_mask": self.w_mask})
             d.update({"pk": self.data[:, 0]})
         else:
             d.update({"w_mask": np.tile(self.w_mask, len(self.poles))})
+            d.update({"m_w_mask": self.m_w_mask})
             d.update({"pk": self.data[:, self.fit_pole_indices].T.flatten()})
         d.update({f"pk{d}": self.data[:, i] for i, d in enumerate(self.poles)})
         return [d]
