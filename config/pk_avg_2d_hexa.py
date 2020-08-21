@@ -46,10 +46,10 @@ if __name__ == "__main__":
             recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 1, 2], correction=Correction.HARTLAP, marg="full"
         )
         model_hexa = PowerBeutler2017(
-            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 2, 4], correction=Correction.HARTLAP, marg=True
+            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 2, 4], correction=Correction.HARTLAP, marg="full"
         )
         model_all = PowerBeutler2017(
-            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 1, 2, 3, 4], correction=Correction.HARTLAP, marg=True
+            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 1, 2, 3, 4], correction=Correction.HARTLAP, marg="full"
         )
 
         fitter.add_model_and_dataset(model_quad, d_quad, name=f"P_{{0}}+P_{{2}}", linestyle=ls, color=cs[0])
