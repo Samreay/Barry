@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
-    for r in [False]:
+    for r in [True]:
         t = "Recon" if r else "Prerecon"
         ls = "-"  # if r else "--"
         d_quad = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 2], reduce_cov_factor=np.sqrt(2000.0))
@@ -52,10 +52,10 @@ if __name__ == "__main__":
             recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 1, 2, 3, 4], correction=Correction.HARTLAP, marg="full"
         )
 
-        fitter.add_model_and_dataset(model_quad, d_quad, name=f"P_{{0}}+P_{{2}}", linestyle=ls, color=cs[0])
-        fitter.add_model_and_dataset(model_odd, d_odd, name=f"P_{{0}}+P_{{1}}+P_{{2}}", linestyle=ls, color=cs[1])
-        fitter.add_model_and_dataset(model_hexa, d_hexa, name=f"P_{{0}}+P_{{2}}+P_{{4}}", linestyle=ls, color=cs[2])
-        fitter.add_model_and_dataset(model_all, d_all, name=f"P_{{0}}+P_{{1}}+P_{{2}}+P_{{3}}+P_{{4}}", linestyle=ls, color=cs[3])
+        fitter.add_model_and_dataset(model_quad, d_quad, name=r"$P_{0}+P_{2}$", linestyle=ls, color=cs[0])
+        fitter.add_model_and_dataset(model_odd, d_odd, name=r"$P_{0}+P_{1}+P_{2}$", linestyle=ls, color=cs[1])
+        fitter.add_model_and_dataset(model_hexa, d_hexa, name=r"$P_{0}+P_{2}+P_{4}$", linestyle=ls, color=cs[2])
+        fitter.add_model_and_dataset(model_all, d_all, name=r"$P_{0}+P_{1}+P_{2}+P_{3}+P_{4}$", linestyle=ls, color=cs[3])
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
@@ -73,7 +73,7 @@ if __name__ == "__main__":
             c = ChainConsumer()
             for posterior, weight, chain, evidence, model, data, extra in fitter.load():
                 c.add_chain(chain, weights=weight, parameters=model.get_labels(), **extra)
-            c.configure(shade=True, legend_artists=True, max_ticks=4, sigmas=[0, 1, 2], label_font_size=12, tick_font_size=12, kde=True)
+            c.configure(shade=True, legend_artists=True, max_ticks=4, sigmas=[0, 1, 2], label_font_size=12, tick_font_size=12, kde=False)
             truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0.0}
             c.plotter.plot_summary(filename=[pfn + "_summary.png", pfn + "_summary.pdf"], errorbar=True)
             c.plotter.plot(
@@ -82,13 +82,14 @@ if __name__ == "__main__":
                 parameters=["$\\alpha$", "$\\epsilon$"],
                 extents={"$\\alpha$": (0.980, 1.015), "$\\epsilon$": (-0.02, 0.035)},
                 truth=truth,
-                chains=[
-                    f"P_{{0}}+P_{{2}}",
-                    f"P_{{0}}+P_{{1}}+P_{{2}}",
-                    f"P_{{0}}+P_{{2}}+P_{{4}}",
-                    f"P_{{0}}+P_{{1}}+P_{{2}}+P_{{3}}+P_{{4}}",
-                ],
+                chains=[r"$P_{0}+P_{2}$", r"$P_{0}+P_{1}+P_{2}$", r"$P_{0}+P_{2}+P_{4}$", r"$P_{0}+P_{1}+P_{2}+P_{3}+P_{4}$"],
             )
+            results = c.analysis.get_summary(parameters=["$\\alpha$", "$\\epsilon$"])
+            for i in range(4):
+                print(results[i]["$\\alpha$"][1] - results[i]["$\\alpha$"][0], results[i]["$\\alpha$"][2] - results[i]["$\\alpha$"][1])
+                print(
+                    results[i]["$\\epsilon$"][1] - results[i]["$\\epsilon$"][0], results[i]["$\\epsilon$"][2] - results[i]["$\\epsilon$"][1]
+                )
 
         if False:
             import matplotlib
