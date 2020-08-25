@@ -232,6 +232,8 @@ if __name__ == "__main__":
 
     print("Checking anisotropic mock mean")
     dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, recon=True, fit_poles=[0, 2])
+    for i in range(997):
+        dataset.set_realisation(i)
     model = PowerBeutler2017(
         recon=dataset.recon, isotropic=dataset.isotropic, marg="full", fix_params=["om"], poly_poles=[0, 2], correction=Correction.HARTLAP
     )

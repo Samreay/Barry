@@ -56,7 +56,7 @@ if __name__ == "__main__":
         fitter.add_model_and_dataset(model_hexa, d_hexa, name=r"$P_{0}+P_{2}+P_{4}$", linestyle=ls, color=cs[2])
         fitter.add_model_and_dataset(model_all, d_all, name=r"$P_{0}+P_{1}+P_{2}+P_{3}+P_{4}$", linestyle=ls, color=cs[3])
 
-        for i in range(999):
+        for i in range(997):
             d_quad.set_realisation(i)
             d_odd.set_realisation(i)
             d_hexa.set_realisation(i)
