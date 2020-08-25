@@ -32,10 +32,6 @@ if __name__ == "__main__":
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
 
-        seo = PowerSeo2016(recon=r)
-        ding = PowerDing2018(recon=r)
-        noda = PowerNoda2019(recon=r, postprocess=p)
-
         d_quad = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 2])
         d_odd = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 1, 2])
         d_hexa = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 2, 4])
