@@ -17,6 +17,17 @@ def weighted_avg_and_std(values, weights):
     return average, np.sqrt(variance)
 
 
+def weighted_avg_and_cov(values, weights, axis):
+    """
+    Return the weighted average and standard deviation.
+
+    values, weights -- Numpy ndarrays with the same shape.
+    """
+    average = np.average(values, weights=weights, axis=axis)
+    covariance = np.cov(values, aweights=weights, rowvar=axis)
+    return average, covariance
+
+
 def break_vector_and_get_blocks(x, number_breaks, keep_indices):
     return np.array(np.split(x, number_breaks))[keep_indices, :].flatten()
 
@@ -90,7 +101,9 @@ def get_model_comparison_dataframe(fitter):
     summary = []
     for label, df in model_results.items():
         model_results[label] = pd.merge(good_ids, df, how="left", on="realisation")
-        summary.append([label, np.mean(model_results[label]["avg"]), np.mean(model_results[label]["std"]), np.std(model_results[label]["avg"])])
+        summary.append(
+            [label, np.mean(model_results[label]["avg"]), np.mean(model_results[label]["std"]), np.std(model_results[label]["avg"])]
+        )
     summary = pd.DataFrame(summary, columns=["Name", "Mean mean", "Mean std", "Std mean"])
 
     return model_results, summary

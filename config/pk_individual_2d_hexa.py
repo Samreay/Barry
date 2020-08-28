@@ -7,7 +7,7 @@ from barry.samplers import DynestySampler
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
 from barry.config import setup
-from barry.utils import weighted_avg_and_std
+from barry.utils import weighted_avg_and_cov
 from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_NGC
 from barry.fitter import Fitter
@@ -39,22 +39,24 @@ if __name__ == "__main__":
 
         # Fix sigma_nl for one of the Beutler models
         model_quad = PowerBeutler2017(
-            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.HARTLAP, marg="full"
+            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.NONE, marg="full"
         )
         model_odd = PowerBeutler2017(
-            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 1, 2], correction=Correction.HARTLAP, marg="full"
+            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 1, 2], correction=Correction.NONE, marg="full"
         )
         model_hexa = PowerBeutler2017(
-            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 2, 4], correction=Correction.HARTLAP, marg="full"
+            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 2, 4], correction=Correction.NONE, marg="full"
         )
         model_all = PowerBeutler2017(
-            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 1, 2, 3, 4], correction=Correction.HARTLAP, marg="full"
+            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 1, 2, 3, 4], correction=Correction.NONE, marg="full"
         )
 
-        fitter.add_model_and_dataset(model_quad, d_quad, name=r"$P_{0}+P_{2}$", linestyle=ls, color=cs[0])
-        fitter.add_model_and_dataset(model_odd, d_odd, name=r"$P_{0}+P_{1}+P_{2}$", linestyle=ls, color=cs[1])
-        fitter.add_model_and_dataset(model_hexa, d_hexa, name=r"$P_{0}+P_{2}+P_{4}$", linestyle=ls, color=cs[2])
-        fitter.add_model_and_dataset(model_all, d_all, name=r"$P_{0}+P_{1}+P_{2}+P_{3}+P_{4}$", linestyle=ls, color=cs[3])
+        fitter.add_model_and_dataset(model_quad, d_quad, name=r"$P_{0}+P_{2}$", linestyle=ls, color=cs[0], realisation="average")
+        fitter.add_model_and_dataset(model_odd, d_odd, name=r"$P_{0}+P_{1}+P_{2}$", linestyle=ls, color=cs[1], realisation="average")
+        fitter.add_model_and_dataset(model_hexa, d_hexa, name=r"$P_{0}+P_{2}+P_{4}$", linestyle=ls, color=cs[2], realisation="average")
+        fitter.add_model_and_dataset(
+            model_all, d_all, name=r"$P_{0}+P_{1}+P_{2}+P_{3}+P_{4}$", linestyle=ls, color=cs[3], realisation="average"
+        )
 
         for i in range(997):
             d_quad.set_realisation(i)
@@ -91,11 +93,28 @@ if __name__ == "__main__":
             logging.info("Found alphameans.csv, reading from existing file")
 
             df = pd.read_csv(pfn + "_alphameans.csv")
-            labels = [c.replace("_pk_mean", "") for c in df.columns if "_pk_mean" in c]
+            labels = [c.replace("_pk_mean_alpha", "") for c in df.columns if "_pk_mean_alpha" in c]
             for label in labels:
-                res[label] = df[[label + "_pk_mean", label + "_pk_std", "realisation", label + "_pk_evidence"]].copy()
+                res[label] = df[
+                    [
+                        "realisation",
+                        label + "_pk_mean_alpha",
+                        label + "_pk_std_alpha",
+                        label + "_pk_mean_epsilon",
+                        label + "_pk_std_epsilon",
+                        label + "_pk_evidence",
+                    ]
+                ].copy()
                 res[label].rename(
-                    {label + "_pk_mean": "avg", label + "_pk_std": "std", label + "_pk_evidence": "evidence"}, axis="columns", inplace=True
+                    {
+                        label + "_pk_mean_alpha": "avg_alpha",
+                        label + "_pk_std_alpha": "std_alpha",
+                        label + "_pk_mean_epsilon": "avg_epsilon",
+                        label + "_pk_std_epsilon": "std_epsilon",
+                        label + "_pk_evidence": "evidence",
+                    },
+                    axis="columns",
+                    inplace=True,
                 )
 
             # Print out stats
@@ -112,12 +131,15 @@ if __name__ == "__main__":
 
             doonce = True
             for posterior, weight, chain, evidence, model, data, extra in fitter.load():
+                if extra["realisation"] == "average":
+                    continue
+
                 n = extra["name"].split(",")[0]
                 if res.get(n) is None:
                     res[n] = []
                 i = posterior.argmax()
                 chi2 = -2 * posterior[i]
-                m, s = weighted_avg_and_std(chain[:, 0], weight)
+                m, s = weighted_avg_and_cov(chain[:, 0:2], weight, 0)
 
                 if doonce:
                     doonce = False
@@ -130,10 +152,40 @@ if __name__ == "__main__":
                         r.append(df.sample(weights=weight, replace=True, n=nsamp).std())
                     print(f"SE of std is {np.std(r)}")
 
-                res[n].append([m, s, chain[i, 0], posterior[i], chi2, -chi2, extra["realisation"], evidence.max()])
+                res[n].append(
+                    [
+                        m[0],
+                        np.sqrt(s[0, 0]),
+                        chain[i, 0],
+                        m[1],
+                        np.sqrt(s[1, 1]),
+                        chain[i, 1],
+                        s[0, 1],
+                        posterior[i],
+                        chi2,
+                        -chi2,
+                        extra["realisation"],
+                        evidence.max(),
+                    ]
+                )
+            print(res.keys())
             for label in res.keys():
                 res[label] = pd.DataFrame(
-                    res[label], columns=["avg", "std", "max", "posterior", "chi2", "Dchi2", "realisation", "evidence"]
+                    res[label],
+                    columns=[
+                        "avg_alpha",
+                        "std_alpha",
+                        "max_alpha",
+                        "avg_epsilon",
+                        "std_epsilon",
+                        "max_epsilon",
+                        "corr",
+                        "posterior",
+                        "chi2",
+                        "Dchi2",
+                        "realisation",
+                        "evidence",
+                    ],
                 )
 
             ks = list(res.keys())
@@ -150,8 +202,10 @@ if __name__ == "__main__":
                 d = pd.DataFrame(
                     {
                         "realisation": means["realisation"],
-                        f"{label}_pk_mean": means["avg"],
-                        f"{label}_pk_std": means["std"],
+                        f"{label}_pk_mean_alpha": means["avg_alpha"],
+                        f"{label}_pk_std_alpha": means["std_alpha"],
+                        f"{label}_pk_mean_epsilon": means["avg_epsilon"],
+                        f"{label}_pk_std_epsilon": means["std_epsilon"],
                         f"{label}_pk_evidence": means["evidence"],
                     }
                 )
@@ -161,67 +215,65 @@ if __name__ == "__main__":
                     df_all = pd.merge(df_all, d, how="outer", on="realisation")
             df_all.to_csv(pfn + "_alphameans.csv", index=False, float_format="%0.5f")
 
-        # Define colour scheme
-        c2 = ["#225465", "#5FA45E"]  # ["#581d7f", "#e05286"]
-        c3 = ["#2C455A", "#258E71", "#C1C64D"]  # ["#501b73", "#a73b8f", "#ee8695"]
-        c4 = ["#262232", "#116A71", "#48AB75", "#D1E05B"]  # ["#461765", "#7b2a95", "#d54d88", "#f19a9b"]
-        c5 = ["#262232", "#1F4D5C", "#0E7A6E", "#5BA561", "#C1C64D"]  # ["#3c1357", "#61208d", "#a73b8f", "#e8638b", "#f4aea3"]
-        cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
+        cols = {
+            r"$P_{0}+P_{2}$": cs[0],
+            r"$P_{0}+P_{1}+P_{2}$": cs[1],
+            r"$P_{0}+P_{2}+P_{4}$": cs[2],
+            r"$P_{0}+P_{1}+P_{2}+P_{3}+P_{4}$": cs[3],
+        }
 
         # Bins for means
-        bins_both = np.linspace(0.91, 1.08, 31)
-        bins = np.linspace(0.95, 1.06, 31)
-        ticks = [0.97, 1.0, 1.03]
-        lim = bins[0], bins[-1]
-        lim_both = bins_both[0], bins_both[-1]
+        bins_alpha = np.linspace(0.94, 1.07, 31)
+        lim_alpha = bins_alpha[0], bins_alpha[-1]
+        ticks_alpha = [0.97, 1.0, 1.03]
+
+        bins_epsilon = np.linspace(-0.075, 0.075, 31)
+        lim_epsilon = bins_epsilon[0], bins_epsilon[-1]
+        ticks_epsilon = [-0.05, 0.0, 0.05]
 
         # Make histogram comparison of the means
         if False:
-            fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
+            fig, axes = plt.subplots(ncols=2, figsize=(5, 3), sharey=True)
             for label, means in res.items():
-                if "Prerecon" in label:
-                    ax = axes[0]
-                else:
-                    ax = axes[1]
                 c = cols[label.split()[0]]
-                ax.hist(
-                    means["avg"], bins=bins_both, label=" ".join(label.split()[:-1]), histtype="stepfilled", linewidth=2, alpha=0.3, color=c
+                axes[0].hist(
+                    means["avg_alpha"],
+                    bins=bins_alpha,
+                    label=" ".join(label.split()[:-1]),
+                    histtype="stepfilled",
+                    linewidth=2,
+                    alpha=0.3,
+                    color=c,
                 )
-                ax.hist(means["avg"], bins=bins_both, histtype="step", linewidth=1.5, color=cols[label.split()[0]])
-            axes[1].set_xlabel(r"$\langle \alpha \rangle$", fontsize=14)
+                axes[1].hist(means["avg_epsilon"], bins=bins_epsilon, histtype="step", linewidth=1.5, color=c)
+            axes[0].set_xlabel(r"$\langle \alpha \rangle$", fontsize=14)
+            axes[1].set_xlabel(r"$\langle \epsilon \rangle$", fontsize=14)
             axes[0].set_yticklabels([])
             axes[1].set_yticklabels([])
-            axes[0].axvline(0.9982, color="k", lw=1, ls="--", alpha=0.6)
-            axes[1].axvline(0.9982, color="k", lw=1, ls="--", alpha=0.6)
-            axes[0].annotate("Prerecon", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
-            axes[1].annotate("Recon", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
-            leg1 = axes[0].legend(loc=2, frameon=False)
+            axes[0].axvline(1.0, color="k", lw=1, ls="--", alpha=0.6)
+            axes[1].axvline(0.0, color="k", lw=1, ls="--", alpha=0.6)
+            # axes[0].annotate(r"$\alpha$", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
+            # axes[1].annotate(r"$\epsilon$", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
+            # leg1 = axes[0].legend(loc=2, frameon=False)
             # leg2 = axes[1].legend(loc=2, frameon=False)
-            for lh in leg1.legendHandles:
-                lh.set_alpha(1)
+            # for lh in leg1.legendHandles:
+            #    lh.set_alpha(1)
             axes[0].tick_params(axis="y", left=False)
             axes[1].tick_params(axis="y", left=False)
-            axes[0].set_xlim(*lim_both)
-            axes[1].set_xlim(*lim_both)
+            axes[0].set_xlim(*lim_alpha)
+            axes[1].set_xlim(*lim_epsilon)
             plt.subplots_adjust(hspace=0.0)
             fig.savefig(pfn + "_alphahist.png", bbox_inches="tight", dpi=300, transparent=True)
             fig.savefig(pfn + "_alphahist.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
-        # Alpha-alpha comparison
+        # Alpha-alpha/epsilon-epsilon comparisons
         if False:
             from scipy.interpolate import interp1d
 
             # Post-recon
-            cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
-            fig, axes = plt.subplots(5, 5, figsize=(10, 10), sharex=True)
-            labels = [
-                "Beutler 2017 Recon",
-                "Beutler 2017 Fixed $\\Sigma_{nl}$ Recon",
-                "Seo 2016 Recon",
-                "Ding 2018 Recon",
-                "Noda 2019 Recon",
-            ]
-            k = "avg"
+            fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
+            labels = [r"$P_{0}+P_{2}$", r"$P_{0}+P_{1}+P_{2}$", r"$P_{0}+P_{2}+P_{4}$", r"$P_{0}+P_{1}+P_{2}+P_{3}+P_{4}$"]
+            k = "avg_alpha"
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
                     ax = axes[i, j]
@@ -230,21 +282,21 @@ if __name__ == "__main__":
                         continue
                     elif i == j:
                         h, _, _ = ax.hist(
-                            res[label1][k], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]]
+                            res[label1][k], bins=bins_alpha, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]]
                         )
-                        ax.hist(res[label1][k], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
+                        ax.hist(res[label1][k], bins=bins_alpha, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
                         ax.set_yticklabels([])
                         ax.tick_params(axis="y", left=False)
-                        ax.set_xlim(*lim)
-                        yval = interp1d(0.5 * (bins[:-1] + bins[1:]), h, kind="nearest")([1.0])[0]
+                        ax.set_xlim(*lim_alpha)
+                        yval = interp1d(0.5 * (bins_alpha[:-1] + bins_alpha[1:]), h, kind="nearest")([1.0])[0]
                         ax.plot([1.0, 1.0], [0, yval], color="k", lw=1, ls="--", alpha=0.4)
                         ax.spines["right"].set_visible(False)
                         ax.spines["top"].set_visible(False)
                         if j == 0:
                             ax.spines["left"].set_visible(False)
-                        if j == 4:
+                        if j == 3:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
-                            ax.set_xticks(ticks)
+                            ax.set_xticks(ticks_alpha)
                     else:
                         print(label1, label2)
                         a1 = np.array(res[label2][k])
@@ -253,34 +305,28 @@ if __name__ == "__main__":
                         # ax.scatter([a1[argbad]], [a2[argbad]], s=2, c='r', zorder=10)
 
                         ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0005, vmax=0.02)
-                        ax.set_xlim(*lim)
-                        ax.set_ylim(*lim)
+                        ax.set_xlim(*lim_alpha)
+                        ax.set_ylim(*lim_alpha)
                         ax.plot([0.8, 1.2], [0.8, 1.2], c="k", lw=1, alpha=0.8, ls=":")
-                        ax.axvline(0.9982, color="k", lw=1, ls="--", alpha=0.4)
-                        ax.axhline(0.9982, color="k", lw=1, ls="--", alpha=0.4)
+                        ax.axvline(1.0, color="k", lw=1, ls="--", alpha=0.4)
+                        ax.axhline(1.0, color="k", lw=1, ls="--", alpha=0.4)
 
                         if j != 0:
                             ax.set_yticklabels([])
                             ax.tick_params(axis="y", left=False)
                         else:
                             ax.set_ylabel(" ".join(label1.split()[:-1]), fontsize=12)
-                            ax.set_yticks(ticks)
-                        if i == 4:
+                            ax.set_yticks(ticks_alpha)
+                        if i == 3:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
-                            ax.set_xticks(ticks)
+                            ax.set_xticks(ticks_alpha)
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphacomp.png", bbox_inches="tight", dpi=300, transparent=True)
             fig.savefig(pfn + "_alphacomp.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
             # Pre-recon
-            fig, axes = plt.subplots(5, 5, figsize=(10, 10), sharex=True)
-            labels = [
-                "Beutler 2017 Prerecon",
-                "Beutler 2017 Fixed $\\Sigma_{nl}$ Prerecon",
-                "Seo 2016 Prerecon",
-                "Ding 2018 Prerecon",
-                "Noda 2019 Prerecon",
-            ]
+            fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
+            k = "avg_epsilon"
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
                     ax = axes[i, j]
@@ -289,21 +335,21 @@ if __name__ == "__main__":
                         continue
                     elif i == j:
                         h, _, _ = ax.hist(
-                            res[label1][k], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]]
+                            res[label1][k], bins=bins_epsilon, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]]
                         )
-                        ax.hist(res[label1][k], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
+                        ax.hist(res[label1][k], bins=bins_epsilon, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
                         ax.set_yticklabels([])
                         ax.tick_params(axis="y", left=False)
-                        ax.set_xlim(*lim)
-                        yval = interp1d(0.5 * (bins[:-1] + bins[1:]), h, kind="nearest")([1.0])[0]
-                        ax.plot([1.0, 1.0], [0, yval], color="k", lw=1, ls="--", alpha=0.4)
+                        ax.set_xlim(*lim_epsilon)
+                        yval = interp1d(0.5 * (bins_epsilon[:-1] + bins_epsilon[1:]), h, kind="nearest")([0.0])[0]
+                        ax.plot([0.0, 0.0], [0, yval], color="k", lw=1, ls="--", alpha=0.4)
                         ax.spines["right"].set_visible(False)
                         ax.spines["top"].set_visible(False)
                         if j == 0:
                             ax.spines["left"].set_visible(False)
-                        if j == 4:
+                        if j == 3:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
-                            ax.set_xticks(ticks)
+                            ax.set_xticks(ticks_epsilon)
                     else:
                         print(label1, label2)
                         a1 = np.array(res[label2][k])
@@ -312,55 +358,61 @@ if __name__ == "__main__":
                         # ax.scatter([a1[argbad]], [a2[argbad]], s=2, c='r', zorder=10)
 
                         ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0005, vmax=0.02)
-                        ax.set_xlim(*lim)
-                        ax.set_ylim(*lim)
-                        ax.plot([0.8, 1.2], [0.8, 1.2], c="k", lw=1, alpha=0.8, ls=":")
-                        ax.axvline(0.9982, color="k", lw=1, ls="--", alpha=0.4)
-                        ax.axhline(0.9982, color="k", lw=1, ls="--", alpha=0.4)
+                        ax.set_xlim(*lim_epsilon)
+                        ax.set_ylim(*lim_epsilon)
+                        ax.plot([-0.4, 0.4], [-0.4, 0.4], c="k", lw=1, alpha=0.8, ls=":")
+                        ax.axvline(0.0, color="k", lw=1, ls="--", alpha=0.4)
+                        ax.axhline(0.0, color="k", lw=1, ls="--", alpha=0.4)
 
                         if j != 0:
                             ax.set_yticklabels([])
                             ax.tick_params(axis="y", left=False)
                         else:
                             ax.set_ylabel(" ".join(label1.split()[:-1]), fontsize=12)
-                            ax.set_yticks(ticks)
-                        if i == 4:
+                            ax.set_yticks(ticks_epsilon)
+                        if i == 3:
                             ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
-                            ax.set_xticks(ticks)
+                            ax.set_xticks(ticks_epsilon)
             plt.subplots_adjust(hspace=0.0, wspace=0)
-            fig.savefig(pfn + "_alphacomp_prerecon.png", bbox_inches="tight", dpi=300, transparent=True)
-            fig.savefig(pfn + "_alphacomp_prerecon.pdf", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_epsiloncomp.png", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_epsiloncomp.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
         # Bins for the alpha errors
-        bins_both = np.linspace(0.005, 0.04, 31)
-        lim_both = bins_both[0], bins_both[-1]
+        bins_alpha_err = np.linspace(0.008, 0.04, 31)
+        lim_alpha_err = bins_alpha_err[0], bins_alpha_err[-1]
+
+        bins_epsilon_err = np.linspace(0.008, 0.04, 31)
+        lim_epsilon_err = bins_epsilon_err[0], bins_epsilon_err[-1]
 
         # Make histogram comparison of the errors
         if False:
-            fig, axes = plt.subplots(nrows=2, figsize=(5, 4), sharex=True)
+            fig, axes = plt.subplots(ncols=2, figsize=(5, 3), sharey=True)
             for label, means in res.items():
-                if "Prerecon" in label:
-                    ax = axes[0]
-                else:
-                    ax = axes[1]
                 c = cols[label.split()[0]]
-                ax.hist(
-                    means["std"], bins=bins_both, label=" ".join(label.split()[:-1]), histtype="stepfilled", linewidth=2, alpha=0.3, color=c
+                axes[0].hist(
+                    means["std_alpha"],
+                    bins=bins_alpha,
+                    label=" ".join(label.split()[:-1]),
+                    histtype="stepfilled",
+                    linewidth=2,
+                    alpha=0.3,
+                    color=c,
                 )
-                ax.hist(means["std"], bins=bins_both, histtype="step", linewidth=1.5, color=cols[label.split()[0]])
-            axes[1].set_xlabel(r"$\sigma_{\alpha}$", fontsize=14)
+                axes[1].hist(means["std_epsilon"], bins=bins_epsilon_err, histtype="step", linewidth=1.5, color=c)
+            axes[0].set_xlabel(r"$\sigma_{\alpha}$", fontsize=14)
+            axes[1].set_xlabel(r"$\sigma_{\epsilon}$", fontsize=14)
             axes[0].set_yticklabels([])
             axes[1].set_yticklabels([])
-            axes[0].annotate("Prerecon", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
-            axes[1].annotate("Recon", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
-            # leg1 = axes[0].legend(loc=1, frameon=False)
-            leg2 = axes[1].legend(loc=4, frameon=False)
-            for lh in leg2.legendHandles:
-                lh.set_alpha(1)
+            # axes[0].annotate(r"$\alpha$", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
+            # axes[1].annotate(r"$\epsilon$", (0.98, 0.96), xycoords="axes fraction", horizontalalignment="right", verticalalignment="top")
+            # leg1 = axes[0].legend(loc=2, frameon=False)
+            # leg2 = axes[1].legend(loc=2, frameon=False)
+            # for lh in leg1.legendHandles:
+            #    lh.set_alpha(1)
             axes[0].tick_params(axis="y", left=False)
             axes[1].tick_params(axis="y", left=False)
-            axes[0].set_xlim(*lim_both)
-            axes[1].set_xlim(*lim_both)
+            axes[0].set_xlim(*lim_alpha_err)
+            axes[1].set_xlim(*lim_epsilon_err)
             plt.subplots_adjust(hspace=0.0)
             fig.savefig(pfn + "_alphaerrhist.png", bbox_inches="tight", dpi=300, transparent=True)
             fig.savefig(pfn + "_alphaerrhist.pdf", bbox_inches="tight", dpi=300, transparent=True)
@@ -370,23 +422,9 @@ if __name__ == "__main__":
             from scipy.interpolate import interp1d
 
             # Post-recon
-            bins = np.linspace(0.006, 0.028, 31)
-            bins2 = np.linspace(0.006, 0.018, 31)
-            ticks = [0.010, 0.017, 0.024]
-            ticks2 = [0.008, 0.012, 0.016]
-            lim = bins[0], bins[-1]
-            lim2 = bins2[0], bins2[-1]
-
-            cols = {"Beutler": c4[0], "Seo": c4[1], "Ding": c4[2], "Noda": c4[3]}
-            fig, axes = plt.subplots(5, 5, figsize=(10, 10), sharex=False)
-            labels = [
-                "Beutler 2017 Recon",
-                "Beutler 2017 Fixed $\\Sigma_{nl}$ Recon",
-                "Seo 2016 Recon",
-                "Ding 2018 Recon",
-                "Noda 2019 Recon",
-            ]
-            k = "std"
+            fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
+            labels = [r"$P_{0}+P_{2}$", r"$P_{0}+P_{1}+P_{2}$", r"$P_{0}+P_{2}+P_{4}$", r"$P_{0}+P_{1}+P_{2}+P_{3}+P_{4}$"]
+            k = "std_alpha"
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
                     ax = axes[i, j]
@@ -394,97 +432,49 @@ if __name__ == "__main__":
                         ax.axis("off")
                         continue
                     elif i == j:
-                        if label1 == "Beutler 2017 Recon":
-                            h, _, _ = ax.hist(
-                                res[label1][k], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]]
-                            )
-                            ax.hist(res[label1][k], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
-                        else:
-                            h, _, _ = ax.hist(
-                                res[label1][k], bins=bins2, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]]
-                            )
-                            ax.hist(res[label1][k], bins=bins2, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
+                        h, _, _ = ax.hist(
+                            res[label1][k],
+                            bins=bins_alpha_err,
+                            histtype="stepfilled",
+                            linewidth=2,
+                            alpha=0.3,
+                            color=cols[label1.split()[0]],
+                        )
+                        ax.hist(res[label1][k], bins=bins_alpha_err, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
                         ax.set_yticklabels([])
                         ax.tick_params(axis="y", left=False)
-                        if label1 == "Beutler 2017 Recon":
-                            ax.set_xlim(*lim)
-                        else:
-                            ax.set_xlim(*lim2)
+                        ax.set_xlim(*lim_alpha_err)
                         ax.spines["right"].set_visible(False)
                         ax.spines["top"].set_visible(False)
                         if j == 0:
                             ax.spines["left"].set_visible(False)
-                        if j == 4:
-                            ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
-                            if label2 == "Beutler 2017 Recon":
-                                ax.set_xticks(ticks)
-                            else:
-                                ax.set_xticks(ticks2)
-                        else:
-                            if label2 == "Beutler 2017 Recon":
-                                ax.set_xticks(ticks)
-                            else:
-                                ax.set_xticks(ticks2)
-                            ax.set_xticklabels([])
+                        if j == 3:
+                            ax.set_xlabel(label2, fontsize=12)
                     else:
                         print(label1, label2)
                         a1 = np.array(res[label2][k])
                         a2 = np.array(res[label1][k])
                         c = np.abs(a1 - a2)
-                        # ax.scatter(a1, a2, s=2, c=means["avg"], cmap="viridis_r", vmin=0.92, vmax=1.08)
-                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0001, vmax=0.006)
-                        if label1 == "Beutler 2017 Recon":
-                            ax.set_ylim(*lim)
-                        else:
-                            ax.set_ylim(*lim2)
-                        if label2 == "Beutler 2017 Recon":
-                            ax.set_xlim(*lim)
-                        else:
-                            ax.set_xlim(*lim2)
+                        # ax.scatter([a1[argbad]], [a2[argbad]], s=2, c='r', zorder=10)
+
+                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0005, vmax=0.02)
+                        ax.set_xlim(*lim_alpha_err)
+                        ax.set_ylim(*lim_alpha_err)
                         ax.plot([0.0, 1.0], [0.0, 1.0], c="k", lw=1, alpha=0.8, ls=":")
 
                         if j != 0:
                             ax.set_yticklabels([])
                             ax.tick_params(axis="y", left=False)
                         else:
-                            ax.set_ylabel(" ".join(label1.split()[:-1]), fontsize=12)
-                            if label1 == "Beutler 2017 Recon":
-                                ax.set_yticks(ticks)
-                            else:
-                                ax.set_yticks(ticks2)
-                        if i == 4:
-                            ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
-                            if label2 == "Beutler 2017 Recon":
-                                ax.set_xticks(ticks)
-                            else:
-                                ax.set_xticks(ticks2)
-                        else:
-                            if label2 == "Beutler 2017 Recon":
-                                ax.set_xticks(ticks)
-                            else:
-                                ax.set_xticks(ticks2)
-                            ax.set_xticklabels([])
+                            ax.set_ylabel(label1, fontsize=12)
+                        if i == 3:
+                            ax.set_xlabel(label2, fontsize=12)
             plt.subplots_adjust(hspace=0.0, wspace=0)
             fig.savefig(pfn + "_alphaerrcomp.png", bbox_inches="tight", dpi=300, transparent=True)
             fig.savefig(pfn + "_alphaerrcomp.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
-            # Pre-recon
-            bins = np.linspace(0.005, 0.055, 31)
-            bins2 = np.linspace(0.005, 0.035, 31)
-            ticks = [0.01, 0.03, 0.05]
-            ticks2 = [0.01, 0.02, 0.03]
-            lim = bins[0], bins[-1]
-            lim2 = bins2[0], bins2[-1]
-
-            fig, axes = plt.subplots(5, 5, figsize=(10, 10), sharex=False)
-            labels = [
-                "Beutler 2017 Prerecon",
-                "Beutler 2017 Fixed $\\Sigma_{nl}$ Prerecon",
-                "Seo 2016 Prerecon",
-                "Ding 2018 Prerecon",
-                "Noda 2019 Prerecon",
-            ]
-            k = "std"
+            fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
+            k = "std_epsilon"
             for i, label1 in enumerate(labels):
                 for j, label2 in enumerate(labels):
                     ax = axes[i, j]
@@ -492,143 +482,167 @@ if __name__ == "__main__":
                         ax.axis("off")
                         continue
                     elif i == j:
-                        if label1 == "Beutler 2017 Prerecon":
-                            h, _, _ = ax.hist(
-                                res[label1][k], bins=bins, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]]
-                            )
-                            ax.hist(res[label1][k], bins=bins, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
-                        else:
-                            h, _, _ = ax.hist(
-                                res[label1][k], bins=bins2, histtype="stepfilled", linewidth=2, alpha=0.3, color=cols[label1.split()[0]]
-                            )
-                            ax.hist(res[label1][k], bins=bins2, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
+                        h, _, _ = ax.hist(
+                            res[label1][k],
+                            bins=bins_epsilon_err,
+                            histtype="stepfilled",
+                            linewidth=2,
+                            alpha=0.3,
+                            color=cols[label1.split()[0]],
+                        )
+                        ax.hist(res[label1][k], bins=bins_epsilon_err, histtype="step", linewidth=1.5, color=cols[label1.split()[0]])
                         ax.set_yticklabels([])
                         ax.tick_params(axis="y", left=False)
-                        if label1 == "Beutler 2017 Prerecon":
-                            ax.set_xlim(*lim)
-                        else:
-                            ax.set_xlim(*lim2)
+                        ax.set_xlim(*lim_epsilon_err)
                         ax.spines["right"].set_visible(False)
                         ax.spines["top"].set_visible(False)
                         if j == 0:
                             ax.spines["left"].set_visible(False)
-                        if j == 4:
-                            ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
-                            if label2 == "Beutler 2017 Prerecon":
-                                ax.set_xticks(ticks)
-                            else:
-                                ax.set_xticks(ticks2)
-                        else:
-                            if label2 == "Beutler 2017 Prerecon":
-                                ax.set_xticks(ticks)
-                            else:
-                                ax.set_xticks(ticks2)
-                            ax.set_xticklabels([])
+                        if j == 3:
+                            ax.set_xlabel(label2, fontsize=12)
                     else:
                         print(label1, label2)
                         a1 = np.array(res[label2][k])
                         a2 = np.array(res[label1][k])
                         c = np.abs(a1 - a2)
-                        # ax.scatter(a1, a2, s=2, c=means["avg"], cmap="viridis_r", vmin=0.92, vmax=1.08)
-                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0001, vmax=0.012)
-                        if label1 == "Beutler 2017 Prerecon":
-                            ax.set_ylim(*lim)
-                        else:
-                            ax.set_ylim(*lim2)
-                        if label2 == "Beutler 2017 Prerecon":
-                            ax.set_xlim(*lim)
-                        else:
-                            ax.set_xlim(*lim2)
+                        # ax.scatter([a1[argbad]], [a2[argbad]], s=2, c='r', zorder=10)
+
+                        ax.scatter(a1, a2, s=2, c=c, cmap="viridis_r", vmin=-0.0005, vmax=0.02)
+                        ax.set_xlim(*lim_epsilon_err)
+                        ax.set_ylim(*lim_epsilon_err)
                         ax.plot([0.0, 1.0], [0.0, 1.0], c="k", lw=1, alpha=0.8, ls=":")
 
                         if j != 0:
                             ax.set_yticklabels([])
                             ax.tick_params(axis="y", left=False)
                         else:
-                            ax.set_ylabel(" ".join(label1.split()[:-1]), fontsize=12)
-                            if label1 == "Beutler 2017 Prerecon":
-                                ax.set_yticks(ticks)
-                            else:
-                                ax.set_yticks(ticks2)
-                        if i == 4:
-                            ax.set_xlabel(" ".join(label2.split()[:-1]), fontsize=12)
-                            if label2 == "Beutler 2017 Prerecon":
-                                ax.set_xticks(ticks)
-                            else:
-                                ax.set_xticks(ticks2)
-                        else:
-                            if label2 == "Beutler 2017 Prerecon":
-                                ax.set_xticks(ticks)
-                            else:
-                                ax.set_xticks(ticks2)
-                            ax.set_xticklabels([])
+                            ax.set_ylabel(label1, fontsize=12)
+                        if i == 3:
+                            ax.set_xlabel(label2, fontsize=12)
             plt.subplots_adjust(hspace=0.0, wspace=0)
-            fig.savefig(pfn + "_alphaerrcomp_prerecon.png", bbox_inches="tight", dpi=300, transparent=True)
-            fig.savefig(pfn + "_alphaerrcomp_prerecon.pdf", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_epsilonerrcomp.png", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_epsilonerrcomp.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
-        # Plot the error as a function of the mean, to see how these are correlated
-        if False:
+        # Plot the percentage change in the error relative to , to see how these are correlated
+        if True:
 
-            import matplotlib.gridspec as gridspec
+            fig, axes = plt.subplots(1, 3, figsize=(6, 2.5), sharey=True)
+            labels = [r"$P_{0}+P_{1}+P_{2}$", r"$P_{0}+P_{2}+P_{4}$", r"$P_{0}+P_{1}+P_{2}+P_{3}+P_{4}$"]
+            k = "avg_alpha"
 
-            # Post-recon
-            fig, axes = plt.subplots(figsize=(6, 8), nrows=1, sharex=True)
-            inner = gridspec.GridSpecFromSubplotSpec(5, 1, subplot_spec=axes, hspace=0.04)
-            ax = plt.subplot(inner[0:])
-            ax.spines["top"].set_color("none")
-            ax.spines["bottom"].set_color("none")
-            ax.spines["left"].set_color("none")
-            ax.spines["right"].set_color("none")
-            ax.set_xlabel(r"$\alpha$")
-            ax.set_ylabel(r"$\sigma_{\alpha}$")
-            ax.tick_params(labelcolor="none", top=False, bottom=False, left=False, right=False)
+            for i, label1 in enumerate(labels):
 
-            counter = 0
-            for label, means in res.items():
-                if not "Recon" in label:
-                    continue
-                ax = fig.add_subplot(inner[counter])
-                c = np.abs(means["std"] - np.mean(means["std"]))
-                ax.scatter(means["avg"], means["std"], s=2, c=c, cmap="viridis_r", vmin=-0.0001, vmax=0.01, label=label)
-                ax.axhline(y=np.mean(means["std"]), c="k", lw=1, alpha=0.8, ls=":")
-                ax.set_xlim(0.96, 1.04)
-                if label == "Beutler 2017 Recon":
-                    ax.set_ylim(0.006, 0.028)
+                ax = axes[i]
+                print(label1)
+                a1 = np.array(res[label1][k] - res[r"$P_{0}+P_{2}$"][k])
+                c = np.abs(a1)
+                # ax.scatter([a1[argbad]], [a2[argbad]], s=2, c='r', zorder=10)
+
+                ax.scatter(res[r"$P_{0}+P_{2}$"]["std_alpha"], a1, s=2, c=c, cmap="viridis_r", vmin=0.0, vmax=0.01)
+                ax.plot([lim_alpha_err[0], lim_alpha_err[1]], [lim_alpha_err[0], lim_alpha_err[1]], c="k", lw=1, alpha=0.3, ls=":")
+                ax.plot([lim_alpha_err[0], lim_alpha_err[1]], [-lim_alpha_err[0], -lim_alpha_err[1]], c="k", lw=1, alpha=0.3, ls=":")
+
+                ax.set_xlim(*lim_alpha_err)
+                ax.set_ylim(-0.04, 0.04)
+                ax.axhline(y=0.0, c="k", lw=1, alpha=0.8, ls=":")
+
+                if i != 0:
+                    # ax.set_yticklabels([])
+                    ax.tick_params(axis="y", left=False)
                 else:
-                    ax.set_ylim(0.006, 0.018)
-                ax.tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
-                ax.legend(loc="upper right", fontsize=9)
-                counter += 1
-            ax.tick_params(axis="x", which="both", labelcolor="k", bottom=True, labelbottom=True)
-            plt.savefig(pfn + "_alphameanerr.pdf")
+                    ax.set_ylabel(r"$\alpha_{P} - \alpha_{P_{0}+P_{2}}$", fontsize=12)
+                ax.set_xlabel(r"$\sigma_{\alpha,P_{0}+P_{2}}$", fontsize=12)
+                ax.annotate(label1, (0.02, 0.96), xycoords="axes fraction", horizontalalignment="left", verticalalignment="top")
+            plt.subplots_adjust(hspace=0.0, wspace=0)
+            fig.savefig(pfn + "_alphadiff.png", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_alphadiff.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
-            # Pre-recon
-            fig, axes = plt.subplots(figsize=(6, 8), nrows=1, sharex=True)
-            inner = gridspec.GridSpecFromSubplotSpec(5, 1, subplot_spec=axes, hspace=0.04)
-            ax = plt.subplot(inner[0:])
-            ax.spines["top"].set_color("none")
-            ax.spines["bottom"].set_color("none")
-            ax.spines["left"].set_color("none")
-            ax.spines["right"].set_color("none")
-            ax.set_xlabel(r"$\alpha$")
-            ax.set_ylabel(r"$\sigma_{\alpha}$")
-            ax.tick_params(labelcolor="none", top=False, bottom=False, left=False, right=False)
+            fig, axes = plt.subplots(1, 3, figsize=(6, 2.5), sharey=True)
+            labels = [r"$P_{0}+P_{1}+P_{2}$", r"$P_{0}+P_{2}+P_{4}$", r"$P_{0}+P_{1}+P_{2}+P_{3}+P_{4}$"]
+            k = "avg_epsilon"
 
-            counter = 0
-            for label, means in res.items():
-                if not "Prerecon" in label:
-                    continue
-                ax = fig.add_subplot(inner[counter])
-                c = np.abs(means["std"] - np.mean(means["std"]))
-                ax.scatter(means["avg"], means["std"], s=2, c=c, cmap="viridis_r", vmin=-0.0001, vmax=0.01, label=label)
-                ax.axhline(y=np.mean(means["std"]), c="k", lw=1, alpha=0.8, ls=":")
-                ax.set_xlim(0.91, 1.09)
-                if label == "Beutler 2017 Prerecon":
-                    ax.set_ylim(0.006, 0.055)
+            for i, label1 in enumerate(labels):
+
+                ax = axes[i]
+                print(label1)
+                a1 = np.array(res[label1][k] - res[r"$P_{0}+P_{2}$"][k])
+                c = np.abs(a1)
+                # ax.scatter([a1[argbad]], [a2[argbad]], s=2, c='r', zorder=10)
+
+                ax.scatter(res[r"$P_{0}+P_{2}$"]["std_epsilon"], a1, s=2, c=c, cmap="viridis_r", vmin=0.0, vmax=0.01)
+                ax.plot([lim_epsilon_err[0], lim_epsilon_err[1]], [lim_epsilon_err[0], lim_epsilon_err[1]], c="k", lw=1, alpha=0.3, ls=":")
+                ax.plot(
+                    [lim_epsilon_err[0], lim_epsilon_err[1]], [-lim_epsilon_err[0], -lim_epsilon_err[1]], c="k", lw=1, alpha=0.3, ls=":"
+                )
+                ax.set_xlim(*lim_epsilon_err)
+                ax.set_ylim(-0.05, 0.05)
+                ax.axhline(y=0.0, c="k", lw=1, alpha=0.8, ls=":")
+
+                if i != 0:
+                    # ax.set_yticklabels([])
+                    ax.tick_params(axis="y", left=False)
                 else:
-                    ax.set_ylim(0.006, 0.035)
-                ax.tick_params(axis="x", which="both", labelcolor="none", bottom=False, labelbottom=False)
-                ax.legend(loc="upper right", fontsize=9)
-                counter += 1
-            ax.tick_params(axis="x", which="both", labelcolor="k", bottom=True, labelbottom=True)
-            plt.savefig(pfn + "_alphameanerr_prerecon.pdf")
+                    ax.set_ylabel(r"$\epsilon_{P} - \epsilon_{P_{0}+P_{2}}$", fontsize=12)
+                ax.set_xlabel(r"$\sigma_{\epsilon,P_{0}+P_{2}}$", fontsize=12)
+                ax.annotate(label1, (0.02, 0.96), xycoords="axes fraction", horizontalalignment="left", verticalalignment="top")
+            plt.subplots_adjust(hspace=0.0, wspace=0)
+            fig.savefig(pfn + "_epsilondiff.png", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_epsilondiff.pdf", bbox_inches="tight", dpi=300, transparent=True)
+
+            fig, axes = plt.subplots(1, 3, figsize=(6, 2.5), sharey=True)
+            labels = [r"$P_{0}+P_{1}+P_{2}$", r"$P_{0}+P_{2}+P_{4}$", r"$P_{0}+P_{1}+P_{2}+P_{3}+P_{4}$"]
+            k = "std_alpha"
+
+            for i, label1 in enumerate(labels):
+
+                ax = axes[i]
+                print(label1)
+                a1 = np.array(res[label1][k] / res[r"$P_{0}+P_{2}$"][k] - 1.0)
+                print(np.mean(a1))
+                c = np.abs(a1)
+                # ax.scatter([a1[argbad]], [a2[argbad]], s=2, c='r', zorder=10)
+
+                ax.scatter(res[r"$P_{0}+P_{2}$"][k], a1, s=2, c=c, cmap="viridis_r", vmin=0.0, vmax=0.5)
+                ax.set_xlim(*lim_alpha_err)
+                ax.set_ylim(-1.0, 1.0)
+                ax.axhline(y=0.0, c="k", lw=1, alpha=0.8, ls=":")
+
+                if i != 0:
+                    # ax.set_yticklabels([])
+                    ax.tick_params(axis="y", left=False)
+                else:
+                    ax.set_ylabel(r"$\sigma_{\alpha,P}/\sigma_{\alpha,P_{0}+P_{2}} - 1$", fontsize=12)
+                ax.set_xlabel(r"$\sigma_{\alpha,P_{0}+P_{2}}$", fontsize=12)
+                ax.annotate(label1, (0.02, 0.96), xycoords="axes fraction", horizontalalignment="left", verticalalignment="top")
+            plt.subplots_adjust(hspace=0.0, wspace=0)
+            fig.savefig(pfn + "_alphaerrdiff.png", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_alphaerrdiff.pdf", bbox_inches="tight", dpi=300, transparent=True)
+
+            fig, axes = plt.subplots(1, 3, figsize=(6, 2.5), sharey=True)
+            labels = [r"$P_{0}+P_{1}+P_{2}$", r"$P_{0}+P_{2}+P_{4}$", r"$P_{0}+P_{1}+P_{2}+P_{3}+P_{4}$"]
+            k = "std_epsilon"
+
+            for i, label1 in enumerate(labels):
+
+                ax = axes[i]
+                print(label1)
+                a1 = np.array(res[label1][k] / res[r"$P_{0}+P_{2}$"][k] - 1.0)
+                print(np.mean(a1))
+                c = np.abs(a1)
+                # ax.scatter([a1[argbad]], [a2[argbad]], s=2, c='r', zorder=10)
+
+                ax.scatter(res[r"$P_{0}+P_{2}$"][k], a1, s=2, c=c, cmap="viridis_r", vmin=0.0, vmax=0.5)
+                ax.set_xlim(*lim_epsilon_err)
+                ax.set_ylim(-1.0, 1.0)
+                ax.axhline(y=0.0, c="k", lw=1, alpha=0.8, ls=":")
+
+                if i != 0:
+                    # ax.set_yticklabels([])
+                    ax.tick_params(axis="y", left=False)
+                else:
+                    ax.set_ylabel(r"$\sigma_{\epsilon,P}/\sigma_{\epsilon,P_{0}+P_{2}} - 1$", fontsize=12)
+                ax.set_xlabel(r"$\sigma_{\epsilon,P_{0}+P_{2}}$", fontsize=12)
+                ax.annotate(label1, (0.02, 0.96), xycoords="axes fraction", horizontalalignment="left", verticalalignment="top")
+            plt.subplots_adjust(hspace=0.0, wspace=0)
+            fig.savefig(pfn + "_epsilonerrdiff.png", bbox_inches="tight", dpi=300, transparent=True)
+            fig.savefig(pfn + "_epsilonerrdiff.pdf", bbox_inches="tight", dpi=300, transparent=True)
