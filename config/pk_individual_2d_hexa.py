@@ -18,13 +18,13 @@ from barry.models.model import Correction
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
-    fitter = Fitter(dir_name, save_dims=2, remove_output=False)
+    fitter = Fitter(dir_name, save_dims=2, remove_output=True)
 
     c = getCambGenerator()
     r_s = c.get_data()["r_s"]
     p = BAOExtractor(r_s)
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
