@@ -232,7 +232,7 @@ if __name__ == "__main__":
         ticks_epsilon = [-0.05, 0.0, 0.05]
 
         # Make histogram comparison of the means
-        if False:
+        if True:
             fig, axes = plt.subplots(ncols=2, figsize=(5, 3), sharey=True)
             for label, means in res.items():
                 c = cols[label.split()[0]]
@@ -267,7 +267,7 @@ if __name__ == "__main__":
             fig.savefig(pfn + "_alphahist.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
         # Alpha-alpha/epsilon-epsilon comparisons
-        if False:
+        if True:
             from scipy.interpolate import interp1d
 
             # Post-recon
@@ -385,7 +385,7 @@ if __name__ == "__main__":
         lim_epsilon_err = bins_epsilon_err[0], bins_epsilon_err[-1]
 
         # Make histogram comparison of the errors
-        if False:
+        if True:
             fig, axes = plt.subplots(ncols=2, figsize=(5, 3), sharey=True)
             for label, means in res.items():
                 c = cols[label.split()[0]]
@@ -418,7 +418,7 @@ if __name__ == "__main__":
             fig.savefig(pfn + "_alphaerrhist.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
         # Error-error comparison
-        if False:
+        if True:
             from scipy.interpolate import interp1d
 
             # Post-recon
