@@ -141,13 +141,13 @@ class PowerSpectrum(Dataset, ABC):
             self.logger.error("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
             self.logger.error(f"These should all be 1: {v}")
 
-        d = np.sqrt(np.diag(self.cov))
-        self.corr = self.cov / (d * np.atleast_2d(d).T)
+        d = np.sqrt(np.diag(self.cov_fit))
+        self.corr = self.cov_fit / (d * np.atleast_2d(d).T)
         self.icov = np.linalg.inv(self.cov_fit)
         if self.m_w_transform is not None:
             w_mask_poles = [self.w_mask] * len(self.poles)
-            for i in self.poles:
-                if i not in self.fit_pole_indices:
+            for i, pole in enumerate(self.poles):
+                if pole not in self.fit_poles:
                     w_mask_poles[i] = np.zeros(len(self.w_mask), dtype=bool)
             w_mask_poles = np.concatenate(w_mask_poles)
             self.icov_w = self.w_transform[w_mask_poles, :].T @ self.icov

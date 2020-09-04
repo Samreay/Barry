@@ -428,8 +428,8 @@ class PowerSpectrum_DESIMockChallenge0_Z01(PowerSpectrum):
         )
 
 
-class PowerSpectrum_DESIMockChallenge_Handshake(PowerSpectrum):
-    """ Power spectrum from the DESI Mock Challenge Handshake    """
+class PowerSpectrum_DESIMockChallenge(PowerSpectrum):
+    """ Power spectrum from the DESI Mock Challenge  """
 
     def __init__(
         self,
@@ -444,10 +444,13 @@ class PowerSpectrum_DESIMockChallenge_Handshake(PowerSpectrum):
         fake_diag=False,
         realisation=None,
         isotropic=False,
-        fit_poles=None,
+        fit_poles=(0, 2, 4),
     ):
-        if recon:
-            raise NotImplementedError("Post-recon data not available for DESIMockChallenge_Handshake")
+        if not recon:
+            raise NotImplementedError("Pre-recon data not available for DESIMockChallenge_Handshake")
+
+        if any(pole in [1, 3, 4] for pole in fit_poles):
+            raise NotImplementedError("Only monopole and quadrupole included in DESIMockChallenge_Handshake")
 
         super().__init__(
             "desi_mock_challenge_handshake.pkl",
@@ -475,13 +478,16 @@ if __name__ == "__main__":
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
     # Plot the data and mock average for the Beutler 2019 spectra
-    for isotropic in [True, False]:
-        datasets = [PowerSpectrum_Beutler2019_Z061_NGC(isotropic=isotropic)]
+    for isotropic in [False]:
+        # datasets = [PowerSpectrum_Beutler2019_Z061_NGC(isotropic=isotropic)]
+        datasets = [PowerSpectrum_DESIMockChallenge(isotropic=False, recon=True, realisation=0, fit_poles=[0, 2])]
         for dataset in datasets:
-            for i, realisation in enumerate([None, "data"]):
-                dataset.set_realisation(realisation)
+            # for i, realisation in enumerate([None, "data"]):
+            for i in range(7):
+                dataset.set_realisation(i)
                 data = dataset.get_data()
-                label = [r"$P_{0}(k)$", r"$P_{2}(k)$", r"$P_{4}(k)$"] if i == 0 else [None, None, None]
+                label = [r"$P_{0}(k)$", r"$P_{2}(k)$"] if i == 0 else [None, None]
+                # label = [r"$P_{0}(k)$", r"$P_{2}(k)$", r"$P_{4}(k)$"] if i == 0 else [None, None, None]
                 fmt = "o" if i == 0 else "None"
                 ls = "None" if i == 0 else "-"
                 if isotropic:
@@ -496,10 +502,10 @@ if __name__ == "__main__":
                         [
                             data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[0 : len(data[0]["ks"])],
                             data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["ks"]) : 3 * len(data[0]["ks"])],
-                            data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[4 * len(data[0]["ks"]) : 5 * len(data[0]["ks"])],
+                            # data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[4 * len(data[0]["ks"]) : 5 * len(data[0]["ks"])],
                         ]
                         if i == 0
-                        else [None, None, None]
+                        else [None, None]
                     )
                     plt.errorbar(
                         data[0]["ks"], data[0]["ks"] * data[0]["pk0"], yerr=yerr[0], marker=fmt, ls=ls, c="r", zorder=i, label=label[0]
@@ -507,16 +513,16 @@ if __name__ == "__main__":
                     plt.errorbar(
                         data[0]["ks"], data[0]["ks"] * data[0]["pk2"], yerr=yerr[1], marker=fmt, ls=ls, c="b", zorder=i, label=label[1]
                     )
-                    plt.errorbar(
-                        data[0]["ks"], data[0]["ks"] * data[0]["pk4"], yerr=yerr[2], marker=fmt, ls=ls, c="g", zorder=i, label=label[2]
-                    )
+                    # plt.errorbar(
+                    #    data[0]["ks"], data[0]["ks"] * data[0]["pk4"], yerr=yerr[2], marker=fmt, ls=ls, c="g", zorder=i, label=label[2]
+                    # )
             plt.xlabel(r"$k$")
             plt.ylabel(r"$k\,P(k)$")
             plt.title(dataset.name)
             plt.legend()
             plt.show()
 
-            if not isotropic:
+            """if not isotropic:
                 for i, realisation in enumerate([None, "data"]):
                     dataset.set_realisation(realisation)
                     data = dataset.get_data()
@@ -540,4 +546,4 @@ if __name__ == "__main__":
                 plt.xlabel(r"$k$")
                 plt.ylabel(r"$k\,Im[P(k)]$")
                 plt.title(dataset.name)
-                plt.show()
+                plt.show()"""

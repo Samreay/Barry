@@ -289,7 +289,6 @@ class Model(ABC):
         log_likelihood : float
             The (corrected) log-likelihood value from the computed chi2.
         """
-
         if icov_m_w[0] is None:
             model += model_odd
             marg_model += marg_model_odd

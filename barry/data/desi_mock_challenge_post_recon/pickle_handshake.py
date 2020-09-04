@@ -5,43 +5,61 @@ import os
 
 
 def getdf(loc):
-    df = pd.read_csv(loc, comment="#", skiprows=10, delim_whitespace=True, names=["k", "keff", "pk0", "pk2", "pk4", "nk", "shot"])
-    mask = df["nk"] >= 0
-    masked = df.loc[mask, ["k", "pk0", "pk2", "pk4", "nk"]]
+    df = pd.read_csv(loc, comment="#", skiprows=0, delim_whitespace=True, names=["k", "pk0", "pk2"])
+    df["pk1"] = 0
+    df["pk3"] = 0
+    df["pk4"] = 0
+    mask = df["k"] <= 0.5
+    masked = df.loc[mask, ["k", "pk0", "pk1", "pk2", "pk3", "pk4"]]
     return masked.astype(np.float32)
 
 
 def getwin(ks):
-    res = {"w_ks_input": ks.copy(), "w_k0_scale": np.zeros(ks.size), "w_transform": np.eye(3 * ks.size), "w_ks_output": ks.copy()}
+    res = {"w_ks_input": ks.copy(), "w_k0_scale": np.zeros(ks.size), "w_transform": np.eye(5 * ks.size), "w_ks_output": ks.copy()}
     return {1: res}  # Step size is one
 
 
 def getcomp(ks):
-    matrix = np.eye(3 * ks.size)
+    matrix = np.zeros((5 * ks.size, 3 * ks.size))
+    matrix[: ks.size, : ks.size] = np.diag(np.ones(ks.size))
+    matrix[2 * ks.size : 3 * ks.size, ks.size : 2 * ks.size] = np.diag(np.ones(ks.size))
+    matrix[4 * ks.size :, 2 * ks.size :] = np.diag(np.ones(ks.size))
     return matrix
 
 
 if __name__ == "__main__":
 
-    ds = f"/global/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/EZmocks/pk_EZmocks/"
-    files = [ds + f for f in os.listdir(ds) if "Power_Spectrum" in f and "RSD" in f]
+    ds = f"/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/"
+    files = [ds + f for f in os.listdir(ds) if "pkl" in f]
     print(files)
 
-    pk_filename = f"/global/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/pk/Power_Spectrum_UNIT_HODsnap97_ELGv1_redshift.txt"
-    cov_filename = ds + f"/covariance/cov_matrix_pk-EZmocks_rsd.txt"
-    data = getdf(pk_filename)
-    ks = data["k"].to_numpy()
-    cov = pd.read_csv(cov_filename, delim_whitespace=True, header=None).to_numpy()
-    cov = (cov.astype(np.float32)[:, 2]).reshape((3 * len(ks), 3 * len(ks)))
-
+    cov_filename = ds + f"/cov_matrix_pk-EZmocks-1Gpc_rsd_centerbin_post.txt"
     res = {f.lower(): getdf(f) for f in files}
+    ks = next(iter(res.items()))[1]["k"].to_numpy()
+    cov = pd.read_csv(cov_filename, delim_whitespace=True, header=None).to_numpy()
+    cov_flat = cov.astype(np.float32)[:, 2]
+    nin = int(np.sqrt(len(cov)) / 3)
+    cov_input = cov_flat.reshape((3 * nin, 3 * nin))
+    cov = np.zeros((5 * len(ks), 5 * len(ks)))
+    cov[: len(ks), : len(ks)] = cov_input[: len(ks), : len(ks)]
+    cov[: len(ks), 2 * len(ks) : 3 * len(ks)] = cov_input[: len(ks), nin : nin + len(ks)]
+    cov[: len(ks), 4 * len(ks) :] = cov_input[: len(ks), 2 * nin : 2 * nin + len(ks)]
+    cov[2 * len(ks) : 3 * len(ks), : len(ks)] = cov_input[nin : nin + len(ks), : len(ks)]
+    cov[2 * len(ks) : 3 * len(ks), 2 * len(ks) : 3 * len(ks)] = cov_input[nin : nin + len(ks), nin : nin + len(ks)]
+    cov[2 * len(ks) : 3 * len(ks), 4 * len(ks) :] = cov_input[nin : nin + len(ks), 2 * nin : 2 * nin + len(ks)]
+    cov[4 * len(ks) :, : len(ks)] = cov_input[2 * nin : 2 * nin + len(ks), : len(ks)]
+    cov[4 * len(ks) :, 2 * len(ks) : 3 * len(ks)] = cov_input[2 * nin : 2 * nin + len(ks), nin : nin + len(ks)]
+    cov[4 * len(ks) :, 4 * len(ks) :] = cov_input[2 * nin : 2 * nin + len(ks), 2 * nin : 2 * nin + len(ks)]
+
+    print(np.shape(cov), np.shape(ks))
+
     split = {
-        "pre-recon data": [data],
-        "pre-recon cov": cov,
+        "pre-recon data": None,
+        "pre-recon cov": None,
         "post-recon data": None,
-        "post-recon cov": None,
-        "pre-recon mocks": [v for k, v in res.items()],
-        "post-recon mocks": None,
+        "post-recon cov": cov,
+        "pre-recon mocks": None,
+        "post-recon mocks": [v for k, v in res.items()],
         "cosmology": {
             "om": (0.1188 + 0.02230 + 0.00064) / 0.6774 ** 2,
             "h0": 0.6774,
