@@ -17,13 +17,13 @@ from barry.utils import weighted_avg_and_cov
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
-    fitter = Fitter(dir_name, save_dims=2, remove_output=False)
+    fitter = Fitter(dir_name, save_dims=2, remove_output=True)
 
     c = getCambGenerator()
     r_s = c.get_data()["r_s"]
     p = BAOExtractor(r_s)
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
 
     cs = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
@@ -36,10 +36,8 @@ if __name__ == "__main__":
         fitter.add_model_and_dataset(model, data, name=names[i], color=cs[i], realisation=i)
 
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(1)
-
-    if not fitter.should_plot():
-        fitter.fit(file)
+    fitter.set_num_walkers(10)
+    fitter.fit(file)
 
     # Everything below is nasty plotting code ###########################################################
     if fitter.should_plot():
