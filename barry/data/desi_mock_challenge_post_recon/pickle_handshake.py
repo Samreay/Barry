@@ -70,11 +70,11 @@ if __name__ == "__main__":
             "mnu": 0.00064 * 93.14,
             "reconsmoothscale": 15,
         },
-        "name": f"DESI Mock Challenge Handshake Pk",
+        "name": f"DESI Mock Challenge Stage 2 Pk",
         "winfit": getwin(ks),
         "winpk": None,  # We can set this to None; Barry will set it to zeroes given the length of the data vector.
         "m_mat": getcomp(ks),
     }
 
-    with open(f"../desi_mock_challenge_handshake.pkl", "wb") as f:
+    with open(f"../desi_mock_challenge_stage_2.pkl", "wb") as f:
         pickle.dump(split, f)

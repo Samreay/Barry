@@ -447,13 +447,13 @@ class PowerSpectrum_DESIMockChallenge(PowerSpectrum):
         fit_poles=(0, 2, 4),
     ):
         if not recon:
-            raise NotImplementedError("Pre-recon data not available for DESIMockChallenge_Handshake")
+            raise NotImplementedError("Pre-recon data not available for DESIMockChallenge")
 
         if any(pole in [1, 3, 4] for pole in fit_poles):
-            raise NotImplementedError("Only monopole and quadrupole included in DESIMockChallenge_Handshake")
+            raise NotImplementedError("Only monopole and quadrupole included in DESIMockChallenge")
 
         super().__init__(
-            "desi_mock_challenge_handshake.pkl",
+            "desi_mock_challenge_stage_2.pkl",
             name=name,
             min_k=min_k,
             max_k=max_k,
