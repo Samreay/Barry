@@ -52,6 +52,7 @@ if __name__ == "__main__":
     cov[4 * len(ks) :, 4 * len(ks) :] = cov_input[2 * nin : 2 * nin + len(ks), 2 * nin : 2 * nin + len(ks)]
 
     print(np.shape(cov), np.shape(ks))
+    print([k for k, v in res.items()])
 
     split = {
         "pre-recon data": None,
