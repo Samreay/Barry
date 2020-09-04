@@ -7,14 +7,13 @@ from barry.samplers import DynestySampler
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
 from barry.config import setup
-from barry.utils import weighted_avg_and_cov
 from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESIMockChallenge
 from barry.fitter import Fitter
 import numpy as np
 import pandas as pd
 from barry.models.model import Correction
-
+from barry.utils import weighted_avg_and_cov
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
@@ -84,30 +83,25 @@ if __name__ == "__main__":
             for l, p in zip(model.get_labels(), ps):
                 best_fit[l] = p
 
-            mean_par, std_par = weighted_avg_and_std(alpha_par, weight)
-            mean_per, std_per = weighted_avg_and_std(alpha_perp, weight)
+            mean, cov = weighted_avg_and_cov(df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$"]], weight)
 
             c2 = ChainConsumer()
             c2.add_chain(df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$"]], weights=weight)
-            _, corr = c2.analysis.get_correlations()
-            corr = corr[1, 0]
+            corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
             output.append(
-                f"{data[0]['min_k']:5.2f}, {data[0][
-                    'max_k']:5.2f}, {mean_par:5.3f}, {mean_per:5.3f}, {std_par:5.3f}, {std_per:5.3f}, {corr:5.3f}, {r_s:6.3f}, {chi2:5.3f}, {dof:4d}, {chi2 / dof:5.2f}"
+                f"{data[0]['min_k']:5.2f}, {data[0]['max_k']:5.2f}, {mean[0]:5.3f}, {mean[0]:5.3f}, {np.sqrt(cov[0,0]):5.3f}, {np.sqrt(cov[1,1]):5.3f}, {corr:5.3f}, {r_s:6.3f}, {chi2:5.3f}, {dof:4d}, {chi2 / dof:5.2f}"
             )
 
         np.savetxt(pfn + "_Pk_linear_CAMB.dat", np.c_[model.camb.ks, pks[0][0]], fmt="%g        %g", header="k     pk")
-        np.savetxt(pfn + "_Pk_linear_CAMB_smooth.dat", np.c_[model.camb.ks, pks[0][1]], fmt="%g     %g",
-                   header="k     pk_smooth")
+        np.savetxt(pfn + "_Pk_linear_CAMB_smooth.dat", np.c_[model.camb.ks, pks[0][1]], fmt="%g     %g", header="k     pk_smooth")
         np.savetxt(
             pfn + "_bestfit_model.dat",
-            np.c_[bestfit_model[0][0], bestfit_model[0][1][: len(bestfit_model[0][0])], bestfit_model[0][1][
-                                                                                        len(bestfit_model[0][0]):]],
+            np.c_[bestfit_model[0][0], bestfit_model[0][1][: len(bestfit_model[0][0])], bestfit_model[0][1][len(bestfit_model[0][0]) :]],
             fmt="%g  %g  %g",
             header="k     pk0     pk2",
         )
 
-        """with open(pfn + "_BAO_fitting_DC.v0.Barry", "w") as f:
+        with open(pfn + "_BAO_fitting.Barry", "w") as f:
             for l in output:
                 f.write(l + "\n")
         c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4, statistics="mean")
@@ -116,4 +110,4 @@ if __name__ == "__main__":
         c.plotter.plot(filename=[pfn + "_contour.png", pfn + "_contour.pdf"], truth=truth, parameters=3)
         c.plotter.plot(filename=[pfn + "_contour2.png", pfn + "_contour.pdf"], truth=truth, parameters=10)
         c.plotter.plot_walks(filename=pfn + "_walks.png", truth=truth)
-        c.analysis.get_latex_table(filename=pfn + "_params.txt")"""
+        c.analysis.get_latex_table(filename=pfn + "_params.txt")
