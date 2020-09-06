@@ -17,7 +17,7 @@ from barry.utils import weighted_avg_and_cov
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
-    fitter = Fitter(dir_name, save_dims=2, remove_output=True)
+    fitter = Fitter(dir_name, remove_output=True)
 
     c = getCambGenerator()
     r_s = c.get_data()["r_s"]
@@ -47,21 +47,11 @@ if __name__ == "__main__":
 
         from chainconsumer import ChainConsumer
 
-        output = []
-        bestfit_model = []
-        pks = []
         c = ChainConsumer()
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
-            model.set_data(data)
-            p = model.get_param_dict(chain[np.argmax(posterior)])
-            print(p, model.get_alphas(p["alpha"], p["epsilon"]))
-            bestfit = model.get_model(p, data[0])
-            pk_smooth_lin, pk_ratio = model.compute_basic_power_spectrum(p["om"])
-            pks.append((pk_smooth_lin * (1.0 + pk_ratio), pk_smooth_lin))
-            bestfit_model.append((data[0]["ks"], bestfit))
-            strout = str(pfn + "_bestfit_%3.2lf_%3.2lf.pdf" % (data[0]["min_k"], data[0]["max_k"]))
-            model.plot(p, figname=strout)
+            print(model.get_active_params())
+            print(np.shape(chain))
 
             df = pd.DataFrame(chain, columns=model.get_labels())
             alpha = df["$\\alpha$"].to_numpy()
@@ -89,15 +79,6 @@ if __name__ == "__main__":
             output.append(
                 f"{data[0]['min_k']:5.2f}, {data[0]['max_k']:5.2f}, {mean[0]:5.3f}, {mean[0]:5.3f}, {np.sqrt(cov[0,0]):5.3f}, {np.sqrt(cov[1,1]):5.3f}, {corr:5.3f}, {r_s:6.3f}, {chi2:5.3f}, {dof:4d}, {chi2 / dof:5.2f}"
             )
-
-        np.savetxt(pfn + "_Pk_linear_CAMB.dat", np.c_[model.camb.ks, pks[0][0]], fmt="%g        %g", header="k     pk")
-        np.savetxt(pfn + "_Pk_linear_CAMB_smooth.dat", np.c_[model.camb.ks, pks[0][1]], fmt="%g     %g", header="k     pk_smooth")
-        np.savetxt(
-            pfn + "_bestfit_model.dat",
-            np.c_[bestfit_model[0][0], bestfit_model[0][1][: len(bestfit_model[0][0])], bestfit_model[0][1][len(bestfit_model[0][0]) :]],
-            fmt="%g  %g  %g",
-            header="k     pk0     pk2",
-        )
 
         with open(pfn + "_BAO_fitting.Barry", "w") as f:
             for l in output:
