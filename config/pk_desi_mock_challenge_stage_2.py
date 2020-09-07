@@ -47,11 +47,9 @@ if __name__ == "__main__":
 
         from chainconsumer import ChainConsumer
 
+        output = []
         c = ChainConsumer()
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
-
-            print(model.get_active_params())
-            print(np.shape(chain))
 
             df = pd.DataFrame(chain, columns=model.get_labels())
             alpha = df["$\\alpha$"].to_numpy()
@@ -60,6 +58,7 @@ if __name__ == "__main__":
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
 
+            extra.pop("realisation", None)
             c.add_chain(df, weights=weight, **extra)
 
             max_post = posterior.argmax()
@@ -71,7 +70,7 @@ if __name__ == "__main__":
             for l, p in zip(model.get_labels(), ps):
                 best_fit[l] = p
 
-            mean, cov = weighted_avg_and_cov(df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$"]], weight)
+            mean, cov = weighted_avg_and_cov(df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$"]], weight, axis=0)
 
             c2 = ChainConsumer()
             c2.add_chain(df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$"]], weights=weight)

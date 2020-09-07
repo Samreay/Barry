@@ -63,7 +63,7 @@ class PowerBeutler2017(PowerSpectrumFit):
         if self.isotropic:
             self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 20.0, 10.0)  # BAO damping
         else:
-            self.add_param("beta", r"$\beta$", 0.01, 1.0, 0.5)  # RSD parameter f/b
+            self.add_param("beta", r"$\beta$", 0.01, 4.0, 0.5)  # RSD parameter f/b
             self.add_param("sigma_nl_par", r"$\Sigma_{nl,||}$", 0.01, 20.0, 8.0)  # BAO damping parallel to LOS
             self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.01, 20.0, 4.0)  # BAO damping perpendicular to LOS
         for pole in self.poly_poles:
@@ -239,7 +239,7 @@ if __name__ == "__main__":
     # )
     # model.sanity_check(dataset)
 
-    dataset = PowerSpectrum_DESIMockChallenge(isotropic=False, recon=True, fit_poles=[0, 2], realisation=6)
+    dataset = PowerSpectrum_DESIMockChallenge(isotropic=False, recon=True, fit_poles=[0, 2], realisation=0)
     model = PowerBeutler2017(
         recon=dataset.recon, isotropic=dataset.isotropic, marg="full", fix_params=["om"], poly_poles=[0, 2], correction=Correction.NONE
     )
