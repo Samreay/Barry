@@ -64,6 +64,15 @@ class CorrelationFunction(Dataset, ABC):
         else:
             self.num_mocks = num_mocks
 
+        # Reformat the data and mocks as necessary
+        rebinned = [df.to_numpy().T for df in self.true_data] if self.true_data is not None else None
+        self.ss = rebinned[0][0] if rebinned is not None else None
+        self.true_data = [x[1] for x in rebinned] if rebinned is not None else None
+
+        rebinned = [df.to_numpy().T for df in self.mock_data] if self.mock_data is not None else None
+        self.ss = rebinned[0][0] if rebinned is not None else self.ss
+        self.mock_data = [x[1:].T for x in rebinned] if rebinned is not None else None
+
         self.cov, self.icov, self.data, self.mask = None, None, None, None
         self.set_realisation(realisation)
         self.set_cov(fake_diag=fake_diag)
@@ -72,16 +81,17 @@ class CorrelationFunction(Dataset, ABC):
         if realisation is None:
             self.logger.info(f"Loading mock average")
             assert self.mock_data is not None, "Passing in None for the realisations means the mock means, but you have no mocks!"
-            self.data = np.array(self.mock_data).mean(axis=0).to_numpy().astype(np.float32)
+            self.data = np.array(self.mock_data).mean(axis=0)
         elif str(realisation).lower() == "data":
             assert self.true_data is not None, "Requested data but this dataset doesn't have data set!"
             self.logger.info(f"Loading data")
-            self.data = self.true_data[0].to_numpy().astype(np.float32)
+            self.data = self.true_data[0]
         else:
             assert self.mock_data is not None, "You asked for a mock realisation, but this dataset has no mocks!"
             self.logger.info(f"Loading mock {realisation}")
-            self.data = self.mock_data[realisation].to_numpy().astype(np.float32)
-        self.mask = (self.data[:, 0] >= self.min_dist) & (self.data[:, 0] <= self.max_dist)
+            self.data = self.mock_data[realisation]
+        self.mask = (self.ss >= self.min_dist) & (self.ss <= self.max_dist)
+        self.ss = self.ss[self.mask]
         self.data = self.data[self.mask, :]
 
     def set_cov(self, fake_diag=False):
@@ -131,7 +141,7 @@ class CorrelationFunction(Dataset, ABC):
 
     def get_data(self):
         d = {
-            "dist": self.data[:, 0],
+            "dist": self.ss,
             "cov": self.cov,
             "icov": self.icov,
             "name": self.name,
@@ -147,10 +157,10 @@ class CorrelationFunction(Dataset, ABC):
 
         # Some data has xi0 some has xi0+xi2
         if self.isotropic:
-            d.update({"xi": self.data[:, 1]})
+            d.update({"xi": self.data[:, 0]})
         else:
-            d.update({"xi": self.data[:, self.fit_pole_indices + 1].T.flatten()})
-        d.update({f"xi{d}": self.data[:, i + 1] for i, d in enumerate(self.poles)})
+            d.update({"xi": self.data[:, self.fit_pole_indices].T.flatten()})
+        d.update({f"xi{d}": self.data[:, i] for i, d in enumerate(self.poles)})
 
         return [d]
 

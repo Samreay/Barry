@@ -607,32 +607,6 @@ class Model(ABC):
 
         print("Starting model optimisation. This may take some time.")
         p, minv = self.optimize(niter=niter, maxiter=maxiter)
-        """p = {
-            "alpha": 1.0003412648322056,
-            "epsilon": 0.0009635935148214203,
-            "sigma_s": 4.739041790619367,
-            "beta": 0.42748392149657716,
-            "sigma_nl_par": 5.699808860145836,
-            "sigma_nl_perp": 5.155833618659709,
-            "a{2}_5": 0.0,
-            "a{0}_1": 0.0,
-            "a{0}_5": 0.0,
-            "a{2}_2": 0.0,
-            "a{1}_4": 0.0,
-            "b": 1.0,
-            "a{0}_2": 0.0,
-            "a{0}_3": 0.0,
-            "a{1}_2": 0.0,
-            "a{1}_5": 0.0,
-            "om": 0.31,
-            "a{2}_1": 0.0,
-            "a{1}_1": 0.0,
-            "a{2}_3": 0.0,
-            "a{2}_4": 0.0,
-            "a{0}_4": 0.0,
-            "a{1}_3": 0.0,
-        }
-        minv = 19.782"""
 
         print(f"Model optimisation with value {minv:0.3f} has parameters are {dict(p)}")
 

@@ -4,8 +4,16 @@ import numpy as np
 import os
 
 
-def getdf(loc):
-    df = pd.read_csv(loc, comment="#", skiprows=0, delim_whitespace=True, names=["k", "pk0", "pk2"])
+def getxi(loc):
+    df = pd.read_csv(loc, comment="#", skiprows=0, delim_whitespace=True, names=["s", "xi0", "xi2"], header=None)
+    df["xi4"] = 0
+    mask = df["s"] <= 200.0
+    masked = df.loc[mask, ["s", "xi0", "xi2", "xi4"]]
+    return masked.astype(np.float32)
+
+
+def getpk(loc):
+    df = pd.read_csv(loc, comment="#", skiprows=0, delim_whitespace=True, names=["k", "pk0", "pk2"], header=None)
     df["pk1"] = 0
     df["pk3"] = 0
     df["pk4"] = 0
@@ -30,11 +38,13 @@ def getcomp(ks):
 if __name__ == "__main__":
 
     ds = f"/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/"
+
+    # Power Spectra
     files = [ds + f for f in os.listdir(ds) if "pkl" in f]
     print(files)
 
     cov_filename = ds + f"/cov_matrix_pk-EZmocks-1Gpc_rsd_centerbin_post.txt"
-    res = {f.lower(): getdf(f) for f in files}
+    res = {f.lower(): getpk(f) for f in files}
     ks = next(iter(res.items()))[1]["k"].to_numpy()
     cov = pd.read_csv(cov_filename, delim_whitespace=True, header=None).to_numpy()
     cov_flat = cov.astype(np.float32)[:, 2]
@@ -76,5 +86,52 @@ if __name__ == "__main__":
         "m_mat": getcomp(ks),
     }
 
-    with open(f"../desi_mock_challenge_stage_2.pkl", "wb") as f:
+    with open(f"../desi_mock_challenge_stage_2_pk.pkl", "wb") as f:
+        pickle.dump(split, f)
+
+    # Correlation Functions
+    files = [ds + f for f in os.listdir(ds) if "xil" in f]
+    print(files)
+
+    cov_filename = ds + f"/cov_matrix_xi-EZmocks-1Gpc_rsd_centerbin_post.txt"
+    res = {f.lower(): getxi(f) for f in files}
+    nss = len(next(iter(res.items()))[1]["s"].to_numpy())
+    cov = pd.read_csv(cov_filename, delim_whitespace=True, header=None).to_numpy()
+    cov_flat = cov.astype(np.float32)[:, 2]
+    nin = int(np.sqrt(len(cov)) / 3)
+    cov_input = cov_flat.reshape((3 * nin, 3 * nin))
+    cov = np.zeros((3 * nss, 3 * nss))
+    cov[:nss, :nss] = cov_input[:nss, :nss]
+    cov[:nss, nss : 2 * nss] = cov_input[:nss, nin : nin + nss]
+    cov[:nss, 2 * nss :] = cov_input[:nss, 2 * nin : 2 * nin + nss]
+    cov[nss : 2 * nss, :nss] = cov_input[nin : nin + nss, :nss]
+    cov[nss : 2 * nss, nss : 2 * nss] = cov_input[nin : nin + nss, nin : nin + nss]
+    cov[nss : 2 * nss, 2 * nss :] = cov_input[nin : nin + nss, 2 * nin : 2 * nin + nss]
+    cov[2 * nss :, :nss] = cov_input[2 * nin : 2 * nin + nss, :nss]
+    cov[2 * nss :, nss : 2 * nss] = cov_input[2 * nin : 2 * nin + nss, nin : nin + nss]
+    cov[2 * nss :, 2 * nss :] = cov_input[2 * nin : 2 * nin + nss, 2 * nin : 2 * nin + nss]
+
+    print(np.shape(cov), nss)
+    print([k for k, v in res.items()])
+
+    split = {
+        "pre-recon data": None,
+        "pre-recon cov": None,
+        "post-recon data": None,
+        "post-recon cov": cov,
+        "pre-recon mocks": None,
+        "post-recon mocks": [v for k, v in res.items()],
+        "cosmology": {
+            "om": (0.1188 + 0.02230 + 0.00064) / 0.6774 ** 2,
+            "h0": 0.6774,
+            "z": 0.9873,
+            "ob": 0.02230 / 0.6774 ** 2,
+            "ns": 0.9667,
+            "mnu": 0.00064 * 93.14,
+            "reconsmoothscale": 15,
+        },
+        "name": f"DESI Mock Challenge Stage 2 Xi",
+    }
+
+    with open(f"../desi_mock_challenge_stage_2_xi.pkl", "wb") as f:
         pickle.dump(split, f)

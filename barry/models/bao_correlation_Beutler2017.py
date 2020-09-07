@@ -69,7 +69,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
         if self.isotropic:
             self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 20.0, 10.0)  # BAO damping
         else:
-            self.add_param("beta", r"$\beta$", 0.01, 1.0, 0.5)  # RSD parameter f/b
+            self.add_param("beta", r"$\beta$", 0.01, 4.0, 0.5)  # RSD parameter f/b
             self.add_param("sigma_nl_par", r"$\Sigma_{nl,||}$", 0.01, 20.0, 8.0)  # BAO damping parallel to LOS
             self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.01, 20.0, 4.0)  # BAO damping perpendicular to LOS
         for pole in self.poly_poles:
@@ -99,12 +99,12 @@ class CorrBeutler2017(CorrelationFunctionFit):
             the model quadrupole interpolated to sprime. Will be 'None' if the model is isotropic
 
         """
-        ks, pk0, pk2, pk4, _ = self.parent.compute_power_spectrum(self.parent.camb.ks, p, smooth=smooth, for_corr=True)
+        ks, pks, _ = self.parent.compute_power_spectrum(self.parent.camb.ks, p, smooth=smooth, for_corr=True)
         xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
 
         if self.isotropic:
             sprime = p["alpha"] * dist
-            xi0 = p["b{0}"] * self.pk2xi_0.__call__(ks, pk0, sprime)
+            xi0 = p["b{0}"] * self.pk2xi_0.__call__(ks, pks[0], sprime)
             xi[0] = xi0 + p["a{0}_1"] / (dist ** 2) + p["a{0}_2"] / dist + p["a{0}_3"]
 
             poly = np.zeros((1, len(dist)))
@@ -118,9 +118,9 @@ class CorrBeutler2017(CorrelationFunctionFit):
             sprime = np.outer(dist * p["alpha"], self.get_sprimefac(epsilon))
             muprime = self.get_muprime(epsilon)
 
-            xi0 = splev(sprime, splrep(dist, self.pk2xi_0.__call__(ks, pk0, dist)))
-            xi2 = splev(sprime, splrep(dist, self.pk2xi_2.__call__(ks, pk2, dist)))
-            xi4 = splev(sprime, splrep(dist, self.pk2xi_4.__call__(ks, pk4, dist)))
+            xi0 = splev(sprime, splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist)))
+            xi2 = splev(sprime, splrep(dist, self.pk2xi_2.__call__(ks, pks[1], dist)))
+            xi4 = splev(sprime, splrep(dist, self.pk2xi_4.__call__(ks, pks[2], dist)))
 
             xi2d = xi0 + 0.5 * (3.0 * muprime ** 2 - 1) * xi2 + 0.125 * (35.0 * muprime ** 4 - 30.0 * muprime ** 2 + 3.0) * xi4
 
@@ -152,14 +152,14 @@ class CorrBeutler2017(CorrelationFunctionFit):
                 for pole in self.poly_poles:
                     xi[int(pole / 2)] += p[f"a{{{pole}}}_1"] / dist ** 2 + p[f"a{{{pole}}}_2"] / dist + p[f"a{{{pole}}}_3"]
 
-        return sprime, xi[0], xi[1], xi[2], poly
+        return sprime, xi, poly
 
 
 if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_correlation_function import CorrelationFunction_ROSS_DR12_Z061
+    from barry.datasets.dataset_correlation_function import CorrelationFunction_ROSS_DR12_Z061, CorrelationFunction_DESIMockChallenge
     from barry.config import setup_logging
     from barry.models.model import Correction
 
@@ -173,8 +173,6 @@ if __name__ == "__main__":
     model_iso.sanity_check(dataset)"""
 
     print("Checking anisotropic")
-    dataset = CorrelationFunction_ROSS_DR12_Z061(isotropic=False, min_dist=50, max_dist=150, realisation="data")
-    model = CorrBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP, marg="full")
-    model_aniso = CorrBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
+    dataset = CorrelationFunction_DESIMockChallenge(recon=True, isotropic=False, min_dist=30, max_dist=200, realisation=3, fit_poles=[0, 2])
+    model = CorrBeutler2017(recon=True, isotropic=False, fix_params=["om"], correction=Correction.NONE, marg="full")
     model.sanity_check(dataset)
-    model_aniso.sanity_check(dataset)

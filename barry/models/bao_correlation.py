@@ -232,7 +232,7 @@ class CorrelationFunctionFit(Model):
             else:
                 xi[2] = 1.125 * (xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
 
-        return sprime, xi[0], xi[1], xi[2], np.zeros((1, len(dist)))
+        return sprime, xi, np.zeros((1, len(dist)))
 
     def get_model(self, p, d, smooth=False):
         """ Gets the model prediction using the data passed in and parameter location specified
@@ -257,22 +257,26 @@ class CorrelationFunctionFit(Model):
 
         """
 
-        dist, xi0, xi2, xi4, poly = self.compute_correlation_function(d["dist"], p, smooth=smooth)
+        dist, xis, poly = self.compute_correlation_function(d["dist"], p, smooth=smooth)
 
-        xi_model = xi0 if self.isotropic else np.concatenate([xi0, xi2])
+        xi_model = xis[0] if self.isotropic else np.concatenate([xis[0], xis[1]])
         if 4 in d["poles"] and not self.isotropic:
-            xi_model = np.concatenate([xi_model, xi4])
+            xi_model = np.concatenate([xi_model, xis[2]])
 
         poly_model = None
         if self.marg:
             len_poly = len(d["dist"])
             if not self.isotropic:
-                len_poly *= len(d["fit_pole_indices"])
+                len_poly *= len(d["poles"])
             poly_model = np.empty((np.shape(poly)[0], len_poly))
             for n in range(np.shape(poly)[0]):
-                poly_model[n] = poly[n] if self.isotropic else np.concatenate([poly[n, 0], poly[n, 1]])
-                if 4 in d["poles"] and not self.isotropic:
-                    poly_model[n] = np.concatenate([poly_model, poly[n, 2]])
+                if self.isotropic:
+                    poly_model[n] = poly[n]
+                else:
+                    if 4 in d["poles"]:
+                        poly_model[n] = poly[n].flatten()
+                    else:
+                        poly_model[n] = np.concatenate([poly[n, 0], poly[n, 1]])
 
         return xi_model, poly_model
 
@@ -297,12 +301,35 @@ class CorrelationFunctionFit(Model):
 
         xi_model, poly_model = self.get_model(p, d, smooth=self.smooth)
 
+        xi_model_fit = break_vector_and_get_blocks(xi_model, len(d["poles"]), d["fit_pole_indices"])
+        poly_model_fit = np.empty((np.shape(poly_model)[0], len(self.data[0]["fit_pole_indices"]) * len(self.data[0]["dist"])))
+        for n in range(np.shape(poly_model)[0]):
+            poly_model_fit[n] = break_vector_and_get_blocks(poly_model[n], np.shape(poly_model)[1] / len(d["dist"]), d["fit_pole_indices"])
+
         if self.marg_type == "partial":
-            return self.get_chi2_partial_marg_likelihood(d["xi"], xi_model, poly_model, d["icov"], None, None, num_mocks=num_mocks)
+            return self.get_chi2_partial_marg_likelihood(
+                d["xi"],
+                xi_model_fit,
+                np.zeros(xi_model_fit.shape),
+                poly_model_fit,
+                np.zeros(poly_model_fit.shape),
+                d["icov"],
+                [None],
+                num_mocks=num_mocks,
+            )
         elif self.marg_type == "full":
-            return self.get_chi2_marg_likelihood(d["xi"], xi_model, poly_model, d["icov"], None, None, num_mocks=num_mocks)
+            return self.get_chi2_marg_likelihood(
+                d["xi"],
+                xi_model_fit,
+                np.zeros(xi_model_fit.shape),
+                poly_model_fit,
+                np.zeros(poly_model_fit.shape),
+                d["icov"],
+                [None],
+                num_mocks=num_mocks,
+            )
         else:
-            return self.get_chi2_likelihood(d["xi"], xi_model, d["icov"], None, None, num_mocks=num_mocks, num_params=num_params)
+            return self.get_chi2_likelihood(d["xi"], xi_model_fit, d["icov"], [None], num_mocks=num_mocks, num_params=num_params)
 
     def plot(self, params, smooth_params=None, figname=None):
         self.logger.info("Create plot")
@@ -333,10 +360,20 @@ class CorrelationFunctionFit(Model):
                 polysmooth_fit[n] = break_vector_and_get_blocks(
                     polysmooth[n], np.shape(polysmooth)[1] / len(self.data[0]["dist"]), self.data[0]["fit_pole_indices"]
                 )
-            bband = self.get_ML_nuisance(polymod_fit, mod_fit, self.data[0]["xi"], self.data[0]["icov"], None, None)
+            bband = self.get_ML_nuisance(
+                self.data[0]["xi"], mod_fit, np.zeros(mod_fit.shape), polymod_fit, np.zeros(polymod_fit.shape), self.data[0]["icov"], [None]
+            )
             mod += bband @ polymod
             print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
-            bband = self.get_ML_nuisance(polysmooth_fit, smooth_fit, self.data[0]["xi"], self.data[0]["icov"], None, None)
+            bband = self.get_ML_nuisance(
+                self.data[0]["xi"],
+                smooth_fit,
+                np.zeros(smooth_fit.shape),
+                polysmooth_fit,
+                np.zeros(polysmooth_fit.shape),
+                self.data[0]["icov"],
+                [None],
+            )
             smooth += bband @ polysmooth
 
         # Split up the different multipoles if we have them

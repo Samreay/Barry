@@ -7,8 +7,9 @@ from barry.samplers import DynestySampler
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
 from barry.config import setup
-from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
+from barry.models import PowerBeutler2017, CorrBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESIMockChallenge
+from barry.datasets.dataset_correlation_function import CorrelationFunction_DESIMockChallenge
 from barry.fitter import Fitter
 import numpy as np
 import pandas as pd
@@ -27,13 +28,25 @@ if __name__ == "__main__":
 
     cs = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
+    # Power spectrum
     data = PowerSpectrum_DESIMockChallenge(recon=True, isotropic=False, fit_poles=[0, 2])
     model = PowerBeutler2017(recon=True, isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.NONE, marg="full")
 
+    ls = "-"
     names = [f"Xinyi-Std", f"Pedro", f"Baojiu", f"Xinyi-Hada", f"Hee-Jong", f"Yu", f"Javier"]
     for i in range(7):
         data.set_realisation(i)
-        fitter.add_model_and_dataset(model, data, name=names[i], color=cs[i], realisation=i)
+        fitter.add_model_and_dataset(model, data, name=names[i], color=cs[i], realisation=i, ls=ls)
+
+    # Correlation Function
+    data = CorrelationFunction_DESIMockChallenge(recon=True, isotropic=False, fit_poles=[0, 2])
+    model = CorrBeutler2017(recon=True, isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.NONE, marg="full")
+
+    ls = "--"
+    names = [f"Xinyi-Std", f"Pedro", f"Baojiu", f"Xinyi-Hada", f"Hee-Jong", f"Yu", f"Javier"]
+    for i in range(7):
+        data.set_realisation(i)
+        fitter.add_model_and_dataset(model, data, name=names[i], color=cs[i], realisation=i, ls=ls)
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)

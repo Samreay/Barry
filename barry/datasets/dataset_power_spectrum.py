@@ -390,44 +390,6 @@ class PowerSpectrum_Beutler2019_Z061(MultiDataset):
         super().__init__(name, [ngc, sgc])
 
 
-class PowerSpectrum_DESIMockChallenge0_Z01(PowerSpectrum):
-    """ Power spectrum from Beutler 2019 for DR12 sample for SGC with mean redshift z = 0.61    """
-
-    def __init__(
-        self,
-        name=None,
-        min_k=0.02,
-        max_k=0.30,
-        step_size=None,
-        recon=False,
-        reduce_cov_factor=1,
-        num_mocks=None,
-        postprocess=None,
-        fake_diag=False,
-        realisation=None,
-        isotropic=True,
-        fit_poles=None,
-    ):
-        if recon:
-            raise NotImplementedError("Post-recon data not available for Beutler2019_DR12_Z061")
-
-        super().__init__(
-            "desi_mock_challenge_0.pkl",
-            name=name,
-            min_k=min_k,
-            max_k=max_k,
-            step_size=step_size,
-            recon=recon,
-            reduce_cov_factor=reduce_cov_factor,
-            num_mocks=num_mocks,
-            postprocess=postprocess,
-            fake_diag=fake_diag,
-            realisation=realisation,
-            isotropic=isotropic,
-            fit_poles=fit_poles,
-        )
-
-
 class PowerSpectrum_DESIMockChallenge(PowerSpectrum):
     """ Power spectrum from the DESI Mock Challenge  """
 
@@ -453,7 +415,7 @@ class PowerSpectrum_DESIMockChallenge(PowerSpectrum):
             raise NotImplementedError("Only monopole and quadrupole included in DESIMockChallenge")
 
         super().__init__(
-            "desi_mock_challenge_stage_2.pkl",
+            "desi_mock_challenge_stage_2_pk.pkl",
             name=name,
             min_k=min_k,
             max_k=max_k,
@@ -480,7 +442,7 @@ if __name__ == "__main__":
     # Plot the data and mock average for the Beutler 2019 spectra
     for isotropic in [False]:
         # datasets = [PowerSpectrum_Beutler2019_Z061_NGC(isotropic=isotropic)]
-        datasets = [PowerSpectrum_DESIMockChallenge(isotropic=False, recon=True, realisation=0, fit_poles=[0, 2])]
+        datasets = [PowerSpectrum_DESIMockChallenge(isotropic=False, recon=True, fit_poles=[0, 2])]
         for dataset in datasets:
             # for i, realisation in enumerate([None, "data"]):
             for i in range(7):
