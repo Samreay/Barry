@@ -173,6 +173,6 @@ if __name__ == "__main__":
     model_iso.sanity_check(dataset)"""
 
     print("Checking anisotropic")
-    dataset = CorrelationFunction_DESIMockChallenge(recon=True, isotropic=False, min_dist=30, max_dist=200, realisation=3, fit_poles=[0, 2])
+    dataset = CorrelationFunction_DESIMockChallenge(recon=True, isotropic=False, min_dist=30, max_dist=200, realisation=0, fit_poles=[0, 2])
     model = CorrBeutler2017(recon=True, isotropic=False, fix_params=["om"], correction=Correction.NONE, marg="full")
     model.sanity_check(dataset)

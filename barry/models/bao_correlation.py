@@ -364,7 +364,13 @@ class CorrelationFunctionFit(Model):
                 self.data[0]["xi"], mod_fit, np.zeros(mod_fit.shape), polymod_fit, np.zeros(polymod_fit.shape), self.data[0]["icov"], [None]
             )
             mod += bband @ polymod
+            mod_fit += bband @ polymod_fit
             print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
+            print(
+                self.get_chi2_likelihood(self.data[0]["xi"], mod_fit, np.zeros(mod_fit.shape), self.data[0]["icov"], [None]),
+                len(self.data[0]["dist"]) * len(self.data[0]["fit_poles"]),
+            )
+            print(self.get_alphas(params["alpha"], params["epsilon"]))
             bband = self.get_ML_nuisance(
                 self.data[0]["xi"],
                 smooth_fit,

@@ -72,6 +72,7 @@ class CorrelationFunction(Dataset, ABC):
         rebinned = [df.to_numpy().T for df in self.mock_data] if self.mock_data is not None else None
         self.ss = rebinned[0][0] if rebinned is not None else self.ss
         self.mock_data = [x[1:].T for x in rebinned] if rebinned is not None else None
+        print(len(self.ss))
 
         self.cov, self.icov, self.data, self.mask = None, None, None, None
         self.set_realisation(realisation)

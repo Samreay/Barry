@@ -444,7 +444,16 @@ class PowerSpectrumFit(Model):
                 self.data[0]["pk"], mod_fit, mod_fit_odd, polymod_fit, polymod_fit_odd, self.data[0]["icov"], self.data[0]["icov_m_w"]
             )
             mod += mod_odd + bband @ (polymod + polymod_odd)
+            mod_fit += mod_fit_odd + bband @ (polymod_fit + polymod_fit_odd)
+
             print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
+            print(
+                self.get_chi2_likelihood(
+                    self.data[0]["pk"], mod_fit, np.zeros(mod_fit.shape), self.data[0]["icov"], self.data[0]["icov_m_w"]
+                ),
+                len(self.data[0]["ks"]) * len(self.data[0]["fit_poles"]),
+            )
+            print(self.get_alphas(params["alpha"], params["epsilon"]))
 
             bband = self.get_ML_nuisance(
                 self.data[0]["pk"],
