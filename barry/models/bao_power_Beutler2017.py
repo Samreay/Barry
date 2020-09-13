@@ -239,7 +239,7 @@ if __name__ == "__main__":
     # )
     # model.sanity_check(dataset)
 
-    dataset = PowerSpectrum_DESIMockChallenge(isotropic=False, recon=True, fit_poles=[0, 2], realisation=6)
+    dataset = PowerSpectrum_DESIMockChallenge(isotropic=False, recon=True, fit_poles=[0, 2], realisation=1)
     model = PowerBeutler2017(
         recon=dataset.recon, isotropic=dataset.isotropic, marg="full", fix_params=["om"], poly_poles=[0, 2], correction=Correction.NONE
     )

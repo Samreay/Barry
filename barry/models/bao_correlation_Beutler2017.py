@@ -125,7 +125,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
             xi2d = xi0 + 0.5 * (3.0 * muprime ** 2 - 1) * xi2 + 0.125 * (35.0 * muprime ** 4 - 30.0 * muprime ** 2 + 3.0) * xi4
 
             # Now compute the dilated xi multipoles
-            xi0, xi2, xi4 = self.integrate_mu(xi2d)
+            xi0, xi2, xi4 = self.integrate_mu(xi2d, self.mu)
 
             xi[0] = p["b{0}"] * xi0
             xi[1] = 2.5 * (p["b{2}"] * xi2 - xi[0])
@@ -173,6 +173,6 @@ if __name__ == "__main__":
     model_iso.sanity_check(dataset)"""
 
     print("Checking anisotropic")
-    dataset = CorrelationFunction_DESIMockChallenge(recon=True, isotropic=False, min_dist=30, max_dist=200, realisation=0, fit_poles=[0, 2])
+    dataset = CorrelationFunction_DESIMockChallenge(recon=True, isotropic=False, min_dist=30, max_dist=200, realisation=6, fit_poles=[0, 2])
     model = CorrBeutler2017(recon=True, isotropic=False, fix_params=["om"], correction=Correction.NONE, marg="full")
     model.sanity_check(dataset)

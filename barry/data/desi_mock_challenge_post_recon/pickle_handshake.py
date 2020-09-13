@@ -43,7 +43,7 @@ if __name__ == "__main__":
     files = [ds + f for f in os.listdir(ds) if "pkl" in f]
     print(files)
 
-    cov_filename = ds + f"/cov_matrix_pk-EZmocks-1Gpc_rsd_centerbin_post.txt"
+    cov_filename = ds + f"/cov_matrix_pk-EZmocks-1Gpc_rsd_centerbin_RecIso_post.txt"
     res = {f.lower(): getpk(f) for f in files}
     ks = next(iter(res.items()))[1]["k"].to_numpy()
     cov = pd.read_csv(cov_filename, delim_whitespace=True, header=None).to_numpy()
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     files = [ds + f for f in os.listdir(ds) if "xil" in f]
     print(files)
 
-    cov_filename = ds + f"/cov_matrix_xi-EZmocks-1Gpc_rsd_centerbin_post.txt"
+    cov_filename = ds + f"/cov_matrix_xi-EZmocks-1Gpc_rsd_centerbin_RecIso_post.txt"
     res = {f.lower(): getxi(f) for f in files}
     start = 6
     nss = len(next(iter(res.items()))[1]["s"].to_numpy())

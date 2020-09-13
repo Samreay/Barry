@@ -33,7 +33,7 @@ if __name__ == "__main__":
     model = PowerBeutler2017(recon=True, isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.NONE, marg="full")
 
     ls = "-"
-    names = [f"Xinyi-Std", f"Pedro", f"Baojiu", f"Xinyi-Hada", f"Hee-Jong", f"Yu", f"Javier"]
+    names = [f"Xinyi-Std Pk", f"Pedro Pk", f"Baojiu Pk", f"Xinyi-Hada Pk", f"Hee-Jong Pk", f"Yu Pk", f"Javier Pk"]
     for i in range(7):
         data.set_realisation(i)
         fitter.add_model_and_dataset(model, data, name=names[i], color=cs[i], realisation=i, ls=ls)
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     model = CorrBeutler2017(recon=True, isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.NONE, marg="full")
 
     ls = "--"
-    names = [f"Xinyi-Std", f"Pedro", f"Baojiu", f"Xinyi-Hada", f"Hee-Jong", f"Yu", f"Javier"]
+    names = [f"Xinyi-Std Xi", f"Pedro Xi", f"Baojiu Xi", f"Xinyi-Hada Xi", f"Hee-Jong Xi", f"Yu Xi", f"Javier Xi"]
     for i in range(7):
         data.set_realisation(i)
         fitter.add_model_and_dataset(model, data, name=names[i], color=cs[i], realisation=i, ls=ls)
@@ -67,17 +67,23 @@ if __name__ == "__main__":
             df = pd.DataFrame(chain, columns=model.get_labels())
             alpha = df["$\\alpha$"].to_numpy()
             epsilon = df["$\\epsilon$"].to_numpy()
+            print(model, np.shape(alpha), np.shape(epsilon))
             alpha_par, alpha_perp = model.get_alphas(alpha, epsilon)
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
 
             extra.pop("realisation", None)
+            extra["linestyle"] = extra["ls"]
+            extra.pop("ls", None)
             c.add_chain(df, weights=weight, **extra)
 
             max_post = posterior.argmax()
             chi2 = -2 * posterior[max_post]
 
-            dof = data[0]["pk"].shape[0] - 1 - len(df.columns)
+            if "Pk" in extra["name"]:
+                dof = data[0]["pk"].shape[0] - 1 - len(df.columns)
+            else:
+                dof = data[0]["xi"].shape[0] - 1 - len(df.columns)
             ps = chain[max_post, :]
             best_fit = {}
             for l, p in zip(model.get_labels(), ps):
@@ -88,9 +94,14 @@ if __name__ == "__main__":
             c2 = ChainConsumer()
             c2.add_chain(df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$"]], weights=weight)
             corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
-            output.append(
-                f"{data[0]['min_k']:5.2f}, {data[0]['max_k']:5.2f}, {mean[0]:5.3f}, {mean[0]:5.3f}, {np.sqrt(cov[0,0]):5.3f}, {np.sqrt(cov[1,1]):5.3f}, {corr:5.3f}, {r_s:6.3f}, {chi2:5.3f}, {dof:4d}, {chi2 / dof:5.2f}"
-            )
+            if "Pk" in extra["name"]:
+                output.append(
+                    f"{data[0]['min_k']:5.2f}, {data[0]['max_k']:5.2f}, {mean[0]:5.3f}, {mean[0]:5.3f}, {np.sqrt(cov[0,0]):5.3f}, {np.sqrt(cov[1,1]):5.3f}, {corr:5.3f}, {r_s:6.3f}, {chi2:5.3f}, {dof:4d}, {chi2 / dof:5.2f}"
+                )
+            else:
+                output.append(
+                    f"{data[0]['min_dist']:5.2f}, {data[0]['max_dist']:5.2f}, {mean[0]:5.3f}, {mean[0]:5.3f}, {np.sqrt(cov[0,0]):5.3f}, {np.sqrt(cov[1,1]):5.3f}, {corr:5.3f}, {r_s:6.3f}, {chi2:5.3f}, {dof:4d}, {chi2 / dof:5.2f}"
+                )
 
         with open(pfn + "_BAO_fitting.Barry", "w") as f:
             for l in output:

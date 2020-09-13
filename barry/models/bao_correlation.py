@@ -113,7 +113,6 @@ class CorrelationFunctionFit(Model):
         pk_ratio = res["pk_lin"] / pk_smooth_lin - 1.0  # Get the ratio
         return pk_smooth_lin, pk_ratio
 
-    @lru_cache(maxsize=32)
     def get_alphas(self, alpha, epsilon):
         """ Computes values of alpha_par and alpha_perp from the input values of alpha and epsilon
 
@@ -173,14 +172,16 @@ class CorrelationFunctionFit(Model):
         muprime = self.mu / np.sqrt(musq + (1.0 - musq) / (1.0 + epsilon) ** 6)
         return muprime
 
-    def integrate_mu(self, xi2d, isotropic=False):
-        xi0 = simps(xi2d, self.mu, axis=1)
+    def integrate_mu(self, xi2d, mu=None, isotropic=False):
+        if mu is None:
+            mu = self.mu
+        xi0 = simps(xi2d, mu, axis=1)
         if isotropic:
             xi2 = None
             xi4 = None
         else:
-            xi2 = 3.0 * simps(xi2d * self.mu ** 2, self.mu, axis=1)
-            xi4 = 35.0 * simps(xi2d * self.mu ** 4, self.mu, axis=1)
+            xi2 = 3.0 * simps(xi2d * mu ** 2, self.mu, axis=1)
+            xi4 = 35.0 * simps(xi2d * mu ** 4, self.mu, axis=1)
         return xi0, xi2, xi4
 
     def compute_correlation_function(self, dist, p, smooth=False):
@@ -224,7 +225,7 @@ class CorrelationFunctionFit(Model):
             xi4 = splev(sprime, splrep(dist, self.pk2xi_4.__call__(ks, pk4, dist)))
             xi2d = xi0 + 0.5 * (3.0 * muprime ** 2 - 1) * xi2 + 0.125 * (35.0 * muprime ** 4 - 30.0 * muprime ** 2 + 3.0) * xi4
 
-            xi0, xi2, xi4 = self.integrate_mu(xi2d)
+            xi0, xi2, xi4 = self.integrate_mu(xi2d, muprime)
             xi[0] = p["b{0}"] * xi0
             xi[1] = 2.5 * (p["b{2}"] * xi2 - xi[0])
             if 4 in self.poly_poles:
