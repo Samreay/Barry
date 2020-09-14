@@ -366,13 +366,22 @@ class CorrelationFunctionFit(Model):
             )
             mod += bband @ polymod
             mod_fit += bband @ polymod_fit
+            print(len(self.get_active_params()) + len(bband))
+
             print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
-            print(
-                self.get_chi2_likelihood(self.data[0]["xi"], mod_fit, np.zeros(mod_fit.shape), self.data[0]["icov"], [None]),
-                len(self.data[0]["dist"]) * len(self.data[0]["fit_poles"]),
+            new_chi_squared = self.get_chi2_likelihood(
+                self.data[0]["xi"],
+                mod_fit,
+                np.zeros(mod_fit.shape),
+                self.data[0]["icov"],
+                [None],
+                num_mocks=self.data[0]["num_mocks"],
+                num_params=len(self.get_active_params()) + len(bband),
             )
-            print(self.get_alphas(params["alpha"], params["epsilon"]))
-            bband = self.get_ML_nuisance(
+            alphas = self.get_alphas(params["alpha"], params["epsilon"])
+            print(new_chi_squared, len(self.data[0]["xi"]), alphas)
+
+            bband_smooth = self.get_ML_nuisance(
                 self.data[0]["xi"],
                 smooth_fit,
                 np.zeros(smooth_fit.shape),
@@ -381,7 +390,7 @@ class CorrelationFunctionFit(Model):
                 self.data[0]["icov"],
                 [None],
             )
-            smooth += bband @ polysmooth
+            smooth += bband_smooth @ polysmooth
 
         # Split up the different multipoles if we have them
         if len(err) > len(ss):
@@ -440,6 +449,41 @@ class CorrelationFunctionFit(Model):
         if figname is not None:
             fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
         plt.show()
+
+        # Output best-fit parameters and model, with some free space to fill in the MCMC results
+        names = ["Xinyi_std", "Pedro", "Baojiu", "Xinyi_Hada", "Hee-Jong_std", "Yu-Yu_std", "Javier"]
+        name = names[1]
+        filename = str("/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/Queensland_xi_%s_bestfits.txt" % name)
+        np.savetxt(
+            filename,
+            np.c_[
+                alphas[0],
+                alphas[1],
+                0.0,
+                0.0,
+                0.0,
+                self.camb.get_data()["r_s"],
+                -2.0 * new_chi_squared,
+                len(self.data[0]["xi"]),
+                params["beta"],
+                params["sigma_s"],
+                params["sigma_nl_par"],
+                params["sigma_nl_perp"],
+                bband[0],
+                bband[1],
+                bband[2],
+                bband[3],
+                bband[4],
+                bband[5],
+                bband[6],
+                bband[7],
+            ],
+            fmt="%12.4lf %12.4lf %12.4lf %12.4lf %12.4lf %8.2lf %8.2lf %10d %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.4lf %8.6lf %8.3lf %8.3lf %8.3lf %8.6lf",
+            header="best_fit_alpha_par  best_fit_alpha_perp  sigma_alpha_par  sigma_alpha_perp  corr_alpha_par_perp  rd_of_template  bf_chi2  dof   beta  sigma_s  sigma_nl_par  sigma_nl_perp  b0   a0_1   a0_2   a0_3   b2   a2_1   a2_2   a2_3",
+        )
+
+        filename = str("/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/Queensland_xi_%s_bestfit_model.txt" % name)
+        np.savetxt(filename, np.c_[ss, mods[0], mods[1]], fmt="%12.6lf %12.6lf %12.6lf", header="s       Xi_0       Xi_2")
 
 
 if __name__ == "__main__":

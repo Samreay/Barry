@@ -446,16 +446,21 @@ class PowerSpectrumFit(Model):
             mod += mod_odd + bband @ (polymod + polymod_odd)
             mod_fit += mod_fit_odd + bband @ (polymod_fit + polymod_fit_odd)
 
+            print(len(self.get_active_params()) + len(bband))
             print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
-            print(
-                self.get_chi2_likelihood(
-                    self.data[0]["pk"], mod_fit, np.zeros(mod_fit.shape), self.data[0]["icov"], self.data[0]["icov_m_w"]
-                ),
-                len(self.data[0]["ks"]) * len(self.data[0]["fit_poles"]),
+            new_chi_squared = self.get_chi2_likelihood(
+                self.data[0]["pk"],
+                mod_fit,
+                np.zeros(mod_fit.shape),
+                self.data[0]["icov"],
+                self.data[0]["icov_m_w"],
+                num_mocks=self.data[0]["num_mocks"],
+                num_params=len(self.get_active_params()) + len(bband),
             )
-            print(self.get_alphas(params["alpha"], params["epsilon"]))
+            alphas = self.get_alphas(params["alpha"], params["epsilon"])
+            print(new_chi_squared, len(self.data[0]["pk"]), alphas)
 
-            bband = self.get_ML_nuisance(
+            bband_smooth = self.get_ML_nuisance(
                 self.data[0]["pk"],
                 smooth_fit,
                 smooth_fit_odd,
@@ -464,7 +469,7 @@ class PowerSpectrumFit(Model):
                 self.data[0]["icov"],
                 self.data[0]["icov_m_w"],
             )
-            smooth += smooth_odd + bband @ (polysmooth + polysmooth_odd)
+            smooth += smooth_odd + bband_smooth @ (polysmooth + polysmooth_odd)
         else:
             mod += mod_odd
             smooth += smooth_odd
@@ -534,6 +539,44 @@ class PowerSpectrumFit(Model):
         if figname is not None:
             fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
         plt.show()
+
+        # Output best-fit parameters and model, with some free space to fill in the MCMC results
+        names = ["Xinyi_std", "Pedro", "Baojiu", "Xinyi_Hada", "Hee-Jong_std", "Yu-Yu_std", "Javier"]
+        name = names[0]
+        filename = str("/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/Queensland_pk_%s_bestfits.txt" % name)
+        np.savetxt(
+            filename,
+            np.c_[
+                alphas[0],
+                alphas[1],
+                0.0,
+                0.0,
+                0.0,
+                self.camb.get_data()["r_s"],
+                -2.0 * new_chi_squared,
+                len(self.data[0]["pk"]),
+                params["beta"],
+                params["sigma_s"],
+                params["sigma_nl_par"],
+                params["sigma_nl_perp"],
+                bband[0],
+                bband[1],
+                bband[2],
+                bband[3],
+                bband[4],
+                bband[5],
+                bband[6],
+                bband[7],
+                bband[8],
+                bband[9],
+                bband[10],
+            ],
+            fmt="%12.4lf %12.4lf %12.4lf %12.4lf %12.4lf %8.2lf %8.2lf %10d %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %10d %10d %10d %8.3lf %8.3lf %10d %10d %10d %8.3lf %8.3lf",
+            header="best_fit_alpha_par  best_fit_alpha_perp  sigma_alpha_par  sigma_alpha_perp  corr_alpha_par_perp  rd_of_template  bf_chi2  dof   beta  sigma_s  sigma_nl_par  sigma_nl_perp  b   a0_1   a0_2   a0_3   a0_4   a0_5  a2_1   a2_2   a2_3   a2_4   a2_5",
+        )
+
+        filename = str("/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/Queensland_pk_%s_bestfit_model.txt" % name)
+        np.savetxt(filename, np.c_[ks, mods[0], mods[2]], fmt="%12.6lf %12.6lf %12.6lf", header="k       P_0       P_2")
 
 
 if __name__ == "__main__":

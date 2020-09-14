@@ -29,7 +29,7 @@ if __name__ == "__main__":
     cs = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
     # Power spectrum
-    data = PowerSpectrum_DESIMockChallenge(recon=True, isotropic=False, fit_poles=[0, 2])
+    data = PowerSpectrum_DESIMockChallenge(recon=True, isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.45)
     model = PowerBeutler2017(recon=True, isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.NONE, marg="full")
 
     ls = "-"
