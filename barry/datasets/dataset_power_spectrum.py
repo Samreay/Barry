@@ -442,7 +442,7 @@ if __name__ == "__main__":
     # Plot the data and mock average for the Beutler 2019 spectra
     for isotropic in [False]:
         # datasets = [PowerSpectrum_Beutler2019_Z061_NGC(isotropic=isotropic)]
-        datasets = [PowerSpectrum_DESIMockChallenge(isotropic=False, recon=True, fit_poles=[0, 2])]
+        datasets = [PowerSpectrum_DESIMockChallenge(isotropic=False, recon=True, fit_poles=[0, 2], min_k=0.007, max_k=0.1)]
         for dataset in datasets:
             # for i, realisation in enumerate([None, "data"]):
             for i in range(7):
@@ -482,6 +482,7 @@ if __name__ == "__main__":
             plt.ylabel(r"$k\,P(k)$")
             plt.title(dataset.name)
             plt.legend()
+            plt.savefig("/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/Queensland_all_data.pdf")
             plt.show()
 
             """if not isotropic:

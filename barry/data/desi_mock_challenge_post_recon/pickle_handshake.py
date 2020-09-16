@@ -47,7 +47,7 @@ if __name__ == "__main__":
     res = {f.lower(): getpk(f) for f in files}
     ks = next(iter(res.items()))[1]["k"].to_numpy()
     cov = pd.read_csv(cov_filename, delim_whitespace=True, header=None).to_numpy()
-    cov_flat = cov.astype(np.float32)[:, 2]
+    cov_flat = cov.astype(np.float64)[:, 2]
     nin = int(np.sqrt(len(cov)) / 3)
     cov_input = cov_flat.reshape((3 * nin, 3 * nin))
     cov = np.zeros((5 * len(ks), 5 * len(ks)))

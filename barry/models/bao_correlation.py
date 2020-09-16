@@ -452,7 +452,7 @@ class CorrelationFunctionFit(Model):
 
         # Output best-fit parameters and model, with some free space to fill in the MCMC results
         names = ["Xinyi_std", "Pedro", "Baojiu", "Xinyi_Hada", "Hee-Jong_std", "Yu-Yu_std", "Javier"]
-        name = names[1]
+        name = names[6]
         filename = str("/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/Queensland_xi_%s_bestfits.txt" % name)
         np.savetxt(
             filename,

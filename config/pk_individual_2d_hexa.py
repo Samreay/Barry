@@ -18,7 +18,7 @@ from barry.models.model import Correction
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
-    fitter = Fitter(dir_name, save_dims=2, remove_output=False)
+    fitter = Fitter(dir_name, remove_output=False)
 
     c = getCambGenerator()
     r_s = c.get_data()["r_s"]
@@ -102,7 +102,7 @@ if __name__ == "__main__":
                         label + "_pk_std_alpha",
                         label + "_pk_mean_epsilon",
                         label + "_pk_std_epsilon",
-                        label + "_pk_evidence",
+                        label + "_pk_chi2",
                     ]
                 ].copy()
                 res[label].rename(
@@ -111,7 +111,7 @@ if __name__ == "__main__":
                         label + "_pk_std_alpha": "std_alpha",
                         label + "_pk_mean_epsilon": "avg_epsilon",
                         label + "_pk_std_epsilon": "std_epsilon",
-                        label + "_pk_evidence": "evidence",
+                        label + "_pk_chi2": "chi2",
                     },
                     axis="columns",
                     inplace=True,
@@ -206,7 +206,7 @@ if __name__ == "__main__":
                         f"{label}_pk_std_alpha": means["std_alpha"],
                         f"{label}_pk_mean_epsilon": means["avg_epsilon"],
                         f"{label}_pk_std_epsilon": means["std_epsilon"],
-                        f"{label}_pk_evidence": means["evidence"],
+                        f"{label}_pk_chi2": means["chi2"],
                     }
                 )
                 if df_all is None:

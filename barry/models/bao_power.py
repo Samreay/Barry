@@ -458,7 +458,7 @@ class PowerSpectrumFit(Model):
                 num_params=len(self.get_active_params()) + len(bband),
             )
             alphas = self.get_alphas(params["alpha"], params["epsilon"])
-            print(new_chi_squared, len(self.data[0]["pk"]), alphas)
+            print(-2.0 * new_chi_squared, len(self.data[0]["pk"]) - len(self.get_active_params()) - len(bband), alphas)
 
             bband_smooth = self.get_ML_nuisance(
                 self.data[0]["pk"],
@@ -540,9 +540,9 @@ class PowerSpectrumFit(Model):
             fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
         plt.show()
 
-        # Output best-fit parameters and model, with some free space to fill in the MCMC results
+        """# Output best-fit parameters and model, with some free space to fill in the MCMC results
         names = ["Xinyi_std", "Pedro", "Baojiu", "Xinyi_Hada", "Hee-Jong_std", "Yu-Yu_std", "Javier"]
-        name = names[0]
+        name = names[6]
         filename = str("/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/Queensland_pk_%s_bestfits.txt" % name)
         np.savetxt(
             filename,
@@ -576,7 +576,7 @@ class PowerSpectrumFit(Model):
         )
 
         filename = str("/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/Queensland_pk_%s_bestfit_model.txt" % name)
-        np.savetxt(filename, np.c_[ks, mods[0], mods[2]], fmt="%12.6lf %12.6lf %12.6lf", header="k       P_0       P_2")
+        np.savetxt(filename, np.c_[ks, mods[0], mods[2]], fmt="%12.6lf %12.6lf %12.6lf", header="k       P_0       P_2")"""
 
 
 if __name__ == "__main__":

@@ -174,7 +174,7 @@ if __name__ == "__main__":
 
     print("Checking anisotropic")
     dataset = CorrelationFunction_DESIMockChallenge(
-        recon=True, isotropic=False, min_dist=30, max_dist=200, realisation=1, fit_poles=[0, 2], num_mocks=1000
+        recon=True, isotropic=False, min_dist=30, max_dist=200, realisation=6, fit_poles=[0, 2], num_mocks=1000
     )
     model = CorrBeutler2017(recon=True, isotropic=False, fix_params=["om"], correction=Correction.HARTLAP, marg="full")
     model.sanity_check(dataset)
