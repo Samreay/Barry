@@ -64,6 +64,7 @@ if __name__ == "__main__":
         files = [d + f for d in ds for f in os.listdir(d)]
 
         res = {f.lower(): getdf(f) for f in files}
+        print([k for k, v in res.items() if "post_recon" in k and "patchy" in k])
         split = {
             "pre-recon data": [v for k, v in res.items() if "pre_recon" in k and "patchy" not in k],
             "post-recon data": None,

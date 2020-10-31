@@ -39,16 +39,16 @@ if __name__ == "__main__":
 
         # Fix sigma_nl for one of the Beutler models
         model_quad = PowerBeutler2017(
-            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.NONE, marg="full"
+            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.HARTLAP, marg="full"
         )
         model_odd = PowerBeutler2017(
-            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 1, 2], correction=Correction.NONE, marg="full"
+            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 1, 2], correction=Correction.HARTLAP, marg="full"
         )
         model_hexa = PowerBeutler2017(
-            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 2, 4], correction=Correction.NONE, marg="full"
+            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 2, 4], correction=Correction.HARTLAP, marg="full"
         )
         model_all = PowerBeutler2017(
-            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 1, 2, 3, 4], correction=Correction.NONE, marg="full"
+            recon=r, isotropic=False, fix_params=["om"], poly_poles=[0, 1, 2, 3, 4], correction=Correction.HARTLAP, marg="full"
         )
 
         fitter.add_model_and_dataset(model_quad, d_quad, name=r"$P_{0}+P_{2}$", linestyle=ls, color=cs[0], realisation="average")
@@ -89,6 +89,7 @@ if __name__ == "__main__":
         plt.rc("font", family="serif")
 
         res = {}
+        bestfits = {}
         if path.exists(pfn + "_alphameans.csv"):
             logging.info("Found alphameans.csv, reading from existing file")
 
@@ -137,8 +138,60 @@ if __name__ == "__main__":
                 n = extra["name"].split(",")[0]
                 if res.get(n) is None:
                     res[n] = []
+                if bestfits.get(n) is None:
+                    bestfits[n] = []
                 i = posterior.argmax()
-                chi2 = -2 * posterior[i]
+
+                model.set_data(data)
+                params = model.get_param_dict(chain[i])
+                for name, val in params.items():
+                    model.set_default(name, val)
+
+                # Ensures we return the window convolved model
+                icov_m_w = model.data[0]["icov_m_w"]
+                model.data[0]["icov_m_w"][0] = None
+
+                ks = model.data[0]["ks"]
+                err = np.sqrt(np.diag(model.data[0]["cov"]))
+                mod, mod_odd, polymod, polymod_odd, _ = model.get_model(params, model.data[0], data_name=data[0]["name"])
+
+                if model.marg:
+                    mask = data[0]["m_w_mask"]
+                    mod_fit, mod_fit_odd = mod[mask], mod_odd[mask]
+
+                    len_poly = len(model.data[0]["ks"]) if model.isotropic else len(model.data[0]["ks"]) * len(model.data[0]["fit_poles"])
+                    polymod_fit, polymod_fit_odd = np.empty((np.shape(polymod)[0], len_poly)), np.zeros((np.shape(polymod)[0], len_poly))
+                    for nn in range(np.shape(polymod)[0]):
+                        polymod_fit[nn], polymod_fit_odd[nn] = polymod[nn, mask], polymod_odd[nn, mask]
+
+                    bband = model.get_ML_nuisance(
+                        model.data[0]["pk"],
+                        mod_fit,
+                        mod_fit_odd,
+                        polymod_fit,
+                        polymod_fit_odd,
+                        model.data[0]["icov"],
+                        model.data[0]["icov_m_w"],
+                    )
+                    mod += mod_odd + bband @ (polymod + polymod_odd)
+                    mod_fit += mod_fit_odd + bband @ (polymod_fit + polymod_fit_odd)
+
+                    # print(len(model.get_active_params()) + len(bband))
+                    # print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
+                    new_chi_squared = -2.0 * model.get_chi2_likelihood(
+                        model.data[0]["pk"],
+                        mod_fit,
+                        np.zeros(mod_fit.shape),
+                        model.data[0]["icov"],
+                        model.data[0]["icov_m_w"],
+                        num_mocks=model.data[0]["num_mocks"],
+                        num_params=len(model.get_active_params()) + len(bband),
+                    )
+                    alphas = model.get_alphas(params["alpha"], params["epsilon"])
+                    # print(new_chi_squared, len(model.data[0]["pk"]) - len(model.get_active_params()) - len(bband), alphas)
+
+                model.data[0]["icov_m_w"] = icov_m_w
+
                 m, s = weighted_avg_and_cov(chain[:, 0:2], weight, 0)
 
                 if doonce:
@@ -162,12 +215,14 @@ if __name__ == "__main__":
                         chain[i, 1],
                         s[0, 1],
                         posterior[i],
-                        chi2,
-                        -chi2,
+                        new_chi_squared,
+                        -new_chi_squared,
                         extra["realisation"],
                         evidence.max(),
                     ]
                 )
+
+                bestfits[n].append(np.concatenate([[extra["realisation"]], chain[i, :], bband]))
             print(res.keys())
             for label in res.keys():
                 res[label] = pd.DataFrame(
@@ -214,6 +269,16 @@ if __name__ == "__main__":
                 else:
                     df_all = pd.merge(df_all, d, how="outer", on="realisation")
             df_all.to_csv(pfn + "_alphameans.csv", index=False, float_format="%0.5f")
+
+            headers = [
+                "realisation   alpha   epsilon   sigma_s   beta   sigma_nl_par   sigma_nl_perp   b   a0_1   a0_2   a0_3   a0_4   a0_5   a2_1   a2_2   a2_3   a2_4   a2_5",
+                "realisation   alpha   epsilon   sigma_s   beta   sigma_nl_par   sigma_nl_perp   b   a0_1   a0_2   a0_3   a0_4   a0_5   a1_1   a1_2   a1_3   a1_4   a1_5   a2_1   a2_2   a2_3   a2_4   a2_5",
+                "realisation   alpha   epsilon   sigma_s   beta   sigma_nl_par   sigma_nl_perp   b   a0_1   a0_2   a0_3   a0_4   a0_5   a2_1   a2_2   a2_3   a2_4   a2_5   a4_1   a4_2   a4_3   a4_4   a4_5",
+                "realisation   alpha   epsilon   sigma_s   beta   sigma_nl_par   sigma_nl_perp   b   a0_1   a0_2   a0_3   a0_4   a0_5   a1_1   a1_2   a1_3   a1_4   a1_5   a2_1   a2_2   a2_3   a2_4   a2_5   a3_1   a3_2   a3_3   a3_4   a3_5   a4_1   a4_2   a4_3   a4_4   a4_5",
+            ]
+            for i, label in enumerate(bestfits.keys()):
+                print(headers[i], np.stack(bestfits[label])[0])
+                np.savetxt(pfn + "_" + label + "_bestfits.dat", np.transpose(np.stack(bestfits[label]))[:, 0], header=headers[i])
 
         cols = {
             r"$P_{0}+P_{2}$": cs[0],

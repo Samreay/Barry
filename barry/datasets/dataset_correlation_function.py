@@ -103,7 +103,7 @@ class CorrelationFunction_DESIMockChallenge(CorrelationFunction):
         name=None,
         min_dist=30,
         max_dist=200,
-        recon=False,
+        recon=True,
         reduce_cov_factor=1,
         num_mocks=None,
         fake_diag=False,
