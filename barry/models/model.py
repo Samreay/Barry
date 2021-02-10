@@ -177,9 +177,13 @@ class Model(ABC):
         """ Returns the default value of a given parameter name """
         return self.param_dict[name].default
 
-    def set_default(self, name, default):
+    def set_default(self, name, default, min=None, max=None):
         """ Sets the default value for a parameter """
         self.param_dict[name].default = default
+        if min is not None:
+            self.param_dict[name].min = min
+        if max is not None:
+            self.param_dict[name].max = max
 
     def get_defaults(self):
         """ Returns a list of default values for all active parameters """

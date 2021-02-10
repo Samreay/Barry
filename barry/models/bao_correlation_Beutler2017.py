@@ -1,4 +1,6 @@
 import logging
+import sys
+sys.path.append("../..")
 
 from barry.models import PowerBeutler2017
 from barry.models.bao_correlation import CorrelationFunctionFit
@@ -58,10 +60,6 @@ class CorrBeutler2017(CorrelationFunctionFit):
                 self.set_default(f"a{{{pole}}}_1", 0.0)
                 self.set_default(f"a{{{pole}}}_2", 0.0)
                 self.set_default(f"a{{{pole}}}_3", 0.0)
-
-    def set_data(self, data):
-        super().set_data(data)
-        self.parent.set_data(data)
 
     def declare_parameters(self):
         super().declare_parameters()
@@ -166,7 +164,7 @@ if __name__ == "__main__":
     setup_logging()
 
     """print("Checking isotropic")
-    dataset = CorrelationFunction_ROSS_DR12_Z061(isotropic=True, realisation="data")
+    dataset = CorrelationFunction_ROSS_DR12_Z061(isotropic=True, reaRlisation="data")
     model = CorrBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP, marg="full")
     model_iso = CorrBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
     model.sanity_check(dataset)
@@ -176,5 +174,5 @@ if __name__ == "__main__":
     dataset = CorrelationFunction_DESIMockChallenge(
         recon=True, isotropic=False, min_dist=30, max_dist=200, realisation=6, fit_poles=[0, 2], num_mocks=1000
     )
-    model = CorrBeutler2017(recon=True, isotropic=False, fix_params=["om"], correction=Correction.HARTLAP, marg="full")
+    model = CorrBeutler2017(recon=True, isotropic=False, fix_params=["om"], correction=Correction.HARTLAP, marg=None)
     model.sanity_check(dataset)

@@ -3,7 +3,7 @@ import numpy as np
 
 from barry.cosmology.pk2xi import PowerToCorrelationGauss
 from barry.cosmology.power_spectrum_smoothing import validate_smooth_method, smooth
-from barry.models.model import Model
+from barry.models.model import Model, Omega_m_z
 from barry.models.bao_power import PowerSpectrumFit
 from scipy.interpolate import splev, splrep
 from scipy.integrate import simps
@@ -76,6 +76,36 @@ class CorrelationFunctionFit(Model):
         self.pk2xi_0 = PowerToCorrelationGauss(self.camb.ks, ell=0)
         self.pk2xi_2 = PowerToCorrelationGauss(self.camb.ks, ell=2)
         self.pk2xi_4 = PowerToCorrelationGauss(self.camb.ks, ell=4)
+        self.set_bias(data[0])
+        self.parent.set_data(data, parent=True)
+
+    def set_bias(self, data, sval=50.0, width=0.3):
+        """ Sets the bias default value by comparing the data monopole and linear model
+
+        Parameters
+        ----------
+        data : dict
+            The data to use
+        kval: float
+            The value of k at which to perform the comparison. Default 0.2
+
+        """
+
+        print(self.param_dict)
+        c = data["cosmology"]
+        dataxi = splev(sval, splrep(data["dist"], data["xi0"]))
+        cambpk = self.camb.get_data(om=c["om"], h0=c["h0"])
+        modelxi = self.pk2xi_0.__call__(cambpk["ks"], cambpk["pk_lin"], np.array([sval]))[0]
+        kaiserfac = dataxi/modelxi
+        f = self.param_dict.get("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
+        b = -1.0/3.0*f + np.sqrt(kaiserfac - 4.0/45.0*f**2)
+        min_b, max_b = (1.0-width)*b, (1.0+width)*b
+        self.set_default(f"b{{{0}}}", b**2, min=min_b**2, max=max_b**2)
+        self.logger.info(f"Setting default bias to b0={b:0.5f} with {width:0.5f} fractional width")
+        if self.param_dict.get("beta") is not None:
+            beta, beta_min, beta_max = f/b, (1.0-width)*f/b, (1.0+width)*f/b
+            self.set_default("beta", beta, beta_min, beta_max)
+            self.logger.info(f"Setting default RSD parameter to beta={beta:0.5f} with {width:0.5f} fractional width")
 
     def declare_parameters(self):
         """ Defines model parameters, their bounds and default value. """
@@ -303,9 +333,10 @@ class CorrelationFunctionFit(Model):
         xi_model, poly_model = self.get_model(p, d, smooth=self.smooth)
 
         xi_model_fit = break_vector_and_get_blocks(xi_model, len(d["poles"]), d["fit_pole_indices"])
-        poly_model_fit = np.empty((np.shape(poly_model)[0], len(self.data[0]["fit_pole_indices"]) * len(self.data[0]["dist"])))
-        for n in range(np.shape(poly_model)[0]):
-            poly_model_fit[n] = break_vector_and_get_blocks(poly_model[n], np.shape(poly_model)[1] / len(d["dist"]), d["fit_pole_indices"])
+        if self.marg:
+            poly_model_fit = np.empty((np.shape(poly_model)[0], len(self.data[0]["fit_pole_indices"]) * len(self.data[0]["dist"])))
+            for n in range(np.shape(poly_model)[0]):
+                poly_model_fit[n] = break_vector_and_get_blocks(poly_model[n], np.shape(poly_model)[1] / len(d["dist"]), d["fit_pole_indices"])
 
         if self.marg_type == "partial":
             return self.get_chi2_partial_marg_likelihood(
@@ -330,7 +361,7 @@ class CorrelationFunctionFit(Model):
                 num_mocks=num_mocks,
             )
         else:
-            return self.get_chi2_likelihood(d["xi"], xi_model_fit, d["icov"], [None], num_mocks=num_mocks, num_params=num_params)
+            return self.get_chi2_likelihood(d["xi"], xi_model_fit, np.zeros(xi_model_fit.shape), d["icov"], [None], num_mocks=num_mocks, num_params=num_params)
 
     def plot(self, params, smooth_params=None, figname=None):
         self.logger.info("Create plot")
@@ -450,7 +481,7 @@ class CorrelationFunctionFit(Model):
             fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
         plt.show()
 
-        # Output best-fit parameters and model, with some free space to fill in the MCMC results
+        """"# Output best-fit parameters and model, with some free space to fill in the MCMC results
         names = ["Xinyi_std", "Pedro", "Baojiu", "Xinyi_Hada", "Hee-Jong_std", "Yu-Yu_std", "Javier"]
         name = names[6]
         filename = str("/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/Queensland_xi_%s_bestfits.txt" % name)
@@ -483,7 +514,7 @@ class CorrelationFunctionFit(Model):
         )
 
         filename = str("/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/Queensland_xi_%s_bestfit_model.txt" % name)
-        np.savetxt(filename, np.c_[ss, mods[0], mods[1]], fmt="%12.6lf %12.6lf %12.6lf", header="s       Xi_0       Xi_2")
+        np.savetxt(filename, np.c_[ss, mods[0], mods[1]], fmt="%12.6lf %12.6lf %12.6lf", header="s       Xi_0       Xi_2")"""
 
 
 if __name__ == "__main__":

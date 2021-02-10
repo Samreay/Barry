@@ -441,15 +441,15 @@ if __name__ == "__main__":
 
     # Plot the data and mock average for the Beutler 2019 spectra
     for isotropic in [False]:
-        datasets = [PowerSpectrum_Beutler2019_Z061_NGC(isotropic=isotropic, min_k=0.0, max_k=0.50)]
-        # datasets = [PowerSpectrum_DESIMockChallenge(isotropic=False, recon=True, fit_poles=[0, 2], min_k=0.007, max_k=0.1)]
+        #datasets = [PowerSpectrum_Beutler2019_Z061_NGC(isotropic=isotropic, min_k=0.0, max_k=0.50)]
+        datasets = [PowerSpectrum_DESIMockChallenge(isotropic=False, recon=True, fit_poles=[0, 2], min_k=0.007, max_k=0.45)]
         for dataset in datasets:
             # for i, realisation in enumerate([None, "data"]):
             for i in range(7):
                 dataset.set_realisation(i)
                 data = dataset.get_data()
-                np.savetxt("/Volumes/Work/UQ/Barry/barry/data/beutler_2019_dr12_z061_pk/C_BOSS_DR12_NGC_z3_postrecon.dat", data[0]["cov"])
-                exit()
+                #np.savetxt("/Volumes/Work/UQ/Barry/barry/data/beutler_2019_dr12_z061_pk/C_BOSS_DR12_NGC_z3_postrecon.dat", data[0]["cov"])
+                #exit()
                 label = [r"$P_{0}(k)$", r"$P_{2}(k)$"] if i == 0 else [None, None]
                 # label = [r"$P_{0}(k)$", r"$P_{2}(k)$", r"$P_{4}(k)$"] if i == 0 else [None, None, None]
                 fmt = "o" if i == 0 else "None"
@@ -484,7 +484,7 @@ if __name__ == "__main__":
             plt.ylabel(r"$k\,P(k)$")
             plt.title(dataset.name)
             plt.legend()
-            plt.savefig("/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/Queensland_all_data.pdf")
+            #plt.savefig("/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/Queensland_all_data.pdf")
             plt.show()
 
             """if not isotropic:

@@ -1,11 +1,10 @@
 from functools import lru_cache
 
-from scipy import integrate
 from scipy.integrate import simps
 from scipy.interpolate import splev, splrep
 
 from barry.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
-from barry.models.model import Model
+from barry.models.model import Model, Omega_m_z
 import numpy as np
 
 from barry.utils import break_vector_and_get_blocks
@@ -57,6 +56,48 @@ class PowerSpectrumFit(Model):
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
+
+    def set_data(self, data, parent=False):
+        """ Sets the models data, including fetching the right cosmology and PT generator.
+
+        Note that if you pass in multiple datas (ie a list with more than one element),
+        they need to have the same cosmology.
+
+        Parameters
+        ----------
+        data : dict, list[dict]
+            A list of datas to use
+        """
+        super().set_data(data)
+        if not parent:
+            self.set_bias(data[0])
+
+    def set_bias(self, data, kval=0.2, width=0.3):
+        """ Sets the bias default value by comparing the data monopole and linear pk
+
+        Parameters
+        ----------
+        data : dict
+            The data to use
+        kval: float
+            The value of k at which to perform the comparison. Default 0.2
+
+        """
+
+        c = data["cosmology"]
+        datapk = splev(kval, splrep(data["ks"], data["pk0"]))
+        cambpk = self.camb.get_data(om=c["om"], h0=c["h0"])
+        modelpk = splev(kval, splrep(cambpk["ks"], cambpk["pk_lin"]))
+        kaiserfac = datapk/modelpk
+        f = self.param_dict.get("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
+        b = -1.0/3.0*f + np.sqrt(kaiserfac - 4.0/45.0*f**2)
+        min_b, max_b = (1.0-width)*b, (1.0+width)*b
+        self.set_default("b", b**2, min=min_b**2, max=max_b**2)
+        self.logger.info(f"Setting default bias to b={b:0.5f} with {width:0.5f} fractional width")
+        if self.param_dict.get("beta") is not None:
+            beta, beta_min, beta_max = f/b, (1.0-width)*f/b, (1.0+width)*f/b
+            self.set_default("beta", beta, beta_min, beta_max)
+            self.logger.info(f"Setting default RSD parameter to beta={beta:0.5f} with {width:0.5f} fractional width")
 
     def declare_parameters(self):
         """ Defines model parameters, their bounds and default value. """

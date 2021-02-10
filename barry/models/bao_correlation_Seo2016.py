@@ -17,10 +17,6 @@ class CorrSeo2016(CorrelationFunctionFit):
         super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, smooth=smooth, correction=correction)
         self.parent = PowerSeo2016(fix_params=fix_params, smooth_type=smooth_type, recon=recon, smooth=smooth, correction=correction)
 
-    def set_data(self, data):
-        super().set_data(data)
-        self.parent.set_data(data)
-
     def declare_parameters(self):
         # Define parameters
         super().declare_parameters()
