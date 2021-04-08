@@ -1,5 +1,8 @@
 import logging
 
+import sys
+
+sys.path.append("..")
 from barry.datasets.dataset import MultiDataset
 from barry.datasets.dataset_power_spectrum_abc import PowerSpectrum
 
@@ -499,9 +502,6 @@ if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
     import numpy as np
-    import sys
-
-    sys.path.append("..")
 
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
