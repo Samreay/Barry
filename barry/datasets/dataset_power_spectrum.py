@@ -508,15 +508,15 @@ if __name__ == "__main__":
     types = ["cov-std", "cov-fix", "rec-iso5", "rec-iso10", "rec-iso15", "rec-iso20", "rec-ani5", "rec-ani10", "rec-ani15", "rec-ani20"]
     recons = [False, False, True, True, True, True, True, True, True, True]
     realisations = [1, 1, 2, 2, 3, 2, 1, 1, 2, 1]
-    for i, type in enumerate(types):
+    for j, type in enumerate(types):
         datasets = [
             PowerSpectrum_DESIMockChallenge_Post(
-                isotropic=isotropic, recon=recons[i], fit_poles=[0, 2, 4], min_k=0.007, max_k=0.45, type=type
+                isotropic=isotropic, recon=recons[j], fit_poles=[0, 2, 4], min_k=0.007, max_k=0.45, type=type
             )
         ]
         for dataset in datasets:
             # for i, realisation in enumerate([None, "data"]):
-            for i in range(realisations[i]):
+            for i in range(realisations[j]):
                 dataset.set_realisation(i)
                 data = dataset.get_data()
                 label = [r"$P_{0}(k)$", r"$P_{2}(k)$", r"$P_{4}(k)$"] if i == 0 else [None, None, None]

@@ -26,6 +26,7 @@ if __name__ == "__main__":
     # Pre-Recon std then fix
     for i, type in enumerate(types):
         for j in range(realisations[i]):
+            print(i, type, j, realisations[i])
             data = PowerSpectrum_DESIMockChallenge_Post(
                 isotropic=False, recon=recons[i], realisation=j, fit_poles=[0, 2, 4], min_k=0.02, max_k=0.30, num_mocks=1000, type=type
             )
