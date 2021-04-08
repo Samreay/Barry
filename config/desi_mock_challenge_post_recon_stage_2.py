@@ -2,21 +2,15 @@ import sys
 
 from chainconsumer import ChainConsumer
 
-# sys.path.append("..")
+sys.path.append("..")
 from barry.samplers import DynestySampler
-from barry.cosmology.camb_generator import CambGenerator
-from barry.postprocessing import BAOExtractor
 from barry.config import setup
-from barry.models import PowerBeutler2017, CorrBeutler2017
+from barry.models import PowerBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESIMockChallenge_Post
-from barry.datasets.dataset_correlation_function import CorrelationFunction_DESIMockChallenge
 from barry.fitter import Fitter
 import numpy as np
-import pandas as pd
 from barry.models.model import Correction
 from barry.utils import weighted_avg_and_cov, break_vector_and_get_blocks
-from barry.cosmology.power_spectrum_smoothing import smooth
-from barry.generate import get_cosmologies
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
