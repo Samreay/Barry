@@ -27,7 +27,7 @@ class Param:
 
 @unique
 class Correction(Enum):
-    """ Various corrections that we should apply when computing our likelihood.
+    """Various corrections that we should apply when computing our likelihood.
 
     NONE gives no correction.
     HARTLAP implements the chi2 correction given in Hartlap 2007
@@ -41,14 +41,14 @@ class Correction(Enum):
 
 
 class Model(ABC):
-    """ Abstract model class.
+    """Abstract model class.
 
     Implement a version of this that overwrites the `plot` and get_likelihood` methods.
 
     """
 
     def __init__(self, name, postprocess=None, correction=None, isotropic=True, marg=None):
-        """ Create a new model.
+        """Create a new model.
 
         Parameters
         ----------
@@ -130,7 +130,7 @@ class Model(ABC):
                 self._load_precomputed_data()
 
     def set_data(self, data):
-        """ Sets the models data, including fetching the right cosmology and PT generator.
+        """Sets the models data, including fetching the right cosmology and PT generator.
 
         Note that if you pass in multiple datas (ie a list with more than one element),
         they need to have the same cosmology and must all be isotropic or anisotropic
@@ -206,7 +206,7 @@ class Model(ABC):
         return [(x.min, x.max) for x in self.get_active_params()]
 
     def get_prior(self, params):
-        """ The prior, implemented as a flat prior by default.
+        """The prior, implemented as a flat prior by default.
 
         Used by the Ensemble and MH samplers, but not by nested sampling methods.
 
@@ -217,7 +217,7 @@ class Model(ABC):
         return 0
 
     def get_chi2_likelihood(self, data, model, model_odd, icov, icov_m_w, num_mocks=None, num_params=None):
-        """ Computes the chi2 corrected likelihood.
+        """Computes the chi2 corrected likelihood.
 
         Parameters
         ----------
@@ -271,7 +271,7 @@ class Model(ABC):
             return -0.5 * chi2
 
     def get_chi2_marg_likelihood(self, data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w, num_mocks=None):
-        """ Computes the chi2 corrected likelihood.
+        """Computes the chi2 corrected likelihood.
 
         Parameters
         ----------
@@ -339,7 +339,7 @@ class Model(ABC):
     def get_chi2_partial_marg_likelihood(
         self, data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w, num_mocks=None, num_params=None
     ):
-        """ Computes the chi2 corrected likelihood.
+        """Computes the chi2 corrected likelihood.
 
         Parameters
         ----------
@@ -443,7 +443,7 @@ class Model(ABC):
         return self.precompute.__func__ != func2.__func__
 
     def precompute(self, camb, om, h0):
-        """ A function available for overriding that precomputes values that depend only on the outputs of CAMB.
+        """A function available for overriding that precomputes values that depend only on the outputs of CAMB.
 
         Parameters
         ----------
@@ -534,7 +534,7 @@ class Model(ABC):
         return params
 
     def optimize(self, close_default=3, niter=100, maxiter=1000):
-        """ Perform local optimiation to try and find the best fit of your model to the dataset loaded in.
+        """Perform local optimiation to try and find the best fit of your model to the dataset loaded in.
 
         Parameters
         ----------
@@ -595,6 +595,8 @@ class Model(ABC):
         print(f"Using dataset {str(dataset)}")
         data = dataset.get_data()
         self.set_data(data)
+
+        print(self.camb.recon_smoothing_scale)
 
         p = self.get_defaults()
         p_dict = self.get_param_dict(p)

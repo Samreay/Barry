@@ -1,5 +1,6 @@
 import logging
 import sys
+
 sys.path.append("../..")
 
 from barry.models import PowerBeutler2017
@@ -10,8 +11,7 @@ import numpy as np
 
 
 class CorrBeutler2017(CorrelationFunctionFit):
-    """  xi(s) model inspired from Beutler 2017 and Ross 2017.
-    """
+    """xi(s) model inspired from Beutler 2017 and Ross 2017."""
 
     def __init__(
         self,
@@ -76,7 +76,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
             self.add_param(f"a{{{pole}}}_3", f"$a_{{{pole},3}}$", -0.2, 0.2, 0)  # Monopole Polynomial marginalisation 3
 
     def compute_correlation_function(self, dist, p, smooth=False):
-        """ Computes the correlation function model using the Beutler et. al., 2017 power spectrum and Ross 2017 method
+        """Computes the correlation function model using the Beutler et. al., 2017 power spectrum and Ross 2017 method
 
         Parameters
         ----------
@@ -157,7 +157,7 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_correlation_function import CorrelationFunction_ROSS_DR12_Z061, CorrelationFunction_DESIMockChallenge
+    from barry.datasets.dataset_correlation_function import PowerSpectrum_DESIMockChallenge_Post
     from barry.config import setup_logging
     from barry.models.model import Correction
 
@@ -171,8 +171,6 @@ if __name__ == "__main__":
     model_iso.sanity_check(dataset)"""
 
     print("Checking anisotropic")
-    dataset = CorrelationFunction_DESIMockChallenge(
-        recon=True, isotropic=False, min_dist=30, max_dist=200, realisation=6, fit_poles=[0, 2], num_mocks=1000
-    )
+    dataset = Correlation_DESIMockChallenge_Post(isotropic=False, recon=False, fit_poles=[0, 2, 4], min_k=0.01, max_k=0.45, type="cov-std")
     model = CorrBeutler2017(recon=True, isotropic=False, fix_params=["om"], correction=Correction.HARTLAP, marg=None)
     model.sanity_check(dataset)

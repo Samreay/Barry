@@ -8,7 +8,7 @@ from scipy.interpolate import splev, splrep
 
 
 class PowerDing2018(PowerSpectrumFit):
-    """ P(k) model inspired from Ding 2018.
+    """P(k) model inspired from Ding 2018.
 
     See https://ui.adsabs.harvard.edu/abs/2018MNRAS.479.1021D for details.
 
@@ -73,7 +73,8 @@ class PowerDing2018(PowerSpectrumFit):
         return {
             "sigma_nl": integrate.simps(pk_lin * (1.0 - j0), ks) / (6.0 * np.pi ** 2),
             "sigma_dd_nl": integrate.simps(pk_lin * (1.0 - s) ** 2 * (1.0 - j0), ks) / (6.0 * np.pi ** 2),
-            "sigma_sd_nl": integrate.simps(pk_lin * (0.5 * (s ** 2 + (1.0 - s) ** 2) - j0 * s * (1.0 - s)), ks) / (6.0 * np.pi ** 2),
+            "sigma_sd_nl": integrate.simps(pk_lin * (0.5 * (s ** 2 + (1.0 - s) ** 2) + j0 * s * (1.0 - s)), ks)
+            / (6.0 * np.pi ** 2),  # Corrected for sign error in front of j0.
             "sigma_ss_nl": integrate.simps(pk_lin * s ** 2 * (1.0 - j0), ks) / (6.0 * np.pi ** 2),
         }
 
@@ -170,7 +171,7 @@ class PowerDing2018(PowerSpectrumFit):
             self.add_param(f"a{{{pole}}}_5", f"$a_{{{pole},5}}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None):
-        """ Computes the power spectrum model using the Ding et. al., 2018 EFT0 propagator
+        """Computes the power spectrum model using the Ding et. al., 2018 EFT0 propagator
 
         Parameters
         ----------

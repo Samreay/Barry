@@ -54,7 +54,7 @@ def E_z(omega_m, z):
 
 
 class CambGenerator(object):
-    """ An object to generate power spectra using camb and save them to file.
+    """An object to generate power spectra using camb and save them to file.
 
     Useful because computing them in a likelihood step is insanely slow.
     """
@@ -62,7 +62,7 @@ class CambGenerator(object):
     def __init__(
         self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21
     ):
-        """ 
+        """
         Precomputes CAMB for efficiency. Access ks via self.ks, and use get_data for an array
         of both the linear and non-linear power spectrum
         """

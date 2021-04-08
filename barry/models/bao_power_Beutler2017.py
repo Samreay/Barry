@@ -4,7 +4,7 @@ from scipy.interpolate import splev, splrep
 
 
 class PowerBeutler2017(PowerSpectrumFit):
-    """ P(k) model inspired from Beutler 2017.
+    """P(k) model inspired from Beutler 2017.
 
     See https://ui.adsabs.harvard.edu/abs/2017MNRAS.464.3409B for details.
 
@@ -15,7 +15,7 @@ class PowerBeutler2017(PowerSpectrumFit):
         name="Pk Beutler 2017",
         fix_params=("om"),
         smooth_type="hinton2017",
-        recon=False,
+        recon=None,
         postprocess=None,
         smooth=False,
         correction=None,
@@ -24,8 +24,15 @@ class PowerBeutler2017(PowerSpectrumFit):
         marg=None,
     ):
 
-        self.recon = recon
-        self.recon_smoothing_scale = None
+        self.recon = False
+        self.recon_type = "None"
+        if recon is not None:
+            if recon.lower() is not "None":
+                self.recon_type = "iso"
+                if recon.lower() == "ani":
+                    self.recon_type = "ani"
+                self.recon = True
+
         if isotropic:
             poly_poles = [0]
         if marg is not None:
@@ -74,7 +81,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param(f"a{{{pole}}}_5", f"$a_{{{pole},5}}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None):
-        """ Computes the power spectrum model using the Beutler et. al., 2017 method
+        """Computes the power spectrum model using the Beutler et. al., 2017 method
 
         Parameters
         ----------
@@ -157,7 +164,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             kprime = np.tile(k, (self.nmu, 1)).T if for_corr else np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
             muprime = self.mu if for_corr else self.get_muprime(epsilon)
             fog = 1.0 / (1.0 + muprime ** 2 * kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
-            if self.recon:
+            if self.recon_type.lower() == "iso":
                 kaiser_prefac = 1.0 + p["beta"] * muprime ** 2 * (1.0 - splev(kprime, splrep(self.camb.ks, self.camb.smoothing_kernel)))
             else:
                 kaiser_prefac = 1.0 + p["beta"] * muprime ** 2
@@ -219,7 +226,7 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_NGC, PowerSpectrum_DESIMockChallenge
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_NGC, PowerSpectrum_DESIMockChallenge_Post
     from barry.config import setup_logging
     from barry.models.model import Correction
 
@@ -231,22 +238,27 @@ if __name__ == "__main__":
     # model.sanity_check(dataset)
 
     print("Checking anisotropic mock mean")
-    #dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, recon=True, fit_poles=[0, 2])
-    #dataset.set_realisation(0)
-    #model = PowerBeutler2017(
+    # dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, recon=True, fit_poles=[0, 2])
+    # dataset.set_realisation(0)
+    # model = PowerBeutler2017(
     #    recon=dataset.recon,
     #    isotropic=dataset.isotropic,
     #    marg="full",
     #    fix_params=["om"],
     #    poly_poles=[0, 2],
     #    correction=Correction.HARTLAP,
-    #)
-    #model.sanity_check(dataset)
+    # )
+    # model.sanity_check(dataset)
 
-    dataset = PowerSpectrum_DESIMockChallenge(
-       isotropic=False, recon=True, fit_poles=[0, 2], realisation=0, min_k=0.007, max_k=0.45, num_mocks=1000
+    dataset = PowerSpectrum_DESIMockChallenge_Post(
+        isotropic=False, recon=False, fit_poles=[0, 2, 4], realisation=0, min_k=0.01, max_k=0.30, num_mocks=1000, type="cov-std"
     )
     model = PowerBeutler2017(
-       recon=dataset.recon, isotropic=dataset.isotropic, marg=None, fix_params=["om"], poly_poles=[0, 2], correction=Correction.HARTLAP
+        recon=None,
+        isotropic=dataset.isotropic,
+        marg="full",
+        fix_params=["om"],
+        poly_poles=[0, 2, 4],
+        correction=Correction.HARTLAP,
     )
     model.sanity_check(dataset)

@@ -25,7 +25,7 @@ class PowerSpectrumFit(Model):
         poly_poles=(0, 2),
         marg=None,
     ):
-        """ Generic power spectrum function model
+        """Generic power spectrum function model
 
         Parameters
         ----------
@@ -58,7 +58,7 @@ class PowerSpectrumFit(Model):
         self.mu = np.linspace(0.0, 1.0, self.nmu)
 
     def set_data(self, data, parent=False):
-        """ Sets the models data, including fetching the right cosmology and PT generator.
+        """Sets the models data, including fetching the right cosmology and PT generator.
 
         Note that if you pass in multiple datas (ie a list with more than one element),
         they need to have the same cosmology.
@@ -72,8 +72,8 @@ class PowerSpectrumFit(Model):
         if not parent:
             self.set_bias(data[0])
 
-    def set_bias(self, data, kval=0.2, width=0.3):
-        """ Sets the bias default value by comparing the data monopole and linear pk
+    def set_bias(self, data, kval=0.2, width=0.4):
+        """Sets the bias default value by comparing the data monopole and linear pk
 
         Parameters
         ----------
@@ -88,14 +88,14 @@ class PowerSpectrumFit(Model):
         datapk = splev(kval, splrep(data["ks"], data["pk0"]))
         cambpk = self.camb.get_data(om=c["om"], h0=c["h0"])
         modelpk = splev(kval, splrep(cambpk["ks"], cambpk["pk_lin"]))
-        kaiserfac = datapk/modelpk
+        kaiserfac = datapk / modelpk
         f = self.param_dict.get("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
-        b = -1.0/3.0*f + np.sqrt(kaiserfac - 4.0/45.0*f**2)
-        min_b, max_b = (1.0-width)*b, (1.0+width)*b
-        self.set_default("b", b**2, min=min_b**2, max=max_b**2)
+        b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f ** 2)
+        min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
+        self.set_default("b", b ** 2, min=min_b ** 2, max=max_b ** 2)
         self.logger.info(f"Setting default bias to b={b:0.5f} with {width:0.5f} fractional width")
         if self.param_dict.get("beta") is not None:
-            beta, beta_min, beta_max = f/b, (1.0-width)*f/b, (1.0+width)*f/b
+            beta, beta_min, beta_max = f / b, (1.0 - width) * f / b, (1.0 + width) * f / b
             self.set_default("beta", beta, beta_min, beta_max)
             self.logger.info(f"Setting default RSD parameter to beta={beta:0.5f} with {width:0.5f} fractional width")
 
@@ -109,7 +109,7 @@ class PowerSpectrumFit(Model):
 
     @lru_cache(maxsize=1024)
     def compute_basic_power_spectrum(self, om):
-        """ Computes the smoothed linear power spectrum and the wiggle ratio
+        """Computes the smoothed linear power spectrum and the wiggle ratio
 
         Parameters
         ----------
@@ -133,7 +133,7 @@ class PowerSpectrumFit(Model):
         return pk_smooth_lin, pk_ratio
 
     def get_alphas(self, alpha, epsilon):
-        """ Computes values of alpha_par and alpha_perp from the input values of alpha and epsilon
+        """Computes values of alpha_par and alpha_perp from the input values of alpha and epsilon
 
         Parameters
         ----------
@@ -154,7 +154,7 @@ class PowerSpectrumFit(Model):
 
     @lru_cache(maxsize=32)
     def get_kprimefac(self, epsilon):
-        """ Computes the prefactor to dilate a k value given epsilon, such that kprime = k * kprimefac / alpha
+        """Computes the prefactor to dilate a k value given epsilon, such that kprime = k * kprimefac / alpha
 
         Parameters
         ----------
@@ -174,7 +174,7 @@ class PowerSpectrumFit(Model):
 
     @lru_cache(maxsize=32)
     def get_muprime(self, epsilon):
-        """ Computes dilated values of mu given input values of epsilon for the power spectrum
+        """Computes dilated values of mu given input values of epsilon for the power spectrum
 
         Parameters
         ----------
@@ -203,7 +203,7 @@ class PowerSpectrumFit(Model):
         return pk0, pk2, pk4
 
     def compute_power_spectrum(self, k, p, smooth=False, for_corr=False):
-        """ Get raw ks and p(k) multipoles for a given parametrisation dilated based on the values of alpha and epsilon
+        """Get raw ks and p(k) multipoles for a given parametrisation dilated based on the values of alpha and epsilon
 
         Parameters
         ----------
@@ -257,7 +257,7 @@ class PowerSpectrumFit(Model):
         return kprime, pk0, pk2, pk4, np.zeros((1, len(k)))
 
     def adjust_model_window_effects(self, pk_generated, data, window=True, wide_angle=True):
-        """ Take the window effects into account.
+        """Take the window effects into account.
 
         Parameters
         ----------
@@ -319,7 +319,7 @@ class PowerSpectrumFit(Model):
         return pk_normalised
 
     def get_likelihood(self, p, d):
-        """ Uses the stated likelihood correction and `get_model` to compute the likelihood
+        """Uses the stated likelihood correction and `get_model` to compute the likelihood
 
         Parameters
         ----------
@@ -374,7 +374,7 @@ class PowerSpectrumFit(Model):
             )
 
     def get_model(self, p, d, smooth=False, data_name=None):
-        """ Gets the model prediction using the data passed in and parameter location specified
+        """Gets the model prediction using the data passed in and parameter location specified
 
         Parameters
         ----------
@@ -498,7 +498,7 @@ class PowerSpectrumFit(Model):
                 num_mocks=self.data[0]["num_mocks"],
                 num_params=len(self.get_active_params()) + len(bband),
             )
-            alphas = self.get_alphas(params["alpha"], params["epsilon"])
+            alphas = params["alpha"] if self.isotropic else self.get_alphas(params["alpha"], params["epsilon"])
             print(-2.0 * new_chi_squared, len(self.data[0]["pk"]) - len(self.get_active_params()) - len(bband), alphas)
 
             bband_smooth = self.get_ML_nuisance(
