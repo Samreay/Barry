@@ -18,14 +18,23 @@ class CorrBeutler2017(CorrelationFunctionFit):
         name="Corr Beutler 2017",
         fix_params=("om"),
         smooth_type="hinton2017",
-        recon=False,
+        recon=None,
         smooth=False,
         correction=None,
         isotropic=True,
         poly_poles=(0, 2),
         marg=None,
     ):
-        self.recon = recon
+
+        self.recon = False
+        self.recon_type = "None"
+        if recon is not None:
+            if recon.lower() is not "None":
+                self.recon_type = "iso"
+                if recon.lower() == "ani":
+                    self.recon_type = "ani"
+                self.recon = True
+
         self.recon_smoothing_scale = None
         if isotropic:
             poly_poles = [0]
@@ -157,7 +166,7 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_correlation_function import PowerSpectrum_DESIMockChallenge_Post
+    from barry.datasets.dataset_correlation_function import CorrelationFunction_DESIMockChallenge_Post
     from barry.config import setup_logging
     from barry.models.model import Correction
 
@@ -171,6 +180,8 @@ if __name__ == "__main__":
     model_iso.sanity_check(dataset)"""
 
     print("Checking anisotropic")
-    dataset = Correlation_DESIMockChallenge_Post(isotropic=False, recon=False, fit_poles=[0, 2, 4], min_k=0.01, max_k=0.45, type="cov-std")
-    model = CorrBeutler2017(recon=True, isotropic=False, fix_params=["om"], correction=Correction.HARTLAP, marg=None)
+    dataset = CorrelationFunction_DESIMockChallenge_Post(
+        isotropic=False, recon=True, fit_poles=[0, 2], min_dist=52, max_dist=158, num_mocks=1000, type="rec-ani15"
+    )
+    model = CorrBeutler2017(recon="ani", isotropic=False, fix_params=["om"], correction=Correction.NONE, marg="full")
     model.sanity_check(dataset)

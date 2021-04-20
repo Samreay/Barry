@@ -5,9 +5,9 @@ import os
 
 
 def getxi(loc):
-    df = pd.read_csv(loc, comment="#", skiprows=0, delim_whitespace=True, names=["s", "xi0", "xi2"], header=None)
-    df["xi4"] = 0
-    mask = df["s"] <= 200.0
+    df = pd.read_csv(loc, comment="#", skiprows=0, delim_whitespace=True, names=["s", "xi0", "xi2", "xi4"], header=None)
+    print(df)
+    mask = df["s"] <= 205.0
     masked = df.loc[mask, ["s", "xi0", "xi2", "xi4"]]
     return masked.astype(np.float32)
 
@@ -145,6 +145,7 @@ if __name__ == "__main__":
     with open(f"../desi_mock_challenge_post_stage_2_pk_pre_fix.pkl", "wb") as f:
         pickle.dump(split, f)
 
+    # ========================================
     # Power Spectra Post Recon Iso
     ds = f"/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO_stage_2/RecIso/"
 
@@ -216,6 +217,7 @@ if __name__ == "__main__":
         with open(f"../desi_mock_challenge_post_stage_2_pk_iso_" + str(smooth) + ".pkl", "wb") as f:
             pickle.dump(split, f)
 
+    # ==========================================
     # Power Spectra Post Recon Aniso
     ds = f"/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO_stage_2/RecAni/"
 
@@ -275,49 +277,111 @@ if __name__ == "__main__":
         with open(f"../desi_mock_challenge_post_stage_2_pk_ani_" + str(smooth) + ".pkl", "wb") as f:
             pickle.dump(split, f)
 
-    """# Correlation Functions
-    files = [ds + f for f in os.listdir(ds) if "xil" in f]
-    print(files)
+    # ===========================================
+    # Correlation Function Post Recon Iso
+    ds = f"/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO_stage_2/RecIso/"
 
-    cov_filename = ds + f"/cov_matrix_xi-EZmocks-1Gpc_rsd_centerbin_RecIso_post.txt"
-    res = {f.lower(): getxi(f) for f in files}
-    start = 6
-    nss = len(next(iter(res.items()))[1]["s"].to_numpy())
-    cov = pd.read_csv(cov_filename, delim_whitespace=True, header=None).to_numpy()
-    cov_flat = cov.astype(np.float32)[:, 2]
-    nin = int(np.sqrt(len(cov)) / 3)
-    cov_input = cov_flat.reshape((3 * nin, 3 * nin))
-    cov = np.zeros((3 * nss, 3 * nss))
-    cov[:nss, :nss] = cov_input[start : start + nss, start : start + nss]
-    cov[:nss, nss : 2 * nss] = cov_input[start : start + nss, start + nin : start + nin + nss]
-    cov[:nss, 2 * nss :] = cov_input[start : start + nss, start + 2 * nin : start + 2 * nin + nss]
-    cov[nss : 2 * nss, :nss] = cov_input[start + nin : start + nin + nss, start : start + nss]
-    cov[nss : 2 * nss, nss : 2 * nss] = cov_input[start + nin : start + nin + nss, start + nin : start + nin + nss]
-    cov[nss : 2 * nss, 2 * nss :] = cov_input[start + nin : start + nin + nss, start + 2 * nin : start + 2 * nin + nss]
-    cov[2 * nss :, :nss] = cov_input[start + 2 * nin : start + 2 * nin + nss, start : start + nss]
-    cov[2 * nss :, nss : 2 * nss] = cov_input[start + 2 * nin : start + 2 * nin + nss, start + nin : start + nin + nss]
-    cov[2 * nss :, 2 * nss :] = cov_input[start + 2 * nin : start + 2 * nin + nss, start + 2 * nin : start + 2 * nin + nss]
-    print(nss, np.diag(cov))
-    print([k for k, v in res.items()])
+    files = [
+        [ds + "UNIELG-b0s15rsd0g1536postmultipoles_xi_gs_han4.txt"],
+    ]
 
-    split = {
-        "pre-recon data": None,
-        "pre-recon cov": None,
-        "post-recon data": None,
-        "post-recon cov": cov,
-        "pre-recon mocks": None,
-        "post-recon mocks": [v for k, v in res.items()],
-        "cosmology": {
-            "om": (0.1188 + 0.02230 + 0.00064) / 0.6774 ** 2,
-            "h0": 0.6774,
-            "z": 0.9873,
-            "ob": 0.02230 / 0.6774 ** 2,
-            "ns": 0.9667,
-            "mnu": 0.00064 * 93.14,
-            "reconsmoothscale": 15,
-        },
-        "name": f"DESI Mock Challenge Stage 2 Xi",
-    }
+    for i, smooth in enumerate([15]):
 
-    with open(f"../desi_mock_challenge_stage_2_xi.pkl", "wb") as f:
-        pickle.dump(split, f)"""
+        print(files[i])
+
+        cov_filename = ds + f"/cov_matrix_xi-EZmocks-3Gpc_rsd_centerbin_post_mariana.txt"
+        res = {f.lower(): getxi(f) for f in files[i]}
+        start = 0
+        nss = len(next(iter(res.items()))[1]["s"].to_numpy())
+        cov = pd.read_csv(cov_filename, delim_whitespace=True, header=None).to_numpy()
+        cov_flat = cov.astype(np.float32)[:, 2]
+        nin = int(np.sqrt(len(cov)) / 3)
+        cov_input = cov_flat.reshape((3 * nin, 3 * nin))
+        cov = np.zeros((3 * nss, 3 * nss))
+        cov[:nss, :nss] = cov_input[start : start + nss, start : start + nss]
+        cov[:nss, nss : 2 * nss] = cov_input[start : start + nss, start + nin : start + nin + nss]
+        cov[:nss, 2 * nss :] = cov_input[start : start + nss, start + 2 * nin : start + 2 * nin + nss]
+        cov[nss : 2 * nss, :nss] = cov_input[start + nin : start + nin + nss, start : start + nss]
+        cov[nss : 2 * nss, nss : 2 * nss] = cov_input[start + nin : start + nin + nss, start + nin : start + nin + nss]
+        cov[nss : 2 * nss, 2 * nss :] = cov_input[start + nin : start + nin + nss, start + 2 * nin : start + 2 * nin + nss]
+        cov[2 * nss :, :nss] = cov_input[start + 2 * nin : start + 2 * nin + nss, start : start + nss]
+        cov[2 * nss :, nss : 2 * nss] = cov_input[start + 2 * nin : start + 2 * nin + nss, start + nin : start + nin + nss]
+        cov[2 * nss :, 2 * nss :] = cov_input[start + 2 * nin : start + 2 * nin + nss, start + 2 * nin : start + 2 * nin + nss]
+
+        print(np.shape(cov), nss)
+
+        split = {
+            "pre-recon data": None,
+            "pre-recon cov": None,
+            "post-recon data": None,
+            "post-recon cov": cov,
+            "pre-recon mocks": None,
+            "post-recon mocks": [v for k, v in res.items()],
+            "cosmology": {
+                "om": (0.1188 + 0.02230 + 0.00064) / 0.6774 ** 2,
+                "h0": 0.6774,
+                "z": 0.9873,
+                "ob": 0.02230 / 0.6774 ** 2,
+                "ns": 0.9667,
+                "mnu": 0.00064 * 93.14,
+                "reconsmoothscale": smooth,
+            },
+            "name": f"DESI Mock Challenge Stage 2 Xi RecIso" + str(smooth),
+        }
+
+        with open(f"../desi_mock_challenge_post_stage_2_xi_iso_" + str(smooth) + ".pkl", "wb") as f:
+            pickle.dump(split, f)
+
+    # ===========================================
+    # Correlation Function Post Recon Ani
+    ds = f"/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO_stage_2/RecAni/"
+
+    files = [
+        [ds + "UNIELG-b0s15rsd0g1536postmultipoles_xi_gs_han4.txt"],
+    ]
+
+    for i, smooth in enumerate([15]):
+        print(files[i])
+
+        cov_filename = ds + f"/cov_matrix_xi-EZmocks-3Gpc_rsd_centerbin_post_mariana.txt"
+        res = {f.lower(): getxi(f) for f in files[i]}
+        start = 0
+        nss = len(next(iter(res.items()))[1]["s"].to_numpy())
+        cov = pd.read_csv(cov_filename, delim_whitespace=True, header=None).to_numpy()
+        cov_flat = cov.astype(np.float32)[:, 2]
+        nin = int(np.sqrt(len(cov)) / 3)
+        cov_input = cov_flat.reshape((3 * nin, 3 * nin))
+        cov = np.zeros((3 * nss, 3 * nss))
+        cov[:nss, :nss] = cov_input[start : start + nss, start : start + nss]
+        cov[:nss, nss : 2 * nss] = cov_input[start : start + nss, start + nin : start + nin + nss]
+        cov[:nss, 2 * nss :] = cov_input[start : start + nss, start + 2 * nin : start + 2 * nin + nss]
+        cov[nss : 2 * nss, :nss] = cov_input[start + nin : start + nin + nss, start : start + nss]
+        cov[nss : 2 * nss, nss : 2 * nss] = cov_input[start + nin : start + nin + nss, start + nin : start + nin + nss]
+        cov[nss : 2 * nss, 2 * nss :] = cov_input[start + nin : start + nin + nss, start + 2 * nin : start + 2 * nin + nss]
+        cov[2 * nss :, :nss] = cov_input[start + 2 * nin : start + 2 * nin + nss, start : start + nss]
+        cov[2 * nss :, nss : 2 * nss] = cov_input[start + 2 * nin : start + 2 * nin + nss, start + nin : start + nin + nss]
+        cov[2 * nss :, 2 * nss :] = cov_input[start + 2 * nin : start + 2 * nin + nss, start + 2 * nin : start + 2 * nin + nss]
+
+        print(np.shape(cov), nss)
+
+        split = {
+            "pre-recon data": None,
+            "pre-recon cov": None,
+            "post-recon data": None,
+            "post-recon cov": cov,
+            "pre-recon mocks": None,
+            "post-recon mocks": [v for k, v in res.items()],
+            "cosmology": {
+                "om": (0.1188 + 0.02230 + 0.00064) / 0.6774 ** 2,
+                "h0": 0.6774,
+                "z": 0.9873,
+                "ob": 0.02230 / 0.6774 ** 2,
+                "ns": 0.9667,
+                "mnu": 0.00064 * 93.14,
+                "reconsmoothscale": smooth,
+            },
+            "name": f"DESI Mock Challenge Stage 2 Xi RecAni" + str(smooth),
+        }
+
+        with open(f"../desi_mock_challenge_post_stage_2_xi_ani_" + str(smooth) + ".pkl", "wb") as f:
+            pickle.dump(split, f)

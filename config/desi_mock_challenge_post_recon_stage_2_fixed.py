@@ -5,8 +5,9 @@ from chainconsumer import ChainConsumer
 sys.path.append("..")
 from barry.samplers import DynestySampler
 from barry.config import setup
-from barry.models import PowerBeutler2017
+from barry.models import PowerBeutler2017_3poly, CorrBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESIMockChallenge_Post
+from barry.datasets.dataset_correlation_function import CorrelationFunction_DESIMockChallenge_Post
 from barry.fitter import Fitter
 import numpy as np
 import pandas as pd
@@ -23,40 +24,39 @@ if __name__ == "__main__":
     sampler = DynestySampler(temp_dir=dir_name, nlive=500)
 
     names = [
-        "PreRecon Cov-Std",
-        "PreRecon Cov-Fix",
-        "PostRecon Yu Yu Iso 5",
-        "PostRecon Daniel Iso 5",
-        "PostRecon Yu Yu Iso 10",
-        "PostRecon Daniel Iso 10",
         "PostRecon Yu Yu Iso 15",
-        "PostRecon Daniel Iso 15",
-        "PostRecon Hee-Jong Grant Iso 15",
-        "PostRecon Yu Yu Iso 20",
-        "PostRecon Daniel Iso 20",
-        "PostRecon Yu Yu Ani 5",
-        "PostRecon Yu Yu Ani 10",
         "PostRecon Yu Yu Ani 15",
-        "PostRecon Hee-Jong Grant Ani 15",
-        "PostRecon Yu Yu Ani 20",
+        "PostRecon Yu Yu Xi Iso 15",
+        "PostRecon Yu Yu Xi Ani 15",
     ]
     cmap = plt.cm.get_cmap("viridis")
 
-    types = ["cov-std", "cov-fix", "rec-iso5", "rec-iso10", "rec-iso15", "rec-iso20", "rec-ani5", "rec-ani10", "rec-ani15", "rec-ani20"]
-    recons = [False, False, True, True, True, True, True, True, True, True]
-    recon_types = ["None", "None", "iso", "iso", "iso", "iso", "ani", "ani", "ani", "ani"]
-    realisations = [1, 1, 2, 2, 3, 2, 1, 1, 2, 1]
+    types = ["rec-iso15", "rec-ani15"]
+    recons = [True, True]
+    recon_types = ["iso", "ani"]
+    realisations = [1, 1]
 
-    # Pre-Recon std then fix
+    # Post-Recon Yu-Yu 15 only, first power spectrum, then correlation function
     counter = 0
     for i, type in enumerate(types):
         for j in range(realisations[i]):
             print(i, type, j, realisations[i])
             data = PowerSpectrum_DESIMockChallenge_Post(
-                isotropic=False, recon=recons[i], realisation=j, fit_poles=[0, 2, 4], min_k=0.02, max_k=0.30, num_mocks=1000, type=type
+                isotropic=False, recon=recons[i], realisation=j, fit_poles=[0, 2], min_k=0.0074, max_k=0.1976, num_mocks=1000, type=type
             )
-            model = PowerBeutler2017(
-                recon=recon_types[i], isotropic=False, fix_params=["om"], poly_poles=[0, 2, 4], correction=Correction.HARTLAP, marg="full"
+            model = PowerBeutler2017_3poly(
+                recon=recon_types[i], isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.NONE, marg="full"
+            )
+            fitter.add_model_and_dataset(model, data, name=names[counter])
+            counter += 1
+    for i, type in enumerate(types):
+        for j in range(realisations[i]):
+            print(i, type, j, realisations[i])
+            data = CorrelationFunction_DESIMockChallenge_Post(
+                isotropic=False, recon=recons[i], realisation=j, fit_poles=[0, 2], min_dist=52, max_dist=158, num_mocks=1000, type=type
+            )
+            model = CorrBeutler2017(
+                recon=recon_types[i], isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.NONE, marg="full"
             )
             fitter.add_model_and_dataset(model, data, name=names[counter])
             counter += 1
@@ -73,9 +73,9 @@ if __name__ == "__main__":
 
         from chainconsumer import ChainConsumer
 
-        splits = ["PreRecon", "Iso", "Ani"]
+        splits = ["PostRecon"]
         output = []
-        ntotal = [2, 9, 5]
+        ntotal = [2]
         for spl, split in enumerate(splits):
             counter = 0
             c = ChainConsumer()

@@ -26,7 +26,7 @@ class CorrelationFunctionFit(Model):
         marg=None,
     ):
 
-        """ Generic correlation function model
+        """Generic correlation function model
 
         Parameters
         ----------
@@ -62,7 +62,7 @@ class CorrelationFunctionFit(Model):
         self.pk2xi_4 = None
 
     def set_data(self, data):
-        """ Sets the models data, including fetching the right cosmology and PT generator.
+        """Sets the models data, including fetching the right cosmology and PT generator.
 
         Note that if you pass in multiple datas (ie a list with more than one element),
         they need to have the same cosmology.
@@ -80,7 +80,7 @@ class CorrelationFunctionFit(Model):
         self.parent.set_data(data, parent=True)
 
     def set_bias(self, data, sval=50.0, width=0.3):
-        """ Sets the bias default value by comparing the data monopole and linear model
+        """Sets the bias default value by comparing the data monopole and linear model
 
         Parameters
         ----------
@@ -96,14 +96,14 @@ class CorrelationFunctionFit(Model):
         dataxi = splev(sval, splrep(data["dist"], data["xi0"]))
         cambpk = self.camb.get_data(om=c["om"], h0=c["h0"])
         modelxi = self.pk2xi_0.__call__(cambpk["ks"], cambpk["pk_lin"], np.array([sval]))[0]
-        kaiserfac = dataxi/modelxi
+        kaiserfac = dataxi / modelxi
         f = self.param_dict.get("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
-        b = -1.0/3.0*f + np.sqrt(kaiserfac - 4.0/45.0*f**2)
-        min_b, max_b = (1.0-width)*b, (1.0+width)*b
-        self.set_default(f"b{{{0}}}", b**2, min=min_b**2, max=max_b**2)
+        b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f ** 2)
+        min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
+        self.set_default(f"b{{{0}}}", b ** 2, min=min_b ** 2, max=max_b ** 2)
         self.logger.info(f"Setting default bias to b0={b:0.5f} with {width:0.5f} fractional width")
         if self.param_dict.get("beta") is not None:
-            beta, beta_min, beta_max = f/b, (1.0-width)*f/b, (1.0+width)*f/b
+            beta, beta_min, beta_max = f / b, (1.0 - width) * f / b, (1.0 + width) * f / b
             self.set_default("beta", beta, beta_min, beta_max)
             self.logger.info(f"Setting default RSD parameter to beta={beta:0.5f} with {width:0.5f} fractional width")
 
@@ -118,7 +118,7 @@ class CorrelationFunctionFit(Model):
 
     @lru_cache(maxsize=1024)
     def compute_basic_power_spectrum(self, om):
-        """ Computes the smoothed linear power spectrum and the wiggle ratio.
+        """Computes the smoothed linear power spectrum and the wiggle ratio.
 
         Uses a fixed h0 as determined by the dataset cosmology.
 
@@ -144,7 +144,7 @@ class CorrelationFunctionFit(Model):
         return pk_smooth_lin, pk_ratio
 
     def get_alphas(self, alpha, epsilon):
-        """ Computes values of alpha_par and alpha_perp from the input values of alpha and epsilon
+        """Computes values of alpha_par and alpha_perp from the input values of alpha and epsilon
 
         Parameters
         ----------
@@ -165,7 +165,7 @@ class CorrelationFunctionFit(Model):
 
     @lru_cache(maxsize=32)
     def get_sprimefac(self, epsilon):
-        """ Computes the prefactor to dilate a s value given epsilon, such that sprime = s * sprimefac * alpha
+        """Computes the prefactor to dilate a s value given epsilon, such that sprime = s * sprimefac * alpha
 
         Parameters
         ----------
@@ -185,7 +185,7 @@ class CorrelationFunctionFit(Model):
 
     @lru_cache(maxsize=32)
     def get_muprime(self, epsilon):
-        """ Computes dilated values of mu given input values of epsilon for the correlation function
+        """Computes dilated values of mu given input values of epsilon for the correlation function
 
         Parameters
         ----------
@@ -215,7 +215,7 @@ class CorrelationFunctionFit(Model):
         return xi0, xi2, xi4
 
     def compute_correlation_function(self, dist, p, smooth=False):
-        """ Computes the dilated correlation function multipoles at distance d given the supplied params
+        """Computes the dilated correlation function multipoles at distance d given the supplied params
 
         Parameters
         ----------
@@ -266,7 +266,7 @@ class CorrelationFunctionFit(Model):
         return sprime, xi, np.zeros((1, len(dist)))
 
     def get_model(self, p, d, smooth=False):
-        """ Gets the model prediction using the data passed in and parameter location specified
+        """Gets the model prediction using the data passed in and parameter location specified
 
         Parameters
         ----------
@@ -312,7 +312,7 @@ class CorrelationFunctionFit(Model):
         return xi_model, poly_model
 
     def get_likelihood(self, p, d):
-        """ Uses the stated likelihood correction and `get_model` to compute the likelihood
+        """Uses the stated likelihood correction and `get_model` to compute the likelihood
 
         Parameters
         ----------
@@ -336,7 +336,9 @@ class CorrelationFunctionFit(Model):
         if self.marg:
             poly_model_fit = np.empty((np.shape(poly_model)[0], len(self.data[0]["fit_pole_indices"]) * len(self.data[0]["dist"])))
             for n in range(np.shape(poly_model)[0]):
-                poly_model_fit[n] = break_vector_and_get_blocks(poly_model[n], np.shape(poly_model)[1] / len(d["dist"]), d["fit_pole_indices"])
+                poly_model_fit[n] = break_vector_and_get_blocks(
+                    poly_model[n], np.shape(poly_model)[1] / len(d["dist"]), d["fit_pole_indices"]
+                )
 
         if self.marg_type == "partial":
             return self.get_chi2_partial_marg_likelihood(
@@ -361,7 +363,9 @@ class CorrelationFunctionFit(Model):
                 num_mocks=num_mocks,
             )
         else:
-            return self.get_chi2_likelihood(d["xi"], xi_model_fit, np.zeros(xi_model_fit.shape), d["icov"], [None], num_mocks=num_mocks, num_params=num_params)
+            return self.get_chi2_likelihood(
+                d["xi"], xi_model_fit, np.zeros(xi_model_fit.shape), d["icov"], [None], num_mocks=num_mocks, num_params=num_params
+            )
 
     def plot(self, params, smooth_params=None, figname=None):
         self.logger.info("Create plot")
@@ -410,7 +414,7 @@ class CorrelationFunctionFit(Model):
                 num_params=len(self.get_active_params()) + len(bband),
             )
             alphas = self.get_alphas(params["alpha"], params["epsilon"])
-            print(new_chi_squared, len(self.data[0]["xi"]), alphas)
+            print(-2.0 * new_chi_squared, len(self.data[0]["xi"]), alphas)
 
             bband_smooth = self.get_ML_nuisance(
                 self.data[0]["xi"],
