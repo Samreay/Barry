@@ -7,7 +7,7 @@ from barry.samplers.sampler import Sampler
 
 class EnsembleSampler(Sampler):
     def __init__(self, num_walkers=None, num_steps=1000, num_burn=300, temp_dir=None, save_interval=300):
-        """ Uses ``emcee`` and the `EnsembleSampler
+        """Uses ``emcee`` and the `EnsembleSampler
         <http://dan.iel.fm/emcee/current/api/#emcee.EnsembleSampler>`_ to fit the supplied
         model.
 
@@ -45,7 +45,7 @@ class EnsembleSampler(Sampler):
         self.num_walkers = num_walkers
 
     def fit(self, log_posterior, start, num_dim, prior_transform, save_dims=None, uid=None):
-        """ Runs the sampler over the model and returns the flat chain of results
+        """Runs the sampler over the model and returns the flat chain of results
 
         Parameters
         ----------

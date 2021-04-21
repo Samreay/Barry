@@ -17,7 +17,10 @@ class DynestySampler(Sampler):
         self.dynamic = dynamic
 
     def get_filename(self, uid):
-        return os.path.join(self.temp_dir, f"{uid}_chain.npy")
+        if self.dynamic:
+            return os.path.join(self.temp_dir, f"{uid}_chain_dyn.npy")
+        else:
+            return os.path.join(self.temp_dir, f"{uid}_chain.npy")
 
     def fit(self, log_likelihood, start, num_dim, prior_transform, save_dims=None, uid=None):
 
@@ -34,7 +37,9 @@ class DynestySampler(Sampler):
         self.logger.debug("Fitting framework with %d dimensions" % num_dim)
         self.logger.info("Using dynesty Sampler")
         if self.dynamic:
-            sampler = dynesty.DynamicNestedSampler(log_likelihood, prior_transform, num_dim, nlive_init=self.nlive, nlive_batch=200, maxbatch=10)
+            sampler = dynesty.DynamicNestedSampler(
+                log_likelihood, prior_transform, num_dim, nlive_init=self.nlive, nlive_batch=200, maxbatch=10
+            )
         else:
             sampler = dynesty.DynamicNestedSampler(log_likelihood, prior_transform, num_dim, nlive=self.nlive)
 
