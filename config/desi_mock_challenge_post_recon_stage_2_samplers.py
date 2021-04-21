@@ -3,7 +3,7 @@ import sys
 from chainconsumer import ChainConsumer
 
 sys.path.append("..")
-from barry.samplers import DynestySampler
+from barry.samplers import DynestySampler, EnsembleSampler
 from barry.config import setup
 from barry.models import PowerBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESIMockChallenge_Post
@@ -20,32 +20,16 @@ if __name__ == "__main__":
     print(pfn)
     fitter = Fitter(dir_name, remove_output=True)
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
-
     names = [
         "PreRecon Cov-Std",
         "PreRecon Cov-Fix",
-        "PostRecon Yu Yu Iso 5",
-        "PostRecon Daniel Iso 5",
-        "PostRecon Yu Yu Iso 10",
-        "PostRecon Daniel Iso 10",
-        "PostRecon Yu Yu Iso 15",
-        "PostRecon Daniel Iso 15",
-        "PostRecon Hee-Jong Grant Iso 15",
-        "PostRecon Yu Yu Iso 20",
-        "PostRecon Daniel Iso 20",
-        "PostRecon Yu Yu Ani 5",
-        "PostRecon Yu Yu Ani 10",
-        "PostRecon Yu Yu Ani 15",
-        "PostRecon Hee-Jong Grant Ani 15",
-        "PostRecon Yu Yu Ani 20",
     ]
     cmap = plt.cm.get_cmap("viridis")
 
-    types = ["cov-std", "cov-fix", "rec-iso5", "rec-iso10", "rec-iso15", "rec-iso20", "rec-ani5", "rec-ani10", "rec-ani15", "rec-ani20"]
-    recons = [False, False, True, True, True, True, True, True, True, True]
-    recon_types = ["None", "None", "iso", "iso", "iso", "iso", "ani", "ani", "ani", "ani"]
-    realisations = [1, 1, 2, 2, 3, 2, 1, 1, 2, 1]
+    types = ["cov-std", "cov-fix"]
+    recons = [False, False]
+    recon_types = ["None", "None"]
+    realisations = [1, 1]
 
     # Pre-Recon std then fix
     counter = 0
@@ -61,6 +45,17 @@ if __name__ == "__main__":
             fitter.add_model_and_dataset(model, data, name=names[counter])
             counter += 1
 
+    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
+    fitter.set_sampler(sampler)
+    fitter.set_num_walkers(10)
+    fitter.fit(file)
+
+    sampler = DynestySampler(temp_dir=dir_name, nlive=500, dynamic=True)
+    fitter.set_sampler(sampler)
+    fitter.set_num_walkers(10)
+    fitter.fit(file)
+
+    sampler = EnsembleSampler(temp_dir=dir_name, num_steps=5000)
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
     fitter.fit(file)
@@ -184,14 +179,7 @@ if __name__ == "__main__":
                 counter += 1
 
             c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4, statistics="mean", legend_location=(0, -1))
-            # truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
-            truth = {
-                "$\\Omega_m$": 0.3121,
-                "$\\alpha$": 0.9988505375938668,
-                "$\\epsilon$": 0.0013970096001433563,
-                "$\\alpha_\\perp$": 1.0016432945666118,
-                "$\\alpha_\\parallel$": 0.9974570804767098,
-            }
+            truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
             c.plotter.plot_summary(
                 filename=[pfn + "_" + split + "_summary.pdf"],
                 errorbar=True,

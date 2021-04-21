@@ -24,8 +24,8 @@ if __name__ == "__main__":
     sampler = DynestySampler(temp_dir=dir_name, nlive=500)
 
     names = [
-        "PostRecon Yu Yu Iso 15",
-        "PostRecon Yu Yu Ani 15",
+        "PostRecon Yu Yu Pk Iso 15",
+        "PostRecon Yu Yu Pk Ani 15",
         "PostRecon Yu Yu Xi Iso 15",
         "PostRecon Yu Yu Xi Ani 15",
     ]
@@ -73,10 +73,10 @@ if __name__ == "__main__":
 
         from chainconsumer import ChainConsumer
 
-        splits = ["PostRecon"]
-        output = []
-        ntotal = [2]
+        splits = ["Pk", "Xi"]
+        ntotal = [2, 2]
         for spl, split in enumerate(splits):
+            output = []
             counter = 0
             c = ChainConsumer()
             for posterior, weight, chain, evidence, model, data, extra in fitter.load():
@@ -108,51 +108,97 @@ if __name__ == "__main__":
                 for name, val in params.items():
                     model.set_default(name, val)
 
-                # Ensures we return the window convolved model
-                icov_m_w = model.data[0]["icov_m_w"]
-                model.data[0]["icov_m_w"][0] = None
+                if "Pk" in extra["name"]:
 
-                ks = model.data[0]["ks"]
-                err = np.sqrt(np.diag(model.data[0]["cov"]))
-                mod, mod_odd, polymod, polymod_odd, _ = model.get_model(params, model.data[0], data_name=data[0]["name"])
+                    # Ensures we return the window convolved model
+                    icov_m_w = model.data[0]["icov_m_w"]
+                    model.data[0]["icov_m_w"][0] = None
 
-                if model.marg:
-                    mask = data[0]["m_w_mask"]
-                    mod_fit, mod_fit_odd = mod[mask], mod_odd[mask]
+                    ks = model.data[0]["ks"]
+                    err = np.sqrt(np.diag(model.data[0]["cov"]))
+                    mod, mod_odd, polymod, polymod_odd, _ = model.get_model(params, model.data[0], data_name=data[0]["name"])
 
-                    len_poly = len(model.data[0]["ks"]) if model.isotropic else len(model.data[0]["ks"]) * len(model.data[0]["fit_poles"])
-                    polymod_fit, polymod_fit_odd = np.empty((np.shape(polymod)[0], len_poly)), np.zeros((np.shape(polymod)[0], len_poly))
-                    for nn in range(np.shape(polymod)[0]):
-                        polymod_fit[nn], polymod_fit_odd[nn] = polymod[nn, mask], polymod_odd[nn, mask]
+                    if model.marg:
+                        mask = data[0]["m_w_mask"]
+                        mod_fit, mod_fit_odd = mod[mask], mod_odd[mask]
 
-                    bband = model.get_ML_nuisance(
-                        model.data[0]["pk"],
-                        mod_fit,
-                        mod_fit_odd,
-                        polymod_fit,
-                        polymod_fit_odd,
-                        model.data[0]["icov"],
-                        model.data[0]["icov_m_w"],
-                    )
-                    mod += mod_odd + bband @ (polymod + polymod_odd)
-                    mod_fit += mod_fit_odd + bband @ (polymod_fit + polymod_fit_odd)
+                        len_poly = (
+                            len(model.data[0]["ks"]) if model.isotropic else len(model.data[0]["ks"]) * len(model.data[0]["fit_poles"])
+                        )
+                        polymod_fit, polymod_fit_odd = np.empty((np.shape(polymod)[0], len_poly)), np.zeros(
+                            (np.shape(polymod)[0], len_poly)
+                        )
+                        for nn in range(np.shape(polymod)[0]):
+                            polymod_fit[nn], polymod_fit_odd[nn] = polymod[nn, mask], polymod_odd[nn, mask]
 
-                    # print(len(model.get_active_params()) + len(bband))
-                    # print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
-                    new_chi_squared = -2.0 * model.get_chi2_likelihood(
-                        model.data[0]["pk"],
-                        mod_fit,
-                        np.zeros(mod_fit.shape),
-                        model.data[0]["icov"],
-                        model.data[0]["icov_m_w"],
-                        num_mocks=model.data[0]["num_mocks"],
-                        num_params=len(model.get_active_params()) + len(bband),
-                    )
-                    alphas = model.get_alphas(params["alpha"], params["epsilon"])
-                    print(new_chi_squared, len(model.data[0]["pk"]) - len(model.get_active_params()) - len(bband), bband)
+                        bband = model.get_ML_nuisance(
+                            model.data[0]["pk"],
+                            mod_fit,
+                            mod_fit_odd,
+                            polymod_fit,
+                            polymod_fit_odd,
+                            model.data[0]["icov"],
+                            model.data[0]["icov_m_w"],
+                        )
+                        mod += mod_odd + bband @ (polymod + polymod_odd)
+                        mod_fit += mod_fit_odd + bband @ (polymod_fit + polymod_fit_odd)
 
-                model.data[0]["icov_m_w"] = icov_m_w
-                dof = data[0]["pk"].shape[0] - 1 - len(df.columns)
+                        # print(len(model.get_active_params()) + len(bband))
+                        # print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
+                        new_chi_squared = -2.0 * model.get_chi2_likelihood(
+                            model.data[0]["pk"],
+                            mod_fit,
+                            np.zeros(mod_fit.shape),
+                            model.data[0]["icov"],
+                            model.data[0]["icov_m_w"],
+                            num_mocks=model.data[0]["num_mocks"],
+                            num_params=len(model.get_active_params()) + len(bband),
+                        )
+                        alphas = model.get_alphas(params["alpha"], params["epsilon"])
+                        print(new_chi_squared, len(model.data[0]["pk"]) - len(model.get_active_params()) - len(bband), bband)
+
+                    model.data[0]["icov_m_w"] = icov_m_w
+                    dof = data[0]["pk"].shape[0] - 1 - len(df.columns)
+
+                else:
+
+                    ss = model.data[0]["dist"]
+                    err = np.sqrt(np.diag(model.data[0]["cov"]))
+                    mod, polymod = model.get_model(params, model.data[0])
+
+                    if model.marg:
+
+                        mod_fit = break_vector_and_get_blocks(mod, len(model.data[0]["poles"]), model.data[0]["fit_pole_indices"])
+                        polymod_fit = np.empty((np.shape(polymod)[0], len(model.data[0]["fit_pole_indices"]) * len(model.data[0]["dist"])))
+                        for n in range(np.shape(polymod)[0]):
+                            polymod_fit[n] = break_vector_and_get_blocks(
+                                polymod[n], np.shape(polymod)[1] / len(model.data[0]["dist"]), model.data[0]["fit_pole_indices"]
+                            )
+                        bband = model.get_ML_nuisance(
+                            model.data[0]["xi"],
+                            mod_fit,
+                            np.zeros(mod_fit.shape),
+                            polymod_fit,
+                            np.zeros(polymod_fit.shape),
+                            model.data[0]["icov"],
+                            [None],
+                        )
+                        mod += bband @ polymod
+                        mod_fit += bband @ polymod_fit
+
+                        new_chi_squared = -0.5 * model.get_chi2_likelihood(
+                            model.data[0]["xi"],
+                            mod_fit,
+                            np.zeros(mod_fit.shape),
+                            model.data[0]["icov"],
+                            [None],
+                            num_mocks=model.data[0]["num_mocks"],
+                            num_params=len(model.get_active_params()) + len(bband),
+                        )
+                        alphas = model.get_alphas(params["alpha"], params["epsilon"])
+                        print(new_chi_squared, len(model.data[0]["xi"]) - len(model.get_active_params()) - len(bband), bband)
+
+                    dof = data[0]["xi"].shape[0] - 1 - len(df.columns)
 
                 ps = chain[max_post, :]
                 best_fit = {}
@@ -177,9 +223,14 @@ if __name__ == "__main__":
                 c2 = ChainConsumer()
                 c2.add_chain(df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$"]], weights=weight)
                 corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
-                output.append(
-                    f"{extra['name']:32s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:7.3f}, {bband[5]:7.3f}, {bband[6]:8.1f}, {bband[7]:8.1f}, {bband[8]:8.1f}, {bband[9]:7.3f}, {bband[10]:7.3f}, {bband[11]:8.1f}, {bband[12]:8.1f}, {bband[13]:8.1f}, {bband[14]:7.3f}, {bband[15]:7.3f}"
-                )
+                if "Pk" in extra["name"]:
+                    output.append(
+                        f"{extra['name']:32s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3g}, {r_s:7.3g}, {chi2:7.3g}, {dof:4d}, {mean[4]:7.3g}, {mean[5]:7.3g}, {mean[2]:7.3g}, {mean[3]:7.3g}, {bband[0]:7.3g}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:7.3g}, {bband[4]:8.1f}, {bband[5]:8.1f}, {bband[6]:7.3g}"
+                    )
+                else:
+                    output.append(
+                        f"{extra['name']:32s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3g}, {r_s:7.3g}, {chi2:7.3g}, {dof:4d}, {mean[4]:7.3g}, {mean[5]:7.3g}, {mean[2]:7.3g}, {mean[3]:7.3g}, {bband[0]:7.3g}, {bband[4]:7.3g}, {bband[1]:7.3g}, {bband[2]:7.3g}, {bband[3]:7.3g}, {bband[5]:7.3g}, {bband[6]:7.3g}, {bband[7]:7.3g}"
+                    )
 
                 counter += 1
 
@@ -205,9 +256,14 @@ if __name__ == "__main__":
             c.plotter.plot(filename=[pfn + "_" + split + "_contour2.pdf"], truth=truth)
             c.analysis.get_latex_table(filename=pfn + "_" + split + "_params.txt")
 
-        with open(pfn + "_BAO_fitting.Barry", "w") as f:
-            f.write(
-                "#Name, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a0_4, a0_5, a2_1, a2_2, a2_3, a2_4, a2_5, a4_1, a4_2, a4_3, a4_4, a4_5\n"
-            )
-            for l in output:
-                f.write(l + "\n")
+            with open(pfn + "_" + split + "_BAO_fitting.Barry", "w") as f:
+                if "Pk" in extra["name"]:
+                    f.write(
+                        "#Name, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_2, a0_1, a0_0, a2_2, a2_1, a2_0\n"
+                    )
+                else:
+                    f.write(
+                        "#Name, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b0, b2, a0_2, a0_1, a0_0, a2_2, a2_1, a2_0\n"
+                    )
+                for l in output:
+                    f.write(l + "\n")
