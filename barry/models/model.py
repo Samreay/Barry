@@ -7,7 +7,7 @@ from collections import OrderedDict
 from numpy.random import uniform
 import numpy as np
 from scipy.special import loggamma
-from scipy.optimize import basinhopping
+from scipy.optimize import basinhopping, differential_evolution
 from enum import Enum, unique
 from dataclasses import dataclass
 
@@ -533,18 +533,13 @@ class Model(ABC):
         params = [p.min + s * (p.max - p.min) for s, p in zip(scaled, self.get_active_params())]
         return params
 
-    def optimize(self, close_default=3, niter=100, maxiter=1000):
+    def optimize(self, tol=1.0e-6):
         """Perform local optimiation to try and find the best fit of your model to the dataset loaded in.
 
         Parameters
         ----------
-        close_default : int, optional
-            How close to the default values we should start our walk. Higher numbers mean closer to the default.
-            Used to compute a weighted avg between the default and a uniformly selected starting point.
-        niter : int, optional
-            How many iterations to run the `basinhopping` algorithm for.
-        maxiter : int, optional
-            How many steps each iteration can take in the `basinhopping` algorithm.
+        tol : float, optional
+            Optimisation tolerance
 
         Returns
         -------
@@ -558,26 +553,11 @@ class Model(ABC):
         def minimise(scale_params):
             return -self.get_posterior(self.unscale(scale_params))
 
-        fs = []
-        xs = []
-        methods = ["Nelder-Mead"]
-        for m in methods:
-            start = np.array(self.get_raw_start())
-            if close_default:
-                start = [(s + p.default * close_default) / (1 + close_default) for s, p in zip(start, self.get_active_params())]
-            res = basinhopping(
-                minimise,
-                self.scale(start),
-                niter_success=10,
-                niter=niter,
-                stepsize=0.05,
-                minimizer_kwargs={"method": m, "options": {"maxiter": maxiter, "fatol": 1.0e-5, "xatol": 1.0e-5}},
-            )
-            fs.append(res.fun)
-            xs.append(res.x)
-        fs = np.array(fs)
-        ps = self.unscale(xs[fs.argmin()])
-        return self.get_param_dict(ps), -fs.min()
+        bounds = [(0.0, 1.0) for _ in self.get_active_params()]
+        res = differential_evolution(minimise, bounds, tol=tol)
+
+        ps = self.unscale(res.x)
+        return self.get_param_dict(ps), -res.fun
 
     def plot_default(self, dataset):
         params = self.get_param_dict(self.get_defaults())
@@ -612,7 +592,7 @@ class Model(ABC):
         print("Model posterior takes on average, %.2f milliseconds" % (timeit.timeit(timing, number=niter) * 1000 / niter))
 
         print("Starting model optimisation. This may take some time.")
-        p, minv = self.optimize(niter=niter, maxiter=maxiter)
+        p, minv = self.optimize()
 
         print(f"Model optimisation with value {minv:0.3f} has parameters are {dict(p)}")
 

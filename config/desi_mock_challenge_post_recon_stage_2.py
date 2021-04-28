@@ -187,10 +187,14 @@ if __name__ == "__main__":
             # truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
             truth = {
                 "$\\Omega_m$": 0.3121,
-                "$\\alpha$": 0.9988505375938668,
-                "$\\epsilon$": 0.0013970096001433563,
-                "$\\alpha_\\perp$": 1.0016432945666118,
-                "$\\alpha_\\parallel$": 0.9974570804767098,
+                "$\\alpha$": 0.9989,
+                "$\\epsilon$": 0.00139,
+                "$\\alpha_\\perp$": 0.9975,
+                "$\\alpha_\\parallel$": 1.0016,
+                "$\\Sigma_s$": 0.0413,
+                "$\\beta$": 0.792,
+                "$\\Sigma_{nl,||}$": 11.333,
+                "$\\Sigma_{nl,\\perp}$": 3.949,
             }
             c.plotter.plot_summary(
                 filename=[pfn + "_" + split + "_summary.pdf"],

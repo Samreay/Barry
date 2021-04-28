@@ -251,7 +251,7 @@ if __name__ == "__main__":
     # model.sanity_check(dataset)
 
     dataset = PowerSpectrum_DESIMockChallenge_Post(
-        isotropic=False, recon=False, fit_poles=[0, 2, 4], realisation=0, min_k=0.01, max_k=0.30, num_mocks=1000, type="cov-std"
+        isotropic=False, recon=False, fit_poles=[0, 2, 4], realisation=0, min_k=0.01, max_k=0.30, num_mocks=1000, type="cov-fix"
     )
     model = PowerBeutler2017(
         recon=None,

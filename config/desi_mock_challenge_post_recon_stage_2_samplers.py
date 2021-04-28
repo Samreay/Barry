@@ -73,6 +73,7 @@ if __name__ == "__main__":
             counter = 0
             c = ChainConsumer()
             for fitterer in [fitter, fitter_dyn, fitter_ens]:
+                print(fitterer)
                 for posterior, weight, chain, evidence, model, data, extra in fitterer.load():
 
                     color = plt.colors.rgb2hex(cmap(float(counter) / (ntotal[spl] - 1)))

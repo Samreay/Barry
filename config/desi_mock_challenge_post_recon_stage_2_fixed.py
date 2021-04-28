@@ -25,9 +25,13 @@ if __name__ == "__main__":
 
     names = [
         "PostRecon Yu Yu Pk Iso 15",
+        "PostRecon Yu Yu Pk Iso 15 Fixed Sigma",
         "PostRecon Yu Yu Pk Ani 15",
+        "PostRecon Yu Yu Pk Ani 15 Fixed Sigma",
         "PostRecon Yu Yu Xi Iso 15",
+        "PostRecon Yu Yu Xi Iso 15 Fixed Sigma",
         "PostRecon Yu Yu Xi Ani 15",
+        "PostRecon Yu Yu Xi Ani 15 Fixed Sigma",
     ]
     cmap = plt.cm.get_cmap("viridis")
 
@@ -49,6 +53,20 @@ if __name__ == "__main__":
             )
             fitter.add_model_and_dataset(model, data, name=names[counter])
             counter += 1
+
+            model = PowerBeutler2017_3poly(
+                recon=recon_types[i],
+                isotropic=False,
+                fix_params=["om", "sigma_nl_par", "sigma_nl_perp"],
+                poly_poles=[0, 2],
+                correction=Correction.NONE,
+                marg="full",
+            )
+            model.set_default("sigma_nl_par", 5.62)
+            model.set_default("sigma_nl_perp", 3.01)
+            fitter.add_model_and_dataset(model, data, name=names[counter])
+            counter += 1
+
     for i, type in enumerate(types):
         for j in range(realisations[i]):
             print(i, type, j, realisations[i])
@@ -58,6 +76,19 @@ if __name__ == "__main__":
             model = CorrBeutler2017(
                 recon=recon_types[i], isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.NONE, marg="full"
             )
+            fitter.add_model_and_dataset(model, data, name=names[counter])
+            counter += 1
+
+            model = CorrBeutler2017(
+                recon=recon_types[i],
+                isotropic=False,
+                fix_params=["om", "sigma_nl_par", "sigma_nl_perp"],
+                poly_poles=[0, 2],
+                correction=Correction.NONE,
+                marg="full",
+            )
+            model.set_default("sigma_nl_par", 5.62)
+            model.set_default("sigma_nl_perp", 3.01)
             fitter.add_model_and_dataset(model, data, name=names[counter])
             counter += 1
 
@@ -99,6 +130,8 @@ if __name__ == "__main__":
                 df["$\\alpha_\\perp$"] = alpha_perp
 
                 extra.pop("realisation", None)
+                df["weights"] = weight
+                df.to_csv(pfn + "_" + extra["name"].replace(" ", "_") + "_chain.csv", index=False)
                 c.add_chain(df, weights=weight, color=color, **extra)
 
                 max_post = posterior.argmax()
@@ -156,6 +189,7 @@ if __name__ == "__main__":
                         )
                         alphas = model.get_alphas(params["alpha"], params["epsilon"])
                         print(new_chi_squared, len(model.data[0]["pk"]) - len(model.get_active_params()) - len(bband), bband)
+                        chi2 = new_chi_squared
 
                     model.data[0]["icov_m_w"] = icov_m_w
                     dof = data[0]["pk"].shape[0] - 1 - len(df.columns)
@@ -197,6 +231,7 @@ if __name__ == "__main__":
                         )
                         alphas = model.get_alphas(params["alpha"], params["epsilon"])
                         print(new_chi_squared, len(model.data[0]["xi"]) - len(model.get_active_params()) - len(bband), bband)
+                        chi2 = new_chi_squared
 
                     dof = data[0]["xi"].shape[0] - 1 - len(df.columns)
 
@@ -225,11 +260,11 @@ if __name__ == "__main__":
                 corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
                 if "Pk" in extra["name"]:
                     output.append(
-                        f"{extra['name']:32s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3g}, {r_s:7.3g}, {chi2:7.3g}, {dof:4d}, {mean[4]:7.3g}, {mean[5]:7.3g}, {mean[2]:7.3g}, {mean[3]:7.3g}, {bband[0]:7.3g}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:7.3g}, {bband[4]:8.1f}, {bband[5]:8.1f}, {bband[6]:7.3g}"
+                        f"{extra['name']:32s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3g}, {r_s:8.3f}, {chi2:7.3g}, {dof:4d}, {mean[4]:7.3g}, {mean[5]:7.3g}, {mean[2]:7.3g}, {mean[3]:7.3g}, {bband[0]:7.3g}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:7.3g}, {bband[4]:8.1f}, {bband[5]:8.1f}, {bband[6]:7.3g}"
                     )
                 else:
                     output.append(
-                        f"{extra['name']:32s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3g}, {r_s:7.3g}, {chi2:7.3g}, {dof:4d}, {mean[4]:7.3g}, {mean[5]:7.3g}, {mean[2]:7.3g}, {mean[3]:7.3g}, {bband[0]:7.3g}, {bband[4]:7.3g}, {bband[1]:7.3g}, {bband[2]:7.3g}, {bband[3]:7.3g}, {bband[5]:7.3g}, {bband[6]:7.3g}, {bband[7]:7.3g}"
+                        f"{extra['name']:32s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3g}, {r_s:8.3f}, {chi2:7.3g}, {dof:4d}, {mean[4]:7.3g}, {mean[5]:7.3g}, {mean[2]:7.3g}, {mean[3]:7.3g}, {bband[0]:7.3g}, {bband[4]:7.3g}, {bband[1]:7.3g}, {bband[2]:7.3g}, {bband[3]:7.3g}, {bband[5]:7.3g}, {bband[6]:7.3g}, {bband[7]:7.3g}"
                     )
 
                 counter += 1
@@ -257,7 +292,7 @@ if __name__ == "__main__":
             c.analysis.get_latex_table(filename=pfn + "_" + split + "_params.txt")
 
             with open(pfn + "_" + split + "_BAO_fitting.Barry", "w") as f:
-                if "Pk" in extra["name"]:
+                if "Pk" in split:
                     f.write(
                         "#Name, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_2, a0_1, a0_0, a2_2, a2_1, a2_0\n"
                     )
