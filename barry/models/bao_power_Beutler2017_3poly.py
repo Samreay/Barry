@@ -178,7 +178,7 @@ class PowerBeutler2017_3poly(PowerSpectrumFit):
                     poly[0, :, :] = pk
                     for i, pole in enumerate(self.poly_poles):
                         if self.recon:
-                            poly[npoly * i + 1 : npoly * (i + 1) + 1, pole] = [k ** 2, np.ones(len(k)), 1.0 / k]
+                            poly[npoly * i + 1 : npoly * (i + 1) + 1, pole] = [k, np.ones(len(k)), 1.0 / k]
                         else:
                             poly[npoly * i + 1 : npoly * (i + 1) + 1, pole] = [k, np.ones(len(k)), 1.0 / k]
 
@@ -188,7 +188,7 @@ class PowerBeutler2017_3poly(PowerSpectrumFit):
                     poly = np.zeros((1, 5, len(k)))
                     for pole in self.poly_poles:
                         if self.recon:
-                            pk[pole] += p[f"a{{{pole}}}_1"] * k ** 2 + p[f"a{{{pole}}}_2"] + p[f"a{{{pole}}}_3"] / k
+                            pk[pole] += p[f"a{{{pole}}}_1"] * k + p[f"a{{{pole}}}_2"] + p[f"a{{{pole}}}_3"] / k
                         else:
                             pk[pole] += p[f"a{{{pole}}}_1"] * k + p[f"a{{{pole}}}_2"] + p[f"a{{{pole}}}_3"] / k
 
