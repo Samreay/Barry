@@ -576,8 +576,6 @@ class Model(ABC):
         data = dataset.get_data()
         self.set_data(data)
 
-        print(self.camb.recon_smoothing_scale)
-
         p = self.get_defaults()
         p_dict = self.get_param_dict(p)
         posterior = self.get_posterior(p)

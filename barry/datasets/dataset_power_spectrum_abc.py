@@ -112,19 +112,22 @@ class PowerSpectrum(Dataset, ABC):
     def set_cov(self, fake_diag=False):
         covname = "post-recon cov" if self.recon else "pre-recon cov"
         if covname in self.data_obj:
-            npoles = len(self.poles)
-            nin = len(self.w_mask)
-            nout = self.data.shape[0]
-            self.cov = np.empty((npoles * nout, npoles * nout))
-            w_mask_indices = np.ix_(self.w_mask, self.w_mask)
-            for i in range(npoles):
-                iinlow, iinhigh = i * nin, (i + 1) * nin
-                ioutlow, iouthigh = i * nout, (i + 1) * nout
-                for j in range(npoles):
-                    jinlow, jinhigh = j * nin, (j + 1) * nin
-                    joutlow, jouthigh = j * nout, (j + 1) * nout
-                    subset = self.data_obj[covname][iinlow:iinhigh, jinlow:jinhigh][w_mask_indices]
-                    self.cov[ioutlow:iouthigh, joutlow:jouthigh] = subset
+            if self.data_obj[covname] is not None:
+                npoles = len(self.poles)
+                nin = len(self.w_mask)
+                nout = self.data.shape[0]
+                self.cov = np.empty((npoles * nout, npoles * nout))
+                w_mask_indices = np.ix_(self.w_mask, self.w_mask)
+                for i in range(npoles):
+                    iinlow, iinhigh = i * nin, (i + 1) * nin
+                    ioutlow, iouthigh = i * nout, (i + 1) * nout
+                    for j in range(npoles):
+                        jinlow, jinhigh = j * nin, (j + 1) * nin
+                        joutlow, jouthigh = j * nout, (j + 1) * nout
+                        subset = self.data_obj[covname][iinlow:iinhigh, jinlow:jinhigh][w_mask_indices]
+                        self.cov[ioutlow:iouthigh, joutlow:jouthigh] = subset
+            else:
+                self._compute_cov()
         else:
             self._compute_cov()
 

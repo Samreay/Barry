@@ -226,39 +226,23 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_NGC, PowerSpectrum_DESIMockChallenge_Post
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z051_NGC, PowerSpectrum_DESIMockChallenge_Post
     from barry.config import setup_logging
     from barry.models.model import Correction
 
     setup_logging()
 
-    # print("Checking isotropic mock mean")
-    # dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=True, recon=True)
-    # model = PowerBeutler2017(recon=dataset.recon, marg=None, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
-    # model.sanity_check(dataset)
-
     print("Checking anisotropic mock mean")
-    # dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, recon=True, fit_poles=[0, 2])
-    # dataset.set_realisation(0)
-    # model = PowerBeutler2017(
-    #    recon=dataset.recon,
-    #    isotropic=dataset.isotropic,
-    #    marg="full",
-    #    fix_params=["om"],
-    #    poly_poles=[0, 2],
-    #    correction=Correction.HARTLAP,
-    # )
-    # model.sanity_check(dataset)
 
-    dataset = PowerSpectrum_DESIMockChallenge_Post(
-        isotropic=False, recon=False, fit_poles=[0, 2, 4], realisation=0, min_k=0.01, max_k=0.30, num_mocks=1000, type="cov-fix"
+    dataset = PowerSpectrum_SDSS_DR12_Z051_NGC(
+        isotropic=False, recon="iso", fit_poles=[0, 2], realisation=40, min_k=0.01, max_k=0.30, num_mocks=2048
     )
     model = PowerBeutler2017(
-        recon=None,
+        recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
         fix_params=["om"],
-        poly_poles=[0, 2, 4],
+        poly_poles=[0, 2],
         correction=Correction.HARTLAP,
     )
     model.sanity_check(dataset)

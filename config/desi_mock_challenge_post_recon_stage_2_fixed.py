@@ -105,7 +105,7 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         splits = ["Pk", "Xi"]
-        ntotal = [2, 2]
+        ntotal = [4, 4]
         for spl, split in enumerate(splits):
             output = []
             counter = 0
@@ -240,20 +240,35 @@ if __name__ == "__main__":
                 for l, p in zip(model.get_labels(), ps):
                     best_fit[l] = p
 
-                mean, cov = weighted_avg_and_cov(
-                    df[
-                        [
-                            "$\\alpha_\\parallel$",
-                            "$\\alpha_\\perp$",
-                            "$\\Sigma_s$",
-                            "$\\beta$",
-                            "$\\Sigma_{nl,||}$",
-                            "$\\Sigma_{nl,\\perp}$",
-                        ]
-                    ],
-                    weight,
-                    axis=0,
-                )
+                if "Fixed Sigma" in extra["name"]:
+                    mean, cov = weighted_avg_and_cov(
+                        df[
+                            [
+                                "$\\alpha_\\parallel$",
+                                "$\\alpha_\\perp$",
+                                "$\\Sigma_s$",
+                                "$\\beta$",
+                            ]
+                        ],
+                        weight,
+                        axis=0,
+                    )
+                    mean = np.concatenate([mean, [5.62, 3.01]])
+                else:
+                    mean, cov = weighted_avg_and_cov(
+                        df[
+                            [
+                                "$\\alpha_\\parallel$",
+                                "$\\alpha_\\perp$",
+                                "$\\Sigma_s$",
+                                "$\\beta$",
+                                "$\\Sigma_{nl,||}$",
+                                "$\\Sigma_{nl,\\perp}$",
+                            ]
+                        ],
+                        weight,
+                        axis=0,
+                    )
 
                 c2 = ChainConsumer()
                 c2.add_chain(df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$"]], weights=weight)
