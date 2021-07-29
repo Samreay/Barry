@@ -67,7 +67,9 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--refresh", action="store_true", default=False)
     args = parser.parse_args()
 
-    datasets = [c() for c in get_concrete(Dataset) if "DESI" in c.__name__]
+    # datasets = [c() for c in get_concrete(Dataset) if "DESI" in c.__name__]
+    print(get_concrete(Dataset))
+    datasets = [c() for c in get_concrete(Dataset) if "PowerSpectrum_SDSS_DR12" in c.__name__ and "Dummy" not in c.__name__]
 
     cosmologies = get_cosmologies(datasets)
     logging.info(f"Have {len(cosmologies)} cosmologies")
