@@ -18,9 +18,9 @@ class DynestySampler(Sampler):
 
     def get_filename(self, uid):
         if self.dynamic:
-            return os.path.join(self.temp_dir, f"{uid}_chain_dyn.npy")
+            return os.path.join(self.temp_dir, f"{uid}_dyn_chain.npy")
         else:
-            return os.path.join(self.temp_dir, f"{uid}_chain.npy")
+            return os.path.join(self.temp_dir, f"{uid}_nest_chain.npy")
 
     def fit(self, log_likelihood, start, num_dim, prior_transform, save_dims=None, uid=None):
 

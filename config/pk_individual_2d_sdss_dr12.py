@@ -3,7 +3,7 @@ import sys
 from chainconsumer import ChainConsumer
 
 sys.path.append("..")
-from barry.samplers import DynestySampler
+from barry.samplers import DynestySampler, Optimiser
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
 from barry.config import setup
@@ -29,7 +29,8 @@ if __name__ == "__main__":
 
     c = getCambGenerator()
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
+    # sampler = DynestySampler(temp_dir=dir_name, nlive=500)
+    sampler = Optimiser(temp_dir=dir_name)
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 

@@ -534,7 +534,7 @@ class Model(ABC):
         return params
 
     def optimize(self, tol=1.0e-6):
-        """Perform local optimiation to try and find the best fit of your model to the dataset loaded in.
+        """Perform local optimisation to try and find the best fit of your model to the dataset loaded in.
 
         Parameters
         ----------
