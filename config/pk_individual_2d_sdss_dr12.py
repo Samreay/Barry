@@ -42,7 +42,7 @@ if __name__ == "__main__":
     ]
 
     pre_recon_datasets = [
-        PowerSpectrum_SDSS_DR12_Z038_NGC(recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
+        PowerSpectrum_SDSS_DR12_Z038_NGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
         PowerSpectrum_SDSS_DR12_Z038_SGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
         PowerSpectrum_SDSS_DR12_Z051_NGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
         PowerSpectrum_SDSS_DR12_Z051_SGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
