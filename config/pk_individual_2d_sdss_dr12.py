@@ -28,7 +28,7 @@ if __name__ == "__main__":
     c = getCambGenerator()
 
     # sampler = DynestySampler(temp_dir=dir_name, nlive=500)
-    sampler = Optimiser(temp_dir=dir_name)
+    sampler = Optimiser(temp_dir=dir_name, tol=1.0e-4)
 
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
