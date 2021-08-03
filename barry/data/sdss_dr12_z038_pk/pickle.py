@@ -70,15 +70,23 @@ def getcomp():
     return matrix
 
 
+def sortfunc(item):
+    if "data" in item:
+        return 0
+    else:
+        return int(item.split("_")[11] if "recon" in item else item.split("_")[9])
+
+
 for gc in ["ngc_z1", "sgc_z1"]:
     ds = [f"/Volumes/Work/UQ/DR12/ps1d_patchyDR12_{gc}/", f"/Volumes/Work/UQ/DR12/ps1d_patchyDR12_{gc}_recon/"]
     files = [d + f for d in ds for f in os.listdir(d)]
-    print(files)
+    files.sort(key=sortfunc)
+    for file in files:
+        print(file)
 
     wfile = f"/Volumes/Work/UQ/DR12/Wll_{gc}_rebinned_5000bins_s10fixed.dat"
     res = {f.lower(): getdf(f) for f in files}
     ks = next(iter(res.items()))[1]["k"].to_numpy()
-    print([v for k, v in res.items() if "recon" not in k and "data" in k])
     split = {
         "pre-recon data": [v for k, v in res.items() if "recon" not in k and "data" in k],
         "post-recon data": [v for k, v in res.items() if "recon" in k and "data" in k],

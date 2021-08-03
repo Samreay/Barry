@@ -1,7 +1,5 @@
 import sys
 
-from chainconsumer import ChainConsumer
-
 sys.path.append("..")
 from barry.samplers import DynestySampler, Optimiser
 from barry.cosmology.camb_generator import getCambGenerator
@@ -43,6 +41,15 @@ if __name__ == "__main__":
         PowerSpectrum_SDSS_DR12_Z061_SGC(recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999),
     ]
 
+    pre_recon_datasets = [
+        PowerSpectrum_SDSS_DR12_Z038_NGC(recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
+        PowerSpectrum_SDSS_DR12_Z038_SGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
+        PowerSpectrum_SDSS_DR12_Z051_NGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
+        PowerSpectrum_SDSS_DR12_Z051_SGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
+        PowerSpectrum_SDSS_DR12_Z061_NGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
+        PowerSpectrum_SDSS_DR12_Z061_SGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
+    ]
+
     # Standard Beutler Model
     model = PowerBeutler2017(recon="iso", isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.HARTLAP, marg="full")
 
@@ -69,61 +76,23 @@ if __name__ == "__main__":
         plt.rc("font", family="serif")
 
         res = {}
-        bestfits = {}
         if path.exists(pfn + "_alphameans.csv"):
             logging.info("Found alphameans.csv, reading from existing file")
 
             df = pd.read_csv(pfn + "_alphameans.csv")
-            labels = [c.replace("_pk_mean_alpha", "") for c in df.columns if "_pk_mean_alpha" in c]
-            for label in labels:
-                res[label] = df[
-                    [
-                        "realisation",
-                        label + "_pk_mean_alpha",
-                        label + "_pk_std_alpha",
-                        label + "_pk_mean_epsilon",
-                        label + "_pk_std_epsilon",
-                        label + "_pk_chi2",
-                    ]
-                ].copy()
-                res[label].rename(
-                    {
-                        label + "_pk_mean_alpha": "avg_alpha",
-                        label + "_pk_std_alpha": "std_alpha",
-                        label + "_pk_mean_epsilon": "avg_epsilon",
-                        label + "_pk_std_epsilon": "std_epsilon",
-                        label + "_pk_chi2": "chi2",
-                    },
-                    axis="columns",
-                    inplace=True,
-                )
-
-            # Print out stats
-            if True:
-                cols = [c for c in df.columns if "mean" in c]
-                df_means = df[cols]
-                means = df_means.mean(axis=0)
-                rms = df_means.std(axis=0)
-                for l, m, r in zip(cols, means, rms):
-                    print(f"{l}    ${m:0.3f} \\pm {r:0.3f}$")
         else:
 
             logging.info("Didn't find alphameans.csv, reading chains")
 
-            doonce = True
+            counter = 0
             for posterior, weight, chain, evidence, model, data, extra in fitter.load():
-                if extra["realisation"] == "average":
-                    continue
 
-                n = extra["name"].split(",")[0]
+                n = extra["name"].split(",")[0][3]
                 if res.get(n) is None:
                     res[n] = []
-                if bestfits.get(n) is None:
-                    bestfits[n] = []
-                i = posterior.argmax()
 
                 model.set_data(data)
-                params = model.get_param_dict(chain[i])
+                params = model.get_param_dict(chain[0])
                 for name, val in params.items():
                     model.set_default(name, val)
 
@@ -172,18 +141,19 @@ if __name__ == "__main__":
 
                 model.data[0]["icov_m_w"] = icov_m_w
 
-                m, s = weighted_avg_and_cov(chain[:, 0:2], weight, 0)
+                dataset = counter % 999
+                print(dataset, counter - dataset * 6)
+                pre_recon_data = pre_recon_datasets[dataset].set_realisation(dataset - counter * 6)
+                pre_recon_data = pre_recon_data.get_data()
+                print(pre_recon_data)
 
-                if doonce:
-                    doonce = False
-                    import pandas as pd
+                plt.plot(pre_recon_data[0]["ks"], pre_recon_data[0]["ks"] * pre_recon_data[0]["pk0"])
+                plt.plot(data[0]["ks"], data[0]["ks"] * data[0]["pk0"])
+                plt.show()
 
-                    df = pd.DataFrame(chain[:, 0], columns=["alpha"])
-                    nsamp = int((weight / weight.max()).sum())
-                    r = []
-                    for ii in range(1000):
-                        r.append(df.sample(weights=weight, replace=True, n=nsamp).std())
-                    print(f"SE of std is {np.std(r)}")
+                print(alphas, new_chi_squared)
+                print(data)
+                exit()
 
                 res[n].append(
                     [

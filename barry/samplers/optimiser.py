@@ -66,6 +66,6 @@ class Optimiser(Sampler):
         """ Load existing results from a file"""
 
         results = np.load(filename)
-        likelihood = results[0][None, :]
+        likelihood = [results[0]]
         flat_chain = results[1:][None, :]
-        return {"chain": flat_chain, "posterior": likelihood}
+        return {"chain": np.array(flat_chain), "posterior": np.array(likelihood)}

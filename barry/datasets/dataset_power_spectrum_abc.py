@@ -108,6 +108,7 @@ class PowerSpectrum(Dataset, ABC):
             assert self.mock_data is not None, "You asked for a mock realisation, but this dataset has no mocks!"
             self.logger.info(f"Loading mock {realisation}")
             self.data = self.mock_data[realisation]
+        return self
 
     def set_cov(self, fake_diag=False):
         covname = "post-recon cov" if self.recon else "pre-recon cov"
