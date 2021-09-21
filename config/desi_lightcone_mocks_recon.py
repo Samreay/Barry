@@ -20,7 +20,7 @@ if __name__ == "__main__":
     print(pfn)
     fitter = Fitter(dir_name, remove_output=True)
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=100)
 
     names = ["PreRecon", "PostRecon Julian RecIso", "PostRecon Julian RecSym", "PostRecon Martin RecIso", "PostRecon Martin RecSym"]
     colors = ["#CAF270", "#CAF270", "#4AB482", "#1A6E73", "#232C3B"]
@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     types = ["julian_reciso", "julian_reciso", "julian_recsym", "martin_reciso", "martin_recsym"]
     recons = [False, True, True, True, True]
-    recon_types = ["None", "iso", "iso", "iso", "iso"]
+    recon_types = ["None", "iso", "ani", "iso", "ani"]
     realisations = ["data", "data", "data", "data", "data"]
 
     for i, (name, type, recon, recon_type, realisation, color) in enumerate(zip(names, types, recons, recon_types, realisations, colors)):
