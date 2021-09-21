@@ -226,7 +226,7 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z038_NGC, PowerSpectrum_DESIMockChallenge_Post
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z038_NGC, PowerSpectrum_DESILightcone_Mocks_Recon
     from barry.config import setup_logging
     from barry.models.model import Correction
 
@@ -234,7 +234,7 @@ if __name__ == "__main__":
 
     print("Checking anisotropic mock mean")
 
-    dataset = PowerSpectrum_SDSS_DR12_Z038_NGC(
+    """dataset = PowerSpectrum_SDSS_DR12_Z038_NGC(
         isotropic=False, recon="iso", fit_poles=[0, 2], realisation=40, min_k=0.01, max_k=0.30, num_mocks=999
     )
     model = PowerBeutler2017(
@@ -244,5 +244,18 @@ if __name__ == "__main__":
         fix_params=["om"],
         poly_poles=[0, 2],
         correction=Correction.HARTLAP,
+    )
+    model.sanity_check(dataset)"""
+
+    dataset = PowerSpectrum_DESILightcone_Mocks_Recon(
+        isotropic=False, recon="iso", fit_poles=[0, 2], realisation="data", min_k=0.02, max_k=0.30, type="julian_recsym"
+    )
+    model = PowerBeutler2017(
+        recon=dataset.recon,
+        isotropic=dataset.isotropic,
+        marg="full",
+        fix_params=["om"],
+        poly_poles=[0, 2],
+        correction=Correction.NONE,
     )
     model.sanity_check(dataset)

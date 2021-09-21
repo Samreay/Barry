@@ -6,7 +6,7 @@ from barry.samplers.sampler import Sampler
 
 
 class Optimiser(Sampler):
-    def __init__(self, temp_dir=None, tol=1.0e-5):
+    def __init__(self, temp_dir=None, tol=1.0e-6):
 
         self.logger = logging.getLogger("barry")
         self.tol = tol
