@@ -41,7 +41,7 @@ class DynestySampler(Sampler):
                 log_likelihood, prior_transform, num_dim, nlive_init=self.nlive, nlive_batch=200, maxbatch=10
             )
         else:
-            sampler = dynesty.DynamicNestedSampler(log_likelihood, prior_transform, num_dim, nlive=self.nlive)
+            sampler = dynesty.NestedSampler(log_likelihood, prior_transform, num_dim, nlive=self.nlive)
 
         sampler.run_nested(maxiter=self.max_iter, print_progress=True)
 

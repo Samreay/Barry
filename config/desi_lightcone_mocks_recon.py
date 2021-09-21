@@ -20,11 +20,11 @@ if __name__ == "__main__":
     print(pfn)
     fitter = Fitter(dir_name, remove_output=True)
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=50)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=100)
 
     names = ["PreRecon", "PostRecon Julian RecIso", "PostRecon Julian RecSym", "PostRecon Martin RecIso", "PostRecon Martin RecSym"]
-    # colors = ["#CAF270", "#CAF270", "#4AB482", "#1A6E73", "#232C3B"]
-    colors = ["#CAF270", "#66C57F", "#219180", "#205C68", "#232C3B"]
+    colors = ["#CAF270", "#CAF270", "#4AB482", "#1A6E73", "#232C3B"]
+    # colors = ["#CAF270", "#66C57F", "#219180", "#205C68", "#232C3B"]
 
     types = ["julian_reciso", "julian_reciso", "julian_recsym", "martin_reciso", "martin_recsym"]
     recons = [False, True, True, True, True]
@@ -75,8 +75,8 @@ if __name__ == "__main__":
         c = ChainConsumer()
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
-            # if "PreRecon" in extra["name"]:
-            #    continue
+            if "PreRecon" in extra["name"]:
+                continue
 
             print(extra["name"])
             model.set_data(data)

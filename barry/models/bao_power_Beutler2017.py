@@ -248,7 +248,7 @@ if __name__ == "__main__":
     model.sanity_check(dataset)"""
 
     dataset = PowerSpectrum_DESILightcone_Mocks_Recon(
-        isotropic=False, recon="iso", fit_poles=[0, 2], realisation="data", min_k=0.02, max_k=0.30, type="julian_recsym"
+        isotropic=False, recon="iso", fit_poles=[0, 2], realisation="data", min_k=0.02, max_k=0.30, type="martin_recsym"
     )
     model = PowerBeutler2017(
         recon=dataset.recon,
