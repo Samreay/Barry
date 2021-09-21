@@ -20,7 +20,7 @@ if __name__ == "__main__":
     print(pfn)
     fitter = Fitter(dir_name, remove_output=True)
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=100)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
 
     names = ["PreRecon", "PostRecon Julian RecIso", "PostRecon Julian RecSym", "PostRecon Martin RecIso", "PostRecon Martin RecSym"]
     colors = ["#CAF270", "#CAF270", "#4AB482", "#1A6E73", "#232C3B"]
