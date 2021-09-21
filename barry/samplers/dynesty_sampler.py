@@ -43,7 +43,7 @@ class DynestySampler(Sampler):
         else:
             sampler = dynesty.DynamicNestedSampler(log_likelihood, prior_transform, num_dim, nlive=self.nlive)
 
-        sampler.run_nested(maxiter=self.max_iter, print_progress=False)
+        sampler.run_nested(maxiter=self.max_iter, print_progress=True)
 
         self.logger.debug("Fit finished")
 

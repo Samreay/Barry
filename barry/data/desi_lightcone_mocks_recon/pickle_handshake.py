@@ -229,9 +229,9 @@ if __name__ == "__main__":
     print(np.shape(cov))
 
     split = {
-        "pre-recon data": [v for k, v in res_prerecon.items() if "unit" in k and "bugfix" in k],
+        "pre-recon data": [v for k, v in res_prerecon.items() if "unit" in k],
         "pre-recon cov": cov_prerecon,
-        "post-recon data": [v for k, v in res.items() if "unit" in k],
+        "post-recon data": [v for k, v in res.items() if "unit" in k and "bugfix" in k],
         "post-recon cov": cov,
         "pre-recon mocks": [v for k, v in res_prerecon.items() if "ezmock" in k],
         "post-recon mocks": [v for k, v in res.items() if "ezmock" in k],
@@ -279,9 +279,9 @@ if __name__ == "__main__":
     print(np.shape(cov))
 
     split = {
-        "pre-recon data": [v for k, v in res_prerecon.items() if "unit" in k and "bugfix" in k],
+        "pre-recon data": [v for k, v in res_prerecon.items() if "unit"],
         "pre-recon cov": cov_prerecon,
-        "post-recon data": [v for k, v in res.items() if "unit" in k],
+        "post-recon data": [v for k, v in res.items() if "unit" in k and "bugfix" in k],
         "post-recon cov": cov,
         "pre-recon mocks": [v for k, v in res_prerecon.items() if "ezmock" in k],
         "post-recon mocks": [v for k, v in res.items() if "ezmock" in k],
