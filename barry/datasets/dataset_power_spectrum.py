@@ -518,35 +518,25 @@ class PowerSpectrum_DESIMockChallenge_Post(PowerSpectrum):
         realisation=None,
         isotropic=False,
         fit_poles=(0, 2),
-        type="cov-std",
+        covtype="cov-std",
+        smoothtype="15",
     ):
 
-        types = ["cov-std", "cov-fix", "rec-iso5", "rec-iso10", "rec-iso15", "rec-iso20", "rec-ani5", "rec-ani10", "rec-ani15", "rec-ani20"]
-        if type.lower() not in types:
-            raise NotImplementedError("Type not recognised, must be cov-std, cov-fix, rec-iso5/10/15/20 or rec-ani5/10/15/20")
+        covtypes = ["cov-std", "cov-fix"]
+        if covtype.lower() not in covtypes:
+            raise NotImplementedError("covtype not recognised, must be cov-std, cov-fix")
 
-        if type.lower() in types[:2] and recon is True:
-            raise NotImplementedError("Type corresponds to pre-recon, but recon=True")
-
-        if type.lower() in types[2:] and recon is False:
-            raise NotImplementedError("Type corresponds to post-recon, but recon=False")
+        smoothtypes = ["5", "10", "15", "20"]
+        if smoothtype.lower() not in smoothtypes:
+            raise NotImplementedError("smoothtype not recognised, must be 5, 10, 15, 20")
 
         if any(pole in [1, 3] for pole in fit_poles):
             raise NotImplementedError("Only even multipoles included in DESIMockChallenge")
 
-        datafiles = [
-            "desi_mock_challenge_post_stage_2_pk_pre_std.pkl",
-            "desi_mock_challenge_post_stage_2_pk_pre_fix.pkl",
-            "desi_mock_challenge_post_stage_2_pk_iso_5.pkl",
-            "desi_mock_challenge_post_stage_2_pk_iso_10.pkl",
-            "desi_mock_challenge_post_stage_2_pk_iso_15.pkl",
-            "desi_mock_challenge_post_stage_2_pk_iso_20.pkl",
-            "desi_mock_challenge_post_stage_2_pk_ani_5.pkl",
-            "desi_mock_challenge_post_stage_2_pk_ani_10.pkl",
-            "desi_mock_challenge_post_stage_2_pk_ani_15.pkl",
-            "desi_mock_challenge_post_stage_2_pk_ani_20.pkl",
-        ]
-        datafile = datafiles[types.index(type.lower())]
+        reconname = "pre" if recon is None else recon.lower()
+        covname = "" if covtype.lower() == "cov-fix" else "_nonfix"
+        smoothname = "" if recon is None else "_" + smoothtype.lower()
+        datafile = "desi_mock_challenge_post_stage_2_pk_" + reconname + smoothname + covname + ".pkl"
 
         super().__init__(
             datafile,
@@ -671,7 +661,7 @@ if __name__ == "__main__":
             plt.legend()
             plt.show()"""
 
-    # Plot the data and mock average for the sdss spectra
+    """"# Plot the data and mock average for the sdss spectra
     for j, recon in enumerate(["iso", None]):
         datasets = [
             PowerSpectrum_DESILightcone_Mocks_Recon(
@@ -712,6 +702,42 @@ if __name__ == "__main__":
                 plt.errorbar(
                     data[0]["ks"], data[0]["ks"] * data[0]["pk4"], yerr=yerr[2], marker=fmt, ls=ls, c="g", zorder=i, label=label[2]
                 )
+            plt.xlabel(r"$k$")
+            plt.ylabel(r"$k\,P(k)$")
+            plt.title(dataset.name)
+            plt.legend()
+            plt.show()"""
+
+    # Plot the data and mock average for the sdss spectra
+    for j, recon in enumerate([None, "iso", "ani"]):
+        datasets = [
+            PowerSpectrum_DESIMockChallenge_Post(
+                isotropic=False, recon=recon, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, covtype="cov-std", smoothtype="15"
+            ),
+            PowerSpectrum_DESIMockChallenge_Post(
+                isotropic=False, recon=recon, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, covtype="cov-fix", smoothtype="15"
+            ),
+        ]
+        for dataset in datasets:
+            dataset.set_realisation(0)
+            data = dataset.get_data()
+            label = [r"$P_{0}(k)$", r"$P_{2}(k)$", r"$P_{4}(k)$"]
+            fmt = "o"
+            ls = "None"
+            yerr = [
+                data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[0 : len(data[0]["ks"])],
+                data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["ks"]) : 3 * len(data[0]["ks"])],
+                data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[4 * len(data[0]["ks"]) : 5 * len(data[0]["ks"])],
+            ]
+            plt.errorbar(
+                data[0]["ks"], data[0]["ks"] * data[0]["pk0"], yerr=10.0 * yerr[0], marker=fmt, ls=ls, c="r", zorder=0, label=label[0]
+            )
+            plt.errorbar(
+                data[0]["ks"], data[0]["ks"] * data[0]["pk2"], yerr=10.0 * yerr[1], marker=fmt, ls=ls, c="b", zorder=0, label=label[1]
+            )
+            plt.errorbar(
+                data[0]["ks"], data[0]["ks"] * data[0]["pk4"], yerr=10.0 * yerr[2], marker=fmt, ls=ls, c="g", zorder=0, label=label[2]
+            )
             plt.xlabel(r"$k$")
             plt.ylabel(r"$k\,P(k)$")
             plt.title(dataset.name)

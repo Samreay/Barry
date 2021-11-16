@@ -226,7 +226,7 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z038_NGC, PowerSpectrum_DESILightcone_Mocks_Recon
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z038_NGC, PowerSpectrum_DESIMockChallenge_Post
     from barry.config import setup_logging
     from barry.models.model import Correction
 
@@ -247,15 +247,15 @@ if __name__ == "__main__":
     )
     model.sanity_check(dataset)"""
 
-    dataset = PowerSpectrum_DESILightcone_Mocks_Recon(
-        isotropic=False, recon="iso", fit_poles=[0, 2], realisation="data", min_k=0.02, max_k=0.30, type="martin_recsym"
+    dataset = PowerSpectrum_DESIMockChallenge_Post(
+        isotropic=False, recon="ani", fit_poles=[0, 2, 4], realisation=0, min_k=0.0075, max_k=0.30, covtype="cov-fix", smoothtype="15"
     )
     model = PowerBeutler2017(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
         fix_params=["om"],
-        poly_poles=[0, 2],
+        poly_poles=[0, 2, 4],
         correction=Correction.NONE,
     )
     model.sanity_check(dataset)

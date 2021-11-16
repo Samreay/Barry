@@ -23,8 +23,8 @@ if __name__ == "__main__":
     sampler = DynestySampler(temp_dir=dir_name, nlive=100)
 
     names = ["PreRecon", "PostRecon Julian RecIso", "PostRecon Julian RecSym", "PostRecon Martin RecIso", "PostRecon Martin RecSym"]
-    colors = ["#CAF270", "#CAF270", "#4AB482", "#1A6E73", "#232C3B"]
-    # colors = ["#CAF270", "#66C57F", "#219180", "#205C68", "#232C3B"]
+    # colors = ["#CAF270", "#CAF270", "#4AB482", "#1A6E73", "#232C3B"]
+    colors = ["#CAF270", "#66C57F", "#219180", "#205C68", "#232C3B"]
 
     types = ["julian_reciso", "julian_reciso", "julian_recsym", "martin_reciso", "martin_recsym"]
     recons = [False, True, True, True, True]
@@ -62,7 +62,7 @@ if __name__ == "__main__":
         fig2, axes2 = plt.subplots(figsize=(5, 8), nrows=len(names), sharex=True, gridspec_kw={"hspace": 0.08})
         labels = [
             r"$k \times P(k)\,(h^{-2}\,\mathrm{Mpc^{2}})$",
-            r"$k \times (P(k) - P_{\mathrm{smooth}}(k))\,(h^{-2}\,\mathrm{Mpc^{2}})$",
+            r"$k^{2} \times (P(k) - P_{\mathrm{smooth}}(k))\,(h^{-1}\,\mathrm{Mpc})$",
         ]
         for fig, label in zip([fig1, fig2], labels):
             ax = fig.add_subplot(111, frameon=False)
@@ -75,8 +75,8 @@ if __name__ == "__main__":
         c = ChainConsumer()
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
-            if "PreRecon" in extra["name"]:
-                continue
+            # if "PreRecon" in extra["name"]:
+            #    continue
 
             print(extra["name"])
             model.set_data(data)
@@ -188,9 +188,9 @@ if __name__ == "__main__":
                 ax1.annotate(extra["name"], xy=(0.98, 0.95), xycoords="axes fraction", ha="right", va="top")
 
                 ax2 = fig2.add_subplot(inn)
-                ax2.errorbar(ks, ks * (data[0][title] - smooth), yerr=ks * err, fmt="o", ms=4, c="#666666")
-                ax2.plot(ks, ks * (mod - smooth), c=extra["color"])
-                ax2.set_ylim(-80.0, 80.0)
+                ax2.errorbar(ks, ks ** 2 * (data[0][title] - smooth), yerr=ks ** 2 * err, fmt="o", ms=4, c="#666666")
+                ax2.plot(ks, ks ** 2 * (mod - smooth), c=extra["color"])
+                ax2.set_ylim(-4.0, 4.0)
                 if counter == 0:
                     if i == 0:
                         ax2.set_title(r"$P_{0}(k)$")
@@ -252,15 +252,15 @@ if __name__ == "__main__":
             },
         )
         c.plotter.plot(
-            filename=[pfn + "_contour.png"],
+            filename=[pfn + "_contour.pdf"],
             truth=truth,
             parameters=["$\\alpha$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
-            extents={
-                "$\\alpha_\\parallel$": [0.92, 1.10],
-                "$\\alpha_\\perp$": [0.95, 1.08],
-                "$\\alpha$": [0.95, 1.08],
-                "$\\epsilon$": [-0.04, 0.04],
-            },
+            # extents={
+            #    "$\\alpha_\\parallel$": [0.92, 1.10],
+            #    "$\\alpha_\\perp$": [0.95, 1.08],
+            #    "$\\alpha$": [0.95, 1.08],
+            #    "$\\epsilon$": [-0.04, 0.04],
+            # },
         )
         c.plotter.plot(
             filename=[pfn + "_contour2.png"],
