@@ -72,7 +72,7 @@ class PowerSpectrumFit(Model):
         if not parent:
             self.set_bias(data[0])
 
-    def set_bias(self, data, kval=0.2, width=0.75):
+    def set_bias(self, data, kval=0.2, width=0.4):
         """Sets the bias default value by comparing the data monopole and linear pk
 
         Parameters
@@ -83,6 +83,11 @@ class PowerSpectrumFit(Model):
             The value of k at which to perform the comparison. Default 0.2
 
         """
+
+        kmax = np.amax(data["ks"])
+        if kval > kmax:
+            kval = np.amax(data["ks"])
+            self.logger.info(f"Default kval for setting beta prior (0.2) larger than kmax={kmax:4.3f}, setting kval=kmax")
 
         c = data["cosmology"]
         datapk = splev(kval, splrep(data["ks"], data["pk0"]))

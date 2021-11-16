@@ -248,7 +248,7 @@ if __name__ == "__main__":
     model.sanity_check(dataset)"""
 
     dataset = PowerSpectrum_DESIMockChallenge_Post(
-        isotropic=False, recon=None, fit_poles=[0, 2, 4], realisation=0, min_k=0.0075, max_k=0.30, covtype="cov-fix", smoothtype="15"
+        isotropic=False, recon="ani", fit_poles=[0, 2, 4], realisation=0, min_k=0.0075, max_k=0.15, covtype="cov-fix", smoothtype="15"
     )
     model = PowerBeutler2017(
         recon=dataset.recon,
