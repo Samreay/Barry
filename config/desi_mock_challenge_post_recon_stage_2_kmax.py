@@ -23,8 +23,6 @@ if __name__ == "__main__":
     sampler = DynestySampler(temp_dir=dir_name, nlive=500)
 
     names = [
-        "PreRecon",
-        "PreRecon NonFix",
         "PostRecon Iso",
         "PostRecon Iso NonFix",
         "PostRecon Ani",
@@ -32,9 +30,8 @@ if __name__ == "__main__":
     ]
     cmap = plt.cm.get_cmap("viridis")
 
-    types = ["cov-fix", "cov-std", "cov-fix", "cov-std", "cov-fix", "cov-std"]
-    recons = [False, False, True, True, True, True]
-    recon_types = [None, None, "iso", "iso", "ani", "ani"]
+    types = ["cov-fix", "cov-std", "cov-fix", "cov-std"]
+    recons = ["iso", "iso", "ani", "ani"]
     kmaxs = [0.15, 0.20, 0.25, 0.30]
 
     counter = 0
@@ -57,9 +54,10 @@ if __name__ == "__main__":
                 marg="full",
                 fix_params=["om"],
                 poly_poles=[0, 2, 4],
-                correction=Correction.SELLENTIN,
+                correction=Correction.NONE,
             )
-            fitter.add_model_and_dataset(model, data, name=names[counter])
+            name = names[i] + str(r" $k_{max} = %3.2lf$" % kmax)
+            fitter.add_model_and_dataset(model, data, name=name)
             counter += 1
 
     fitter.set_sampler(sampler)
