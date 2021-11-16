@@ -72,7 +72,7 @@ class PowerSpectrumFit(Model):
         if not parent:
             self.set_bias(data[0])
 
-    def set_bias(self, data, kval=0.2, width=0.4):
+    def set_bias(self, data, kval=0.2, width=0.75):
         """Sets the bias default value by comparing the data monopole and linear pk
 
         Parameters

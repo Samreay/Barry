@@ -27,7 +27,7 @@ class PowerBeutler2017(PowerSpectrumFit):
         self.recon = False
         self.recon_type = "None"
         if recon is not None:
-            if recon.lower() is not "None":
+            if recon.lower() != "None":
                 self.recon_type = "iso"
                 if recon.lower() == "ani":
                     self.recon_type = "ani"
