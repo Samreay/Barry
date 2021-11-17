@@ -5,7 +5,7 @@ from chainconsumer import ChainConsumer
 sys.path.append("..")
 from barry.samplers import DynestySampler
 from barry.config import setup
-from barry.models import PowerBeutler2017
+from barry.models import PowerBeutler2017, PowerBeutler2017_3poly
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESIMockChallenge_Post
 from barry.fitter import Fitter
 import numpy as np
@@ -23,10 +23,10 @@ if __name__ == "__main__":
     sampler = DynestySampler(temp_dir=dir_name, nlive=500)
 
     names = [
-        "PostRecon Iso Fix",
-        "PostRecon Iso NonFix",
-        "PostRecon Ani Fix",
-        "PostRecon Ani NonFix",
+        "PostRecon_Iso_Fix",
+        "PostRecon Iso_NonFix",
+        "PostRecon_Ani_Fix",
+        "PostRecon_Ani_NonFix",
     ]
     cmap = plt.cm.get_cmap("viridis")
 
@@ -35,30 +35,46 @@ if __name__ == "__main__":
     kmaxs = [0.15, 0.20, 0.25, 0.30]
 
     counter = 0
-    for i, type in enumerate(types):
-        for j, kmax in enumerate(kmaxs):
-            data = PowerSpectrum_DESIMockChallenge_Post(
-                isotropic=False,
-                recon=recons[i],
-                realisation=0,
-                fit_poles=[0, 2, 4],
-                min_k=0.0075,
-                max_k=kmax,
-                num_mocks=1000,
-                covtype=type,
-                smoothtype="15",
-            )
-            model = PowerBeutler2017(
-                recon=data.recon,
-                isotropic=data.isotropic,
-                marg="full",
-                fix_params=["om"],
-                poly_poles=[0, 2, 4],
-                correction=Correction.NONE,
-            )
-            name = names[i] + str(r" $k_{max} = %3.2lf$" % kmax)
-            fitter.add_model_and_dataset(model, data, name=name)
-            counter += 1
+    for h, fittype in enumerate(["Hexa", "No-Hexa"]):
+        fit_poles = [0, 2] if fittype == "No-Hexa" else [0, 2, 4]
+        poly_poles = [0, 2] if fittype == "No-Hexa" else [0, 2, 4]
+        for m, modeltype in enumerate(["5-Poly", "3-Poly"]):
+            for i, type in enumerate(types):
+                for j, kmax in enumerate(kmaxs):
+                    data = PowerSpectrum_DESIMockChallenge_Post(
+                        isotropic=False,
+                        recon=recons[i],
+                        realisation=0,
+                        fit_poles=fit_poles,
+                        min_k=0.0075,
+                        max_k=kmax,
+                        num_mocks=1000,
+                        covtype=type,
+                        smoothtype="15",
+                    )
+                    model = (
+                        PowerBeutler2017(
+                            recon=data.recon,
+                            isotropic=data.isotropic,
+                            marg="full",
+                            fix_params=["om"],
+                            poly_poles=poly_poles,
+                            correction=Correction.NONE,
+                        )
+                        if modeltype == "5-Poly"
+                        else PowerBeutler2017_3poly(
+                            recon=data.recon,
+                            isotropic=data.isotropic,
+                            marg="full",
+                            fix_params=["om"],
+                            poly_poles=poly_poles,
+                            correction=Correction.NONE,
+                        )
+                    )
+                    name = names[i] + "_" + fittype + "_" + modeltype + str(r"_$k_{max}=%3.2lf$" % kmax)
+                    print(name)
+                    fitter.add_model_and_dataset(model, data, name=name)
+                    counter += 1
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
@@ -80,14 +96,15 @@ if __name__ == "__main__":
         counter = np.zeros(len(names))
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
-            fitname = " ".join(extra["name"].split()[:3])
+            kmax = extra["name"].split()[-1][:-1]
+            fitname = "_".join(extra["name"].split()[:3])
             nameindex = [i for i, n in enumerate(names) if n == fitname][0]
 
             color = plt.colors.rgb2hex(cmap(float(counter[nameindex]) / (len(kmaxs) - 1)))
 
             model.set_data(data)
             r_s = model.camb.get_data()["r_s"]
-            print(extra["name"])
+            print(extra["name"], kmax)
 
             df = pd.DataFrame(chain, columns=model.get_labels())
             alpha = df["$\\alpha$"].to_numpy()
@@ -174,7 +191,7 @@ if __name__ == "__main__":
 
             corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
             output[fitname].append(
-                f"{kmax:3.2f}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:7.3f}, {bband[5]:7.3f}, {bband[6]:8.1f}, {bband[7]:8.1f}, {bband[8]:8.1f}, {bband[9]:7.3f}, {bband[10]:7.3f}, {bband[11]:8.1f}, {bband[12]:8.1f}, {bband[13]:8.1f}, {bband[14]:7.3f}, {bband[15]:7.3f}"
+                f"{kmax:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:7.3f}, {bband[5]:7.3f}, {bband[6]:8.1f}, {bband[7]:8.1f}, {bband[8]:8.1f}, {bband[9]:7.3f}, {bband[10]:7.3f}, {bband[11]:8.1f}, {bband[12]:8.1f}, {bband[13]:8.1f}, {bband[14]:7.3f}, {bband[15]:7.3f}"
             )
 
             counter[nameindex] += 1
@@ -208,7 +225,7 @@ if __name__ == "__main__":
             )
             c.plotter.plot(filename=[pfn + "_" + name + "_contour2.pdf"], truth=truth, chains=chainnames)
 
-            with open(dir_name + "/Queensland_bestfit" + name + ".txt", "w") as f:
+            with open(dir_name + "/Queensland_bestfit_" + name + ".txt", "w") as f:
                 f.write(
                     "# kmax, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a0_4, a0_5, a2_1, a2_2, a2_3, a2_4, a2_5, a4_1, a4_2, a4_3, a4_4, a4_5\n"
                 )
