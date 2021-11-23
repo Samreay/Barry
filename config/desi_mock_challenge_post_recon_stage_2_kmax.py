@@ -20,13 +20,13 @@ if __name__ == "__main__":
     print(pfn)
     fitter = Fitter(dir_name, remove_output=True)
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
 
     names = [
-        "PostRecon_Iso_Fix",
-        "PostRecon Iso_NonFix",
-        "PostRecon_Ani_Fix",
-        "PostRecon_Ani_NonFix",
+        "PostRecon Iso Fix",
+        "PostRecon Iso NonFix",
+        "PostRecon Ani Fix",
+        "PostRecon Ani NonFix",
     ]
     cmap = plt.cm.get_cmap("viridis")
 
@@ -71,7 +71,7 @@ if __name__ == "__main__":
                             correction=Correction.NONE,
                         )
                     )
-                    name = names[i] + "_" + fittype + "_" + modeltype + str(r"_$k_{max}=%3.2lf$" % kmax)
+                    name = names[i] + " " + fittype + " " + modeltype + str(r" $k_{max}=%3.2lf$" % kmax)
                     print(name)
                     fitter.add_model_and_dataset(model, data, name=name)
                     counter += 1
@@ -89,22 +89,26 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         output = {}
+        namelist = []
         for name in names:
-            output[name] = []
+            for h, fittype in enumerate(["Hexa", "No-Hexa"]):
+                for m, modeltype in enumerate(["5-Poly", "3-Poly"]):
+                    output[name + " " + fittype + " " + modeltype] = []
+                    namelist.append(name + " " + fittype + " " + modeltype)
 
         c = ChainConsumer()
-        counter = np.zeros(len(names))
+        counter = np.zeros(len(4 * names))
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
-            kmax = extra["name"].split()[-1][:-1]
-            fitname = "_".join(extra["name"].split()[:3])
-            nameindex = [i for i, n in enumerate(names) if n == fitname][0]
+            kmax = extra["name"].split(" ")[-1][9:-1]
+            fitname = " ".join(extra["name"].split()[:5])
+            print(kmax, fitname)
+            nameindex = [i for i, n in enumerate(namelist) if n == fitname][0]
 
             color = plt.colors.rgb2hex(cmap(float(counter[nameindex]) / (len(kmaxs) - 1)))
 
             model.set_data(data)
             r_s = model.camb.get_data()["r_s"]
-            print(extra["name"], kmax)
 
             df = pd.DataFrame(chain, columns=model.get_labels())
             alpha = df["$\\alpha$"].to_numpy()
@@ -190,44 +194,72 @@ if __name__ == "__main__":
             )
 
             corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
-            output[fitname].append(
-                f"{kmax:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:7.3f}, {bband[5]:7.3f}, {bband[6]:8.1f}, {bband[7]:8.1f}, {bband[8]:8.1f}, {bband[9]:7.3f}, {bband[10]:7.3f}, {bband[11]:8.1f}, {bband[12]:8.1f}, {bband[13]:8.1f}, {bband[14]:7.3f}, {bband[15]:7.3f}"
-            )
+            if "3-Poly" in fitname:
+                if "No-Hexa" in fitname:
+                    output[fitname].append(
+                        f"{kmax:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:8.1f}, {bband[5]:8.1f}, {bband[6]:8.1f}"
+                    )
+                else:
+                    output[fitname].append(
+                        f"{kmax:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:8.1f}, {bband[5]:8.1f}, {bband[6]:8.1f}, {bband[7]:8.1f}, {bband[8]:8.1f}, {bband[9]:8.1f}"
+                    )
+            else:
+                if "No-Hexa" in fitname:
+                    output[fitname].append(
+                        f"{kmax:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:7.3f}, {bband[5]:7.3f}, {bband[6]:8.1f}, {bband[7]:8.1f}, {bband[8]:8.1f}, {bband[9]:7.3f}, {bband[10]:7.3f}"
+                    )
+                else:
+                    output[fitname].append(
+                        f"{kmax:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:7.3f}, {bband[5]:7.3f}, {bband[6]:8.1f}, {bband[7]:8.1f}, {bband[8]:8.1f}, {bband[9]:7.3f}, {bband[10]:7.3f}, {bband[11]:8.1f}, {bband[12]:8.1f}, {bband[13]:8.1f}, {bband[14]:7.3f}, {bband[15]:7.3f}"
+                    )
 
             counter[nameindex] += 1
 
-        c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4, statistics="mean", legend_location=(0, -1))
+        c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4, legend_location=(0, -1))
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
 
-        c.analysis.get_latex_table(filename=pfn + "_params.txt")
-        for name in names:
+        # c.analysis.get_latex_table(filename=pfn + "_params.txt")
+        for name in namelist:
 
-            chainnames = [name + str(r" $k_{max} = %3.2lf$" % kmax) for kmax in kmaxs]
+            chainnames = [name + str(r" $k_{max}=%3.2lf$" % kmax) for kmax in kmaxs]
 
             c.plotter.plot_summary(
-                filename=[pfn + "_" + name + "_summary.pdf"],
+                filename=[pfn + "_" + name + "_summary.png"],
                 errorbar=True,
                 truth=truth,
-                parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\alpha$", "$\\epsilon$"],
-                # extents={
-                #    "$\\alpha_\\parallel$": [0.961, 1.039],
-                #    "$\\alpha_\\perp$": [0.976, 1.024],
-                #    "$\\alpha$": [0.984, 1.016],
-                #    "$\\epsilon$": [-0.017, 0.017],
-                # },
+                parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+                extents={
+                    "$\\alpha_\\parallel$": [0.987, 1.012],
+                    "$\\alpha_\\perp$": [0.987, 1.007],
+                },
                 chains=chainnames,
             )
             c.plotter.plot(
                 filename=[pfn + "_" + name + "_contour.pdf"],
                 truth=truth,
-                parameters=["$\\alpha$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+                parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
                 chains=chainnames,
             )
             c.plotter.plot(filename=[pfn + "_" + name + "_contour2.pdf"], truth=truth, chains=chainnames)
 
-            with open(dir_name + "/Queensland_bestfit_" + name + ".txt", "w") as f:
-                f.write(
-                    "# kmax, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a0_4, a0_5, a2_1, a2_2, a2_3, a2_4, a2_5, a4_1, a4_2, a4_3, a4_4, a4_5\n"
-                )
+            with open(dir_name + "/Queensland_bestfit_" + name.replace(" ", "_") + ".txt", "w") as f:
+                if "3-Poly" in name:
+                    if "No-Hexa" in name:
+                        f.write(
+                            "# kmax, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a2_1, a2_2, a2_3\n"
+                        )
+                    else:
+                        f.write(
+                            "# kmax, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a2_1, a2_2, a2_3, a4_1, a4_2, a4_3\n"
+                        )
+                else:
+                    if "No-Hexa" in name:
+                        f.write(
+                            "# kmax, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a0_4, a0_5, a2_1, a2_2, a2_3, a2_4, a2_5\n"
+                        )
+                    else:
+                        f.write(
+                            "# kmax, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a0_4, a0_5, a2_1, a2_2, a2_3, a2_4, a2_5, a4_1, a4_2, a4_3, a4_4, a4_5\n"
+                        )
                 for l in output[name]:
                     f.write(l + "\n")

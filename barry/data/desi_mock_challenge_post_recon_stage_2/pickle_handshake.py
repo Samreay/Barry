@@ -8,6 +8,7 @@ def getxi(loc):
     df = pd.read_csv(loc, comment="#", skiprows=0, delim_whitespace=True, names=["s", "xi0", "xi2", "xi4"], header=None)
     mask = df["s"] <= 205.0
     masked = df.loc[mask, ["s", "xi0", "xi2", "xi4"]]
+    print(masked)
     return masked.astype(np.float32)
 
 

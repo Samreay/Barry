@@ -65,16 +65,15 @@ class CorrelationFunction(Dataset, ABC):
             self.num_mocks = num_mocks
 
         # Reformat the data and mocks as necessary
-        rebinned = [df.to_numpy().T for df in self.true_data] if self.true_data is not None else None
+        rebinned = [self._agg_data(df) for df in self.true_data] if self.true_data is not None else None
         self.ss = rebinned[0][0] if rebinned is not None else None
         self.true_data = [x[1] for x in rebinned] if rebinned is not None else None
 
-        rebinned = [df.to_numpy().T for df in self.mock_data] if self.mock_data is not None else None
+        rebinned = [self._agg_data(df) for df in self.mock_data] if self.mock_data is not None else None
         self.ss = rebinned[0][0] if rebinned is not None else self.ss
-        self.mock_data = [x[1:].T for x in rebinned] if rebinned is not None else None
-        print(len(self.ss))
+        self.mock_data = [x[1] for x in rebinned] if rebinned is not None else None
 
-        self.cov, self.icov, self.data, self.mask = None, None, None, None
+        self.cov, self.icov, self.data = None, None, None
         self.set_realisation(realisation)
         self.set_cov(fake_diag=fake_diag)
 
@@ -91,9 +90,23 @@ class CorrelationFunction(Dataset, ABC):
             assert self.mock_data is not None, "You asked for a mock realisation, but this dataset has no mocks!"
             self.logger.info(f"Loading mock {realisation}")
             self.data = self.mock_data[realisation]
-        self.mask = (self.ss >= self.min_dist) & (self.ss <= self.max_dist)
-        self.ss = self.ss[self.mask]
-        self.data = self.data[self.mask, :]
+        # self.mask = (self.ss >= self.min_dist) & (self.ss <= self.max_dist)
+        # print(np.shape(self.data), np.shape(self.mask))
+        # self.ss = self.ss[self.mask]
+        # self.data = self.data[self.mask, :]
+
+    def _agg_data(self, dataframe):
+
+        poles = self.poles
+        ss = dataframe["s"].values
+        self.mask = (ss >= self.min_dist) & (ss <= self.max_dist)
+        xi0_rebinned = dataframe["xi0"].values[self.mask]
+        xi_rebinned = np.empty((len(xi0_rebinned), len(poles)))
+        xi_rebinned[:, 0] = xi0_rebinned
+        for i, pole in enumerate(poles[1:]):
+            xi_rebinned[:, i + 1] = dataframe[f"xi{pole}"].values[self.mask]
+
+        return ss[self.mask], xi_rebinned, self.mask
 
     def set_cov(self, fake_diag=False):
         covname = "post-recon cov" if self.recon else "pre-recon cov"

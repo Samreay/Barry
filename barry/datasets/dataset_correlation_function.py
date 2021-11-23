@@ -134,44 +134,34 @@ class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
     def __init__(
         self,
         name=None,
-        min_dist=30,
-        max_dist=200,
-        recon=True,
+        min_dist=30.0,
+        max_dist=200.0,
+        recon=None,
         reduce_cov_factor=1,
         num_mocks=None,
         fake_diag=False,
         realisation=None,
         isotropic=False,
-        fit_poles=(0, 2, 4),
-        type="cov-std",
+        fit_poles=(0, 2),
+        covtype="cov-std",
+        smoothtype="15",
     ):
 
-        types = ["cov-std", "cov-fix", "rec-iso5", "rec-iso10", "rec-iso15", "rec-iso20", "rec-ani5", "rec-ani10", "rec-ani15", "rec-ani20"]
-        if type.lower() not in types:
-            raise NotImplementedError("Type not recognised, must be cov-std, cov-fix, rec-iso5/10/15/20 or rec-ani5/10/15/20")
+        covtypes = ["cov-std", "cov-fix"]
+        if covtype.lower() not in covtypes:
+            raise NotImplementedError("covtype not recognised, must be cov-std, cov-fix")
 
-        if type.lower() in types[:2] and recon is True:
-            raise NotImplementedError("Type corresponds to pre-recon, but recon=True")
-
-        if type.lower() in types[2:] and recon is False:
-            raise NotImplementedError("Type corresponds to post-recon, but recon=False")
+        smoothtypes = ["5", "10", "15", "20"]
+        if smoothtype.lower() not in smoothtypes:
+            raise NotImplementedError("smoothtype not recognised, must be 5, 10, 15, 20")
 
         if any(pole in [1, 3] for pole in fit_poles):
             raise NotImplementedError("Only even multipoles included in DESIMockChallenge")
 
-        datafiles = [
-            "desi_mock_challenge_post_stage_2_xi_pre_std.pkl",
-            "desi_mock_challenge_post_stage_2_xi_pre_fix.pkl",
-            "desi_mock_challenge_post_stage_2_xi_iso_5.pkl",
-            "desi_mock_challenge_post_stage_2_xi_iso_10.pkl",
-            "desi_mock_challenge_post_stage_2_xi_iso_15.pkl",
-            "desi_mock_challenge_post_stage_2_xi_iso_20.pkl",
-            "desi_mock_challenge_post_stage_2_xi_ani_5.pkl",
-            "desi_mock_challenge_post_stage_2_xi_ani_10.pkl",
-            "desi_mock_challenge_post_stage_2_xi_ani_15.pkl",
-            "desi_mock_challenge_post_stage_2_xi_ani_20.pkl",
-        ]
-        datafile = datafiles[types.index(type.lower())]
+        reconname = "pre" if recon is None else recon.lower()
+        covname = "" if covtype.lower() == "cov-fix" else "_nonfix"
+        smoothname = "" if recon is None else "_" + smoothtype.lower()
+        datafile = "desi_mock_challenge_post_stage_2_xi_" + reconname + smoothname + covname + ".pkl"
 
         super().__init__(
             datafile,
@@ -197,80 +187,53 @@ if __name__ == "__main__":
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
     # Plot the data and mock average for the desi_mock_challenge_post_stage_2 spectra
-    isotropic = False
-    types = ["rec-iso15", "rec-ani15"]
-    recons = [True, True]
-    realisations = [1, 1]
-    for j, type in enumerate(types):
+    for j, recon in enumerate(["iso", "ani"]):
         datasets = [
             CorrelationFunction_DESIMockChallenge_Post(
-                isotropic=isotropic, recon=recons[j], fit_poles=[0, 2, 4], min_dist=2, max_dist=205, type=type
-            )
+                isotropic=False, recon=recon, fit_poles=[0, 2, 4], min_dist=0.0, max_dist=200.0, covtype="cov-std", smoothtype="15"
+            ),
+            CorrelationFunction_DESIMockChallenge_Post(
+                isotropic=False, recon=recon, fit_poles=[0, 2, 4], min_dist=0.0, max_dist=200.0, covtype="cov-fix", smoothtype="15"
+            ),
         ]
         for dataset in datasets:
-            for i in range(realisations[j]):
-                dataset.set_realisation(i)
-                data = dataset.get_data()
-                label = [r"$\xi_{0}(s)$", r"$\xi_{2}(s)$", r"$\xi_{4}(s)$"] if i == 0 else [None, None, None]
-                fmt = "o" if i == 0 else "None"
-                ls = "None" if i == 0 else "-"
-                if isotropic:
-                    yerr = (
-                        data[0]["dist"] * np.sqrt(np.diag(data[0]["cov"]))[: len(data[0]["dist"])]
-                        if i == 0
-                        else np.zeros(len(data[0]["dist"]))
-                    )
-                    plt.errorbar(
-                        data[0]["dist"],
-                        data[0]["dist"] ** 2 * data[0]["xi0"],
-                        yerr=yerr,
-                        marker=fmt,
-                        ls=ls,
-                        c="r",
-                        zorder=i,
-                        label=label[0],
-                    )
-                else:
-                    yerr = (
-                        [
-                            data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[: len(data[0]["dist"])],
-                            data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[len(data[0]["dist"]) : 2 * len(data[0]["dist"])],
-                            data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["dist"]) :],
-                        ]
-                        if i == 0
-                        else [None, None, None]
-                    )
-                    print(yerr)
-                    plt.errorbar(
-                        data[0]["dist"],
-                        data[0]["dist"] ** 2 * data[0]["xi0"],
-                        yerr=yerr[0],
-                        marker=fmt,
-                        ls=ls,
-                        c="r",
-                        zorder=i,
-                        label=label[0],
-                    )
-                    plt.errorbar(
-                        data[0]["dist"],
-                        data[0]["dist"] ** 2 * data[0]["xi2"],
-                        yerr=yerr[1],
-                        marker=fmt,
-                        ls=ls,
-                        c="b",
-                        zorder=i,
-                        label=label[1],
-                    )
-                    plt.errorbar(
-                        data[0]["dist"],
-                        data[0]["dist"] ** 2 * data[0]["xi4"],
-                        yerr=yerr[2],
-                        marker=fmt,
-                        ls=ls,
-                        c="g",
-                        zorder=i,
-                        label=label[2],
-                    )
+            dataset.set_realisation(0)
+            data = dataset.get_data()
+            label = [r"$\xi_{0}(s)$", r"$\xi_{2}(s)$", r"$\xi_{4}(s)$"]
+            fmt = "o"
+            ls = "None"
+            yerr = [
+                data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[: len(data[0]["dist"])],
+                data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[len(data[0]["dist"]) : 2 * len(data[0]["dist"])],
+                data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["dist"]) :],
+            ]
+            plt.errorbar(
+                data[0]["dist"],
+                data[0]["dist"] ** 2 * data[0]["xi0"],
+                yerr=yerr[0],
+                marker=fmt,
+                ls=ls,
+                c="r",
+                label=label[0],
+            )
+            plt.errorbar(
+                data[0]["dist"],
+                data[0]["dist"] ** 2 * data[0]["xi2"],
+                yerr=yerr[1],
+                marker=fmt,
+                ls=ls,
+                c="b",
+                label=label[1],
+            )
+            plt.errorbar(
+                data[0]["dist"],
+                data[0]["dist"] ** 2 * data[0]["xi4"],
+                yerr=yerr[2],
+                marker=fmt,
+                ls=ls,
+                c="g",
+                label=label[2],
+            )
             plt.xlabel(r"$s$")
             plt.ylabel(r"$s^{2}\xi_{\ell}(s)$")
             plt.title(dataset.name)
