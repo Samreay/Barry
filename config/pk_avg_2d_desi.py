@@ -38,7 +38,9 @@ if __name__ == "__main__":
         model.set_default("sigma_nl_perp", 5.98)
         model.set_fix_params(["om", "sigma_nl_par", "sigma_nl_perp"])
 
-        fitter.add_model_and_dataset(PowerBeutler2017(recon=r, isotropic=False, correction=Correction.NONE, fix_params=["om"]), d, name=f"Beutler 2017 {t}")
+        fitter.add_model_and_dataset(
+            PowerBeutler2017(recon=r, isotropic=False, correction=Correction.NONE, fix_params=["om"]), d, name=f"Beutler 2017 {t}"
+        )
         fitter.add_model_and_dataset(model, d, name=f"Beutler 2017 Fixed $\\Sigma_{{nl}}$ {t}")
         # fitter.add_model_and_dataset(PowerSeo2016(recon=r, isotropic=False), d, name=f"Seo 2016 {t}", linestyle=ls, color=cs[1])
         # fitter.add_model_and_dataset(PowerDing2018(recon=r, isotropic=False), d, name=f"Ding 2018 {t}", linestyle=ls, color=cs[2])

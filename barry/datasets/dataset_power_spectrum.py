@@ -432,7 +432,9 @@ if __name__ == "__main__":
                 ls = "None" if i == 0 else "-"
                 if isotropic:
                     yerr = data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"])) if i == 0 else np.zeros(len(data[0]["ks"]))
-                    plt.errorbar(data[0]["ks"], data[0]["ks"] * data[0]["pk0"], yerr=yerr, marker=fmt, ls=ls, c="r", zorder=i, label=label[0])
+                    plt.errorbar(
+                        data[0]["ks"], data[0]["ks"] * data[0]["pk0"], yerr=yerr, marker=fmt, ls=ls, c="r", zorder=i, label=label[0]
+                    )
                 else:
                     yerr = (
                         [
@@ -443,9 +445,15 @@ if __name__ == "__main__":
                         if i == 0
                         else [None, None, None]
                     )
-                    plt.errorbar(data[0]["ks"], data[0]["ks"] * data[0]["pk0"], yerr=yerr[0], marker=fmt, ls=ls, c="r", zorder=i, label=label[0])
-                    plt.errorbar(data[0]["ks"], data[0]["ks"] * data[0]["pk2"], yerr=yerr[1], marker=fmt, ls=ls, c="b", zorder=i, label=label[1])
-                    plt.errorbar(data[0]["ks"], data[0]["ks"] * data[0]["pk4"], yerr=yerr[2], marker=fmt, ls=ls, c="g", zorder=i, label=label[2])
+                    plt.errorbar(
+                        data[0]["ks"], data[0]["ks"] * data[0]["pk0"], yerr=yerr[0], marker=fmt, ls=ls, c="r", zorder=i, label=label[0]
+                    )
+                    plt.errorbar(
+                        data[0]["ks"], data[0]["ks"] * data[0]["pk2"], yerr=yerr[1], marker=fmt, ls=ls, c="b", zorder=i, label=label[1]
+                    )
+                    plt.errorbar(
+                        data[0]["ks"], data[0]["ks"] * data[0]["pk4"], yerr=yerr[2], marker=fmt, ls=ls, c="g", zorder=i, label=label[2]
+                    )
             plt.xlabel(r"$k$")
             plt.ylabel(r"$k\,P(k)$")
             plt.title(dataset.name)
@@ -467,8 +475,12 @@ if __name__ == "__main__":
                         if i == 0
                         else [None, None]
                     )
-                    plt.errorbar(data[0]["ks"], data[0]["ks"] * data[0]["pk1"], yerr=yerr[0], marker=fmt, ls=ls, c="r", zorder=1, label=label[0])
-                    plt.errorbar(data[0]["ks"], data[0]["ks"] * data[0]["pk3"], yerr=yerr[1], marker=fmt, ls=ls, c="b", zorder=1, label=label[1])
+                    plt.errorbar(
+                        data[0]["ks"], data[0]["ks"] * data[0]["pk1"], yerr=yerr[0], marker=fmt, ls=ls, c="r", zorder=1, label=label[0]
+                    )
+                    plt.errorbar(
+                        data[0]["ks"], data[0]["ks"] * data[0]["pk3"], yerr=yerr[1], marker=fmt, ls=ls, c="b", zorder=1, label=label[1]
+                    )
                 plt.xlabel(r"$k$")
                 plt.ylabel(r"$k\,Im[P(k)]$")
                 plt.title(dataset.name)

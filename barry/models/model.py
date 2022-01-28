@@ -29,7 +29,7 @@ class Param:
 
 @unique
 class Correction(Enum):
-    """ Various corrections that we should apply when computing our likelihood.
+    """Various corrections that we should apply when computing our likelihood.
 
     NONE gives no correction.
     HARTLAP implements the chi2 correction given in Hartlap 2007
@@ -43,14 +43,14 @@ class Correction(Enum):
 
 
 class Model(ABC):
-    """ Abstract model class.
+    """Abstract model class.
 
     Implement a version of this that overwrites the `plot` and get_likelihood` methods.
 
     """
 
     def __init__(self, name, postprocess=None, correction=None, isotropic=True):
-        """ Create a new model.
+        """Create a new model.
 
         Parameters
         ----------
@@ -89,7 +89,9 @@ class Model(ABC):
         self.correction = correction
         self.correction_data = {}  # Empty dict to store correction specific data for speeding up computation
         assert isinstance(self.correction, Correction), "Correction should be an enum of Correction"
-        self.logger.info(f"Created model {name} of {self.__class__.__name__} with correction {correction} and postprocess {str(postprocess)}")
+        self.logger.info(
+            f"Created model {name} of {self.__class__.__name__} with correction {correction} and postprocess {str(postprocess)}"
+        )
 
     def get_name(self):
         return self.name
@@ -114,7 +116,7 @@ class Model(ABC):
                 self._load_precomputed_data()
 
     def set_data(self, data):
-        """ Sets the models data, including fetching the right cosmology and PT generator.
+        """Sets the models data, including fetching the right cosmology and PT generator.
 
         Note that if you pass in multiple datas (ie a list with more than one element),
         they need to have the same cosmology and must all be isotropic or anisotropic
@@ -186,7 +188,7 @@ class Model(ABC):
         return [(x.min, x.max) for x in self.get_active_params()]
 
     def get_prior(self, params):
-        """ The prior, implemented as a flat prior by default.
+        """The prior, implemented as a flat prior by default.
 
         Used by the Ensemble and MH samplers, but not by nested sampling methods.
 
@@ -197,7 +199,7 @@ class Model(ABC):
         return 0
 
     def get_chi2_likelihood(self, diff, icov, num_mocks=None, num_params=None):
-        """ Computes the chi2 corrected likelihood.
+        """Computes the chi2 corrected likelihood.
 
         Parameters
         ----------
@@ -218,7 +220,9 @@ class Model(ABC):
         chi2 = diff.T @ icov @ diff
 
         if self.correction in [Correction.HARTLAP, Correction.SELLENTIN]:
-            assert num_mocks > 0, "Cannot use HARTLAP  or SELLENTIN correction with covariance not determined from mocks. Set correction to Correction.NONE"
+            assert (
+                num_mocks > 0
+            ), "Cannot use HARTLAP  or SELLENTIN correction with covariance not determined from mocks. Set correction to Correction.NONE"
         if self.correction is Correction.HARTLAP:  # From Hartlap 2007
             chi2 *= (num_mocks - diff.shape - 2) / (num_mocks - 1)
 
@@ -226,7 +230,9 @@ class Model(ABC):
             key = f"{num_mocks}_{num_params}"
             if key not in self.correction_data:
                 self.correction_data[key] = (
-                    loggamma(num_mocks / 2).real - (num_params / 2) * np.log(np.pi * (num_mocks - 1)) - loggamma((num_mocks - num_params) * 0.5).real
+                    loggamma(num_mocks / 2).real
+                    - (num_params / 2) * np.log(np.pi * (num_mocks - 1))
+                    - loggamma((num_mocks - num_params) * 0.5).real
                 )
             c_p = self.correction_data[key]
             log_likelihood = c_p - (num_mocks / 2) * np.log(1 + chi2 / (num_mocks - 1))
@@ -281,7 +287,7 @@ class Model(ABC):
         return self.precompute.__func__ != func2.__func__
 
     def precompute(self, camb, om, h0):
-        """ A function available for overriding that precomputes values that depend only on the outputs of CAMB.
+        """A function available for overriding that precomputes values that depend only on the outputs of CAMB.
 
         Parameters
         ----------
@@ -311,7 +317,12 @@ class Model(ABC):
 
         self.logger.info("Starting basin hopping to find a good starting point")
         res = basinhopping(
-            minimise, self.scale(start_close), niter_success=3, niter=30, stepsize=0.05, minimizer_kwargs={"method": "Nelder-Mead", "options": {"maxiter": 600}}
+            minimise,
+            self.scale(start_close),
+            niter_success=3,
+            niter=30,
+            stepsize=0.05,
+            minimizer_kwargs={"method": "Nelder-Mead", "options": {"maxiter": 600}},
         )
 
         scaled_start = res.x
@@ -367,7 +378,7 @@ class Model(ABC):
         return params
 
     def optimize(self, close_default=3, niter=100, maxiter=1000):
-        """ Perform local optimiation to try and find the best fit of your model to the dataset loaded in.
+        """Perform local optimiation to try and find the best fit of your model to the dataset loaded in.
 
         Parameters
         ----------

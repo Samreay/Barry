@@ -8,13 +8,23 @@ import numpy as np
 
 
 class CorrBeutler2017(CorrelationFunctionFit):
-    """  xi(s) model inspired from Beutler 2017 and Ross 2017.
-    """
+    """xi(s) model inspired from Beutler 2017 and Ross 2017."""
 
-    def __init__(self, name="Corr Beutler 2017", recon=False, smooth_type="hinton2017", fix_params=("om", "f"), smooth=False, correction=None, isotropic=True):
+    def __init__(
+        self,
+        name="Corr Beutler 2017",
+        recon=False,
+        smooth_type="hinton2017",
+        fix_params=("om", "f"),
+        smooth=False,
+        correction=None,
+        isotropic=True,
+    ):
         self.recon = recon
         self.recon_smoothing_scale = None
-        super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, smooth=smooth, correction=correction, isotropic=isotropic)
+        super().__init__(
+            name=name, fix_params=fix_params, smooth_type=smooth_type, smooth=smooth, correction=correction, isotropic=isotropic
+        )
 
     def set_data(self, data):
         super().set_data(data)
@@ -39,7 +49,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
             self.add_param("a2_3", r"$a2_3$", -0.2, 0.2, 0)  # Quadrupole Polynomial marginalisation 3
 
     def compute_correlation_function(self, dist, p, smooth=False):
-        """ Computes the correlation function model using the Beutler et. al., 2017 power spectrum and Ross 2017 method
+        """Computes the correlation function model using the Beutler et. al., 2017 power spectrum and Ross 2017 method
 
         Parameters
         ----------

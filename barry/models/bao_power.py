@@ -13,8 +13,10 @@ from barry.utils import break_vector_and_get_blocks
 class PowerSpectrumFit(Model):
     """ Generic power spectrum model """
 
-    def __init__(self, name="Pk Basic", smooth_type="hinton2017", fix_params=("om"), postprocess=None, smooth=False, correction=None, isotropic=True):
-        """ Generic power spectrum function model
+    def __init__(
+        self, name="Pk Basic", smooth_type="hinton2017", fix_params=("om"), postprocess=None, smooth=False, correction=None, isotropic=True
+    ):
+        """Generic power spectrum function model
 
         Parameters
         ----------
@@ -55,7 +57,7 @@ class PowerSpectrumFit(Model):
 
     @lru_cache(maxsize=1024)
     def compute_basic_power_spectrum(self, om):
-        """ Computes the smoothed linear power spectrum and the wiggle ratio
+        """Computes the smoothed linear power spectrum and the wiggle ratio
 
         Parameters
         ----------
@@ -72,12 +74,14 @@ class PowerSpectrumFit(Model):
         """
         # Get base linear power spectrum from camb
         res = self.camb.get_data(om=om, h0=self.camb.h0)
-        pk_smooth_lin = smooth(self.camb.ks, res["pk_lin"], method=self.smooth_type, om=om, h0=self.camb.h0)  # Get the smoothed power spectrum
+        pk_smooth_lin = smooth(
+            self.camb.ks, res["pk_lin"], method=self.smooth_type, om=om, h0=self.camb.h0
+        )  # Get the smoothed power spectrum
         pk_ratio = res["pk_lin"] / pk_smooth_lin - 1.0  # Get the ratio
         return pk_smooth_lin, pk_ratio
 
     def get_alphas(self, alpha, epsilon):
-        """ Computes values of alpha_par and alpha_perp from the input values of alpha and epsilon
+        """Computes values of alpha_par and alpha_perp from the input values of alpha and epsilon
 
         Parameters
         ----------
@@ -98,7 +102,7 @@ class PowerSpectrumFit(Model):
 
     @lru_cache(maxsize=32)
     def get_kprimefac(self, epsilon):
-        """ Computes the prefactor to dilate a k value given epsilon, such that kprime = k * kprimefac / alpha
+        """Computes the prefactor to dilate a k value given epsilon, such that kprime = k * kprimefac / alpha
 
         Parameters
         ----------
@@ -118,7 +122,7 @@ class PowerSpectrumFit(Model):
 
     @lru_cache(maxsize=32)
     def get_muprime(self, epsilon):
-        """ Computes dilated values of mu given input values of epsilon for the power spectrum
+        """Computes dilated values of mu given input values of epsilon for the power spectrum
 
         Parameters
         ----------
@@ -136,7 +140,7 @@ class PowerSpectrumFit(Model):
         return muprime
 
     def compute_power_spectrum(self, k, p, smooth=False, shape=True, dilate=True, data_name=None):
-        """ Get raw ks and p(k) multipoles for a given parametrisation dilated based on the values of alpha and epsilon
+        """Get raw ks and p(k) multipoles for a given parametrisation dilated based on the values of alpha and epsilon
 
         Parameters
         ----------
@@ -200,7 +204,7 @@ class PowerSpectrumFit(Model):
         return kprime, pk0, pk2, pk4
 
     def adjust_model_window_effects(self, pk_generated, data, window=True):
-        """ Take the window effects into account.
+        """Take the window effects into account.
 
         Parameters
         ----------
@@ -246,14 +250,16 @@ class PowerSpectrumFit(Model):
                 pk_normalised = []
                 for i in range(len(data["poles"])):
                     pk_normalised.append(
-                        splev(data["ks_output"], splrep(data["ks_input"], pk_mod[i * len(data["ks_input"]) : (i + 1) * len(data["ks_input"])]))
+                        splev(
+                            data["ks_output"], splrep(data["ks_input"], pk_mod[i * len(data["ks_input"]) : (i + 1) * len(data["ks_input"])])
+                        )
                     )
                 pk_normalised = np.array(pk_normalised).flatten()
 
         return pk_normalised, data["w_mask"]
 
     def get_likelihood(self, p, d):
-        """ Uses the stated likelihood correction and `get_model` to compute the likelihood
+        """Uses the stated likelihood correction and `get_model` to compute the likelihood
 
         Parameters
         ----------
@@ -279,7 +285,7 @@ class PowerSpectrumFit(Model):
         return self.get_chi2_likelihood(diff, d["icov"], num_mocks=num_mocks, num_params=num_params)
 
     def get_model(self, p, d, smooth=False):
-        """ Gets the model prediction using the data passed in and parameter location specified
+        """Gets the model prediction using the data passed in and parameter location specified
 
         Parameters
         ----------

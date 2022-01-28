@@ -8,18 +8,32 @@ from scipy.interpolate import splev, splrep
 
 
 class PowerSeo2016(PowerSpectrumFit):
-    """ P(k) model inspired from Seo 2016.
+    """P(k) model inspired from Seo 2016.
 
     See https://ui.adsabs.harvard.edu/abs/2016MNRAS.460.2453S for details.
     """
 
     def __init__(
-        self, name="Pk Seo 2016", fix_params=("om", "f"), smooth_type="hinton2017", recon=False, postprocess=None, smooth=False, correction=None, isotropic=True
+        self,
+        name="Pk Seo 2016",
+        fix_params=("om", "f"),
+        smooth_type="hinton2017",
+        recon=False,
+        postprocess=None,
+        smooth=False,
+        correction=None,
+        isotropic=True,
     ):
         self.recon = recon
         self.recon_smoothing_scale = None
         super().__init__(
-            name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction, isotropic=isotropic
+            name=name,
+            fix_params=fix_params,
+            smooth_type=smooth_type,
+            postprocess=postprocess,
+            smooth=smooth,
+            correction=correction,
+            isotropic=isotropic,
         )
 
     def precompute(self, camb, om, h0):
@@ -50,9 +64,9 @@ class PowerSeo2016(PowerSpectrumFit):
         R1 = -(1.0 + r ** 2) / (24.0 * r ** 2) * (3.0 - 14.0 * r ** 2 + 3.0 * r ** 4) + (r ** 2 - 1.0) ** 4 / (16.0 * r ** 3) * np.log(
             np.fabs((1.0 + r) / (1.0 - r))
         )
-        R2 = (1.0 - r ** 2) / (24.0 * r ** 2) * (3.0 - 2.0 * r ** 2 + 3.0 * r ** 4) + (r ** 2 - 1.0) ** 3 * (1.0 + r ** 2) / (16.0 * r ** 3) * np.log(
-            np.fabs((1.0 + r) / (1.0 - r))
-        )
+        R2 = (1.0 - r ** 2) / (24.0 * r ** 2) * (3.0 - 2.0 * r ** 2 + 3.0 * r ** 4) + (r ** 2 - 1.0) ** 3 * (1.0 + r ** 2) / (
+            16.0 * r ** 3
+        ) * np.log(np.fabs((1.0 + r) / (1.0 - r)))
 
         # We get NaNs in R1, R2 etc., when r = 1.0 (diagonals). We manually set these to the correct values.
         # We also get numerical issues for large/small r, so we set these manually to asymptotic limits
@@ -156,7 +170,7 @@ class PowerSeo2016(PowerSpectrumFit):
             self.add_param("a2_5", r"$a_{2,5}$", -3.0, 3.0, 0)  # Quadrupole Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p, smooth=False, dilate=True, data_name=None):
-        """ Computes the power spectrum model using the LPT based propagators from Seo et. al., 2016
+        """Computes the power spectrum model using the LPT based propagators from Seo et. al., 2016
 
         Parameters
         ----------
@@ -216,7 +230,9 @@ class PowerSeo2016(PowerSpectrumFit):
                 else:
                     damping = self.get_damping(growth, om)
 
-                    prefac_k = 1.0 + np.tile(3.0 / 7.0 * (self.get_pregen("R1", om) * (1.0 - 4.0 / (9.0 * p["b"])) + self.get_pregen("R2", om)), (self.nmu, 1))
+                    prefac_k = 1.0 + np.tile(
+                        3.0 / 7.0 * (self.get_pregen("R1", om) * (1.0 - 4.0 / (9.0 * p["b"])) + self.get_pregen("R2", om)), (self.nmu, 1)
+                    )
                     prefac_mu = np.outer(
                         self.mu ** 2,
                         growth / p["b"]

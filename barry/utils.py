@@ -50,7 +50,7 @@ def get_hpc():
 
 
 def get_model_comparison_dataframe(fitter):
-    """ Uses fitter.load to create a comparison dataframe on the first column of fitter results (presumed to be alpha)
+    """Uses fitter.load to create a comparison dataframe on the first column of fitter results (presumed to be alpha)
 
     Will only produce a row if a given realisation has a successful fit for all models.
 
@@ -90,7 +90,9 @@ def get_model_comparison_dataframe(fitter):
     summary = []
     for label, df in model_results.items():
         model_results[label] = pd.merge(good_ids, df, how="left", on="realisation")
-        summary.append([label, np.mean(model_results[label]["avg"]), np.mean(model_results[label]["std"]), np.std(model_results[label]["avg"])])
+        summary.append(
+            [label, np.mean(model_results[label]["avg"]), np.mean(model_results[label]["std"]), np.std(model_results[label]["avg"])]
+        )
     summary = pd.DataFrame(summary, columns=["Name", "Mean mean", "Mean std", "Std mean"])
 
     return model_results, summary

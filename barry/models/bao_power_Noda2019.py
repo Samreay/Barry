@@ -12,7 +12,7 @@ from barry.cosmology.camb_generator import Omega_m_z
 
 
 class PowerNoda2019(PowerSpectrumFit):
-    """ P(k) model inspired from Noda 2019.
+    """P(k) model inspired from Noda 2019.
 
     See https://ui.adsabs.harvard.edu/abs/2019arXiv190106854N for details.
 
@@ -39,7 +39,13 @@ class PowerNoda2019(PowerSpectrumFit):
                 gammaval = 1.0
 
         super().__init__(
-            name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction, isotropic=isotropic
+            name=name,
+            fix_params=fix_params,
+            smooth_type=smooth_type,
+            postprocess=postprocess,
+            smooth=smooth,
+            correction=correction,
+            isotropic=isotropic,
         )
         self.set_default("gamma", gammaval)
 
@@ -163,7 +169,13 @@ class PowerNoda2019(PowerSpectrumFit):
             - 30.0 * r ** 4
             + 3.0 * (r ** 2 - 1.0) ** 3 * (4.0 + 5.0 * r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
         )
-        J11 = 12.0 / r ** 2 - 82.0 + 4.0 * r ** 2 - 6.0 * r ** 4 + 3.0 * (r ** 2 - 1.0) ** 3 * (2.0 + r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
+        J11 = (
+            12.0 / r ** 2
+            - 82.0
+            + 4.0 * r ** 2
+            - 6.0 * r ** 4
+            + 3.0 * (r ** 2 - 1.0) ** 3 * (2.0 + r ** 2) / r ** 3 * np.log(np.fabs((1.0 + r) / (1.0 - r)))
+        )
 
         # We get NaNs in R1, R2 etc., when r = 1.0 (diagonals). We manually set these to the correct values.
         # We also get numerical issues for large/small r, so we set these manually to asymptotic limits
@@ -246,7 +258,7 @@ class PowerNoda2019(PowerSpectrumFit):
         self.add_param("A", r"$A$", -10, 30.0, 10)  # Fingers-of-god damping
 
     def compute_power_spectrum(self, k, p, smooth=False, dilate=True, data_name=None):
-        """ Computes the power spectrum model using the model from Noda et. al., 2019
+        """Computes the power spectrum model using the model from Noda et. al., 2019
 
         Parameters
         ----------
@@ -335,7 +347,9 @@ class PowerNoda2019(PowerSpectrumFit):
             # Compute the non-linear correction to the smooth power spectrum
             p_dd_spline, p_dt_spline, p_tt_spline = self.get_nonlinear_aniso(growth, om)
             pk_nonlinear = (
-                splev(kprime, p_dd_spline) + muprime ** 2 * splev(kprime, p_dt_spline) / p["b"] + muprime ** 4 * splev(kprime, p_tt_spline) / p["b"] ** 2
+                splev(kprime, p_dd_spline)
+                + muprime ** 2 * splev(kprime, p_dt_spline) / p["b"]
+                + muprime ** 4 * splev(kprime, p_tt_spline) / p["b"] ** 2
             )
 
             if smooth:

@@ -12,13 +12,13 @@ from barry.utils import get_hpc
 
 
 class Fitter(object):
-    """ This class manages all the model fitting you'll be doing.
+    """This class manages all the model fitting you'll be doing.
 
     You simply declare pairs of models and datasets that you want to fit,
     optionally tell it which sampler to use and then tell it do its job.
 
     Hopefully minimal fuss involved.
-    
+
     """
 
     def __init__(self, temp_dir, save_dims=None, remove_output=True):
@@ -53,7 +53,7 @@ class Fitter(object):
             self.logger.warning("OUTPUT IS NOT BEING REMOVED, BE WARNED IF THIS IS SUPPOSED TO BE A FRESH RUN")
 
     def add_model_and_dataset(self, model, dataset, **extra_args):
-        """ Adds a model-dataset pair to fit.
+        """Adds a model-dataset pair to fit.
 
         Parameters
         ----------
@@ -69,7 +69,7 @@ class Fitter(object):
         self.model_datasets.append((model, dataset.get_data(), extra_args))
 
     def set_num_concurrent(self, num_concurrent=None):
-        """ Set the number of jobs allowed to run in the job array at once.
+        """Set the number of jobs allowed to run in the job array at once.
 
         Parameters
         ----------
@@ -80,7 +80,7 @@ class Fitter(object):
         self.num_concurrent = num_concurrent
 
     def get_num_concurrent(self):
-        """ Gets the number of current jobs limit.
+        """Gets the number of current jobs limit.
 
         Returns
         -------
@@ -91,7 +91,7 @@ class Fitter(object):
         return self.num_concurrent
 
     def set_num_walkers(self, num_walkers):
-        """ Sets the number of walks for each model-dataset pair.
+        """Sets the number of walks for each model-dataset pair.
 
         Ie, how many different runs we should do for each pair to ensure convergence
         and good statistics. Setting this to 10 for the MH sampling for example would
@@ -104,7 +104,7 @@ class Fitter(object):
         self.num_walkers = num_walkers
 
     def get_num_jobs(self):
-        """ Gets the total number of jobs that wil be submitted.
+        """Gets the total number of jobs that wil be submitted.
 
         Returns
         -------
@@ -119,7 +119,7 @@ class Fitter(object):
         return model_index, walker_index
 
     def set_sampler(self, sampler):
-        """ Sets the sampler
+        """Sets the sampler
 
         Parameters
         ----------
@@ -129,7 +129,7 @@ class Fitter(object):
         self.sampler = sampler
 
     def get_sampler(self):
-        """ Returns the sampler. If not set, creates a DynestySampler
+        """Returns the sampler. If not set, creates a DynestySampler
 
         Returns
         -------
@@ -221,7 +221,7 @@ class Fitter(object):
         return result
 
     def load(self, split_models=True, split_walkers=False):
-        """ Load in all the chains and fitting results
+        """Load in all the chains and fitting results
 
         Parameters
         ----------

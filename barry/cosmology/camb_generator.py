@@ -12,7 +12,13 @@ import logging
 @lru_cache(maxsize=32)
 def getCambGenerator(redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, recon_smoothing_scale=21.21):
     return CambGenerator(
-        redshift=redshift, om_resolution=om_resolution, h0_resolution=h0_resolution, h0=h0, ob=ob, ns=ns, recon_smoothing_scale=recon_smoothing_scale
+        redshift=redshift,
+        om_resolution=om_resolution,
+        h0_resolution=h0_resolution,
+        h0=h0,
+        ob=ob,
+        ns=ns,
+        recon_smoothing_scale=recon_smoothing_scale,
     )
 
 
@@ -45,13 +51,13 @@ def E_z(omega_m, z):
 
 
 class CambGenerator(object):
-    """ An object to generate power spectra using camb and save them to file.
+    """An object to generate power spectra using camb and save them to file.
 
     Useful because computing them in a likelihood step is insanely slow.
     """
 
     def __init__(self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, recon_smoothing_scale=21.21):
-        """ 
+        """
         Precomputes CAMB for efficiency. Access ks via self.ks, and use get_data for an array
         of both the linear and non-linear power spectrum
         """
@@ -63,7 +69,9 @@ class CambGenerator(object):
 
         self.data_dir = os.path.normpath(os.path.dirname(inspect.stack()[0][1]) + "/../generated/")
         hh = int(h0 * 10000)
-        self.filename_unique = f"{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}"
+        self.filename_unique = (
+            f"{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}"
+        )
         self.filename = self.data_dir + f"/camb_{self.filename_unique}.npy"
 
         self.k_min = 1e-4

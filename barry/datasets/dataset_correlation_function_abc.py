@@ -10,7 +10,18 @@ from barry.datasets.dataset import Dataset
 
 
 class CorrelationFunction(Dataset, ABC):
-    def __init__(self, filename, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, num_mocks=None, realisation=None, isotropic=False):
+    def __init__(
+        self,
+        filename,
+        name=None,
+        min_dist=30,
+        max_dist=200,
+        recon=True,
+        reduce_cov_factor=1,
+        num_mocks=None,
+        realisation=None,
+        isotropic=False,
+    ):
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + f"/../data/{filename}")
         self.min_dist = min_dist
@@ -65,7 +76,9 @@ class CorrelationFunction(Dataset, ABC):
                     for j in range(npoles):
                         jinlow, jinhigh = j * nin, (j + 1) * nin
                         joutlow, jouthigh = j * nout, (j + 1) * nout
-                        self.cov[ioutlow:iouthigh, joutlow:jouthigh] = self.data_obj[covname][iinlow:iinhigh, jinlow:jinhigh][np.ix_(self.mask, self.mask)]
+                        self.cov[ioutlow:iouthigh, joutlow:jouthigh] = self.data_obj[covname][iinlow:iinhigh, jinlow:jinhigh][
+                            np.ix_(self.mask, self.mask)
+                        ]
             else:
                 self._compute_cov()
         else:

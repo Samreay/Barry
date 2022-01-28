@@ -43,7 +43,9 @@ if __name__ == "__main__":
 
         # Now change linear and smooth spectra to Hee-Jong's inputs
         pklin = np.array(pd.read_csv("../barry/data/desi_mock_challenge_0/mylinearmatterpkL900.dat", delim_whitespace=True, header=None))
-        pksmooth = np.array(pd.read_csv("../barry/data/desi_mock_challenge_0/Psh_mylinearmatterpkL900.dat", delim_whitespace=True, header=None, skiprows=2))
+        pksmooth = np.array(
+            pd.read_csv("../barry/data/desi_mock_challenge_0/Psh_mylinearmatterpkL900.dat", delim_whitespace=True, header=None, skiprows=2)
+        )
         model2 = PowerBeutler2017(recon=False, isotropic=False, correction=Correction.NONE)
         model2.set_default("sigma_nl_par", 6.2)
         model2.set_default("sigma_nl_perp", 2.9)

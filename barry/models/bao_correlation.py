@@ -12,8 +12,16 @@ from scipy import integrate
 class CorrelationFunctionFit(Model):
     """ A generic model for computing correlation functions."""
 
-    def __init__(self, name="BAO Correlation Polynomial Fit", smooth_type="hinton2017", fix_params=("om"), smooth=False, correction=None, isotropic=True):
-        """ Generic correlation function model
+    def __init__(
+        self,
+        name="BAO Correlation Polynomial Fit",
+        smooth_type="hinton2017",
+        fix_params=("om"),
+        smooth=False,
+        correction=None,
+        isotropic=True,
+    ):
+        """Generic correlation function model
 
         Parameters
         ----------
@@ -52,7 +60,7 @@ class CorrelationFunctionFit(Model):
         self.pk2xi_4 = None
 
     def set_data(self, data):
-        """ Sets the models data, including fetching the right cosmology and PT generator.
+        """Sets the models data, including fetching the right cosmology and PT generator.
 
         Note that if you pass in multiple datas (ie a list with more than one element),
         they need to have the same cosmology.
@@ -78,7 +86,7 @@ class CorrelationFunctionFit(Model):
 
     @lru_cache(maxsize=1024)
     def compute_basic_power_spectrum(self, om):
-        """ Computes the smoothed linear power spectrum and the wiggle ratio.
+        """Computes the smoothed linear power spectrum and the wiggle ratio.
 
         Uses a fixed h0 as determined by the dataset cosmology.
 
@@ -97,13 +105,15 @@ class CorrelationFunctionFit(Model):
         """
         # Get base linear power spectrum from camb
         res = self.camb.get_data(om=om, h0=self.camb.h0)
-        pk_smooth_lin = smooth(self.camb.ks, res["pk_lin"], method=self.smooth_type, om=om, h0=self.camb.h0)  # Get the smoothed power spectrum
+        pk_smooth_lin = smooth(
+            self.camb.ks, res["pk_lin"], method=self.smooth_type, om=om, h0=self.camb.h0
+        )  # Get the smoothed power spectrum
         pk_ratio = res["pk_lin"] / pk_smooth_lin - 1.0  # Get the ratio
         return pk_smooth_lin, pk_ratio
 
     @lru_cache(maxsize=32)
     def get_alphas(self, alpha, epsilon):
-        """ Computes values of alpha_par and alpha_perp from the input values of alpha and epsilon
+        """Computes values of alpha_par and alpha_perp from the input values of alpha and epsilon
 
         Parameters
         ----------
@@ -124,7 +134,7 @@ class CorrelationFunctionFit(Model):
 
     @lru_cache(maxsize=32)
     def get_sprimefac(self, epsilon):
-        """ Computes the prefactor to dilate a s value given epsilon, such that sprime = s * sprimefac * alpha
+        """Computes the prefactor to dilate a s value given epsilon, such that sprime = s * sprimefac * alpha
 
         Parameters
         ----------
@@ -144,7 +154,7 @@ class CorrelationFunctionFit(Model):
 
     @lru_cache(maxsize=32)
     def get_muprime(self, epsilon):
-        """ Computes dilated values of mu given input values of epsilon for the correlation function
+        """Computes dilated values of mu given input values of epsilon for the correlation function
 
         Parameters
         ----------
@@ -162,7 +172,7 @@ class CorrelationFunctionFit(Model):
         return muprime
 
     def compute_correlation_function(self, dist, p, smooth=False):
-        """ Computes the dilated correlation function multipoles at distance d given the supplied params
+        """Computes the dilated correlation function multipoles at distance d given the supplied params
 
         Parameters
         ----------
@@ -210,7 +220,7 @@ class CorrelationFunctionFit(Model):
         return sprime, xi0, xi2
 
     def get_model(self, p, data, smooth=False):
-        """ Gets the model prediction using the data passed in and parameter location specified
+        """Gets the model prediction using the data passed in and parameter location specified
 
         Parameters
         ----------
@@ -239,7 +249,7 @@ class CorrelationFunctionFit(Model):
         return xi_model
 
     def get_likelihood(self, p, d):
-        """ Uses the stated likelihood correction and `get_model` to compute the likelihood
+        """Uses the stated likelihood correction and `get_model` to compute the likelihood
 
         Parameters
         ----------

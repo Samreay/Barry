@@ -6,7 +6,7 @@ from scipy import integrate
 
 
 class PowerBeutler2017(PowerSpectrumFit):
-    """ P(k) model inspired from Beutler 2017.
+    """P(k) model inspired from Beutler 2017.
 
     See https://ui.adsabs.harvard.edu/abs/2017MNRAS.464.3409B for details.
 
@@ -26,7 +26,13 @@ class PowerBeutler2017(PowerSpectrumFit):
         self.recon = recon
         self.recon_smoothing_scale = None
         super().__init__(
-            name=name, fix_params=fix_params, smooth_type=smooth_type, postprocess=postprocess, smooth=smooth, correction=correction, isotropic=isotropic
+            name=name,
+            fix_params=fix_params,
+            smooth_type=smooth_type,
+            postprocess=postprocess,
+            smooth=smooth,
+            correction=correction,
+            isotropic=isotropic,
         )
 
         self.kvals = None
@@ -60,7 +66,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param("a2_5", r"$a_{2,5}$", -3.0, 3.0, 0)  # Quadrupole Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p, smooth=False, dilate=True, data_name=None):
-        """ Computes the power spectrum model using the Beutler et. al., 2017 method
+        """Computes the power spectrum model using the Beutler et. al., 2017 method
 
         Parameters
         ----------
