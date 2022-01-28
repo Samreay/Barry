@@ -17,7 +17,7 @@ def setup_ptgenerator_slurm(model, c, hpc="getafix"):
     if hpc is None:
         raise ValueError("HPC environment variable is not set. Please set it to an hpc system, like export HPC=nersc")
     config = get_config()
-    hpc_config = config.get("hpcs", {}).get(hpc, {})
+    hpc_config = config.get("hpcs", {}).get(hpc.lower(), {})
     job_path = os.path.join(os.path.dirname(inspect.stack()[0][1]), f"jobscripts/slurm_pt_generator_{hpc}.job")
     python_path = os.path.abspath(os.path.dirname(inspect.stack()[0][1]))
     unique_name = model.__class__.__name__ + "_" + ("".join([k + str(c[k]) for k in sorted(c.keys())])) + ".job"
@@ -25,6 +25,7 @@ def setup_ptgenerator_slurm(model, c, hpc="getafix"):
     output = os.path.join(job_dir, "zlog")
     d = {
         "name": unique_name,
+        "conda_env": hpc_config["conda_env"],
         "mpi_module": hpc_config["mpi_module"],
         "fort_compile_module": hpc_config["fort_compile_module"],
         "path": python_path,
