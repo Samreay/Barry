@@ -11,7 +11,6 @@ class TestDataset:
     @classmethod
     def setup_class(cls):
         cls.concrete = [c() for c in cls.classes]
-        print(cls.concrete)
 
     def test_all_datasets_define_cosmology(self):
         for c in self.concrete:
@@ -23,28 +22,50 @@ class TestDataset:
                 assert isinstance(cosmology, dict)
                 required_keys = ["z", "om", "h0", "ns", "ob", "mnu", "reconsmoothscale"]
                 for r in required_keys:
-                    assert r in cosmology.keys(), f"Cosmology should have key {r}, but has keys {list(cosmology.keys())}"
+                    assert r in cosmology.keys(), f"{c} cosmology should have key {r}, but has keys {list(cosmology.keys())}"
 
     def test_all_power_spectrum_datasets(self):
         for c in self.concrete:
             if isinstance(c, PowerSpectrum):
                 datas = c.get_data()
                 for data in datas:
-                    required_keys = ["name", "ks_output", "ks", "pk", "ks_input", "w_scale", "w_transform", "w_pk"]
-                    computed_keys = ["w_mask", "num_mocks", "icov", "cov"]
+                    required_keys = [
+                        "name",
+                        "min_k",
+                        "max_k",
+                        "num_mocks",
+                        "isotropic",
+                        "ks_output",
+                        "ks",
+                        "pk",
+                        "ks_input",
+                        "w_scale",
+                        "w_transform",
+                        "m_transform",
+                        "w_m_transform",
+                        "w_pk",
+                        "poles",
+                        "fit_poles",
+                        "pk",
+                    ]
+                    computed_keys = ["w_mask", "num_mocks", "cov", "icov_m_w", "corr", "fit_pole_indices", "w_mask", "m_w_mask"]
                     for r in required_keys:
                         assert r in data.keys(), f"Power spectrum data needs to have key {r}"
                     for r in computed_keys:
                         assert r in data.keys(), f"Power spectrum data should have computed key {r}"
+                    for i, d in enumerate(data["poles"]):
+                        assert f"pk{d}" in data.keys(), f"Power spectrum data needs to have key pk{d}"
 
     def test_all_correlation_function_datasets(self):
         for c in self.concrete:
             if isinstance(c, CorrelationFunction):
                 datas = c.get_data()
                 for data in datas:
-                    required_keys = ["name", "dist", "xi0"]  # "xi", "xi2", "xi4" would be good to have in the future
-                    computed_keys = ["num_mocks", "icov", "cov"]
+                    required_keys = ["name", "isotropic", "dist", "xi", "poles", "fit_poles", "min_dist", "max_dist"]
+                    computed_keys = ["num_mocks", "icov", "cov", "fit_pole_indices"]
                     for r in required_keys:
-                        assert r in data.keys(), f"Power spectrum data needs to have key {r}"
+                        assert r in data.keys(), f"Correlation function data needs to have key {r}"
                     for r in computed_keys:
-                        assert r in data.keys(), f"Power spectrum data should have computed key {r}"
+                        assert r in data.keys(), f"Correlation function data should have computed key {r}"
+                    for i, d in enumerate(data["poles"]):
+                        assert f"xi{d}" in data.keys(), f"Correlation function data needs to have key xi{d}"

@@ -29,7 +29,7 @@ class PowerSpectrum_SDSS_DR12(PowerSpectrum):
         fake_diag=False,
         realisation=None,
         isotropic=True,
-        fit_poles=None,
+        fit_poles=(0, 2),
     ):
 
         if redshift_bin not in [1, 2, 3]:
@@ -41,8 +41,9 @@ class PowerSpectrum_SDSS_DR12(PowerSpectrum):
         if any(pole in [1, 3] for pole in fit_poles):
             raise NotImplementedError("Only even multipoles included in SDSS_DR12")
 
-        if realisation.lower() == "data" and any(pole in [4] for pole in fit_poles):
-            raise NotImplementedError("Hexadecapole not included in SDSS_DR12 data realisation, only in mocks")
+        if realisation is not None:
+            if realisation.lower() == "data" and any(pole in [4] for pole in fit_poles):
+                raise NotImplementedError("Hexadecapole not included in SDSS_DR12 data realisation, only in mocks")
 
         reds = ["z1", "z2", "z3"]
         datafile = "sdss_dr12_pk_" + galactic_cap.lower() + "_" + reds[redshift_bin - 1] + ".pkl"
@@ -85,7 +86,7 @@ class PowerSpectrum_Beutler2019(PowerSpectrum):
         fake_diag=False,
         realisation=None,
         isotropic=True,
-        fit_poles=None,
+        fit_poles=(0, 2),
     ):
 
         if recon is not None:

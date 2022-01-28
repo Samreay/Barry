@@ -68,7 +68,7 @@ if __name__ == "__main__":
             "post-recon data": None,
             "pre-recon mocks": [v for k, v in res.items() if "pre_recon" in k and "patchy" in k],
             "post-recon mocks": None,
-            "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.38, "ob": 0.04814, "ns": 0.97, "reconsmoothscale": 15},
+            "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.38, "ob": 0.04814, "ns": 0.97, "mnu": 0.00, "reconsmoothscale": 15},
             "name": f"Beutler 2019 Z0.38 Pk {gc}",
             "winfit": getwin(wfile),
             "winpk": None,  # We can set this to None; Barry will set it to zeroes given the length of the data vector.

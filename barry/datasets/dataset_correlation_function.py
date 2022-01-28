@@ -3,7 +3,7 @@ import logging
 from barry.datasets.dataset_correlation_function_abc import CorrelationFunction
 
 
-class CorrelationFunction_SDSS_DR12_Z061_NGC(CorrelationFunction):
+class CorrelationFunction_SDSS_DR12_Z061_NGC:
     """ Correlation function for SDSS BOSS DR12 sample for the NGC with mean redshift z = 0.61    """
 
     def __init__(self, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None, isotropic=True):
@@ -37,9 +37,9 @@ class CorrelationFunction_ROSS_DR12(CorrelationFunction):
         reduce_cov_factor=1,
         num_mocks=None,
         fake_diag=False,
-        realisation=None,
+        realisation="data",
         isotropic=False,
-        fit_poles=(0, 2, 4),
+        fit_poles=(0, 2),
     ):
 
         if recon.lower() != "iso":
@@ -83,7 +83,7 @@ class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
         name=None,
         min_dist=30.0,
         max_dist=200.0,
-        recon=None,
+        recon="iso",
         reduce_cov_factor=1,
         num_mocks=None,
         fake_diag=False,
@@ -93,6 +93,9 @@ class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
         covtype="cov-std",
         smoothtype="15",
     ):
+
+        if recon is None:
+            raise NotImplementedError("Only Post recon data not available for DESIMockChallenge_Post")
 
         covtypes = ["cov-std", "cov-fix"]
         if covtype.lower() not in covtypes:
