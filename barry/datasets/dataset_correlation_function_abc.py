@@ -140,8 +140,6 @@ class CorrelationFunction(Dataset, ABC):
             self.logger.error("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
             self.logger.error(f"These should all be 1: {v}")
 
-        d = np.sqrt(np.diag(self.cov))
-        self.corr = self.cov / (d * np.atleast_2d(d).T)
         self.icov = np.linalg.inv(self.cov_fit)
 
     def _compute_cov(self):

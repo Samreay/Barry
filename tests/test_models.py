@@ -1,4 +1,4 @@
-from barry.datasets.dummy import DummyCorrelationFunction_SDSS_DR12_Z061_NGC, DummyPowerSpectrum_SDSS_DR12_Z061_NGC
+from barry.datasets.dummy import DummyCorrelationFunction_SDSS_DR12, DummyPowerSpectrum_SDSS_DR12
 from barry.models.model import Model
 from barry.models.bao_power import PowerSpectrumFit
 from barry.models.bao_correlation import CorrelationFunctionFit
@@ -14,7 +14,7 @@ class TestDataset:
 
     @classmethod
     def setup_class(cls):
-        cls.pk_data = DummyPowerSpectrum_SDSS_DR12_Z061_NGC()
+        cls.pk_data = DummyPowerSpectrum_SDSS_DR12()
         cls.xi_data = DummyCorrelationFunction_SDSS_DR12_Z061_NGC()
         for c in cls.classes:
             model = c()

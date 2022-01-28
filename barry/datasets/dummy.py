@@ -4,7 +4,7 @@ import numpy as np
 
 from barry.cosmology import pk2xi
 from barry.cosmology.camb_generator import getCambGenerator
-from barry.datasets import PowerSpectrum_SDSS_DR12, CorrelationFunction_SDSS_DR12_Z061_NGC
+from barry.datasets import PowerSpectrum_SDSS_DR12, CorrelationFunction_ROSS_DR12
 
 
 class DummyPowerSpectrum_SDSS_DR12(PowerSpectrum_SDSS_DR12):
@@ -64,7 +64,7 @@ class DummyPowerSpectrum_SDSS_DR12(PowerSpectrum_SDSS_DR12):
         self.set_cov(cov)
 
 
-class DummyCorrelationFunction_SDSS_DR12_Z061_NGC(CorrelationFunction_SDSS_DR12_Z061_NGC):
+class DummyCorrelationFunction_ROSS_DR12(CorrelationFunction_ROSS_DR12):
     """Dummy correlation function.
 
     Uses CAMB's linear power spectrum and faked uncertainty.

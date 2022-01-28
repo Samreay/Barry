@@ -8,6 +8,7 @@ def getdata(xi0file, xi2file):
     dfxi0 = pd.read_csv(xi0file, comment="#", delim_whitespace=True, names=["s", "xi0", "xi0err"]).drop("xi0err", axis=1)
     dfxi2 = pd.read_csv(xi2file, comment="#", delim_whitespace=True, names=["s", "xi2", "xi2err"]).drop("xi2err", axis=1)
     df = pd.merge(dfxi0, dfxi2, on="s")
+    df["xi4"] = np.zeros(len(df["s"]))
     # output = df.to_numpy().astype(np.float32)
     # print(np.shape(output))
     return df
@@ -15,8 +16,10 @@ def getdata(xi0file, xi2file):
 
 def getcov(covfile):
     df = pd.read_csv(covfile, comment="#", delim_whitespace=True, header=None)
-    output = df.to_numpy().astype(np.float32)
-    print(np.shape(output))
+    nss = int(len(df) / 2)
+    output = np.zeros((3 * nss, 3 * nss))
+    output[: 2 * nss, : 2 * nss] = df.to_numpy().astype(np.float32)
+    print(nss, np.shape(output))
     return output
 
 
@@ -32,7 +35,7 @@ split = {
     "post-recon mocks": None,
     "pre-recon cov": None,
     "post-recon cov": getcov(covfile),
-    "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.38, "ob": 0.04814, "ns": 0.97, "reconsmoothscale": 15},
+    "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.61, "ob": 0.04814, "ns": 0.97, "mnu": 0.00, "reconsmoothscale": 15},
     "name": "Ross 2016 Combined z038 corr",
 }
 with open("../ross_2016_dr12_combined_corr_zbin0p38.pkl", "wb") as f:
@@ -50,7 +53,7 @@ split = {
     "post-recon mocks": None,
     "pre-recon cov": None,
     "post-recon cov": getcov(covfile),
-    "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.51, "ob": 0.04814, "ns": 0.97, "reconsmoothscale": 15},
+    "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.61, "ob": 0.04814, "ns": 0.97, "mnu": 0.00, "reconsmoothscale": 15},
     "name": "Ross 2016 Combined z051 corr",
 }
 
@@ -69,7 +72,7 @@ split = {
     "post-recon mocks": None,
     "pre-recon cov": None,
     "post-recon cov": getcov(covfile),
-    "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.61, "ob": 0.04814, "ns": 0.97, "reconsmoothscale": 15},
+    "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.61, "ob": 0.04814, "ns": 0.97, "mnu": 0.00, "reconsmoothscale": 15},
     "name": "Ross 2016 Combined z061 corr",
 }
 with open("../ross_2016_dr12_combined_corr_zbin0p61.pkl", "wb") as f:

@@ -11,6 +11,7 @@ class TestDataset:
     @classmethod
     def setup_class(cls):
         cls.concrete = [c() for c in cls.classes]
+        print(cls.concrete)
 
     def test_all_datasets_define_cosmology(self):
         for c in self.concrete:
@@ -20,7 +21,7 @@ class TestDataset:
                 assert "cosmology" in keys, "Data should have a cosmology key!"
                 cosmology = data["cosmology"]
                 assert isinstance(cosmology, dict)
-                required_keys = ["z", "om", "h0", "ns", "ob", "reconsmoothscale"]
+                required_keys = ["z", "om", "h0", "ns", "ob", "mnu", "reconsmoothscale"]
                 for r in required_keys:
                     assert r in cosmology.keys(), f"Cosmology should have key {r}, but has keys {list(cosmology.keys())}"
 
