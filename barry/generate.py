@@ -68,8 +68,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # datasets = [c() for c in get_concrete(Dataset) if "DESI" in c.__name__]
-    print(get_concrete(Dataset))
-    datasets = [c() for c in get_concrete(Dataset)]
+    datasets = [c() for c in get_concrete(Dataset) if "DESI" not in c.__name__]
 
     cosmologies = get_cosmologies(datasets)
     logging.info(f"Have {len(cosmologies)} cosmologies")
