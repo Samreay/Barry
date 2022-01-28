@@ -16,7 +16,7 @@ mydesienv
 module load {mpi_module}
 module load {fort_compile_module}
 conda deactivate
-conda activate Barry
+conda activate {conda_env}
 echo "Activated python"
 echo `which python`
 

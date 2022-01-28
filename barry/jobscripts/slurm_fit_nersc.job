@@ -13,7 +13,7 @@
 
 IDIR={directory}
 conda deactivate
-conda activate Barry
+conda activate {conda_env}
 
 echo "Activated python"
 executable=$(which python)

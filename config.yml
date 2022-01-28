@@ -11,6 +11,7 @@ hpcs:
     fort_compile_module: intel/2018.1.163
 
   nersc:
+    conda_env: cosmopipe
     job_script_name: nersc
     num_fits_per_job: 4
     mpi_module: openmpi
