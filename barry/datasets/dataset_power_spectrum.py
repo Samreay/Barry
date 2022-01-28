@@ -29,7 +29,7 @@ class PowerSpectrum_SDSS_DR12(PowerSpectrum):
         fake_diag=False,
         realisation=None,
         isotropic=True,
-        fit_poles=(0, 2),
+        fit_poles=(0,),
     ):
 
         if redshift_bin not in [1, 2, 3]:
@@ -86,7 +86,7 @@ class PowerSpectrum_Beutler2019(PowerSpectrum):
         fake_diag=False,
         realisation=None,
         isotropic=True,
-        fit_poles=(0, 2),
+        fit_poles=(0,),
     ):
 
         if recon is not None:
@@ -133,8 +133,8 @@ class PowerSpectrum_DESIMockChallenge_Post(PowerSpectrum):
         postprocess=None,
         fake_diag=False,
         realisation=None,
-        isotropic=False,
-        fit_poles=(0, 2),
+        isotropic=True,
+        fit_poles=(0,),
         covtype="cov-std",
         smoothtype="15",
     ):
@@ -187,8 +187,8 @@ class PowerSpectrum_DESILightcone_Mocks_Recon(PowerSpectrum):
         postprocess=None,
         fake_diag=False,
         realisation=None,
-        isotropic=False,
-        fit_poles=(0, 2),
+        isotropic=True,
+        fit_poles=(0,),
         type="julian_reciso",
     ):
 

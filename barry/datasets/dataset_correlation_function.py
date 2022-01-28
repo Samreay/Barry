@@ -38,8 +38,8 @@ class CorrelationFunction_ROSS_DR12(CorrelationFunction):
         num_mocks=None,
         fake_diag=False,
         realisation="data",
-        isotropic=False,
-        fit_poles=(0, 2),
+        isotropic=True,
+        fit_poles=(0,),
     ):
 
         if recon.lower() != "iso":
@@ -88,8 +88,8 @@ class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
         num_mocks=None,
         fake_diag=False,
         realisation=None,
-        isotropic=False,
-        fit_poles=(0, 2),
+        isotropic=True,
+        fit_poles=(0,),
         covtype="cov-std",
         smoothtype="15",
     ):

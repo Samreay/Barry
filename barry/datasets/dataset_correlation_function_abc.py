@@ -22,8 +22,8 @@ class CorrelationFunction(Dataset, ABC):
         num_mocks=None,
         fake_diag=False,
         realisation=None,
-        isotropic=False,
-        fit_poles=None,
+        isotropic=True,
+        fit_poles=(0,),
     ):
 
         current_file = os.path.dirname(inspect.stack()[0][1])

@@ -25,7 +25,7 @@ class PowerSpectrum(Dataset, ABC):
         fake_diag=False,
         realisation=None,
         isotropic=True,
-        fit_poles=None,
+        fit_poles=(0,),
     ):
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + f"/../data/{filename}")
