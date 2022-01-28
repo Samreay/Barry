@@ -4,18 +4,37 @@ import numpy as np
 
 from barry.cosmology import pk2xi
 from barry.cosmology.camb_generator import getCambGenerator
-from barry.datasets import PowerSpectrum_SDSS_DR12_Z061_NGC, CorrelationFunction_SDSS_DR12_Z061_NGC
+from barry.datasets import PowerSpectrum_SDSS_DR12, CorrelationFunction_SDSS_DR12_Z061_NGC
 
 
-class DummyPowerSpectrum_SDSS_DR12_Z061_NGC(PowerSpectrum_SDSS_DR12_Z061_NGC):
-    """ Dummy power spectrum.
+class DummyPowerSpectrum_SDSS_DR12(PowerSpectrum_SDSS_DR12):
+    """Dummy power spectrum.
 
     Uses CAMB's linear power spectrum and faked uncertainty. Utilised the SDSS DR12 window function, with option
     to make a dummy window function too.
     """
 
-    def __init__(self, name="DummyPowerSpectrum", min_k=0.02, max_k=0.30, step_size=1, postprocess=None, dummy_window=False, uncert=0.01):
-        super().__init__(name=name, step_size=step_size, postprocess=postprocess, min_k=min_k, max_k=max_k)
+    def __init__(
+        self,
+        redshift_bin=3,
+        galatic_cap="ngc",
+        name="DummyPowerSpectrum",
+        min_k=0.02,
+        max_k=0.30,
+        step_size=1,
+        postprocess=None,
+        dummy_window=False,
+        uncert=0.01,
+    ):
+        super().__init__(
+            redshift_bin=redshift_bin,
+            galactic_cap=galatic_cap,
+            name=name,
+            step_size=step_size,
+            postprocess=postprocess,
+            min_k=min_k,
+            max_k=max_k,
+        )
 
         # Set data to camb generated power spectrum
         c = getCambGenerator()
@@ -46,7 +65,7 @@ class DummyPowerSpectrum_SDSS_DR12_Z061_NGC(PowerSpectrum_SDSS_DR12_Z061_NGC):
 
 
 class DummyCorrelationFunction_SDSS_DR12_Z061_NGC(CorrelationFunction_SDSS_DR12_Z061_NGC):
-    """ Dummy correlation function.
+    """Dummy correlation function.
 
     Uses CAMB's linear power spectrum and faked uncertainty.
     """
@@ -79,19 +98,34 @@ if __name__ == "__main__":
     c = getCambGenerator()
     pk_lin = c.get_data()["pk_lin"]
 
-    dataset = DummyPowerSpectrum_SDSS_DR12_Z061_NGC()
+    dataset = DummyPowerSpectrum_SDSS_DR12()
     data = dataset.get_data()
-    plt.errorbar(data[0]["ks"], data[0]["ks"] * data[0]["pk"], yerr=data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"])), fmt="o", c="k", zorder=1)
+    plt.errorbar(
+        data[0]["ks"], data[0]["ks"] * data[0]["pk"], yerr=data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"])), fmt="o", c="k", zorder=1
+    )
     plt.errorbar(data[0]["ks"], data[0]["ks"] * splev(dataset.w_ks_output, splrep(c.ks, pk_lin))[dataset.w_mask], fmt="-", c="k", zorder=0)
     plt.xlabel(r"$k$")
     plt.ylabel(r"$k\,P(k)$")
     plt.title(dataset.name)
     plt.show()
 
-    dataset = DummyCorrelationFunction_SDSS_DR12_Z061_NGC()
+    dataset = DummyCorrelationFunction_SDSS_DR12()
     data = dataset.get_data()
-    plt.errorbar(data[0]["dist"], data[0]["dist"] ** 2 * data[0]["xi0"], yerr=data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"])), fmt="o", c="k", zorder=1)
-    plt.errorbar(data[0]["dist"], data[0]["dist"] ** 2 * pk2xi.PowerToCorrelationGauss(c.ks).__call__(c.ks, pk_lin, data[0]["dist"]), fmt="-", c="k", zorder=0)
+    plt.errorbar(
+        data[0]["dist"],
+        data[0]["dist"] ** 2 * data[0]["xi0"],
+        yerr=data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"])),
+        fmt="o",
+        c="k",
+        zorder=1,
+    )
+    plt.errorbar(
+        data[0]["dist"],
+        data[0]["dist"] ** 2 * pk2xi.PowerToCorrelationGauss(c.ks).__call__(c.ks, pk_lin, data[0]["dist"]),
+        fmt="-",
+        c="k",
+        zorder=0,
+    )
     plt.xlabel(r"$s$")
     plt.ylabel(r"$s^{2}\xi(s)$")
     plt.title(dataset.name)

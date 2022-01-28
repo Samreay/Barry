@@ -118,7 +118,7 @@ if __name__ == "__main__":
             df["$\\alpha_\\perp$"] = alpha_perp
 
             extra.pop("realisation", None)
-            c.add_chain(df, weights=weight, color=color, **extra)
+            c.add_chain(df, weights=weight, color=color, posterior=posterior, **extra)
 
             max_post = posterior.argmax()
             chi2 = -2 * posterior[max_post]
@@ -194,6 +194,7 @@ if __name__ == "__main__":
             )
 
             corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
+            print(corr, print(c.analysis.get_correlations()))
             if "3-Poly" in fitname:
                 if "No-Hexa" in fitname:
                     output[fitname].append(
@@ -215,15 +216,18 @@ if __name__ == "__main__":
 
             counter[nameindex] += 1
 
-        c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4, legend_location=(0, -1))
+        c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4, legend_location=(0, -1), plot_contour=True)
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
 
         # c.analysis.get_latex_table(filename=pfn + "_params.txt")
         for name in namelist:
 
+            if "PostRecon Iso NonFix" not in name:
+                continue
+
             chainnames = [name + str(r" $k_{max}=%3.2lf$" % kmax) for kmax in kmaxs]
 
-            c.plotter.plot_summary(
+            """c.plotter.plot_summary(
                 filename=[pfn + "_" + name + "_summary.png"],
                 errorbar=True,
                 truth=truth,
@@ -233,14 +237,14 @@ if __name__ == "__main__":
                     "$\\alpha_\\perp$": [0.987, 1.007],
                 },
                 chains=chainnames,
-            )
+            )"""
             c.plotter.plot(
                 filename=[pfn + "_" + name + "_contour.pdf"],
                 truth=truth,
                 parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
                 chains=chainnames,
             )
-            c.plotter.plot(filename=[pfn + "_" + name + "_contour2.pdf"], truth=truth, chains=chainnames)
+            # c.plotter.plot(filename=[pfn + "_" + name + "_contour2.pdf"], truth=truth, chains=chainnames)
 
             with open(dir_name + "/Queensland_bestfit_" + name.replace(" ", "_") + ".txt", "w") as f:
                 if "3-Poly" in name:

@@ -99,7 +99,6 @@ class PowerSpectrum(Dataset, ABC):
         if realisation is None:
             self.logger.info(f"Loading mock average")
             assert self.mock_data is not None, "Passing in None for the realisations means the mock means, but you have no mocks!"
-            print(self.mock_data)
             self.data = np.array(self.mock_data).mean(axis=0)
         elif str(realisation).lower() == "data":
             assert self.true_data is not None, "Requested data but this dataset doesn't have data set!"

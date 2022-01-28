@@ -95,39 +95,6 @@ class CorrelationFunction_ROSS_DR12_Z061(CorrelationFunction):
         )
 
 
-class CorrelationFunction_DESIMockChallenge(CorrelationFunction):
-    """ Power spectrum from the DESI Mock Challenge  """
-
-    def __init__(
-        self,
-        name=None,
-        min_dist=30,
-        max_dist=200,
-        recon=True,
-        reduce_cov_factor=1,
-        num_mocks=None,
-        fake_diag=False,
-        realisation=None,
-        isotropic=False,
-        fit_poles=(0, 2, 4),
-    ):
-        if not recon:
-            raise NotImplementedError("Pre-recon data not available for DESI Mock Challenge")
-        super().__init__(
-            "desi_mock_challenge_stage_2_xi.pkl",
-            name=name,
-            min_dist=min_dist,
-            max_dist=max_dist,
-            recon=recon,
-            reduce_cov_factor=reduce_cov_factor,
-            num_mocks=num_mocks,
-            fake_diag=fake_diag,
-            realisation=realisation,
-            isotropic=isotropic,
-            fit_poles=fit_poles,
-        )
-
-
 class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
     """ Power spectrum from the DESI Mock Challenge  """
 
