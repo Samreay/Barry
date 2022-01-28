@@ -10,7 +10,9 @@ import logging
 
 
 @lru_cache(maxsize=32)
-def getCambGenerator(redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, recon_smoothing_scale=21.21):
+def getCambGenerator(
+    redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21
+):
     return CambGenerator(
         redshift=redshift,
         om_resolution=om_resolution,
@@ -18,6 +20,7 @@ def getCambGenerator(redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676
         h0=h0,
         ob=ob,
         ns=ns,
+        mnu=mnu,
         recon_smoothing_scale=recon_smoothing_scale,
     )
 
@@ -56,7 +59,9 @@ class CambGenerator(object):
     Useful because computing them in a likelihood step is insanely slow.
     """
 
-    def __init__(self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, recon_smoothing_scale=21.21):
+    def __init__(
+        self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21
+    ):
         """
         Precomputes CAMB for efficiency. Access ks via self.ks, and use get_data for an array
         of both the linear and non-linear power spectrum
@@ -69,9 +74,7 @@ class CambGenerator(object):
 
         self.data_dir = os.path.normpath(os.path.dirname(inspect.stack()[0][1]) + "/../generated/")
         hh = int(h0 * 10000)
-        self.filename_unique = (
-            f"{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}"
-        )
+        self.filename_unique = f"{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}_{int(mnu * 10000)}"
         self.filename = self.data_dir + f"/camb_{self.filename_unique}.npy"
 
         self.k_min = 1e-4
@@ -84,6 +87,7 @@ class CambGenerator(object):
         self.omch2s = np.linspace(0.05, 0.3, self.om_resolution)
         self.omega_b = ob
         self.ns = ns
+        self.mnu = mnu
         if h0_resolution == 1:
             self.h0s = [h0]
         else:
@@ -139,10 +143,10 @@ class CambGenerator(object):
                 pars.set_cosmology(
                     H0=h0 * 100,
                     omch2=omch2,
-                    mnu=0.0,
+                    mnu=self.mnu,
                     ombh2=self.omega_b * h0 * h0,
                     omk=0.0,
-                    tau=0.063,
+                    tau=0.066,
                     neutrino_hierarchy="degenerate",
                     num_massive_neutrinos=1,
                 )
@@ -169,10 +173,20 @@ class CambGenerator(object):
         """ Performs bilinear interpolation on the entire pk array """
         omch2_index = 1.0 * (self.om_resolution - 1) * (omch2 - self.omch2s[0]) / (self.omch2s[-1] - self.omch2s[0])
 
+        # If omch2 == self.omch2s[-1] we can get an index out of bounds later due to rounding errors, so we
+        # manually set the edge cases
+        if omch2 >= self.omch2s[-1]:
+            omch2_index = self.om_resolution - 1 - 1.0e-6
+
         if self.h0_resolution == 1:
             h0_index = 0
         else:
             h0_index = 1.0 * (self.h0_resolution - 1) * (h0 - self.h0s[0]) / (self.h0s[-1] - self.h0s[0])
+
+            # If h0 == self.h0s[-1] we can get an index out of bounds later due to rounding errors, so we
+            # manually set the edge cases
+            if h0 == self.h0s[-1]:
+                h0_index = self.h0_resolution - 1 - 1.0e-6
 
         x = omch2_index - np.floor(omch2_index)
         y = h0_index - np.floor(h0_index)

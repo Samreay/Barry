@@ -8,9 +8,9 @@ def getdata(xi0file, xi2file):
     dfxi0 = pd.read_csv(xi0file, comment="#", delim_whitespace=True, names=["s", "xi0", "xi0err"]).drop("xi0err", axis=1)
     dfxi2 = pd.read_csv(xi2file, comment="#", delim_whitespace=True, names=["s", "xi2", "xi2err"]).drop("xi2err", axis=1)
     df = pd.merge(dfxi0, dfxi2, on="s")
-    output = df.to_numpy().astype(np.float32)
-    print(np.shape(output))
-    return output
+    # output = df.to_numpy().astype(np.float32)
+    # print(np.shape(output))
+    return df
 
 
 def getcov(covfile):
@@ -26,8 +26,10 @@ xi2file = "Ross_2016_COMBINEDDR12_zbin1_correlation_function_quadrupole_post_rec
 covfile = "Ross_2016_COMBINEDDR12_zbin1_covariance_monoquad_post_recon_bincent0.dat"
 
 split = {
-    "pre-recon": None,
-    "post-recon": [getdata(xi0file, xi2file)],
+    "pre-recon data": None,
+    "post-recon data": [getdata(xi0file, xi2file)],
+    "pre-recon mocks": None,
+    "post-recon mocks": None,
     "pre-recon cov": None,
     "post-recon cov": getcov(covfile),
     "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.38, "ob": 0.04814, "ns": 0.97, "reconsmoothscale": 15},
@@ -42,8 +44,10 @@ xi2file = "Ross_2016_COMBINEDDR12_zbin2_correlation_function_quadrupole_post_rec
 covfile = "Ross_2016_COMBINEDDR12_zbin2_covariance_monoquad_post_recon_bincent0.dat"
 
 split = {
-    "pre-recon": None,
-    "post-recon": [getdata(xi0file, xi2file)],
+    "pre-recon data": None,
+    "post-recon data": [getdata(xi0file, xi2file)],
+    "pre-recon mocks": None,
+    "post-recon mocks": None,
     "pre-recon cov": None,
     "post-recon cov": getcov(covfile),
     "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.51, "ob": 0.04814, "ns": 0.97, "reconsmoothscale": 15},
@@ -59,8 +63,10 @@ xi2file = "Ross_2016_COMBINEDDR12_zbin3_correlation_function_quadrupole_post_rec
 covfile = "Ross_2016_COMBINEDDR12_zbin3_covariance_monoquad_post_recon_bincent0.dat"
 
 split = {
-    "pre-recon": None,
-    "post-recon": [getdata(xi0file, xi2file)],
+    "pre-recon data": None,
+    "post-recon data": [getdata(xi0file, xi2file)],
+    "pre-recon mocks": None,
+    "post-recon mocks": None,
     "pre-recon cov": None,
     "post-recon cov": getcov(covfile),
     "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.61, "ob": 0.04814, "ns": 0.97, "reconsmoothscale": 15},

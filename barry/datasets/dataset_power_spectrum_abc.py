@@ -25,6 +25,7 @@ class PowerSpectrum(Dataset, ABC):
         fake_diag=False,
         realisation=None,
         isotropic=True,
+        fit_poles=None,
     ):
         current_file = os.path.dirname(inspect.stack()[0][1])
         self.data_location = os.path.normpath(current_file + f"/../data/{filename}")
@@ -49,7 +50,13 @@ class PowerSpectrum(Dataset, ABC):
         self.reduce_cov_factor = reduce_cov_factor
 
         self.poles = [int(c.replace("pk", "")) for c in (self.true_data or self.mock_data)[0].columns if c.startswith("pk")]
-        self.fit_poles = [x for x in self.poles if x % 2 == 0]
+        if fit_poles is None:
+            if isotropic:
+                self.fit_poles = [0]
+            else:
+                self.fit_poles = [x for x in self.poles if x % 2 == 0]
+        else:
+            self.fit_poles = fit_poles
         self.fit_pole_indices = np.where([i in self.fit_poles for i in self.poles])[0]
 
         if self.reduce_cov_factor == -1:
@@ -79,10 +86,12 @@ class PowerSpectrum(Dataset, ABC):
         self._load_winpk_file()
         self.m_transform = None
         self.m_w_transform = None
+        self.m_w_mask = None
         if not self.isotropic:
             self._load_comp_file()
 
-        self.cov, self.cov_fit, self.corr, self.icov, self.data = None, None, None, None, None
+        self.icov, self.icov_w, self.icov_mw, self.icov_ww, self.icov_mww, self.icov_mwmw = None, None, None, None, None, None
+        self.cov, self.cov_fit, self.corr, self.data = None, None, None, None
         self.set_realisation(realisation)
         self.set_cov(fake_diag=fake_diag)
 
@@ -99,23 +108,27 @@ class PowerSpectrum(Dataset, ABC):
             assert self.mock_data is not None, "You asked for a mock realisation, but this dataset has no mocks!"
             self.logger.info(f"Loading mock {realisation}")
             self.data = self.mock_data[realisation]
+        return self
 
     def set_cov(self, fake_diag=False):
         covname = "post-recon cov" if self.recon else "pre-recon cov"
         if covname in self.data_obj:
-            npoles = len(self.poles)
-            nin = len(self.w_mask)
-            nout = self.data.shape[0]
-            self.cov = np.empty((npoles * nout, npoles * nout))
-            w_mask_indices = np.ix_(self.w_mask, self.w_mask)
-            for i in range(npoles):
-                iinlow, iinhigh = i * nin, (i + 1) * nin
-                ioutlow, iouthigh = i * nout, (i + 1) * nout
-                for j in range(npoles):
-                    jinlow, jinhigh = j * nin, (j + 1) * nin
-                    joutlow, jouthigh = j * nout, (j + 1) * nout
-                    subset = self.data_obj[covname][iinlow:iinhigh, jinlow:jinhigh][w_mask_indices]
-                    self.cov[ioutlow:iouthigh, joutlow:jouthigh] = subset
+            if self.data_obj[covname] is not None:
+                npoles = len(self.poles)
+                nin = len(self.w_mask)
+                nout = self.data.shape[0]
+                self.cov = np.empty((npoles * nout, npoles * nout))
+                w_mask_indices = np.ix_(self.w_mask, self.w_mask)
+                for i in range(npoles):
+                    iinlow, iinhigh = i * nin, (i + 1) * nin
+                    ioutlow, iouthigh = i * nout, (i + 1) * nout
+                    for j in range(npoles):
+                        jinlow, jinhigh = j * nin, (j + 1) * nin
+                        joutlow, jouthigh = j * nout, (j + 1) * nout
+                        subset = self.data_obj[covname][iinlow:iinhigh, jinlow:jinhigh][w_mask_indices]
+                        self.cov[ioutlow:iouthigh, joutlow:jouthigh] = subset
+            else:
+                self._compute_cov()
         else:
             self._compute_cov()
 
@@ -125,20 +138,32 @@ class PowerSpectrum(Dataset, ABC):
             self.cov_fit = np.diag(np.diag(self.cov_fit))
         self.cov /= self.reduce_cov_factor
         self.cov_fit /= self.reduce_cov_factor
+
+        # Run some checks
         v = np.diag(self.cov_fit @ np.linalg.inv(self.cov_fit))
         if not np.all(np.isclose(v, 1)):
             self.logger.error("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
             self.logger.error(f"These should all be 1: {v}")
-        d = np.sqrt(np.diag(self.cov))
-        self.corr = self.cov / (d * np.atleast_2d(d).T)
+
+        d = np.sqrt(np.diag(self.cov_fit))
+        self.corr = self.cov_fit / (d * np.atleast_2d(d).T)
         self.icov = np.linalg.inv(self.cov_fit)
+        if self.m_w_transform is not None:
+            w_mask_poles = [self.w_mask] * len(self.poles)
+            for i, pole in enumerate(self.poles):
+                if pole not in self.fit_poles:
+                    w_mask_poles[i] = np.zeros(len(self.w_mask), dtype=bool)
+            w_mask_poles = np.concatenate(w_mask_poles)
+            self.icov_w = self.w_transform[w_mask_poles, :].T @ self.icov
+            self.icov_mw = self.m_w_transform[w_mask_poles, :].T @ self.icov
+            self.icov_ww = self.icov_w @ self.w_transform[w_mask_poles, :]
+            self.icov_mww = self.icov_mw @ self.w_transform[w_mask_poles, :]
+            self.icov_mwmw = self.icov_mw @ self.m_w_transform[w_mask_poles, :]
+            self.m_w_mask = w_mask_poles
 
     def _compute_cov(self):
         ad = np.array(self.mock_data)
-        if self.isotropic:
-            x0 = ad[:]
-        else:
-            x0 = np.concatenate([ad[:, :, 0], ad[:, :, 1], ad[:, :, 2], ad[:, :, 3], ad[:, :, 4]], axis=1)
+        x0 = np.concatenate([ad[:, :, pole] for pole in self.poles], axis=1)
         self.cov = np.cov(x0.T)
         self.logger.info(f"Computed cov {self.cov.shape}")
 
@@ -169,23 +194,20 @@ class PowerSpectrum(Dataset, ABC):
 
     def _rebin_data(self, dataframe):
         poles = self.poles
-        if self.isotropic:
-            poles = [p for p in self.poles if p == 0]
-            assert len(poles) == 1, "Could not find 'pk0' pole"
+        # if self.isotropic:
+        #    poles = [p for p in self.poles if p == 0]
+        #    assert len(poles) == 1, "Could not find 'pk0' pole"
 
         k_rebinned, pk0_rebinned, mask = self._agg_data(dataframe, "pk0")
         if self.postprocess is not None:
             pk0_rebinned = self.postprocess(ks=k_rebinned, pk=pk0_rebinned, mask=mask)
         else:
             pk0_rebinned = pk0_rebinned[mask]
-        if self.isotropic:
-            pk_rebinned = pk0_rebinned
-        else:
-            pk_rebinned = np.empty((len(pk0_rebinned), len(poles)))
-            pk_rebinned[:, 0] = pk0_rebinned
-            for i, pole in enumerate(poles[1:]):
-                k_rebinned, pkpole_rebinned, mask = self._agg_data(dataframe, f"pk{pole}")
-                pk_rebinned[:, i + 1] = pkpole_rebinned[mask]
+        pk_rebinned = np.empty((len(pk0_rebinned), len(poles)))
+        pk_rebinned[:, 0] = pk0_rebinned
+        for i, pole in enumerate(poles[1:]):
+            k_rebinned, pkpole_rebinned, mask = self._agg_data(dataframe, f"pk{pole}")
+            pk_rebinned[:, i + 1] = pkpole_rebinned[mask]
         return k_rebinned[mask], pk_rebinned
 
     def _load_winfit(self):
@@ -235,6 +257,7 @@ class PowerSpectrum(Dataset, ABC):
             "ks": self.ks,
             "cov": self.cov,
             "icov": self.icov,
+            "icov_m_w": [self.icov_w, self.icov_mw, self.icov_ww, self.icov_mww, self.icov_mwmw],
             "ks_input": self.w_ks_input,
             "w_scale": self.w_k0_scale,
             "w_transform": self.w_transform,
@@ -256,14 +279,13 @@ class PowerSpectrum(Dataset, ABC):
         # Some data has pk0 some has pk0 to pk4
         if self.isotropic:
             d.update({"w_mask": self.w_mask})
-            d.update({"pk0": self.data})
-            d.update({"pk": self.data})
+            d.update({"m_w_mask": self.w_mask})
+            d.update({"pk": self.data[:, 0]})
         else:
-
             d.update({"w_mask": np.tile(self.w_mask, len(self.poles))})
-            pk_fit = self.data[:, self.fit_pole_indices].T.flatten()
-            d.update({"pk": pk_fit})
-            d.update({f"pk{d}": self.data[:, i] for i, d in enumerate(self.poles)})
+            d.update({"m_w_mask": self.m_w_mask})
+            d.update({"pk": self.data[:, self.fit_pole_indices].T.flatten()})
+        d.update({f"pk{d}": self.data[:, i] for i, d in enumerate(self.poles)})
         return [d]
 
 

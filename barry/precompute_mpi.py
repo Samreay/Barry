@@ -19,6 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("--h0", type=float, default=0.676)
     parser.add_argument("--ob", type=float, default=0.04814)
     parser.add_argument("--ns", type=float, default=0.97)
+    parser.add_argument("--mnu", type=float, default=0.0)
     parser.add_argument("--reconsmoothscale", type=float, default=21.21)
     args = parser.parse_args()
 
@@ -31,7 +32,15 @@ if __name__ == "__main__":
     model = [c() for c in get_concrete(Model) if args.model == c.__name__][0]
     logging.info(f"Model found is {model}")
     model.set_cosmology(
-        {"z": args.redshift, "h0": args.h0, "om": args.om, "ob": args.ob, "ns": args.ns, "reconsmoothscale": args.reconsmoothscale},
+        {
+            "z": args.redshift,
+            "h0": args.h0,
+            "om": args.om,
+            "ob": args.ob,
+            "ns": args.ns,
+            "mnu": args.mnu,
+            "reconsmoothscale": args.reconsmoothscale,
+        },
         load_pregen=False,
     )
 

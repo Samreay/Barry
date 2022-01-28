@@ -18,10 +18,6 @@ class CorrDing2018(CorrelationFunctionFit):
         super().__init__(name=name, fix_params=fix_params, smooth_type=smooth_type, smooth=smooth, correction=correction)
         self.parent = PowerDing2018(fix_params=fix_params, smooth_type=smooth_type, recon=recon, correction=correction)
 
-    def set_data(self, data):
-        super().set_data(data)
-        self.parent.set_data(data)
-
     def declare_parameters(self):
         super().declare_parameters()
         self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure

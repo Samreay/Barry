@@ -103,6 +103,8 @@ class Fitter(object):
         """
         self.num_walkers = num_walkers
 
+        return self
+
     def get_num_jobs(self):
         """Gets the total number of jobs that wil be submitted.
 
@@ -127,6 +129,8 @@ class Fitter(object):
 
         """
         self.sampler = sampler
+
+        return self
 
     def get_sampler(self):
         """Returns the sampler. If not set, creates a DynestySampler

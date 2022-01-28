@@ -5,7 +5,7 @@ from barry.samplers.sampler import Sampler
 
 
 class DynestySampler(Sampler):
-    def __init__(self, temp_dir=None, max_iter=None, nlive=500):
+    def __init__(self, temp_dir=None, max_iter=None, dynamic=False, nlive=500):
 
         self.logger = logging.getLogger("barry")
         self.max_iter = max_iter
@@ -14,9 +14,13 @@ class DynestySampler(Sampler):
         self.temp_dir = temp_dir
         if temp_dir is not None and not os.path.exists(temp_dir):
             os.makedirs(temp_dir, exist_ok=True)
+        self.dynamic = dynamic
 
     def get_filename(self, uid):
-        return os.path.join(self.temp_dir, f"{uid}_chain.npy")
+        if self.dynamic:
+            return os.path.join(self.temp_dir, f"{uid}_dyn_chain.npy")
+        else:
+            return os.path.join(self.temp_dir, f"{uid}_nest_chain.npy")
 
     def fit(self, log_likelihood, start, num_dim, prior_transform, save_dims=None, uid=None):
 
@@ -32,7 +36,12 @@ class DynestySampler(Sampler):
             save_dims = num_dim
         self.logger.debug("Fitting framework with %d dimensions" % num_dim)
         self.logger.info("Using dynesty Sampler")
-        sampler = dynesty.NestedSampler(log_likelihood, prior_transform, num_dim, nlive=self.nlive)
+        if self.dynamic:
+            sampler = dynesty.DynamicNestedSampler(
+                log_likelihood, prior_transform, num_dim, nlive_init=self.nlive, nlive_batch=200, maxbatch=10
+            )
+        else:
+            sampler = dynesty.NestedSampler(log_likelihood, prior_transform, num_dim, nlive=self.nlive)
 
         sampler.run_nested(maxiter=self.max_iter, print_progress=False)
 

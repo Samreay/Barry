@@ -1,4 +1,7 @@
 import logging
+import sys
+
+sys.path.append("../..")
 
 from barry.models import PowerBeutler2017
 from barry.models.bao_correlation import CorrelationFunctionFit
@@ -13,40 +16,73 @@ class CorrBeutler2017(CorrelationFunctionFit):
     def __init__(
         self,
         name="Corr Beutler 2017",
-        recon=False,
+        fix_params=("om"),
         smooth_type="hinton2017",
-        fix_params=("om", "f"),
+        recon=None,
         smooth=False,
         correction=None,
         isotropic=True,
+        poly_poles=(0, 2),
+        marg=None,
     ):
-        self.recon = recon
-        self.recon_smoothing_scale = None
-        super().__init__(
-            name=name, fix_params=fix_params, smooth_type=smooth_type, smooth=smooth, correction=correction, isotropic=isotropic
-        )
 
-    def set_data(self, data):
-        super().set_data(data)
+        self.recon = False
+        self.recon_type = "None"
+        if recon is not None:
+            if recon.lower() is not "None":
+                self.recon_type = "iso"
+                if recon.lower() == "ani":
+                    self.recon_type = "ani"
+                self.recon = True
+
+        self.recon_smoothing_scale = None
+        if isotropic:
+            poly_poles = [0]
+        if marg is not None:
+            fix_params = list(fix_params)
+            for pole in poly_poles:
+                fix_params.extend([f"b{{{pole}}}"])
+                fix_params.extend([f"a{{{pole}}}_1", f"a{{{pole}}}_2", f"a{{{pole}}}_3", f"a{{{pole}}}_4", f"a{{{pole}}}_5"])
+        super().__init__(
+            name=name,
+            fix_params=fix_params,
+            smooth_type=smooth_type,
+            smooth=smooth,
+            correction=correction,
+            isotropic=isotropic,
+            poly_poles=poly_poles,
+            marg=marg,
+        )
+        self.parent = PowerBeutler2017(
+            fix_params=fix_params,
+            smooth_type=smooth_type,
+            recon=recon,
+            smooth=smooth,
+            correction=correction,
+            isotropic=isotropic,
+            poly_poles=poly_poles,
+            marg=marg,
+        )
+        if self.marg:
+            for pole in self.poly_poles:
+                self.set_default(f"b{{{pole}}}", 1.0)
+                self.set_default(f"a{{{pole}}}_1", 0.0)
+                self.set_default(f"a{{{pole}}}_2", 0.0)
+                self.set_default(f"a{{{pole}}}_3", 0.0)
 
     def declare_parameters(self):
         super().declare_parameters()
         self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 20.0, 10.0)  # Fingers-of-god damping
         if self.isotropic:
-            self.add_param("sigma_nl", r"$\Sigma_{nl}$", 1.0, 20.0, 1.0)  # dampening
-            self.add_param("a1", r"$a_1$", -100, 100, 0)  # Polynomial marginalisation 1
-            self.add_param("a2", r"$a_2$", -2, 2, 0)  # Polynomial marginalisation 2
-            self.add_param("a3", r"$a_3$", -0.2, 0.2, 0)  # Polynomial marginalisation 3
+            self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.01, 20.0, 10.0)  # BAO damping
         else:
-            self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure
-            self.add_param("sigma_nl_par", r"$\Sigma_{nl,||}$", 1.0, 20.0, 1.0)  # dampening parallel to LOS
-            self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 1.0, 20.0, 1.0)  # dampening perpendicular to LOS
-            self.add_param("a0_1", r"$a0_1$", -100, 100, 0)  # Monopole Polynomial marginalisation 1
-            self.add_param("a0_2", r"$a0_2$", -2, 2, 0)  # Monopole Polynomial marginalisation 2
-            self.add_param("a0_3", r"$a0_3$", -0.2, 0.2, 0)  # Monopole Polynomial marginalisation 3
-            self.add_param("a2_1", r"$a2_1$", -100, 100, 0)  # Quadrupole Polynomial marginalisation 1
-            self.add_param("a2_2", r"$a2_2$", -2, 2, 0)  # Quadrupole Polynomial marginalisation 2
-            self.add_param("a2_3", r"$a2_3$", -0.2, 0.2, 0)  # Quadrupole Polynomial marginalisation 3
+            self.add_param("beta", r"$\beta$", 0.01, 4.0, 0.5)  # RSD parameter f/b
+            self.add_param("sigma_nl_par", r"$\Sigma_{nl,||}$", 0.01, 20.0, 8.0)  # BAO damping parallel to LOS
+            self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.01, 20.0, 4.0)  # BAO damping perpendicular to LOS
+        for pole in self.poly_poles:
+            self.add_param(f"a{{{pole}}}_1", f"$a_{{{pole},1}}$", -100.0, 100.0, 0)  # Monopole Polynomial marginalisation 1
+            self.add_param(f"a{{{pole}}}_2", f"$a_{{{pole},2}}$", -2.0, 2.0, 0)  # Monopole Polynomial marginalisation 2
+            self.add_param(f"a{{{pole}}}_3", f"$a_{{{pole},3}}$", -0.2, 0.2, 0)  # Monopole Polynomial marginalisation 3
 
     def compute_correlation_function(self, dist, p, smooth=False):
         """Computes the correlation function model using the Beutler et. al., 2017 power spectrum and Ross 2017 method
@@ -70,82 +106,84 @@ class CorrBeutler2017(CorrelationFunctionFit):
             the model quadrupole interpolated to sprime. Will be 'None' if the model is isotropic
 
         """
-        ks = self.camb.ks
-        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
+        ks, pks, _ = self.parent.compute_power_spectrum(self.parent.camb.ks, p, smooth=smooth, for_corr=True)
+        xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
 
         if self.isotropic:
-            fog = 1.0 / (1.0 + ks ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
-            pk_smooth = pk_smooth_lin * fog
-
-            # Compute the propagator
-            C = np.exp(-0.5 * ks ** 2 * p["sigma_nl"] ** 2)
-            pk0 = pk_smooth * (1.0 + pk_ratio * C)
-
             sprime = p["alpha"] * dist
-            xi0 = p["b0"] * self.pk2xi_0.__call__(ks, pk0, sprime)
-            shape = p["a1"] / (dist ** 2) + p["a2"] / dist + p["a3"]
+            xi0 = p["b{0}"] * self.pk2xi_0.__call__(ks, pks[0], sprime)
+            xi[0] = xi0 + p["a{0}_1"] / (dist ** 2) + p["a{0}_2"] / dist + p["a{0}_3"]
 
-            xi0 += shape
-            xi2 = None
+            poly = np.zeros((1, len(dist)))
+            if self.marg:
+                poly = [xi0, 1.0 / (dist ** 2), 1.0 / dist, np.ones(len(dist))]
 
         else:
-            # First compute the undilated pk multipoles
-            fog = 1.0 / (1.0 + np.outer(self.mu ** 2, ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
-            if self.recon:
-                kaiser_prefac = 1.0 + np.outer(p["f"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel)
-            else:
-                kaiser_prefac = 1.0 + np.tile(p["f"] * self.mu ** 2, (len(ks), 1)).T
-            pk_smooth = kaiser_prefac ** 2 * pk_smooth_lin * fog
-
-            # Compute the propagator
-            C = np.exp(np.outer(-0.5 * (self.mu ** 2 * p["sigma_nl_par"] ** 2 + (1.0 - self.mu ** 2) * p["sigma_nl_perp"] ** 2), ks ** 2))
-            pk2d = (pk_smooth * (1.0 + pk_ratio) * C).T
-
-            pk0 = integrate.simps(pk2d, self.mu, axis=1)
-            pk2 = 3.0 * integrate.simps(pk2d * self.mu ** 2, self.mu, axis=1)
-            pk4 = 1.125 * (35.0 * integrate.simps(pk2d * self.mu ** 4, self.mu, axis=1) - 10.0 * pk2 + 3.0 * pk0)
-            pk2 = 2.5 * (pk2 - pk0)
-
             # Construct the dilated 2D correlation function by splining the undilated multipoles. We could have computed these
             # directly at sprime, but sprime depends on both s and mu, so splining is quicker
             epsilon = np.round(p["epsilon"], decimals=5)
             sprime = np.outer(dist * p["alpha"], self.get_sprimefac(epsilon))
             muprime = self.get_muprime(epsilon)
 
-            xi0 = splev(sprime, splrep(dist, self.pk2xi_0.__call__(ks, pk0, dist)))
-            xi2 = splev(sprime, splrep(dist, self.pk2xi_2.__call__(ks, pk2, dist)))
-            xi4 = splev(sprime, splrep(dist, self.pk2xi_4.__call__(ks, pk4, dist)))
+            xi0 = splev(sprime, splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist)))
+            xi2 = splev(sprime, splrep(dist, self.pk2xi_2.__call__(ks, pks[1], dist)))
+            xi4 = splev(sprime, splrep(dist, self.pk2xi_4.__call__(ks, pks[2], dist)))
 
             xi2d = xi0 + 0.5 * (3.0 * muprime ** 2 - 1) * xi2 + 0.125 * (35.0 * muprime ** 4 - 30.0 * muprime ** 2 + 3.0) * xi4
 
             # Now compute the dilated xi multipoles
-            xi0 = p["b0"] * integrate.simps(xi2d, self.mu, axis=1)
-            xi2 = 3.0 * p["b2"] * integrate.simps(xi2d * muprime ** 2, self.mu, axis=1)
-            xi2 = 2.5 * (xi2 - xi0)
+            xi0, xi2, xi4 = self.integrate_mu(xi2d, self.mu)
 
-            shape0 = p["a0_1"] / (dist ** 2) + p["a0_2"] / dist + p["a0_3"]
-            shape2 = p["a2_1"] / (dist ** 2) + p["a2_2"] / dist + p["a2_3"]
-            xi0 += shape0
-            xi2 += shape2
+            xi[0] = p["b{0}"] * xi0
+            xi[1] = 2.5 * (p["b{2}"] * xi2 - xi[0])
+            if 4 in self.poly_poles:
+                xi[2] = 1.125 * (p["b{4}"] * xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
+            else:
+                xi[2] = 1.125 * (xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
 
-        return sprime, xi0, xi2
+            # Polynomial shape
+            if self.marg:
+                xi_marg = [xi0, 2.5 * xi2, 1.125 * xi4]
+                poly = np.zeros((4 * len(self.poly_poles), 3, len(dist)))
+                for pole in self.poly_poles:
+                    npole = int(pole / 2)
+                    poly[4 * npole : 4 * (npole + 1), npole] = [xi_marg[pole], 1.0 / (dist ** 2), 1.0 / dist, np.ones(len(dist))]
+                poly[0, 1] = -2.5 * xi0
+                poly[0, 2] = 1.125 * 3.0 * xi0
+                if 2 in self.poly_poles:
+                    poly[4, 2] = -1.125 * 10.0 * xi2
+
+                xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
+            else:
+                poly = np.zeros((1, 3, len(dist)))
+                for pole in self.poly_poles:
+                    xi[int(pole / 2)] += p[f"a{{{pole}}}_1"] / dist ** 2 + p[f"a{{{pole}}}_2"] / dist + p[f"a{{{pole}}}_3"]
+
+        return sprime, xi, poly
 
 
 if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_correlation_function import CorrelationFunction_ROSS_DR12_Z061
+    from barry.datasets.dataset_correlation_function import CorrelationFunction_DESIMockChallenge_Post
     from barry.config import setup_logging
+    from barry.models.model import Correction
 
     setup_logging()
 
-    print("Checking isotropic")
-    dataset = CorrelationFunction_ROSS_DR12_Z061(isotropic=True)
-    model_iso = CorrBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
-    model_iso.sanity_check(dataset)
+    """print("Checking isotropic")
+    dataset = CorrelationFunction_ROSS_DR12_Z061(isotropic=True, reaRlisation="data")
+    model = CorrBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP, marg="full")
+    model_iso = CorrBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
+    model.sanity_check(dataset)
+    model_iso.sanity_check(dataset)"""
 
     print("Checking anisotropic")
-    dataset = CorrelationFunction_ROSS_DR12_Z061(isotropic=False, min_dist=50, max_dist=150)
-    model_aniso = CorrBeutler2017(recon=dataset.recon, isotropic=dataset.isotropic)
-    model_aniso.sanity_check(dataset)
+    dataset = CorrelationFunction_DESIMockChallenge_Post(
+        isotropic=False, recon="iso", fit_poles=[0, 2], min_dist=52, max_dist=158, num_mocks=1000, covtype="cov-std", smoothtype="15"
+    )
+    model = CorrBeutler2017(
+        isotropic=dataset.isotropic, recon=dataset.recon, fix_params=["om"], poly_poles=[0, 2], correction=Correction.NONE, marg="full"
+    )
+    model.sanity_check(dataset)
