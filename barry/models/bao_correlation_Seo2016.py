@@ -6,7 +6,7 @@ from barry.models.bao_correlation import CorrelationFunctionFit
 
 
 class CorrSeo2016(CorrelationFunctionFit):
-    """ xi(s) model inspired from Seo 2016.
+    """xi(s) model inspired from Seo 2016.
 
     See https://ui.adsabs.harvard.edu/abs/2016MNRAS.460.2453S for details.
     """
@@ -27,7 +27,7 @@ class CorrSeo2016(CorrelationFunctionFit):
         self.add_param("a3", r"$a_3$", -0.2, 0.2, 0)  # Polynomial marginalisation 3
 
     def compute_correlation_function(self, d, p, smooth=False):
-        """ Computes the correlation function model using the LPT based propagators from Seo et. al., 2016 at d*alpha
+        """Computes the correlation function model using the LPT based propagators from Seo et. al., 2016 at d*alpha
 
         Parameters
         ----------

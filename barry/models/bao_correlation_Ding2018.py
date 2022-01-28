@@ -6,7 +6,7 @@ from barry.models.bao_correlation import CorrelationFunctionFit
 
 
 class CorrDing2018(CorrelationFunctionFit):
-    """ xi(s) model inspired from Ding 2018.
+    """xi(s) model inspired from Ding 2018.
 
     See https://ui.adsabs.harvard.edu/abs/2018MNRAS.479.1021D for details.
 
@@ -28,7 +28,7 @@ class CorrDing2018(CorrelationFunctionFit):
         self.add_param("a3", r"$a_3$", -0.2, 0.2, 0)  # Polynomial marginalisation 3
 
     def compute_correlation_function(self, d, p, smooth=False):
-        """ Computes the correlation function model at d*alpha using the Ding et. al., 2018 EFT0 model
+        """Computes the correlation function model at d*alpha using the Ding et. al., 2018 EFT0 model
 
         Parameters
         ----------

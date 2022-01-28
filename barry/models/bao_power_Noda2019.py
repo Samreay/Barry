@@ -12,7 +12,7 @@ from barry.cosmology.camb_generator import Omega_m_z
 
 
 class PowerNoda2019(PowerSpectrumFit):
-    """ P(k) model inspired from Noda 2019.
+    """P(k) model inspired from Noda 2019.
 
     See https://ui.adsabs.harvard.edu/abs/2019arXiv190106854N for details.
 
@@ -258,7 +258,7 @@ class PowerNoda2019(PowerSpectrumFit):
         self.add_param("A", r"$A$", -10, 30.0, 10)  # Fingers-of-god damping
 
     def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None):
-        """ Computes the power spectrum model using the model from Noda et. al., 2019
+        """Computes the power spectrum model using the model from Noda et. al., 2019
 
         Parameters
         ----------

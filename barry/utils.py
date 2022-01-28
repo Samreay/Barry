@@ -61,7 +61,7 @@ def get_hpc():
 
 
 def get_model_comparison_dataframe(fitter):
-    """ Uses fitter.load to create a comparison dataframe on the first column of fitter results (presumed to be alpha)
+    """Uses fitter.load to create a comparison dataframe on the first column of fitter results (presumed to be alpha)
 
     Will only produce a row if a given realisation has a successful fit for all models.
 

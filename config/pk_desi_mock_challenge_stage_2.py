@@ -2,7 +2,7 @@ import sys
 
 from chainconsumer import ChainConsumer
 
-#sys.path.append("..")
+# sys.path.append("..")
 from barry.samplers import DynestySampler
 from barry.cosmology.camb_generator import CambGenerator
 from barry.postprocessing import BAOExtractor
@@ -27,10 +27,10 @@ if __name__ == "__main__":
     cs = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
     data = PowerSpectrum_DESIMockChallenge(recon=True, isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.45)
-    #c = data.get_data()[0]["cosmology"]
-    #generator = CambGenerator(om_resolution=1, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"],
+    # c = data.get_data()[0]["cosmology"]
+    # generator = CambGenerator(om_resolution=1, h0_resolution=1, h0=c["h0"], ob=c["ob"], ns=c["ns"], redshift=c["z"],
     #                          mnu=c["mnu"])
-    #generator.load_data(can_generate=True)
+    # generator.load_data(can_generate=True)
 
     model = PowerBeutler2017(recon=True, isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.NONE, marg="full")
 

@@ -8,7 +8,7 @@ from scipy.interpolate import splev, splrep
 
 
 class PowerSeo2016(PowerSpectrumFit):
-    """ P(k) model inspired from Seo 2016.
+    """P(k) model inspired from Seo 2016.
 
     See https://ui.adsabs.harvard.edu/abs/2016MNRAS.460.2453S for details.
     """
@@ -183,7 +183,7 @@ class PowerSeo2016(PowerSpectrumFit):
             self.add_param(f"a{{{pole}}}_5", f"$a_{{{pole},5}}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None):
-        """ Computes the power spectrum model using the Seo et. al., 2016 method
+        """Computes the power spectrum model using the Seo et. al., 2016 method
 
         Parameters
         ----------
