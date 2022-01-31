@@ -110,7 +110,6 @@ class CorrelationFunction(Dataset, ABC):
         return ss[self.mask], xi_rebinned, self.mask
 
     def set_cov(self, fake_diag=False):
-        print(fake_diag)
         covname = "post-recon cov" if self.recon else "pre-recon cov"
         if covname in self.data_obj:
             npoles = len(self.poles)

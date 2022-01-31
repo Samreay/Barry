@@ -4,6 +4,7 @@ hpc_submit_command: sbatch
 # Determine job run time and resources
 hpcs:
   getafix:
+    account: smp
     conda_env: Barry
     job_script_name: getafix
     num_fits_per_job: 1
@@ -11,6 +12,7 @@ hpcs:
     fort_compile_module: intel/2018.1.163
 
   nersc:
+    account: desi
     conda_env: cosmopipe
     job_script_name: nersc
     num_fits_per_job: 4

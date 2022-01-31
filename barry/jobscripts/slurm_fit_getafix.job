@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH -J {name}
-#SBATCH -p smp
+#SBATCH -p {account}
 #SBATCH --array=1-{num_tasks}%{num_concurrent}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1

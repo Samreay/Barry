@@ -3,7 +3,7 @@
 #SBATCH --qos=shared
 #SBATCH -C haswell
 #SBATCH --ntasks=20
-#SBATCH --account=desi
+#SBATCH --account={account}
 #SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=4GB

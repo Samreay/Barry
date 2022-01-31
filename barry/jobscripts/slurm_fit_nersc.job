@@ -4,13 +4,14 @@
 #SBATCH -C haswell
 #SBATCH --array=1-{num_tasks}%{num_concurrent}
 #SBATCH --ntasks={num_fits_per_job}
-#SBATCH --account=desi
+#SBATCH --account={account}
 #SBATCH --cpus-per-task=2
 #SBATCH --nodes=1
 #SBATCH --mem=8GB
 #SBATCH -t 24:00:00
 #SBATCH -o {output_dir}/{name}.o%j
 
+source ~/.bashrc.ext
 IDIR={directory}
 conda deactivate
 conda activate {conda_env}
