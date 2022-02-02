@@ -20,9 +20,9 @@ class PowerSpectrumFit(Model):
         fix_params=("om"),
         postprocess=None,
         smooth=False,
+        recon=None,
         correction=None,
         isotropic=True,
-        poly_poles=(0, 2),
         marg=None,
     ):
         """Generic power spectrum function model
@@ -43,10 +43,18 @@ class PowerSpectrumFit(Model):
             Defaults to `Correction.SELLENTIN
         """
         super().__init__(name, postprocess=postprocess, correction=correction, isotropic=isotropic, marg=marg)
-        self.poly_poles = poly_poles
         self.smooth_type = smooth_type.lower()
         if not validate_smooth_method(smooth_type):
             exit(0)
+
+        self.recon = False
+        self.recon_type = "None"
+        if recon is not None:
+            if recon.lower() != "None":
+                self.recon_type = "iso"
+                if recon.lower() == "ani":
+                    self.recon_type = "ani"
+                self.recon = True
 
         self.declare_parameters()
         self.set_fix_params(fix_params)
@@ -56,6 +64,10 @@ class PowerSpectrumFit(Model):
 
         self.nmu = 100
         self.mu = np.linspace(0.0, 1.0, self.nmu)
+
+        self.kvals = None
+        self.pksmooth = None
+        self.pkratio = None
 
     def set_data(self, data, parent=False):
         """Sets the models data, including fetching the right cosmology and PT generator.
@@ -169,7 +181,7 @@ class PowerSpectrumFit(Model):
             pk2 = 2.5 * (pk2 - pk0)
         return pk0, pk2, pk4
 
-    def compute_power_spectrum(self, k, p, smooth=False, for_corr=False):
+    def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None):
         """Get raw ks and p(k) multipoles for a given parametrisation dilated based on the values of alpha and epsilon
 
         Parameters
@@ -192,36 +204,76 @@ class PowerSpectrumFit(Model):
             the model quadrupole interpolated using the dilation scales. Will be 'None' if the model is isotropic
 
         """
-        ks = self.camb.ks
-        pk_smooth, pk_ratio = self.compute_basic_power_spectrum(p["om"])
+        # Get the basic power spectrum components
+        if self.kvals is None or self.pksmooth is None or self.pkratio is None:
+            ks = self.camb.ks
+            pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
+        else:
+            ks = self.kvals
+            pk_smooth_lin, pk_ratio = self.pksmooth, self.pkratio
 
-        # Work out the dilated values for the power spectra
+        # We split for isotropic and anisotropic here for consistency with our previous isotropic convention, which
+        # differs from our implementation of the Beutler2017 isotropic model quite a bit. This results in some duplication
+        # of code and a few nested if statements, but it's perhaps more readable and a little faster (because we only
+        # need one interpolation for the whole isotropic monopole, rather than separately for the smooth and wiggle components)
+        pk = [np.zeros(len(k)), np.zeros(len(k)), np.zeros(len(k))]
+
         if self.isotropic:
             kprime = k if for_corr else k / p["alpha"]
+            pk_smooth = splev(kprime, splrep(ks, pk_smooth_lin))
+            if not for_corr:
+                pk_smooth *= p["b"]
+
+            if smooth:
+                pk[0] = pk_smooth if for_corr else pk_smooth
+            else:
+                # Compute the propagator
+                C = np.ones(len(ks))
+                propagator = splev(kprime, splrep(ks, (1.0 + pk_ratio * C)))
+                pk[0] = pk_smooth * propagator
+
+            poly = np.zeros((1, len(k)))
+            if self.marg:
+                prefac = np.ones(len(kprime)) if smooth else propagator
+                poly = prefac * [pk_smooth]
+
         else:
+
             epsilon = 0 if for_corr else p["epsilon"]
-            kprime = np.tile(k, (self.nmu, 1)) if for_corr else np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
+            kprime = np.tile(k, (self.nmu, 1)).T if for_corr else np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
             muprime = self.mu if for_corr else self.get_muprime(epsilon)
+            if self.recon_type.lower() == "iso":
+                kaiser_prefac = 1.0 + p["beta"] * muprime ** 2 * (1.0 - splev(kprime, splrep(self.camb.ks, self.camb.smoothing_kernel)))
+            else:
+                kaiser_prefac = 1.0 + p["beta"] * muprime ** 2
+            pk_smooth = kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin))
+            if not for_corr:
+                pk_smooth *= p["b"]
 
-        if smooth:
-            pkprime = p["b"] * splev(kprime, splrep(ks, pk_smooth))
-        else:
-            pkprime = p["b"] * splev(kprime, splrep(ks, pk_smooth * (1 + pk_ratio)))
-
-        # Get the multipoles
-        if self.isotropic:
-            pk0 = pkprime
-            pk2 = None
-            pk4 = None
-        else:
-            growth = p["f"]
-            s = self.camb.smoothing_kernel
-            kaiser_prefac = 1.0 + growth / np.sqrt(p["b"]) * np.outer(1.0 - s, muprime ** 2)
-            pk2d = kaiser_prefac * pkprime
+            # Compute the propagator
+            if smooth:
+                pk2d = pk_smooth
+            else:
+                C = np.ones(len(ks))
+                pk2d = pk_smooth * (1.0 + splev(kprime, splrep(ks, pk_ratio)) * C)
 
             pk0, pk2, pk4 = self.integrate_mu(pk2d)
 
-        return kprime, pk0, pk2, pk4, np.zeros((1, len(k)))
+            # Polynomial shape
+            pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4]
+
+            if for_corr:
+                poly = None
+                kprime = k
+            else:
+                if self.marg:
+                    poly = np.zeros((1, 5, len(k)))
+                    poly[0, :, :] = pk
+                    pk = [np.zeros(len(k))] * 5
+                else:
+                    poly = np.zeros((1, 5, len(k)))
+
+        return kprime, pk, poly
 
     def adjust_model_window_effects(self, pk_generated, data, window=True, wide_angle=True):
         """Take the window effects into account.

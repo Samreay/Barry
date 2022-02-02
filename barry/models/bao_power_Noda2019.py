@@ -25,11 +25,12 @@ class PowerNoda2019(PowerSpectrumFit):
         gammaval=None,
         smooth_type="hinton2017",
         nonlinear_type="spt",
-        recon=False,
+        recon=None,
         postprocess=None,
         smooth=False,
         correction=None,
         isotropic=True,
+        marg=None,
     ):
         self.recon = recon
         if gammaval is None:
@@ -38,15 +39,24 @@ class PowerNoda2019(PowerSpectrumFit):
             else:
                 gammaval = 1.0
 
+        if marg is not None:
+            raise NotImplementedError("Analytic marginalisation not possible for Noda2019 model as there are no linear order parameters")
+
         super().__init__(
             name=name,
             fix_params=fix_params,
             smooth_type=smooth_type,
             postprocess=postprocess,
+            recon=recon,
             smooth=smooth,
             correction=correction,
             isotropic=isotropic,
+            marg=marg,
         )
+
+        if self.recon_type == "ani":
+            raise NotImplementedError("Anisotropic reconstruction not yet available for Noda2019 model")
+
         self.set_default("gamma", gammaval)
 
         self.nonlinear_type = nonlinear_type.lower()
@@ -253,7 +263,7 @@ class PowerNoda2019(PowerSpectrumFit):
 
     def declare_parameters(self):
         super().declare_parameters()
-        self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure
+        self.add_param("beta", r"$\beta$", 0.01, 4.0, 0.5)  # RSD parameter f/b
         self.add_param("gamma", r"$\gamma_{rec}$", 1.0, 8.0, 1.0)  # Describes the sharpening of the BAO post-reconstruction
         self.add_param("A", r"$A$", -10, 30.0, 10)  # Fingers-of-god damping
 
@@ -287,12 +297,16 @@ class PowerNoda2019(PowerSpectrumFit):
         """
 
         # Get the basic power spectrum components
-        ks = self.camb.ks
-        pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
-
-        pk = [np.zeros(len(k)), np.zeros(len(k)), np.zeros(len(k))]
+        if self.kvals is None or self.pksmooth is None or self.pkratio is None:
+            ks = self.camb.ks
+            pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
+        else:
+            ks = self.kvals
+            pk_smooth_lin, pk_ratio = self.pksmooth, self.pkratio
 
         if self.isotropic:
+
+            pk = [np.zeros(len(k))]
 
             kprime = k / p["alpha"]
 
@@ -301,13 +315,13 @@ class PowerNoda2019(PowerSpectrumFit):
 
             # Lets round some things for the sake of numerical speed (to hit the cache more often
             om = np.round(p["om"], decimals=5)
-            growth = np.round(p["f"], decimals=5)
+            growth = np.round(p["beta"] * p["b"], decimals=5)
             gamma = np.round(p["gamma"], decimals=5)
 
             if self.recon:
-                kaiser_prefac = 1.0 + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel)
+                kaiser_prefac = 1.0 + np.outer(p["beta"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel)
             else:
-                kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T
+                kaiser_prefac = 1.0 + np.tile(p["beta"] * self.mu ** 2, (len(ks), 1)).T
 
             # Compute the non-linear correction to the smooth power spectrum
             p_dd, p_dt, p_tt = self.get_nonlinear(growth, om)
@@ -321,7 +335,7 @@ class PowerNoda2019(PowerSpectrumFit):
                 propagator = self.get_damping(growth, om, gamma)
                 pk1d = integrate.simps(pk_smooth * ((1.0 + pk_ratio * propagator) * kaiser_prefac ** 2 + pk_nonlinear), self.mu, axis=0)
 
-            poly = np.zeros(len(k))
+            poly = np.zeros((1, len(k)))
             pk[0] = splev(kprime, splrep(ks, pk1d))
 
         else:
@@ -333,14 +347,14 @@ class PowerNoda2019(PowerSpectrumFit):
 
             # Lets round some things for the sake of numerical speed
             om = np.round(p["om"], decimals=5)
-            growth = np.round(p["f"], decimals=5)
+            growth = np.round(p["beta"] * p["b"], decimals=5)
             gamma = np.round(p["gamma"], decimals=5)
 
             if self.recon:
                 sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel))
-                kaiser_prefac = 1.0 + growth / p["b"] * muprime ** 2 * (1.0 - sprime)
+                kaiser_prefac = 1.0 + p["beta"] * muprime ** 2 * (1.0 - sprime)
             else:
-                kaiser_prefac = 1.0 + growth / p["b"] * muprime ** 2
+                kaiser_prefac = 1.0 + p["beta"] * muprime ** 2
 
             # Compute the non-linear correction to the smooth power spectrum
             p_dd_spline, p_dt_spline, p_tt_spline = self.get_nonlinear_aniso(growth, om)
@@ -365,18 +379,17 @@ class PowerNoda2019(PowerSpectrumFit):
 
             pk0, pk2, pk4 = self.integrate_mu(pk2d)
 
-            # Polynomial shape
-            pk = [pk0, pk2, pk4]
-            poly = np.zeros((1, 3, len(k)))
+            pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4]
+            poly = np.zeros((1, 5, len(k)))
 
-        return kprime, pk[0], pk[1], pk[2], poly
+        return kprime, pk, poly
 
 
 if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_NGC
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12
     from barry.postprocessing import BAOExtractor
     from barry.config import setup_logging
     from barry.models.model import Correction
@@ -387,24 +400,19 @@ if __name__ == "__main__":
     postprocess = BAOExtractor(147.6)
 
     # TODO: Make sanity check make sense for BAOEXtracted measurements. Plot is not really useful.
-
-    print("Checking pre-recon")
-    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=False, postprocess=postprocess)
-    model_pre = PowerNoda2019(recon=False, postprocess=postprocess)
-    model_pre.sanity_check(dataset)
-
-    print("Checking post-recon")
-    dataset = PowerSpectrum_SDSS_DR12_Z061_NGC(recon=True, postprocess=postprocess)
-    model_post = PowerNoda2019(recon=True, postprocess=postprocess)
-    model_post.sanity_check(dataset)
     """
 
     print("Checking isotropic mock mean")
-    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=True, recon=True)
-    model = PowerNoda2019(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
+    dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
+    model = PowerNoda2019(recon=dataset.recon, marg=None, isotropic=dataset.isotropic, correction=Correction.HARTLAP)
     model.sanity_check(dataset)
 
     print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, recon=True, fit_poles=[0, 2, 4])
-    model = PowerNoda2019(recon=dataset.recon, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
+    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
+    model = PowerNoda2019(
+        recon=dataset.recon,
+        isotropic=dataset.isotropic,
+        marg=None,
+        correction=Correction.HARTLAP,
+    )
     model.sanity_check(dataset)

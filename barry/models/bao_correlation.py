@@ -42,7 +42,7 @@ class CorrelationFunctionFit(Model):
         """
         super().__init__(name, correction=correction, isotropic=isotropic, marg=marg)
         self.parent = PowerSpectrumFit(
-            fix_params=fix_params, smooth_type=smooth_type, correction=correction, isotropic=isotropic, poly_poles=poly_poles, marg=marg
+            fix_params=fix_params, smooth_type=smooth_type, correction=correction, isotropic=isotropic, marg=marg
         )
         self.poly_poles = poly_poles
         self.smooth_type = smooth_type.lower()
@@ -351,11 +351,10 @@ class CorrelationFunctionFit(Model):
         Returns
         -------
         xi_model : np.ndarray
-            The concatenated xi_{\ell}(s) predictions at the dilated distances given p and data['dist']
+            The concatenated xi_{\\ell}(s) predictions at the dilated distances given p and data['dist']
         poly_model : np.ndarray
             the functions describing any polynomial terms, used for analytical marginalisation
             k values correspond to d['dist']
-
         """
 
         dist, xis, poly = self.compute_correlation_function(d["dist"], p, smooth=smooth)

@@ -19,7 +19,7 @@ class PowerDing2018(PowerSpectrumFit):
         name="Pk Ding 2018",
         fix_params=("om", "beta"),
         smooth_type="hinton2017",
-        recon=False,
+        recon=None,
         postprocess=None,
         smooth=False,
         correction=None,
@@ -28,16 +28,6 @@ class PowerDing2018(PowerSpectrumFit):
         marg=None,
     ):
 
-        self.recon = False
-        self.recon_type = "None"
-        if recon is not None:
-            if recon.lower() != "None":
-                self.recon_type = "iso"
-                if recon.lower() == "ani":
-                    self.recon_type = "ani"
-                    raise NotImplementedError("Anisotropic reconstruction not yet available for Ding2018 model")
-                self.recon = True
-
         if isotropic:
             poly_poles = [0]
         if marg is not None:
@@ -45,17 +35,22 @@ class PowerDing2018(PowerSpectrumFit):
             for pole in poly_poles:
                 fix_params.extend([f"a{{{pole}}}_1", f"a{{{pole}}}_2", f"a{{{pole}}}_3", f"a{{{pole}}}_4", f"a{{{pole}}}_5"])
 
+        self.poly_poles = poly_poles
+
         super().__init__(
             name=name,
             fix_params=fix_params,
             smooth_type=smooth_type,
             postprocess=postprocess,
+            recon=recon,
             smooth=smooth,
             correction=correction,
             isotropic=isotropic,
-            poly_poles=poly_poles,
             marg=marg,
         )
+
+        if self.recon_type == "ani":
+            raise NotImplementedError("Anisotropic reconstruction not yet available for Seo2016 model")
 
         if self.marg:
             for pole in self.poly_poles:
@@ -64,10 +59,6 @@ class PowerDing2018(PowerSpectrumFit):
                 self.set_default(f"a{{{pole}}}_3", 0.0)
                 self.set_default(f"a{{{pole}}}_4", 0.0)
                 self.set_default(f"a{{{pole}}}_5", 0.0)
-
-        self.kvals = None
-        self.pksmooth = None
-        self.pkratio = None
 
     def precompute(self, camb, om, h0):
 
@@ -215,9 +206,9 @@ class PowerDing2018(PowerSpectrumFit):
             ks = self.kvals
             pk_smooth_lin, pk_ratio = self.pksmooth, self.pkratio
 
-        pk = [np.zeros(len(k)), np.zeros(len(k)), np.zeros(len(k))]
-
         if self.isotropic:
+
+            pk = [np.zeros(len(k))]
 
             kprime = k if for_corr else k / p["alpha"]
 

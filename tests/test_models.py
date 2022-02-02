@@ -8,7 +8,7 @@ from tests.utils import get_concrete
 import numpy as np
 
 
-class TestDataset:
+class TestModels:
     classes = get_concrete(Model)
     concrete = []
     num_start = 100

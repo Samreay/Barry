@@ -24,15 +24,6 @@ class PowerBeutler2017_3poly(PowerSpectrumFit):
         marg=None,
     ):
 
-        self.recon = False
-        self.recon_type = "None"
-        if recon is not None:
-            if recon.lower() is not "None":
-                self.recon_type = "iso"
-                if recon.lower() == "ani":
-                    self.recon_type = "ani"
-                self.recon = True
-
         if isotropic:
             poly_poles = [0]
         if marg is not None:
@@ -40,15 +31,18 @@ class PowerBeutler2017_3poly(PowerSpectrumFit):
             fix_params.extend(["b"])
             for pole in poly_poles:
                 fix_params.extend([f"a{{{pole}}}_1", f"a{{{pole}}}_2", f"a{{{pole}}}_3"])
+
+        self.poly_poles = poly_poles
+
         super().__init__(
             name=name,
             fix_params=fix_params,
             smooth_type=smooth_type,
             postprocess=postprocess,
+            recon=recon,
             smooth=smooth,
             correction=correction,
             isotropic=isotropic,
-            poly_poles=poly_poles,
             marg=marg,
         )
         if self.marg:
@@ -57,10 +51,6 @@ class PowerBeutler2017_3poly(PowerSpectrumFit):
                 self.set_default(f"a{{{pole}}}_1", 0.0)
                 self.set_default(f"a{{{pole}}}_2", 0.0)
                 self.set_default(f"a{{{pole}}}_3", 0.0)
-
-        self.kvals = None
-        self.pksmooth = None
-        self.pkratio = None
 
     def declare_parameters(self):
         super().declare_parameters()
@@ -114,9 +104,9 @@ class PowerBeutler2017_3poly(PowerSpectrumFit):
         # differs from our implementation of the Beutler2017 isotropic model quite a bit. This results in some duplication
         # of code and a few nested if statements, but it's perhaps more readable and a little faster (because we only
         # need one interpolation for the whole isotropic monopole, rather than separately for the smooth and wiggle components)
-        pk = [np.zeros(len(k)), np.zeros(len(k)), np.zeros(len(k))]
 
         if self.isotropic:
+            pk = [np.zeros(len(k))]
             kprime = k if for_corr else k / p["alpha"]
             fog = 1.0 / (1.0 + kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
             pk_smooth = splev(kprime, splrep(ks, pk_smooth_lin)) * fog

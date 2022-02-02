@@ -59,7 +59,6 @@ class CorrBeutler2017(CorrelationFunctionFit):
             smooth=smooth,
             correction=correction,
             isotropic=isotropic,
-            poly_poles=poly_poles,
             marg=marg,
         )
         if self.marg:
