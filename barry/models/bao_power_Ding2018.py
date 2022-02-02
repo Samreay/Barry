@@ -17,7 +17,7 @@ class PowerDing2018(PowerSpectrumFit):
     def __init__(
         self,
         name="Pk Ding 2018",
-        fix_params=("om", "f"),
+        fix_params=("om", "beta"),
         smooth_type="hinton2017",
         recon=False,
         postprocess=None,
@@ -28,8 +28,16 @@ class PowerDing2018(PowerSpectrumFit):
         marg=None,
     ):
 
-        self.recon = recon
-        self.recon_smoothing_scale = None
+        self.recon = False
+        self.recon_type = "None"
+        if recon is not None:
+            if recon.lower() != "None":
+                self.recon_type = "iso"
+                if recon.lower() == "ani":
+                    self.recon_type = "ani"
+                    raise NotImplementedError("Anisotropic reconstruction not yet available for Ding2018 model")
+                self.recon = True
+
         if isotropic:
             poly_poles = [0]
         if marg is not None:
@@ -160,9 +168,9 @@ class PowerDing2018(PowerSpectrumFit):
 
     def declare_parameters(self):
         super().declare_parameters()
-        self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure
+        self.add_param("beta", r"$\beta$", 0.01, 4.0, 0.5)  # RSD parameter f/b
         self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
-        self.add_param("b_delta", r"$b_{\delta}$", 0.01, 10.0, 5.0)  # Non-linear galaxy bias
+        self.add_param("b_delta", r"$b_{\delta}$", -5.0, 5.0, 0.0)  # Non-linear galaxy bias
         for pole in self.poly_poles:
             self.add_param(f"a{{{pole}}}_1", f"$a_{{{pole},1}}$", -20000.0, 20000.0, 0)  # Monopole Polynomial marginalisation 1
             self.add_param(f"a{{{pole}}}_2", f"$a_{{{pole},2}}$", -20000.0, 20000.0, 0)  # Monopole Polynomial marginalisation 2
@@ -211,24 +219,27 @@ class PowerDing2018(PowerSpectrumFit):
 
         if self.isotropic:
 
-            kprime = k / p["alpha"]
+            kprime = k if for_corr else k / p["alpha"]
 
             # Compute the smooth model
             fog = 1.0 / (1.0 + np.outer(self.mu ** 2, ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
             pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
 
             # Polynomial shape
-            if self.recon:
-                shape = p["a{0}_1"] * ks ** 2 + p["a{0}_2"] + p["a{0}_3"] / ks + p["a{0}_4"] / (ks * ks) + p["a{0}_5"] / (ks ** 3)
+            if for_corr:
+                shape = np.zeros(len(ks))
             else:
-                shape = p["a{0}_1"] * ks + p["a{0}_2"] + p["a{0}_3"] / ks + p["a{0}_4"] / (ks * ks) + p["a{0}_5"] / (ks ** 3)
+                if self.recon:
+                    shape = p["a{0}_1"] * ks ** 2 + p["a{0}_2"] + p["a{0}_3"] / ks + p["a{0}_4"] / (ks * ks) + p["a{0}_5"] / (ks ** 3)
+                else:
+                    shape = p["a{0}_1"] * ks + p["a{0}_2"] + p["a{0}_3"] / ks + p["a{0}_4"] / (ks * ks) + p["a{0}_5"] / (ks ** 3)
 
             if smooth:
                 propagator = np.zeros(len(ks))
             else:
                 # Lets round some things for the sake of numerical speed
                 om = np.round(p["om"], decimals=5)
-                growth = np.round(p["f"], decimals=5)
+                growth = np.round(p["b"] * p["beta"], decimals=5)
 
                 # Compute the BAO damping
                 if self.recon:
@@ -239,7 +250,7 @@ class PowerDing2018(PowerSpectrumFit):
                     smooth_prefac = np.tile(self.camb.smoothing_kernel / p["b"], (self.nmu, 1))
                     bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
                     kaiser_prefac = (
-                        1.0 - smooth_prefac + np.outer(growth / p["b"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel) + bdelta_prefac
+                        1.0 - smooth_prefac + np.outer(p["beta"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel) + bdelta_prefac
                     )
                     propagator = (
                         (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping_dd
@@ -249,7 +260,7 @@ class PowerDing2018(PowerSpectrumFit):
                 else:
                     damping = self.get_damping(growth, om)
                     bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks ** 2, (self.nmu, 1))
-                    kaiser_prefac = 1.0 + np.tile(growth / p["b"] * self.mu ** 2, (len(ks), 1)).T + bdelta_prefac
+                    kaiser_prefac = 1.0 + np.tile(p["beta"] * self.mu ** 2, (len(ks), 1)).T + bdelta_prefac
                     propagator = (kaiser_prefac ** 2 - bdelta_prefac ** 2) * damping
 
             poly = np.zeros((1, len(k)))
@@ -269,16 +280,16 @@ class PowerDing2018(PowerSpectrumFit):
 
         else:
             epsilon = np.round(p["epsilon"], decimals=5)
-            kprime = np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
+            kprime = np.tile(k, (self.nmu, 1)).T if for_corr else np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
             muprime = self.get_muprime(epsilon)
             fog = 1.0 / (1.0 + muprime ** 2 * kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
 
             # Lets round some things for the sake of numerical speed
             om = np.round(p["om"], decimals=5)
-            growth = np.round(p["f"], decimals=5)
+            growth = np.round(p["b"] * p["beta"], decimals=5)
 
             sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel))
-            kaiser_prefac = 1.0 + growth / p["b"] * muprime ** 2 * (1.0 - sprime)
+            kaiser_prefac = 1.0 + p["beta"] * muprime ** 2 * (1.0 - sprime)
 
             pk_smooth = p["b"] ** 2 * kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
 
@@ -331,15 +342,12 @@ class PowerDing2018(PowerSpectrumFit):
                 kprime = k
             else:
                 if self.marg:
-                    poly = np.zeros((5 * len(self.poly_poles) + 1, 5, len(k)))
-                    poly[0, :, :] = pk
+                    poly = np.zeros((5 * len(self.poly_poles), 5, len(k)))
                     for i, pole in enumerate(self.poly_poles):
                         if self.recon:
-                            poly[5 * i + 1 : 5 * (i + 1) + 1, pole] = [k ** 2, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
+                            poly[5 * i : 5 * (i + 1), pole] = [k ** 2, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
                         else:
-                            poly[5 * i + 1 : 5 * (i + 1) + 1, pole] = [k, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
-
-                    pk = [np.zeros(len(k))] * 5
+                            poly[5 * i : 5 * (i + 1), pole] = [k, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
 
                 else:
                     poly = np.zeros((1, 5, len(k)))
@@ -368,25 +376,24 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_NGC
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12
     from barry.config import setup_logging
     from barry.models.model import Correction
 
     setup_logging()
 
     print("Checking isotropic mock mean")
-    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=True, recon=True)
-    model = PowerDing2018(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
+    dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
+    model = PowerDing2018(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP)
     model.sanity_check(dataset)
 
     print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, recon=True, fit_poles=[0, 1, 2, 3, 4])
+    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
     model = PowerDing2018(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
-        fix_params=["om"],
-        poly_poles=[0, 1, 2, 3, 4],
+        poly_poles=[0, 2, 4],
         correction=Correction.HARTLAP,
     )
     model.sanity_check(dataset)

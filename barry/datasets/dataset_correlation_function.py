@@ -25,11 +25,13 @@ class CorrelationFunction_SDSS_DR12_Z061_NGC:
 
 
 class CorrelationFunction_ROSS_DR12(CorrelationFunction):
-    """ Anisotropic Correlation function for SDSS BOSS DR12 sample from Ross 2017 with mean redshift z = 0.38    """
+    """Anisotropic Correlation function for SDSS BOSS DR12 sample from Ross 2017 with mean redshifts z = 0.38, 0.51 and 0.61.
+    Only contains reconstructed data and a covariance matrix (no mocks and no pre-recon), for the monopole and quadrupole.
+    """
 
     def __init__(
         self,
-        redshift_bin=1,
+        redshift_bin=3,
         name=None,
         min_dist=30.0,
         max_dist=200.0,
@@ -49,8 +51,10 @@ class CorrelationFunction_ROSS_DR12(CorrelationFunction):
             raise NotImplementedError("Only monopole and quadrupole included in ROSS_DR12")
 
         if realisation is not None:
-            if realisation.lower() != "data":
+            if isinstance(realisation, int):
                 raise NotImplementedError("Only data (no mocks) available for ROSS_DR12")
+            elif realisation.lower() != "data":
+                raise ValueError("Realisation is set to a string, but not 'data'")
         else:
             raise NotImplementedError("Only data (no mocks) available for ROSS_DR12")
 
@@ -136,7 +140,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
-    # Plot the data and mock average for the desi_mock_challenge_post_stage_2 spectra
+    # Plot the data for the ROSS DR12 Correlation function
     for j, recon in enumerate(["iso"]):
         for redshift_bin in [1, 2, 3]:
             dataset = CorrelationFunction_ROSS_DR12(

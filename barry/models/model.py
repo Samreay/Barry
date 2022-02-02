@@ -10,6 +10,7 @@ from scipy.special import loggamma
 from scipy.optimize import basinhopping, differential_evolution
 from enum import Enum, unique
 from dataclasses import dataclass
+from functools import lru_cache
 
 
 from barry.cosmology.camb_generator import Omega_m_z, getCambGenerator
@@ -83,7 +84,7 @@ class Model(ABC):
         if postprocess is not None and not self.isotropic:
             raise NotImplementedError("Postprocessing (i.e., BAOExtractor) not implemented for anisotropic fits")
         if correction is None:
-            correction = Correction.SELLENTIN
+            correction = Correction.NONE
         self.correction = correction
         self.correction_data = {}  # Empty dict to store correction specific data for speeding up computation
         assert isinstance(self.correction, Correction), "Correction should be an enum of Correction"
@@ -399,6 +400,45 @@ class Model(ABC):
         bband = F2inv @ F11
 
         return bband
+
+    def get_alphas(self, alpha, epsilon):
+        """Computes values of alpha_par and alpha_perp from the input values of alpha and epsilon
+
+        Parameters
+        ----------
+        alpha : float
+            The isotropic dilation scale
+        epsilon: float
+            The anisotropic warping
+
+        Returns
+        -------
+        alpha_par : float
+            The dilation scale parallel to the line-of-sight
+        alpha_perp : float
+            The dilation scale perpendicular to the line-of-sight
+
+        """
+        return alpha * (1.0 + epsilon) ** 2, alpha / (1.0 + epsilon)
+
+    @lru_cache(maxsize=32)
+    def get_muprime(self, epsilon):
+        """Computes dilated values of mu given input values of epsilon for the power spectrum
+
+        Parameters
+        ----------
+        epsilon: float
+            The anisotropic warping
+
+        Returns
+        -------
+        muprime : np.ndarray
+            The dilated mu values
+
+        """
+        musq = self.mu ** 2
+        muprime = self.mu / np.sqrt(musq + (1.0 + epsilon) ** 6 * (1.0 - musq))
+        return muprime
 
     def get_raw_start(self):
         """ Gets a uniformly distributed starting point between parameter min and max constraints """

@@ -94,11 +94,12 @@ class PowerSpectrumFit(Model):
         cambpk = self.camb.get_data(om=c["om"], h0=c["h0"])
         modelpk = splev(kval, splrep(cambpk["ks"], cambpk["pk_lin"]))
         kaiserfac = datapk / modelpk
-        f = self.param_dict.get("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
+        f = self.get_default("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
         b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f ** 2)
-        min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
-        self.set_default("b", b ** 2, min=min_b ** 2, max=max_b ** 2)
-        self.logger.info(f"Setting default bias to b={b:0.5f} with {width:0.5f} fractional width")
+        if not self.marg:
+            min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
+            self.set_default("b", b ** 2, min=min_b ** 2, max=max_b ** 2)
+            self.logger.info(f"Setting default bias to b={b:0.5f} with {width:0.5f} fractional width")
         if self.param_dict.get("beta") is not None:
             beta, beta_min, beta_max = f / b, (1.0 - width) * f / b, (1.0 + width) * f / b
             self.set_default("beta", beta, beta_min, beta_max)
@@ -137,26 +138,6 @@ class PowerSpectrumFit(Model):
         pk_ratio = res["pk_lin"] / pk_smooth_lin - 1.0  # Get the ratio
         return pk_smooth_lin, pk_ratio
 
-    def get_alphas(self, alpha, epsilon):
-        """Computes values of alpha_par and alpha_perp from the input values of alpha and epsilon
-
-        Parameters
-        ----------
-        alpha : float
-            The isotropic dilation scale
-        epsilon: float
-            The anisotropic warping
-
-        Returns
-        -------
-        alpha_par : float
-            The dilation scale parallel to the line-of-sight
-        alpha_perp : float
-            The dilation scale perpendicular to the line-of-sight
-
-        """
-        return alpha * (1.0 + epsilon) ** 2, alpha / (1.0 + epsilon)
-
     @lru_cache(maxsize=32)
     def get_kprimefac(self, epsilon):
         """Computes the prefactor to dilate a k value given epsilon, such that kprime = k * kprimefac / alpha
@@ -176,25 +157,6 @@ class PowerSpectrumFit(Model):
         epsilonsq = (1.0 + epsilon) ** 2
         kprimefac = np.sqrt(musq / epsilonsq ** 2 + (1.0 - musq) * epsilonsq)
         return kprimefac
-
-    @lru_cache(maxsize=32)
-    def get_muprime(self, epsilon):
-        """Computes dilated values of mu given input values of epsilon for the power spectrum
-
-        Parameters
-        ----------
-        epsilon: float
-            The anisotropic warping
-
-        Returns
-        -------
-        muprime : np.ndarray
-            The dilated mu values
-
-        """
-        musq = self.mu ** 2
-        muprime = self.mu / np.sqrt(musq + (1.0 + epsilon) ** 6 * (1.0 - musq))
-        return muprime
 
     def integrate_mu(self, pk2d, isotropic=False):
         pk0 = simps(pk2d, self.mu, axis=1)
@@ -489,8 +451,8 @@ class PowerSpectrumFit(Model):
             bband = self.get_ML_nuisance(
                 self.data[0]["pk"], mod_fit, mod_fit_odd, polymod_fit, polymod_fit_odd, self.data[0]["icov"], self.data[0]["icov_m_w"]
             )
-            mod += mod_odd + bband @ (polymod + polymod_odd)
-            mod_fit += mod_fit_odd + bband @ (polymod_fit + polymod_fit_odd)
+            mod = mod + mod_odd + bband @ (polymod + polymod_odd)
+            mod_fit = mod_fit + mod_fit_odd + bband @ (polymod_fit + polymod_fit_odd)
 
             print(len(self.get_active_params()) + len(bband))
             print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
@@ -515,10 +477,10 @@ class PowerSpectrumFit(Model):
                 self.data[0]["icov"],
                 self.data[0]["icov_m_w"],
             )
-            smooth += smooth_odd + bband_smooth @ (polysmooth + polysmooth_odd)
+            smooth = smooth + smooth_odd + bband_smooth @ (polysmooth + polysmooth_odd)
         else:
-            mod += mod_odd
-            smooth += smooth_odd
+            mod = mod + mod_odd
+            smooth = smooth + smooth_odd
 
         # Mask the model to match the data points
         mod = mod[self.data[0]["w_mask"]]

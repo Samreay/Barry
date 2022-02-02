@@ -13,7 +13,7 @@ class PowerBeutler2017_3poly(PowerSpectrumFit):
     def __init__(
         self,
         name="Pk Beutler 2017 3poly",
-        fix_params=("om"),
+        fix_params=("om",),
         smooth_type="hinton2017",
         recon=None,
         postprocess=None,
@@ -199,39 +199,25 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_NGC, PowerSpectrum_DESIMockChallenge_Post
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12
     from barry.config import setup_logging
     from barry.models.model import Correction
 
     setup_logging()
 
-    # print("Checking isotropic mock mean")
-    # dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=True, recon=True)
-    # model = PowerBeutler2017(recon=dataset.recon, marg=None, isotropic=dataset.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
-    # model.sanity_check(dataset)
+    print("Checking isotropic mock mean")
+    dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
+    model = PowerBeutler2017_3poly(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP)
+    model.sanity_check(dataset)
 
     print("Checking anisotropic mock mean")
-    # dataset = PowerSpectrum_Beutler2019_Z061_NGC(isotropic=False, recon=True, fit_poles=[0, 2])
-    # dataset.set_realisation(0)
-    # model = PowerBeutler2017(
-    #    recon=dataset.recon,
-    #    isotropic=dataset.isotropic,
-    #    marg="full",
-    #    fix_params=["om"],
-    #    poly_poles=[0, 2],
-    #    correction=Correction.HARTLAP,
-    # )
-    # model.sanity_check(dataset)
-
-    dataset = PowerSpectrum_DESIMockChallenge_Post(
-        isotropic=False, recon=True, fit_poles=[0, 2], realisation=0, min_k=0.0074, max_k=0.1976, num_mocks=1000, type="rec-ani15"
-    )
+    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
     model = PowerBeutler2017_3poly(
-        recon="ani",
+        recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
         fix_params=["om"],
-        poly_poles=[0, 2],
-        correction=Correction.NONE,
+        poly_poles=[0, 2, 4],
+        correction=Correction.HARTLAP,
     )
     model.sanity_check(dataset)

@@ -13,7 +13,7 @@ class PowerBeutler2017(PowerSpectrumFit):
     def __init__(
         self,
         name="Pk Beutler 2017",
-        fix_params=("om"),
+        fix_params=("om",),
         smooth_type="hinton2017",
         recon=None,
         postprocess=None,
@@ -40,6 +40,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             fix_params.extend(["b"])
             for pole in poly_poles:
                 fix_params.extend([f"a{{{pole}}}_1", f"a{{{pole}}}_2", f"a{{{pole}}}_3", f"a{{{pole}}}_4", f"a{{{pole}}}_5"])
+
         super().__init__(
             name=name,
             fix_params=fix_params,
@@ -226,36 +227,25 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12_Z038_NGC, PowerSpectrum_DESIMockChallenge_Post
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12
     from barry.config import setup_logging
     from barry.models.model import Correction
 
     setup_logging()
 
+    print("Checking isotropic mock mean")
+    dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
+    model = PowerBeutler2017(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP)
+    model.sanity_check(dataset)
+
     print("Checking anisotropic mock mean")
-
-    """dataset = PowerSpectrum_SDSS_DR12_Z038_NGC(
-        isotropic=False, recon="iso", fit_poles=[0, 2], realisation=40, min_k=0.01, max_k=0.30, num_mocks=999
-    )
-    model = PowerBeutler2017(
-        recon=dataset.recon,
-        isotropic=dataset.isotropic,
-        marg="full",
-        fix_params=["om"],
-        poly_poles=[0, 2],
-        correction=Correction.HARTLAP,
-    )
-    model.sanity_check(dataset)"""
-
-    dataset = PowerSpectrum_DESIMockChallenge_Post(
-        isotropic=False, recon="ani", fit_poles=[0, 2, 4], realisation=0, min_k=0.0075, max_k=0.15, covtype="cov-fix", smoothtype="15"
-    )
+    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
     model = PowerBeutler2017(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
         fix_params=["om"],
         poly_poles=[0, 2, 4],
-        correction=Correction.NONE,
+        correction=Correction.HARTLAP,
     )
     model.sanity_check(dataset)
