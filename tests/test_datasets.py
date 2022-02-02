@@ -10,7 +10,7 @@ class TestDataset:
 
     @classmethod
     def setup_class(cls):
-        cls.concrete = [c() for c in cls.classes]
+        cls.concrete = [c() for c in cls.classes if "DESI" not in c.__name__]
 
     def test_all_datasets_define_cosmology(self):
         for c in self.concrete:
