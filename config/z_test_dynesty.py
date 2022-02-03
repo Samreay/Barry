@@ -12,8 +12,8 @@ if __name__ == "__main__":
 
     pfn, dir_name, file = setup(__file__)
 
-    data = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso", realisation=0)
-    model = PowerBeutler2017(isotropic=data.isotropic, recon=data.recon, marg=None)
+    data = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
+    model = PowerBeutler2017(isotropic=data.isotropic, recon=data.recon, marg="full")
 
     sampler = DynestySampler(temp_dir=dir_name)
 
@@ -28,6 +28,7 @@ if __name__ == "__main__":
 
         posterior, weight, chain, evidence, model, data, extra = fitter.load()[0]
         model_results, summary = get_model_comparison_dataframe(fitter)
+        print(summary)
 
         c = ChainConsumer()
         c.add_chain(chain, weights=weight, parameters=model.get_labels())

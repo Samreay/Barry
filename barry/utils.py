@@ -96,7 +96,7 @@ def get_model_comparison_dataframe(fitter):
 
         model_results[n].append(
             [
-                extra["realisation"],
+                extra["realisation"] if extra["realisation"] is not None else "Mock mean",
                 posterior[i],
                 alpha,
                 salpha,
