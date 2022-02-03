@@ -66,6 +66,11 @@ class Fitter(object):
             I often use this to name my pairs to make it convenient to load into `ChainConsumer`.
 
         """
+
+        if "realisation" not in extra_args:
+            extra_args["realisation"] = dataset.realisation
+        if "name" not in extra_args:
+            extra_args["name"] = dataset.get_name() + " + " + model.get_name()
         self.model_datasets.append((model, dataset.get_data(), extra_args))
 
     def set_num_concurrent(self, num_concurrent=None):

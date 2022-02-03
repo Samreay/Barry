@@ -32,8 +32,6 @@ class PowerSpectrum(Dataset, ABC):
         self.min_k = min_k
         self.max_k = max_k
         self.step_size = step_size
-        self.recon = recon
-        self.isotropic = isotropic
         self.postprocess = postprocess
         if postprocess is not None and not self.isotropic:
             raise NotImplementedError("Postprocessing (i.e., BAOExtractor) not implemented for anisotropic fits")
@@ -41,7 +39,7 @@ class PowerSpectrum(Dataset, ABC):
         with open(self.data_location, "rb") as f:
             self.data_obj = pickle.load(f)
         name = name or self.data_obj["name"] + " Recon" if recon else self.data_obj["name"] + " Prerecon"
-        super().__init__(name)
+        super().__init__(name, isotropic=isotropic, recon=recon, realisation=realisation)
 
         self.cosmology = self.data_obj["cosmology"]
         dataname = "post-recon data" if recon else "pre-recon data"

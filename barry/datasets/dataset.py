@@ -3,7 +3,7 @@ import logging
 
 
 class Dataset(ABC):
-    """ Abstract Dataset class.
+    """Abstract Dataset class.
 
     Concrete implementations need to implement the `get_data` method, which
     should return a length 1 array with the sole element being a dictionary
@@ -18,7 +18,10 @@ class Dataset(ABC):
 
     """
 
-    def __init__(self, name):
+    def __init__(self, name, isotropic=True, recon=None, realisation=None):
+        self.recon = recon
+        self.isotropic = isotropic
+        self.realisation = realisation
         self.name = name
         self.logger = logging.getLogger("barry")
 
@@ -26,7 +29,7 @@ class Dataset(ABC):
         return self.name
 
     def get_data(self):
-        """ Return a list of data dictionaries
+        """Return a list of data dictionaries
 
         Returns
         -------
@@ -37,7 +40,7 @@ class Dataset(ABC):
 
 
 class MultiDataset(Dataset, ABC):
-    """ Dataset wrapping multiple datasets. Used for combining *independent* datasets.
+    """Dataset wrapping multiple datasets. Used for combining *independent* datasets.
 
     Attributes
     ----------
@@ -51,7 +54,7 @@ class MultiDataset(Dataset, ABC):
         self.datasets = datasets
 
     def get_data(self):
-        """ Returns a flattened list of data from each child dataset.
+        """Returns a flattened list of data from each child dataset.
 
         Returns
         -------

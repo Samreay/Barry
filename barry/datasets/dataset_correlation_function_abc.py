@@ -30,13 +30,11 @@ class CorrelationFunction(Dataset, ABC):
         self.data_location = os.path.normpath(current_file + f"/../data/{filename}")
         self.min_dist = min_dist
         self.max_dist = max_dist
-        self.recon = recon
-        self.isotropic = isotropic
 
         with open(self.data_location, "rb") as f:
             self.data_obj = pickle.load(f)
         name = name or self.data_obj["name"] + " Recon" if recon else self.data_obj["name"] + " Prerecon"
-        super().__init__(name)
+        super().__init__(name, isotropic=isotropic, recon=recon, realisation=realisation)
 
         self.cosmology = self.data_obj["cosmology"]
         dataname = "post-recon data" if recon else "pre-recon data"
