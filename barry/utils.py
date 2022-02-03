@@ -120,7 +120,7 @@ def get_model_comparison_dataframe(fitter):
                 "realisation",
                 "posterior",
                 "alpha_avg",
-                "alpha_std",
+                +"alpha_std",
                 "alpha_max",
                 "epsilon_avg",
                 "epsilon_std",

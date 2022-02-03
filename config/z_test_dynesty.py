@@ -20,7 +20,7 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name)
     fitter.add_model_and_dataset(model, data)
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(1)
+    fitter.set_num_walkers(4)
     fitter.fit(file)
 
     if fitter.should_plot():
