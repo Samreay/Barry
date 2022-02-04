@@ -168,7 +168,7 @@ class Fitter(object):
         return shutil.which(get_config()["hpc_determining_command"]) is None
 
     def should_plot(self):
-        # Plot if we're running on the laptop, or we've passed a -1 as the only argument
+        # Plot if we're running on the laptop, or we've passed "plot" as the argument
         # to the python script on the HPC
         return self.is_local() or (len(sys.argv) == 2 and sys.argv[1] == "plot")
 

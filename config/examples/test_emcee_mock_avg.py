@@ -16,7 +16,7 @@ if __name__ == "__main__":
     data = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
     model = PowerBeutler2017(isotropic=data.isotropic, recon=data.recon, marg="full")
 
-    sampler = EnsembleSampler(num_walkers=16, num_steps=5000, num_burn=300, temp_dir=dir_name)
+    sampler = EnsembleSampler(temp_dir=dir_name)
 
     fitter = Fitter(dir_name)
     fitter.add_model_and_dataset(model, data)
