@@ -7,7 +7,7 @@
 #SBATCH --account={account}
 #SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
-#SBATCH --mem=128GB
+#SBATCH --mem-per-node=128GB
 #SBATCH -t 24:00:00
 #SBATCH -o {output_dir}/{name}.o%j
 
