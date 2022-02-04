@@ -13,7 +13,6 @@
 
 source ~/.bashrc.ext
 IDIR={directory}
-conda deactivate
 conda activate {conda_env}
 
 echo "Activated python"

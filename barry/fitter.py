@@ -199,6 +199,7 @@ class Fitter(object):
                 os.system(f"{config['hpc_submit_command']} {filename}")
             else:
                 # or if running a specific fit to a model+dataset pair
+                print(sys.argv)
                 if sys.argv[1].isdigit():
                     index = int(sys.argv[1])
                 else:
