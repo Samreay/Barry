@@ -1,5 +1,6 @@
 import sys
 
+sys.path.append("..")
 sys.path.append("../..")
 from barry.config import setup
 from barry.fitter import Fitter
