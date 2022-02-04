@@ -28,7 +28,7 @@ echo "$PROG $PARAMS"
 cd $IDIR
 sleep $((RANDOM % 5))
 
-for ((i=1;i<=END;i++)); do
+for ((i=0;i<END;i++)); do
     echo "Loop iteration $i"
     ANUM=`expr $PARAMS \* $END + $i`
     echo "Executing $executable $PROG $ANUM"
