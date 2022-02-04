@@ -187,3 +187,32 @@ def get_model_comparison_dataframe(fitter):
     )
 
     return model_results, summary
+
+
+def plot_bestfit(posterior, chain, model, name=None, figname=None):
+    """Produces a plot of the maximum a posteriori model in the chain and returns the model, parameters and chi-squared at this point
+
+    Returns
+    -------
+    chi2: float
+        The chi squared value at the maximum a posteriori point
+    bband: list
+        A list of the best-fit values for any analytically marginalised points at the maximum a posteriori point.
+    model : np.ndarray
+        The model multipoles
+    smooth : np.ndarray
+        The dewiggled model multipoles
+    """
+
+    max_post = posterior.argmax()
+    chi2 = -2 * posterior[max_post]
+
+    params = model.get_param_dict(chain[max_post])
+    for name, val in params.items():
+        model.set_default(name, val)
+
+    new_chi_squared, bband, dof, mods, smooths = model.plot(params, figname=figname, name=name)
+    if model.marg:
+        chi2 = new_chi_squared
+
+    return chi2, dof, bband, mods, smooths

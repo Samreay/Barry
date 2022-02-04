@@ -440,7 +440,7 @@ class CorrelationFunctionFit(Model):
                 d["xi"], xi_model_fit, np.zeros(xi_model_fit.shape), d["icov"], [None], num_mocks=num_mocks, num_params=num_params
             )
 
-    def plot(self, params, smooth_params=None, figname=None):
+    def plot(self, params, smooth_params=None, figname=None, name=None):
         self.logger.info("Create plot")
         import matplotlib.pyplot as plt
 
@@ -489,7 +489,8 @@ class CorrelationFunctionFit(Model):
                 num_params=len(self.get_active_params()) + len(bband),
             )
             alphas = params["alpha"] if self.isotropic else self.get_alphas(params["alpha"], params["epsilon"])
-            print(-2.0 * new_chi_squared, len(self.data[0]["xi"]), alphas)
+            dof = len(self.data[0]["xi"]) - len(self.get_active_params()) - len(bband)
+            print(-2.0 * new_chi_squared, dof, alphas)
 
             bband_smooth = self.get_ML_nuisance(
                 self.data[0]["xi"],
@@ -501,6 +502,10 @@ class CorrelationFunctionFit(Model):
                 [None],
             )
             smooth = smooth + bband_smooth @ polysmooth
+        else:
+            dof = len(self.data[0]["xi"]) - len(self.get_active_params())
+            new_chi_squared = 0.0
+            bband = None
 
         # Split up the different multipoles if we have them
         if len(err) > len(ss):
@@ -539,7 +544,11 @@ class CorrelationFunctionFit(Model):
         # Show the model parameters
         string = f"$\\mathcal{{L}}$: {self.get_likelihood(params, self.data[0]):0.3g}\n"
         if self.marg:
-            string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items() if v not in self.fix_params])
+            string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items() if l not in self.fix_params])
+            string += "\n"
+            string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items() if l is "om"])
+            string += "\n"
+            string += "\n".join([f"{self.param_dict[v].label}={bband[l-1]:0.4g}" for l, v in enumerate(self.fix_params) if v is not "om"])
         else:
             string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items()])
         va = "center" if self.postprocess is None else "top"
@@ -555,45 +564,15 @@ class CorrelationFunctionFit(Model):
             axes[0, 1].set_title("$\\xi(s) - data$")
         axes[0, 0].set_title("$s^{2} \\times \\xi(s)$")
 
-        fig.suptitle(self.data[0]["name"] + " + " + self.get_name())
+        if name is None:
+            name = self.data[0]["name"] + " + " + self.get_name()
+        fig.suptitle(name)
         if figname is not None:
             fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
-        plt.show()
+        else:
+            plt.show()
 
-        """"# Output best-fit parameters and model, with some free space to fill in the MCMC results
-        names = ["Xinyi_std", "Pedro", "Baojiu", "Xinyi_Hada", "Hee-Jong_std", "Yu-Yu_std", "Javier"]
-        name = names[6]
-        filename = str("/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/Queensland_xi_%s_bestfits.txt" % name)
-        np.savetxt(
-            filename,
-            np.c_[
-                alphas[0],
-                alphas[1],
-                0.0,
-                0.0,
-                0.0,
-                self.camb.get_data()["r_s"],
-                -2.0 * new_chi_squared,
-                len(self.data[0]["xi"]),
-                params["beta"],
-                params["sigma_s"],
-                params["sigma_nl_par"],
-                params["sigma_nl_perp"],
-                bband[0],
-                bband[1],
-                bband[2],
-                bband[3],
-                bband[4],
-                bband[5],
-                bband[6],
-                bband[7],
-            ],
-            fmt="%12.4lf %12.4lf %12.4lf %12.4lf %12.4lf %8.2lf %8.2lf %10d %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.3lf %8.4lf %8.6lf %8.3lf %8.3lf %8.3lf %8.6lf",
-            header="best_fit_alpha_par  best_fit_alpha_perp  sigma_alpha_par  sigma_alpha_perp  corr_alpha_par_perp  rd_of_template  bf_chi2  dof   beta  sigma_s  sigma_nl_par  sigma_nl_perp  b0   a0_1   a0_2   a0_3   b2   a2_1   a2_2   a2_3",
-        )
-
-        filename = str("/Volumes/Work/UQ/DESI/MockChallenge/Post_recon_BAO/Queensland_xi_%s_bestfit_model.txt" % name)
-        np.savetxt(filename, np.c_[ss, mods[0], mods[1]], fmt="%12.6lf %12.6lf %12.6lf", header="s       Xi_0       Xi_2")"""
+        return new_chi_squared, dof, bband, mods, smooths
 
 
 if __name__ == "__main__":
