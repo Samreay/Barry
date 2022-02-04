@@ -440,7 +440,7 @@ class CorrelationFunctionFit(Model):
                 d["xi"], xi_model_fit, np.zeros(xi_model_fit.shape), d["icov"], [None], num_mocks=num_mocks, num_params=num_params
             )
 
-    def plot(self, params, smooth_params=None, figname=None, name=None):
+    def plot(self, params, smooth_params=None, figname=None, title=None):
         self.logger.info("Create plot")
         import matplotlib.pyplot as plt
 
@@ -564,9 +564,9 @@ class CorrelationFunctionFit(Model):
             axes[0, 1].set_title("$\\xi(s) - data$")
         axes[0, 0].set_title("$s^{2} \\times \\xi(s)$")
 
-        if name is None:
-            name = self.data[0]["name"] + " + " + self.get_name()
-        fig.suptitle(name)
+        if title is None:
+            title = self.data[0]["name"] + " + " + self.get_name()
+        fig.suptitle(title)
         if figname is not None:
             fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
         else:

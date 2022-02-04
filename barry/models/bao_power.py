@@ -468,7 +468,7 @@ class PowerSpectrumFit(Model):
 
         return pk_model, pk_model_odd, poly_model, poly_model_odd, mask
 
-    def plot(self, params, smooth_params=None, figname=None, name=None):
+    def plot(self, params, smooth_params=None, figname=None, title=None):
         self.logger.info("Create plot")
         import matplotlib.pyplot as plt
 
@@ -603,9 +603,9 @@ class PowerSpectrumFit(Model):
             axes[0, 1].set_title("$P(k) - data$")
         axes[0, 0].set_title("$k \\times P(k)$")
 
-        if name is None:
-            name = self.data[0]["name"] + " + " + self.get_name()
-        fig.suptitle(name)
+        if title is None:
+            title = self.data[0]["name"] + " + " + self.get_name()
+        fig.suptitle(title)
         if figname is not None:
             fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
         else:

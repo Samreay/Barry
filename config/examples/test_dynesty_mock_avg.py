@@ -14,7 +14,7 @@ from barry.samplers import DynestySampler
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
-    data = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso")
+    data = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
     model = PowerBeutler2017(isotropic=data.isotropic, recon=data.recon, marg="full")
 
     sampler = DynestySampler(temp_dir=dir_name)
@@ -29,7 +29,8 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         posterior, weight, chain, evidence, model, data, extra = fitter.load()[0]
-        chi2, dof, bband, mods, smooths = plot_bestfit(posterior, chain, model, name=extra["name"], figname=pfn + "_bestfit.pdf")
+        print(extra["name"])
+        chi2, dof, bband, mods, smooths = plot_bestfit(posterior, chain, model, title=extra["name"], figname=pfn + "_bestfit.pdf")
 
         c = ChainConsumer()
         c.add_chain(chain, weights=weight, parameters=model.get_labels())

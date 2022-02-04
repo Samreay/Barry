@@ -189,7 +189,7 @@ def get_model_comparison_dataframe(fitter):
     return model_results, summary
 
 
-def plot_bestfit(posterior, chain, model, name=None, figname=None):
+def plot_bestfit(posterior, chain, model, title=None, figname=None):
     """Produces a plot of the maximum a posteriori model in the chain and returns the model, parameters and chi-squared at this point
 
     Returns
@@ -211,7 +211,7 @@ def plot_bestfit(posterior, chain, model, name=None, figname=None):
     for name, val in params.items():
         model.set_default(name, val)
 
-    new_chi_squared, bband, dof, mods, smooths = model.plot(params, figname=figname, name=name)
+    new_chi_squared, bband, dof, mods, smooths = model.plot(params, figname=figname, title=title)
     if model.marg:
         chi2 = new_chi_squared
 
