@@ -8,13 +8,15 @@ from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
 from barry.config import setup
 from barry.utils import weighted_avg_and_cov
-from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018, PowerNoda2019
-from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_NGC
+from barry.models import PowerBeutler2017
+from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019
 from barry.fitter import Fitter
 import numpy as np
 import pandas as pd
 from barry.models.model import Correction
 
+# Check to see if including the hexadecapole or higher order multipoles gives tighter constraints on BAO parameters
+# when fitting all individual mocks
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
@@ -32,10 +34,10 @@ if __name__ == "__main__":
         t = "Recon" if r else "Prerecon"
         ls = "-" if r else "--"
 
-        d_quad = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 2])
-        d_odd = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 1, 2])
-        d_hexa = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 2, 4])
-        d_all = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=False, fit_poles=[0, 1, 2, 3, 4])
+        d_quad = PowerSpectrum_Beutler2019(recon=r, isotropic=False, fit_poles=[0, 2])
+        d_odd = PowerSpectrum_Beutler2019(recon=r, isotropic=False, fit_poles=[0, 1, 2])
+        d_hexa = PowerSpectrum_Beutler2019(recon=r, isotropic=False, fit_poles=[0, 2, 4])
+        d_all = PowerSpectrum_Beutler2019(recon=r, isotropic=False, fit_poles=[0, 1, 2, 3, 4])
 
         # Fix sigma_nl for one of the Beutler models
         model_quad = PowerBeutler2017(

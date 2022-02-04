@@ -7,14 +7,18 @@ import numpy as np
 
 
 sys.path.append("..")
-from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019_Z061_NGC
+from barry.datasets.dataset_power_spectrum import PowerSpectrum_Beutler2019
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
 from barry.config import setup
-from barry.models import PowerSeo2016, PowerBeutler2017, PowerDing2018
+from barry.models import PowerBeutler2017
 from barry.samplers import DynestySampler, EnsembleSampler
 from barry.fitter import Fitter
 from barry.models.model import Correction
+
+# Compare model fits with different analytic marginalisation options and where we fix the marginalised
+# parameters. The three types of marginalisation should give the same posteriors ("partial" is not strictly
+# the same, but looks identical for most purposes). The fit with fixed values will give a bad posterior.
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
@@ -27,13 +31,12 @@ if __name__ == "__main__":
     # sampler = EnsembleSampler(temp_dir=dir_name, num_steps=5000)
     fitter = Fitter(dir_name)
 
-    cs = ["#262232", "#116A71", "#48AB75"]
-    # cs = ["#262232", "#294D5F", "#197D7A", "#48AC7C"]
+    cs = ["#262232", "#294D5F", "#197D7A", "#48AC7C"]
 
     for r in [False]:
         t = "Recon" if r else "Prerecon"
         ls = "-"  # if r else "--"
-        d = PowerSpectrum_Beutler2019_Z061_NGC(recon=r, isotropic=True, reduce_cov_factor=np.sqrt(2000.0))
+        d = PowerSpectrum_Beutler2019(recon=r, isotropic=True, reduce_cov_factor=np.sqrt(2000.0))
 
         # Fix sigma_nl for one of the Beutler models
         model = PowerBeutler2017(recon=r, isotropic=d.isotropic, fix_params=["om"], correction=Correction.HARTLAP)
@@ -57,7 +60,7 @@ if __name__ == "__main__":
         fitter.add_model_and_dataset(model, d, name=f"Full Fit", linestyle=ls, color=cs[0])
         fitter.add_model_and_dataset(model_marg_full, d, name=f"Full Analytic", linestyle=ls, color=cs[1])
         fitter.add_model_and_dataset(model_marg_partial, d, name=f"Partial Analytic", linestyle=ls, color=cs[2])
-        # fitter.add_model_and_dataset(model_fixed, d, name=f"Fixed Bias+Poly", linestyle=ls, color=cs[2])
+        fitter.add_model_and_dataset(model_fixed, d, name=f"Fixed Bias+Poly", linestyle=ls, color=cs[2])
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(10)
     fitter.fit(file)

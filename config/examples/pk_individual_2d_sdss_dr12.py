@@ -7,19 +7,15 @@ from barry.postprocessing import BAOExtractor
 from barry.config import setup
 from barry.utils import weighted_avg_and_cov
 from barry.models import PowerBeutler2017
-from barry.datasets.dataset_power_spectrum import (
-    PowerSpectrum_SDSS_DR12_Z038_NGC,
-    PowerSpectrum_SDSS_DR12_Z038_SGC,
-    PowerSpectrum_SDSS_DR12_Z051_NGC,
-    PowerSpectrum_SDSS_DR12_Z051_SGC,
-    PowerSpectrum_SDSS_DR12_Z061_NGC,
-    PowerSpectrum_SDSS_DR12_Z061_SGC,
-)
+from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12
 from barry.fitter import Fitter
 import numpy as np
 import pandas as pd
 from barry.models.model import Correction
 
+
+# Run an optimisation on each of the post-recon SDSS DR12 mocks. Then compare to the pre-recon mocks
+# to compute the cross-correlation between BAO parameters and pre-recon measurements
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
@@ -33,21 +29,45 @@ if __name__ == "__main__":
     cs = ["#262232", "#116A71", "#48AB75", "#D1E05B"]
 
     datasets = [
-        PowerSpectrum_SDSS_DR12_Z038_NGC(recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999),
-        PowerSpectrum_SDSS_DR12_Z038_SGC(recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999),
-        PowerSpectrum_SDSS_DR12_Z051_NGC(recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999),
-        PowerSpectrum_SDSS_DR12_Z051_SGC(recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999),
-        PowerSpectrum_SDSS_DR12_Z061_NGC(recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999),
-        PowerSpectrum_SDSS_DR12_Z061_SGC(recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999),
+        PowerSpectrum_SDSS_DR12(
+            redshift_bin=1, galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999
+        ),
+        PowerSpectrum_SDSS_DR12(
+            redshift_bin=1, galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999
+        ),
+        PowerSpectrum_SDSS_DR12(
+            redshift_bin=2, galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999
+        ),
+        PowerSpectrum_SDSS_DR12(
+            redshift_bin=2, galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999
+        ),
+        PowerSpectrum_SDSS_DR12(
+            redshift_bin=3, galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999
+        ),
+        PowerSpectrum_SDSS_DR12(
+            redshift_bin=3, galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999
+        ),
     ]
 
     pre_recon_datasets = [
-        PowerSpectrum_SDSS_DR12_Z038_NGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
-        PowerSpectrum_SDSS_DR12_Z038_SGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
-        PowerSpectrum_SDSS_DR12_Z051_NGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
-        PowerSpectrum_SDSS_DR12_Z051_SGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
-        PowerSpectrum_SDSS_DR12_Z061_NGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
-        PowerSpectrum_SDSS_DR12_Z061_SGC(recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999),
+        PowerSpectrum_SDSS_DR12(
+            redshift_bin=1, galactic_cap="ngc", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.01, max_k=0.30, num_mocks=999
+        ),
+        PowerSpectrum_SDSS_DR12(
+            redshift_bin=1, galactic_cap="sgc", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.01, max_k=0.30, num_mocks=999
+        ),
+        PowerSpectrum_SDSS_DR12(
+            redshift_bin=2, galactic_cap="ngc", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.01, max_k=0.30, num_mocks=999
+        ),
+        PowerSpectrum_SDSS_DR12(
+            redshift_bin=2, galactic_cap="sgc", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.01, max_k=0.30, num_mocks=999
+        ),
+        PowerSpectrum_SDSS_DR12(
+            redshift_bin=3, galactic_cap="ngc", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.01, max_k=0.30, num_mocks=999
+        ),
+        PowerSpectrum_SDSS_DR12(
+            redshift_bin=3, galactic_cap="sgc", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.01, max_k=0.30, num_mocks=999
+        ),
     ]
 
     # Standard Beutler Model
