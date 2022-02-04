@@ -7,7 +7,7 @@
 #SBATCH --account={account}
 #SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
-#SBATCH --mem-per-cpu=4GB
+#SBATCH --mem=128GB
 #SBATCH -t 24:00:00
 #SBATCH -o {output_dir}/{name}.o%j
 
@@ -33,6 +33,6 @@ for ((i=1;i<=END;i++)); do
     echo "Loop iteration $i"
     ANUM=`expr $PARAMS \* $END + $i`
     echo "Executing $executable $PROG $ANUM"
-    srun -u --exclusive --nodes 1 --ntasks 1 --output "{output_dir}/{name}_$ANUM.log" $executable $PROG $ANUM  &
+    srun -u --exclusive --nodes 1 --ntasks 1 --mem-per-cpu=4GB --output "{output_dir}/{name}_$ANUM.log" $executable $PROG $ANUM  &
 done
 wait
