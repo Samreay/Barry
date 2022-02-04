@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append("..")
+sys.path.append("../..")
 from barry.config import setup
 from barry.fitter import Fitter
 from barry.models.bao_power_Beutler2017 import PowerBeutler2017
