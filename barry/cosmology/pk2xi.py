@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d, splev, splrep
 
 
 class PowerToCorrelation(ABC):
-    """ Generic class for converting power spectra to correlation functions
+    """Generic class for converting power spectra to correlation functions
 
     Using a class based method as there might be multiple implementations and
     some of the implementations have state.
@@ -19,7 +19,7 @@ class PowerToCorrelation(ABC):
         self.ell = ell
 
     def __call__(self, ks, pk, ss):
-        """ Generates the correlation function
+        """Generates the correlation function
 
         Parameters
         ----------
@@ -39,8 +39,7 @@ class PowerToCorrelation(ABC):
 
 
 class PowerToCorrelationGauss(PowerToCorrelation):
-    """ A pk2xi implementation using manual numeric integration with Gaussian dampening factor
-    """
+    """A pk2xi implementation using manual numeric integration with Gaussian dampening factor"""
 
     def __init__(self, ks, interpolateDetail=2, a=0.25, ell=0):
         super().__init__(ell=ell)
@@ -74,8 +73,7 @@ class PowerToCorrelationGauss(PowerToCorrelation):
 
 
 class PowerToCorrelationFT(PowerToCorrelation):
-    """ A pk2xi implementation utilising the Hankel library to use explicit FFT.
-    """
+    """A pk2xi implementation utilising the Hankel library to use explicit FFT."""
 
     def __init__(self, num_nodes=None, h=0.001, ell=0):
         """
@@ -95,7 +93,7 @@ class PowerToCorrelationFT(PowerToCorrelation):
     def __call__(self, ks, pk, ss):
         pkspline = splrep(ks, pk)
         f = lambda k: splev(k, pkspline) / (k ** self.ell)
-        xi = (2.0 * np.pi * ss) ** self.ell * self.ft.transform(f, ss, inverse=True, ret_err=False)
+        xi = (2.0 * np.pi * ss) ** self.ell * (1j) ** self.ell * self.ft.transform(f, ss, inverse=True, ret_err=False)
         return xi
 
 

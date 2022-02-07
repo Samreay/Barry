@@ -421,25 +421,6 @@ class Model(ABC):
         """
         return alpha * (1.0 + epsilon) ** 2, alpha / (1.0 + epsilon)
 
-    @lru_cache(maxsize=32)
-    def get_muprime(self, epsilon):
-        """Computes dilated values of mu given input values of epsilon for the power spectrum
-
-        Parameters
-        ----------
-        epsilon: float
-            The anisotropic warping
-
-        Returns
-        -------
-        muprime : np.ndarray
-            The dilated mu values
-
-        """
-        musq = self.mu ** 2
-        muprime = self.mu / np.sqrt(musq + (1.0 + epsilon) ** 6 * (1.0 - musq))
-        return muprime
-
     def get_raw_start(self):
         """ Gets a uniformly distributed starting point between parameter min and max constraints """
         start_random = np.array([uniform(x.min, x.max) for x in self.get_active_params()])

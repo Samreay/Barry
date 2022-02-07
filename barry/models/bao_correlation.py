@@ -136,6 +136,25 @@ class CorrelationFunctionFit(Model):
         sprimefac = np.sqrt(musq * epsilonsq ** 2 + (1.0 - musq) / epsilonsq)
         return sprimefac
 
+    @lru_cache(maxsize=32)
+    def get_muprime(self, epsilon):
+        """Computes dilated values of mu given input values of epsilon for the correlation function
+
+        Parameters
+        ----------
+        epsilon: float
+            The anisotropic warping
+
+        Returns
+        -------
+        muprime : np.ndarray
+            The dilated mu values
+
+        """
+        musq = self.mu ** 2
+        muprime = self.mu / np.sqrt(musq + (1.0 + epsilon) ** 6 * (1.0 - musq))
+        return muprime
+
     def integrate_mu(self, xi2d, mu=None, isotropic=False):
         if mu is None:
             mu = self.mu
@@ -182,13 +201,13 @@ class CorrelationFunctionFit(Model):
             muprime = self.get_muprime(epsilon)
 
             xi0 = splev(sprime, splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist)))
-            xi2 = splev(sprime, splrep(dist, self.pk2xi_2.__call__(ks, pks[1], dist)))
-            xi4 = splev(sprime, splrep(dist, self.pk2xi_4.__call__(ks, pks[2], dist)))
+            xi2 = splev(sprime, splrep(dist, self.pk2xi_2.__call__(ks, pks[2], dist)))
+            xi4 = splev(sprime, splrep(dist, self.pk2xi_4.__call__(ks, pks[4], dist)))
 
             xi2d = xi0 + 0.5 * (3.0 * muprime ** 2 - 1) * xi2 + 0.125 * (35.0 * muprime ** 4 - 30.0 * muprime ** 2 + 3.0) * xi4
 
             # Now compute the dilated xi multipoles
-            xi[0], xi[1], xi[2] = self.integrate_mu(xi2d, self.mu)
+            xi[0], xi[1], xi[2] = self.integrate_mu(xi2d, muprime)
 
         return sprime, xi
 

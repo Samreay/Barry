@@ -170,6 +170,25 @@ class PowerSpectrumFit(Model):
         kprimefac = np.sqrt(musq / epsilonsq ** 2 + (1.0 - musq) * epsilonsq)
         return kprimefac
 
+    @lru_cache(maxsize=32)
+    def get_muprime(self, epsilon):
+        """Computes dilated values of mu given input values of epsilon for the power spectrum
+
+        Parameters
+        ----------
+        epsilon: float
+            The anisotropic warping
+
+        Returns
+        -------
+        muprime : np.ndarray
+            The dilated mu values
+
+        """
+        musq = self.mu ** 2
+        muprime = self.mu / np.sqrt(musq + (1.0 + epsilon) ** 6 * (1.0 - musq))
+        return muprime
+
     def integrate_mu(self, pk2d, isotropic=False):
         pk0 = simps(pk2d, self.mu, axis=1)
         if isotropic:
