@@ -3,6 +3,7 @@ import sys
 from chainconsumer import ChainConsumer
 
 sys.path.append("..")
+sys.path.append("../..")
 from barry.samplers import DynestySampler
 from barry.config import setup
 from barry.models import CorrBeutler2017
