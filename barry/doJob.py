@@ -11,7 +11,7 @@ from barry.config import get_config
 def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, delete=False, hpc="getafix"):
 
     if hpc is None:
-        raise ValueError("HPC environment veriable is not set. Please set it to an hpc system, like export HPC=nersc")
+        raise ValueError("HPC environment variable is not set. Please set it to an hpc system, like export HPC=nersc")
 
     config = get_config()
     directory = os.path.dirname(os.path.abspath(filename))
@@ -31,8 +31,8 @@ def write_jobscript_slurm(filename, name=None, num_tasks=24, num_concurrent=24, 
     # Factor in jobs executing multiple fits
     hpc_config = config.get("hpcs", {}).get(hpc, {})
     if hpc_config.get("num_fits_per_job", 1) >= num_tasks:
-        num_tasks = 1
         hpc_config["num_fits_per_job"] = num_tasks
+        num_tasks = 1
     else:
         num_tasks = int(np.ceil(num_tasks / hpc_config.get("num_fits_per_job", 1)))
     d = {
