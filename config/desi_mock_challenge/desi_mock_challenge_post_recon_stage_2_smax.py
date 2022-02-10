@@ -81,7 +81,7 @@ if __name__ == "__main__":
                     poly_poles=poly_poles,
                     correction=Correction.NONE,
                 )
-                name = names[i] + " " + fittype + " " + str(r" $s_{min}=%3.2lf$" % smin)
+                name = names[i] + " " + fittype + str(r" $s_{min}=%4.2lf$" % smin)
                 print(name)
                 fitter.add_model_and_dataset(model, data, name=name)
                 counter += 1
@@ -102,20 +102,20 @@ if __name__ == "__main__":
         namelist = []
         for name in names:
             for h, fittype in enumerate(["Hexa", "No-Hexa"]):
-                for m, modeltype in enumerate(["5-Poly", "3-Poly"]):
-                    output[name + " " + fittype + " " + modeltype] = []
-                    namelist.append(name + " " + fittype + " " + modeltype)
+                output[name + " " + fittype] = []
+                namelist.append(name + " " + fittype)
+        print(namelist)
 
         c = ChainConsumer()
         counter = np.zeros(len(4 * names))
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
-            kmax = extra["name"].split(" ")[-1][9:-1]
-            fitname = " ".join(extra["name"].split()[:5])
-            print(kmax, fitname)
+            smin = extra["name"].split(" ")[-1][9:-1]
+            fitname = " ".join(extra["name"].split()[:4])
+            print(smin, fitname, [i for i, n in enumerate(namelist) if n == fitname])
             nameindex = [i for i, n in enumerate(namelist) if n == fitname][0]
 
-            color = plt.colors.rgb2hex(cmap(float(counter[nameindex]) / (len(kmaxs) - 1)))
+            color = plt.colors.rgb2hex(cmap(float(counter[nameindex]) / (len(smins) - 1)))
 
             model.set_data(data)
             r_s = model.camb.get_data()["r_s"]
@@ -128,7 +128,7 @@ if __name__ == "__main__":
             df["$\\alpha_\\perp$"] = alpha_perp
 
             extra.pop("realisation", None)
-            c.add_chain(df, weights=weight, color=color, posterior=posterior, **extra)
+            c.add_chain(df, weights=weight, color=color, posterior=posterior, plot_contour=True, **extra)
 
             max_post = posterior.argmax()
             chi2 = -2 * posterior[max_post]
@@ -137,7 +137,9 @@ if __name__ == "__main__":
             for name, val in params.items():
                 model.set_default(name, val)
 
-            # Ensures we return the window convolved model
+            new_chi_squared, dof, bband, mods, smooths = model.plot(params, display=False)
+
+            """# Ensures we return the window convolved model
             icov_m_w = model.data[0]["icov_m_w"]
             model.data[0]["icov_m_w"][0] = None
 
@@ -181,7 +183,7 @@ if __name__ == "__main__":
                 print(new_chi_squared, len(model.data[0]["pk"]) - len(model.get_active_params()) - len(bband), bband)
 
             model.data[0]["icov_m_w"] = icov_m_w
-            dof = data[0]["pk"].shape[0] - 1 - len(df.columns)
+            dof = data[0]["pk"].shape[0] - 1 - len(df.columns)"""
 
             ps = chain[max_post, :]
             best_fit = {}
@@ -204,25 +206,15 @@ if __name__ == "__main__":
             )
 
             corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
-            print(corr, print(c.analysis.get_correlations()))
-            if "3-Poly" in fitname:
-                if "No-Hexa" in fitname:
-                    output[fitname].append(
-                        f"{kmax:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:8.1f}, {bband[5]:8.1f}, {bband[6]:8.1f}"
-                    )
-                else:
-                    output[fitname].append(
-                        f"{kmax:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:8.1f}, {bband[5]:8.1f}, {bband[6]:8.1f}, {bband[7]:8.1f}, {bband[8]:8.1f}, {bband[9]:8.1f}"
-                    )
+            print(corr, c.analysis.get_correlations())
+            if "No-Hexa" in fitname:
+                output[fitname].append(
+                    f"{smin:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:8.1f}, {bband[5]:8.1f}, {bband[6]:8.1f}"
+                )
             else:
-                if "No-Hexa" in fitname:
-                    output[fitname].append(
-                        f"{kmax:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:7.3f}, {bband[5]:7.3f}, {bband[6]:8.1f}, {bband[7]:8.1f}, {bband[8]:8.1f}, {bband[9]:7.3f}, {bband[10]:7.3f}"
-                    )
-                else:
-                    output[fitname].append(
-                        f"{kmax:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:7.3f}, {bband[5]:7.3f}, {bband[6]:8.1f}, {bband[7]:8.1f}, {bband[8]:8.1f}, {bband[9]:7.3f}, {bband[10]:7.3f}, {bband[11]:8.1f}, {bband[12]:8.1f}, {bband[13]:8.1f}, {bband[14]:7.3f}, {bband[15]:7.3f}"
-                    )
+                output[fitname].append(
+                    f"{smin:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:8.1f}, {bband[5]:8.1f}, {bband[6]:8.1f}, {bband[7]:8.1f}, {bband[8]:8.1f}, {bband[9]:8.1f}"
+                )
 
             counter[nameindex] += 1
 
@@ -232,10 +224,7 @@ if __name__ == "__main__":
         # c.analysis.get_latex_table(filename=pfn + "_params.txt")
         for name in namelist:
 
-            if "PostRecon Iso NonFix" not in name:
-                continue
-
-            chainnames = [name + str(r" $k_{max}=%3.2lf$" % kmax) for kmax in kmaxs]
+            chainnames = [name + str(r" $s_{min}=%4.2lf$" % smin) for smin in smins]
 
             """c.plotter.plot_summary(
                 filename=[pfn + "_" + name + "_summary.png"],
@@ -257,23 +246,13 @@ if __name__ == "__main__":
             # c.plotter.plot(filename=[pfn + "_" + name + "_contour2.pdf"], truth=truth, chains=chainnames)
 
             with open(dir_name + "/Queensland_bestfit_" + name.replace(" ", "_") + ".txt", "w") as f:
-                if "3-Poly" in name:
-                    if "No-Hexa" in name:
-                        f.write(
-                            "# kmax, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a2_1, a2_2, a2_3\n"
-                        )
-                    else:
-                        f.write(
-                            "# kmax, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a2_1, a2_2, a2_3, a4_1, a4_2, a4_3\n"
-                        )
+                if "No-Hexa" in name:
+                    f.write(
+                        "# smin, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a2_1, a2_2, a2_3\n"
+                    )
                 else:
-                    if "No-Hexa" in name:
-                        f.write(
-                            "# kmax, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a0_4, a0_5, a2_1, a2_2, a2_3, a2_4, a2_5\n"
-                        )
-                    else:
-                        f.write(
-                            "# kmax, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a0_4, a0_5, a2_1, a2_2, a2_3, a2_4, a2_5, a4_1, a4_2, a4_3, a4_4, a4_5\n"
-                        )
+                    f.write(
+                        "# smin, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a2_1, a2_2, a2_3, a4_1, a4_2, a4_3\n"
+                    )
                 for l in output[name]:
                     f.write(l + "\n")

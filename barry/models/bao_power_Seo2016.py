@@ -24,16 +24,22 @@ class PowerSeo2016(PowerSpectrumFit):
         isotropic=True,
         poly_poles=(0, 2),
         marg=None,
+        n_poly=5,
     ):
+
+        self.n_poly = n_poly
+        if n_poly not in [3, 5]:
+            raise NotImplementedError("Models require n_poly to be 3 or 5 polynomial terms per multipole")
 
         if isotropic:
             poly_poles = [0]
         if marg is not None:
             fix_params = list(fix_params)
             for pole in poly_poles:
-                fix_params.extend([f"a{{{pole}}}_1", f"a{{{pole}}}_2", f"a{{{pole}}}_3", f"a{{{pole}}}_4", f"a{{{pole}}}_5"])
-
-        self.poly_poles = poly_poles
+                if n_poly == 3:
+                    fix_params.extend([f"a{{{pole}}}_1", f"a{{{pole}}}_2", f"a{{{pole}}}_3"])
+                else:
+                    fix_params.extend([f"a{{{pole}}}_1", f"a{{{pole}}}_2", f"a{{{pole}}}_3", f"a{{{pole}}}_4", f"a{{{pole}}}_5"])
 
         super().__init__(
             name=name,
@@ -55,8 +61,9 @@ class PowerSeo2016(PowerSpectrumFit):
                 self.set_default(f"a{{{pole}}}_1", 0.0)
                 self.set_default(f"a{{{pole}}}_2", 0.0)
                 self.set_default(f"a{{{pole}}}_3", 0.0)
-                self.set_default(f"a{{{pole}}}_4", 0.0)
-                self.set_default(f"a{{{pole}}}_5", 0.0)
+                if n_poly == 5:
+                    self.set_default(f"a{{{pole}}}_4", 0.0)
+                    self.set_default(f"a{{{pole}}}_5", 0.0)
 
     def precompute(self, camb, om, h0):
 
@@ -174,8 +181,9 @@ class PowerSeo2016(PowerSpectrumFit):
             self.add_param(f"a{{{pole}}}_1", f"$a_{{{pole},1}}$", -20000.0, 20000.0, 0)  # Monopole Polynomial marginalisation 1
             self.add_param(f"a{{{pole}}}_2", f"$a_{{{pole},2}}$", -20000.0, 20000.0, 0)  # Monopole Polynomial marginalisation 2
             self.add_param(f"a{{{pole}}}_3", f"$a_{{{pole},3}}$", -5000.0, 5000.0, 0)  # Monopole Polynomial marginalisation 3
-            self.add_param(f"a{{{pole}}}_4", f"$a_{{{pole},4}}$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
-            self.add_param(f"a{{{pole}}}_5", f"$a_{{{pole},5}}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
+            if self.n_poly == 5:
+                self.add_param(f"a{{{pole}}}_4", f"$a_{{{pole},4}}$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
+                self.add_param(f"a{{{pole}}}_5", f"$a_{{{pole},5}}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None):
         """Computes the power spectrum model using the Seo et. al., 2016 method
@@ -222,15 +230,6 @@ class PowerSeo2016(PowerSpectrumFit):
             fog = 1.0 / (1.0 + np.outer(self.mu ** 2, ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
             pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
 
-            # Polynomial shape
-            if for_corr:
-                shape = np.zeros(len(ks))
-            else:
-                if self.recon:
-                    shape = p["a{0}_1"] * ks ** 2 + p["a{0}_2"] + p["a{0}_3"] / ks + p["a{0}_4"] / (ks * ks) + p["a{0}_5"] / (ks ** 3)
-                else:
-                    shape = p["a{0}_1"] * ks + p["a{0}_2"] + p["a{0}_3"] / ks + p["a{0}_4"] / (ks * ks) + p["a{0}_5"] / (ks ** 3)
-
             if smooth:
                 propagator = np.zeros(len(ks))
             else:
@@ -261,16 +260,21 @@ class PowerSeo2016(PowerSpectrumFit):
                     )
                     propagator = ((prefac_k + prefac_mu) * damping) ** 2
 
-            poly = np.zeros((1, len(k)))
+            if smooth:
+                prefac = np.ones(len(kprime))
+            else:
+                prefac = splev(kprime, splrep(ks, integrate.simps((1.0 + pk_ratio * propagator), self.mu, axis=0)))
+            shape, poly = (
+                self.add_three_poly(ks, k, p, prefac, np.zeros(len(k)))
+                if self.n_poly == 3
+                else self.add_five_poly(ks, k, p, prefac, np.zeros(len(k)))
+            )
+
             if self.marg:
+                poly = poly[1:]  # Remove the bias marginalisation.
+
+            if for_corr:
                 pk1d = integrate.simps(pk_smooth * (1.0 + pk_ratio * propagator), self.mu, axis=0)
-                if smooth:
-                    prefac = np.ones(len(kprime))
-                else:
-                    prefac = splev(kprime, splrep(ks, integrate.simps((1.0 + pk_ratio * propagator), self.mu, axis=0)))
-                poly = prefac * [kprime, np.ones(len(kprime)), 1.0 / kprime, 1.0 / (kprime * kprime), 1.0 / (kprime ** 3)]
-                if self.recon:
-                    poly[0] *= kprime
             else:
                 pk1d = integrate.simps((pk_smooth + shape) * (1.0 + pk_ratio * propagator), self.mu, axis=0)
 
@@ -336,33 +340,16 @@ class PowerSeo2016(PowerSpectrumFit):
                 poly = None
                 kprime = k
             else:
+                shape, poly = (
+                    self.add_three_poly(k, k, p, np.ones(len(k)), pk)
+                    if self.n_poly == 3
+                    else self.add_five_poly(k, k, p, np.ones(len(k)), pk)
+                )
                 if self.marg:
-                    poly = np.zeros((5 * len(self.poly_poles), 5, len(k)))
-                    for i, pole in enumerate(self.poly_poles):
-                        if self.recon:
-                            poly[5 * i : 5 * (i + 1), pole] = [k ** 2, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
-                        else:
-                            poly[5 * i : 5 * (i + 1), pole] = [k, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
-
+                    poly = poly[1:]  # Remove the bias marginalisation.
                 else:
-                    poly = np.zeros((1, 5, len(k)))
                     for pole in self.poly_poles:
-                        if self.recon:
-                            pk[pole] += (
-                                p[f"a{{{pole}}}_1"] * k ** 2
-                                + p[f"a{{{pole}}}_2"]
-                                + p[f"a{{{pole}}}_3"] / k
-                                + p[f"a{{{pole}}}_4"] / (k * k)
-                                + p[f"a{{{pole}}}_5"] / (k ** 3)
-                            )
-                        else:
-                            pk[pole] += (
-                                p[f"a{{{pole}}}_1"] * k
-                                + p[f"a{{{pole}}}_2"]
-                                + p[f"a{{{pole}}}_3"] / k
-                                + p[f"a{{{pole}}}_4"] / (k * k)
-                                + p[f"a{{{pole}}}_5"] / (k ** 3)
-                            )
+                        pk[pole] += shape[pole]
 
         return kprime, pk, poly
 
@@ -382,6 +369,11 @@ if __name__ == "__main__":
     model = PowerSeo2016(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP)
     model.sanity_check(dataset)
 
+    print("Checking isotropic mock mean")
+    dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
+    model = PowerSeo2016(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP, n_poly=3)
+    model.sanity_check(dataset)
+
     print("Checking anisotropic mock mean")
     dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
     model = PowerSeo2016(
@@ -390,5 +382,12 @@ if __name__ == "__main__":
         marg="full",
         poly_poles=[0, 2, 4],
         correction=Correction.HARTLAP,
+    )
+    model.sanity_check(dataset)
+
+    print("Checking anisotropic mock mean")
+    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
+    model = PowerSeo2016(
+        recon=dataset.recon, isotropic=dataset.isotropic, marg="full", poly_poles=[0, 2, 4], correction=Correction.HARTLAP, n_poly=3
     )
     model.sanity_check(dataset)

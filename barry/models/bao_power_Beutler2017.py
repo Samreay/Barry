@@ -22,7 +22,13 @@ class PowerBeutler2017(PowerSpectrumFit):
         isotropic=True,
         poly_poles=(0, 2),
         marg=None,
+        dilate_smooth=True,
+        n_poly=5,
     ):
+
+        self.n_poly = n_poly
+        if n_poly not in [3, 5]:
+            raise NotImplementedError("Models require n_poly to be 3 or 5 polynomial terms per multipole")
 
         if isotropic:
             poly_poles = [0]
@@ -30,9 +36,12 @@ class PowerBeutler2017(PowerSpectrumFit):
             fix_params = list(fix_params)
             fix_params.extend(["b"])
             for pole in poly_poles:
-                fix_params.extend([f"a{{{pole}}}_1", f"a{{{pole}}}_2", f"a{{{pole}}}_3", f"a{{{pole}}}_4", f"a{{{pole}}}_5"])
+                if n_poly == 3:
+                    fix_params.extend([f"a{{{pole}}}_1", f"a{{{pole}}}_2", f"a{{{pole}}}_3"])
+                else:
+                    fix_params.extend([f"a{{{pole}}}_1", f"a{{{pole}}}_2", f"a{{{pole}}}_3", f"a{{{pole}}}_4", f"a{{{pole}}}_5"])
 
-        self.poly_poles = poly_poles
+        self.dilate_smooth = dilate_smooth
 
         super().__init__(
             name=name,
@@ -43,6 +52,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             smooth=smooth,
             correction=correction,
             isotropic=isotropic,
+            poly_poles=poly_poles,
             marg=marg,
         )
         if self.marg:
@@ -51,8 +61,9 @@ class PowerBeutler2017(PowerSpectrumFit):
                 self.set_default(f"a{{{pole}}}_1", 0.0)
                 self.set_default(f"a{{{pole}}}_2", 0.0)
                 self.set_default(f"a{{{pole}}}_3", 0.0)
-                self.set_default(f"a{{{pole}}}_4", 0.0)
-                self.set_default(f"a{{{pole}}}_5", 0.0)
+                if n_poly == 5:
+                    self.set_default(f"a{{{pole}}}_4", 0.0)
+                    self.set_default(f"a{{{pole}}}_5", 0.0)
 
     def declare_parameters(self):
         super().declare_parameters()
@@ -67,8 +78,9 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param(f"a{{{pole}}}_1", f"$a_{{{pole},1}}$", -20000.0, 20000.0, 0)  # Monopole Polynomial marginalisation 1
             self.add_param(f"a{{{pole}}}_2", f"$a_{{{pole},2}}$", -20000.0, 20000.0, 0)  # Monopole Polynomial marginalisation 2
             self.add_param(f"a{{{pole}}}_3", f"$a_{{{pole},3}}$", -5000.0, 5000.0, 0)  # Monopole Polynomial marginalisation 3
-            self.add_param(f"a{{{pole}}}_4", f"$a_{{{pole},4}}$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
-            self.add_param(f"a{{{pole}}}_5", f"$a_{{{pole},5}}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
+            if self.n_poly == 5:
+                self.add_param(f"a{{{pole}}}_4", f"$a_{{{pole},4}}$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
+                self.add_param(f"a{{{pole}}}_5", f"$a_{{{pole},5}}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None):
         """Computes the power spectrum model using the Beutler et. al., 2017 method
@@ -112,53 +124,44 @@ class PowerBeutler2017(PowerSpectrumFit):
         if self.isotropic:
             pk = [np.zeros(len(k))]
             kprime = k if for_corr else k / p["alpha"]
-            fog = 1.0 / (1.0 + kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
-            pk_smooth = splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+            if self.dilate_smooth:
+                pk_smooth = splev(kprime, splrep(ks, pk_smooth_lin)) / (1.0 + kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
+            else:
+                pk_smooth = splev(k, splrep(ks, pk_smooth_lin)) / (1.0 + k ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
             if not for_corr:
                 pk_smooth *= p["b"]
-                if self.recon:
-                    shape = (
-                        p["a{0}_1"] * kprime ** 2
-                        + p["a{0}_2"]
-                        + p["a{0}_3"] / kprime
-                        + p["a{0}_4"] / (kprime * kprime)
-                        + p["a{0}_5"] / (kprime ** 3)
-                    )
-                else:
-                    shape = (
-                        p["a{0}_1"] * kprime
-                        + p["a{0}_2"]
-                        + p["a{0}_3"] / kprime
-                        + p["a{0}_4"] / (kprime * kprime)
-                        + p["a{0}_5"] / (kprime ** 3)
-                    )
 
             if smooth:
-                pk[0] = pk_smooth if for_corr else pk_smooth + shape
+                propagator = np.ones(len(kprime))
             else:
                 # Compute the propagator
-                C = np.exp(-0.5 * ks ** 2 * p["sigma_nl"] ** 2)
-                propagator = splev(kprime, splrep(ks, (1.0 + pk_ratio * C)))
-                pk[0] = pk_smooth * propagator if for_corr else (pk_smooth + shape) * propagator
+                C = np.exp(-0.5 * kprime ** 2 * p["sigma_nl"] ** 2)
+                propagator = 1.0 + splev(kprime, splrep(ks, pk_ratio)) * C
+            prefac = np.ones(len(kprime)) if smooth else propagator
 
-            poly = np.zeros((1, len(k)))
-            if self.marg:
-                prefac = np.ones(len(kprime)) if smooth else propagator
-                poly = prefac * [pk_smooth, kprime, np.ones(len(kprime)), 1.0 / kprime, 1.0 / (kprime * kprime), 1.0 / (kprime ** 3)]
-                if self.recon:
-                    poly[1] *= kprime
+            shape, poly = (
+                self.add_three_poly(k, k, p, prefac, pk_smooth) if self.n_poly == 3 else self.add_five_poly(k, k, p, prefac, pk_smooth)
+            )
+
+            pk[0] = pk_smooth * propagator if for_corr else (pk_smooth + shape) * propagator
 
         else:
 
             epsilon = 0 if for_corr else p["epsilon"]
             kprime = np.tile(k, (self.nmu, 1)).T if for_corr else np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
             muprime = self.mu if for_corr else self.get_muprime(epsilon)
-            fog = 1.0 / (1.0 + muprime ** 2 * kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
-            if self.recon_type.lower() == "iso":
-                kaiser_prefac = 1.0 + p["beta"] * muprime ** 2 * (1.0 - splev(kprime, splrep(self.camb.ks, self.camb.smoothing_kernel)))
+            if self.dilate_smooth:
+                fog = 1.0 / (1.0 + muprime ** 2 * kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
+                reconfac = splev(kprime, splrep(self.camb.ks, self.camb.smoothing_kernel)) if self.recon_type.lower() == "iso" else 0.0
+                kaiser_prefac = 1.0 + p["beta"] * muprime ** 2 * (1.0 - reconfac)
+                pk_smooth = kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
             else:
-                kaiser_prefac = 1.0 + p["beta"] * muprime ** 2
-            pk_smooth = kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+                ktile = np.tile(k, (self.nmu, 1)).T
+                fog = 1.0 / (1.0 + muprime ** 2 * ktile ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
+                reconfac = splev(ktile, splrep(self.camb.ks, self.camb.smoothing_kernel)) if self.recon_type.lower() == "iso" else 0.0
+                kaiser_prefac = 1.0 + p["beta"] * muprime ** 2 * (1.0 - reconfac)
+                pk_smooth = kaiser_prefac ** 2 * splev(ktile, splrep(ks, pk_smooth_lin)) * fog
+
             if not for_corr:
                 pk_smooth *= p["b"]
 
@@ -178,36 +181,16 @@ class PowerBeutler2017(PowerSpectrumFit):
                 poly = None
                 kprime = k
             else:
+                shape, poly = (
+                    self.add_three_poly(k, k, p, np.ones(len(k)), pk)
+                    if self.n_poly == 3
+                    else self.add_five_poly(k, k, p, np.ones(len(k)), pk)
+                )
                 if self.marg:
-                    poly = np.zeros((5 * len(self.poly_poles) + 1, 5, len(k)))
-                    poly[0, :, :] = pk
-                    for i, pole in enumerate(self.poly_poles):
-                        if self.recon:
-                            poly[5 * i + 1 : 5 * (i + 1) + 1, pole] = [k ** 2, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
-                        else:
-                            poly[5 * i + 1 : 5 * (i + 1) + 1, pole] = [k, np.ones(len(k)), 1.0 / k, 1.0 / (k * k), 1.0 / (k ** 3)]
-
                     pk = [np.zeros(len(k))] * 5
-
                 else:
-                    poly = np.zeros((1, 5, len(k)))
                     for pole in self.poly_poles:
-                        if self.recon:
-                            pk[pole] += (
-                                p[f"a{{{pole}}}_1"] * k ** 2
-                                + p[f"a{{{pole}}}_2"]
-                                + p[f"a{{{pole}}}_3"] / k
-                                + p[f"a{{{pole}}}_4"] / (k * k)
-                                + p[f"a{{{pole}}}_5"] / (k ** 3)
-                            )
-                        else:
-                            pk[pole] += (
-                                p[f"a{{{pole}}}_1"] * k
-                                + p[f"a{{{pole}}}_2"]
-                                + p[f"a{{{pole}}}_3"] / k
-                                + p[f"a{{{pole}}}_4"] / (k * k)
-                                + p[f"a{{{pole}}}_5"] / (k ** 3)
-                            )
+                        pk[pole] += shape[pole]
 
         return kprime, pk, poly
 
@@ -227,6 +210,11 @@ if __name__ == "__main__":
     model = PowerBeutler2017(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP)
     model.sanity_check(dataset)
 
+    print("Checking isotropic mock mean")
+    dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
+    model = PowerBeutler2017(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP, n_poly=3)
+    model.sanity_check(dataset)
+
     print("Checking anisotropic mock mean")
     dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
     model = PowerBeutler2017(
@@ -236,5 +224,18 @@ if __name__ == "__main__":
         fix_params=["om"],
         poly_poles=[0, 2, 4],
         correction=Correction.HARTLAP,
+    )
+    model.sanity_check(dataset)
+
+    print("Checking anisotropic mock mean")
+    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
+    model = PowerBeutler2017(
+        recon=dataset.recon,
+        isotropic=dataset.isotropic,
+        marg="full",
+        fix_params=["om"],
+        poly_poles=[0, 2, 4],
+        correction=Correction.HARTLAP,
+        n_poly=3,
     )
     model.sanity_check(dataset)

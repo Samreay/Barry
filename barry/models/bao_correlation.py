@@ -459,7 +459,7 @@ class CorrelationFunctionFit(Model):
                 d["xi"], xi_model_fit, np.zeros(xi_model_fit.shape), d["icov"], [None], num_mocks=num_mocks, num_params=num_params
             )
 
-    def plot(self, params, smooth_params=None, figname=None, title=None):
+    def plot(self, params, smooth_params=None, figname=None, title=None, display=True):
         self.logger.info("Create plot")
         import matplotlib.pyplot as plt
 
@@ -588,7 +588,7 @@ class CorrelationFunctionFit(Model):
         fig.suptitle(title)
         if figname is not None:
             fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
-        else:
+        if display:
             plt.show()
 
         return new_chi_squared, dof, bband, mods, smooths

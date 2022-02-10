@@ -23,6 +23,7 @@ class PowerSpectrumFit(Model):
         recon=None,
         correction=None,
         isotropic=True,
+        poly_poles=(0, 2),
         marg=None,
     ):
         """Generic power spectrum function model
@@ -46,6 +47,8 @@ class PowerSpectrumFit(Model):
         self.smooth_type = smooth_type.lower()
         if not validate_smooth_method(smooth_type):
             exit(0)
+
+        self.poly_poles = poly_poles
 
         self.recon = False
         self.recon_type = "None"
@@ -294,6 +297,144 @@ class PowerSpectrumFit(Model):
 
         return kprime, pk, poly
 
+    def add_three_poly(self, k, kpoly, p, prefac, pk):
+        """Returns the polynomial components for 3 terms per multipole
+
+        Parameters
+        ----------
+        k : np.ndarray
+            Array of k values for the shape terms
+        kpoly : np.ndarray
+            Array of k values for the marginalised polynomial array
+        p : dict
+            dictionary of parameter name to float value pairs
+        prefac : np.ndarray
+            Prefactors to be added to the front of the analytically marginalised polynomial
+        pk_comp: np.ndarray
+            the power spectrum components without polynomials
+
+        Returns
+        -------
+        shape : np.ndarray
+            The polynomial terms to be added directly to each multipole
+        poly: np.ndarray
+            The additive terms in the model not added to the multipoles, necessary for analytical marginalisation
+
+        """
+
+        if self.isotropic:
+            if self.recon:
+                shape = p["a{0}_1"] * k ** 2 + p["a{0}_2"] + p["a{0}_3"] / k
+            else:
+                shape = p["a{0}_1"] * k + p["a{0}_2"] + p["a{0}_3"] / k
+
+            poly = np.zeros((1, len(kpoly)))
+            if self.marg:
+                poly = prefac * [pk, kpoly, np.ones(len(kpoly)), 1.0 / kpoly]
+                if self.recon:
+                    poly[1] *= kpoly
+        else:
+            shape = np.zeros((5, len(k)))
+            if self.marg:
+                poly = np.zeros((3 * len(self.poly_poles) + 1, 5, len(kpoly)))
+                poly[0, :, :] = pk
+                for i, pole in enumerate(self.poly_poles):
+                    if self.recon:
+                        poly[3 * i + 1 : 3 * (i + 1) + 1, pole] = [kpoly ** 2, np.ones(len(kpoly)), 1.0 / kpoly]
+                    else:
+                        poly[3 * i + 1 : 3 * (i + 1) + 1, pole] = [kpoly, np.ones(len(kpoly)), 1.0 / kpoly]
+
+            else:
+                poly = np.zeros((1, 5, len(kpoly)))
+                for pole in self.poly_poles:
+                    if self.recon:
+                        shape[pole] = p[f"a{{{pole}}}_1"] * k ** 2 + p[f"a{{{pole}}}_2"] + p[f"a{{{pole}}}_3"] / k
+                    else:
+                        shape[pole] = p[f"a{{{pole}}}_1"] * k + p[f"a{{{pole}}}_2"] + p[f"a{{{pole}}}_3"] / k
+
+        return shape, poly
+
+    def add_five_poly(self, k, kpoly, p, prefac, pk):
+        """Returns the polynomial components for 5 terms per multipole
+
+        Parameters
+        ----------
+        k : np.ndarray
+            Array of k values for the shape terms
+        kpoly : np.ndarray
+            Array of k values for the marginalised polynomial array
+        p : dict
+            dictionary of parameter name to float value pairs
+        prefac : np.ndarray
+            Prefactors to be added to the front of the analytically marginalised polynomial
+        pk_comp: np.ndarray
+            the power spectrum components without polynomials
+
+        Returns
+        -------
+        shape : np.ndarray
+            The polynomial terms to be added directly to each multipole
+        poly: np.ndarray
+            The additive terms in the model not added to the multipoles, necessary for analytical marginalisation
+
+        """
+
+        if self.isotropic:
+            if self.recon:
+                shape = p["a{0}_1"] * k ** 2 + p["a{0}_2"] + p["a{0}_3"] / k + p["a{0}_4"] / (k * k) + p["a{0}_5"] / (k ** 3)
+            else:
+                shape = p["a{0}_1"] * k + p["a{0}_2"] + p["a{0}_3"] / k + p["a{0}_4"] / (k * k) + p["a{0}_5"] / (k ** 3)
+
+            poly = np.zeros((1, len(kpoly)))
+            if self.marg:
+                poly = prefac * [pk, kpoly, np.ones(len(kpoly)), 1.0 / kpoly, 1.0 / (kpoly * kpoly), 1.0 / (kpoly ** 3)]
+                if self.recon:
+                    poly[1] *= kpoly
+        else:
+            shape = np.zeros((5, len(k)))
+            if self.marg:
+                poly = np.zeros((5 * len(self.poly_poles) + 1, 5, len(kpoly)))
+                poly[0, :, :] = pk
+                for i, pole in enumerate(self.poly_poles):
+                    if self.recon:
+                        poly[5 * i + 1 : 5 * (i + 1) + 1, pole] = [
+                            kpoly ** 2,
+                            np.ones(len(kpoly)),
+                            1.0 / kpoly,
+                            1.0 / (kpoly * kpoly),
+                            1.0 / (kpoly ** 3),
+                        ]
+                    else:
+                        poly[5 * i + 1 : 5 * (i + 1) + 1, pole] = [
+                            kpoly,
+                            np.ones(len(kpoly)),
+                            1.0 / kpoly,
+                            1.0 / (kpoly * kpoly),
+                            1.0 / (kpoly ** 3),
+                        ]
+
+            else:
+                poly = np.zeros((1, 5, len(kpoly)))
+                for pole in self.poly_poles:
+                    if self.recon:
+                        shape[pole] = (
+                            p[f"a{{{pole}}}_1"] * kpoly ** 2
+                            + p[f"a{{{pole}}}_2"]
+                            + p[f"a{{{pole}}}_3"] / kpoly
+                            + p[f"a{{{pole}}}_4"] / (kpoly * kpoly)
+                            + p[f"a{{{pole}}}_5"] / (kpoly ** 3)
+                        )
+                    else:
+                        shape[pole] = (
+                            p[f"a{{{pole}}}_1"] * kpoly
+                            + p[f"a{{{pole}}}_2"]
+                            + p[f"a{{{pole}}}_3"] / kpoly
+                            + p[f"a{{{pole}}}_4"] / (kpoly * kpoly)
+                            + p[f"a{{{pole}}}_5"] / (kpoly ** 3)
+                        )
+
+        return shape, poly
+
     def adjust_model_window_effects(self, pk_generated, data, window=True, wide_angle=True):
         """Take the window effects into account.
 
@@ -487,7 +628,7 @@ class PowerSpectrumFit(Model):
 
         return pk_model, pk_model_odd, poly_model, poly_model_odd, mask
 
-    def plot(self, params, smooth_params=None, figname=None, title=None):
+    def plot(self, params, smooth_params=None, figname=None, title=None, display=True):
         self.logger.info("Create plot")
         import matplotlib.pyplot as plt
 
@@ -603,10 +744,6 @@ class PowerSpectrumFit(Model):
         string = f"$\\mathcal{{L}}$: {self.get_likelihood(params, self.data[0]):0.3g}\n"
         if self.marg:
             string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items() if l not in self.fix_params])
-            string += "\n"
-            string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items() if l is "om"])
-            string += "\n"
-            string += "\n".join([f"{self.param_dict[v].label}={bband[l-1]:0.4g}" for l, v in enumerate(self.fix_params) if v is not "om"])
         else:
             string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items()])
         va = "center" if self.postprocess is None else "top"
@@ -627,7 +764,7 @@ class PowerSpectrumFit(Model):
         fig.suptitle(title)
         if figname is not None:
             fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
-        else:
+        if display:
             plt.show()
 
         return new_chi_squared, dof, bband, mods, smooths
