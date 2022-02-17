@@ -56,8 +56,8 @@ class PowerDing2018(PowerSpectrumFit):
             marg=marg,
         )
 
-        if self.recon_type == "ani":
-            raise NotImplementedError("Anisotropic reconstruction not yet available for Seo2016 model")
+        if self.recon_type == "sym" or self.recon_type == "ani":
+            raise NotImplementedError("Symmetric and Anisotropic reconstruction not yet available for Ding2018 model")
 
         if self.marg:
             for pole in self.poly_poles:
@@ -86,8 +86,36 @@ class PowerDing2018(PowerSpectrumFit):
         }
 
     @lru_cache(maxsize=4)
+    def get_damping(self, growth, om):
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_nl", om))
+
+    @lru_cache(maxsize=4)
     def get_damping_dd(self, growth, om):
         return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_dd_nl", om))
+
+    @lru_cache(maxsize=4)
+    def get_damping_sd(self, growth, om):
+        return np.exp(-np.outer(1.0 + growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_sd_nl", om))
+
+    @lru_cache(maxsize=4)
+    def get_damping_ss(self, om):
+        return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pregen("sigma_ss_nl", om))
+
+    @lru_cache(maxsize=4)
+    def get_damping_aniso_par(self, growth, om, data_name=None):
+        if data_name is None:
+            ks = self.camb.ks
+        else:
+            ks = self.data_dict[data_name]["ks_input"]
+        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_nl", om))
+
+    @lru_cache(maxsize=4)
+    def get_damping_aniso_perp(self, om, data_name=None):
+        if data_name is None:
+            ks = self.camb.ks
+        else:
+            ks = self.data_dict[data_name]["ks_input"]
+        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_dd_par(self, growth, om, data_name=None):
@@ -106,10 +134,6 @@ class PowerDing2018(PowerSpectrumFit):
         return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_dd_nl", om))
 
     @lru_cache(maxsize=4)
-    def get_damping_sd(self, growth, om):
-        return np.exp(-np.outer(1.0 + growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_sd_nl", om))
-
-    @lru_cache(maxsize=4)
     def get_damping_aniso_sd_par(self, growth, om, data_name=None):
         if data_name is None:
             ks = self.camb.ks
@@ -126,10 +150,6 @@ class PowerDing2018(PowerSpectrumFit):
         return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_sd_nl", om))
 
     @lru_cache(maxsize=4)
-    def get_damping_ss(self, om):
-        return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pregen("sigma_ss_nl", om))
-
-    @lru_cache(maxsize=4)
     def get_damping_aniso_ss_par(self, om, data_name=None):
         if data_name is None:
             ks = self.camb.ks
@@ -144,26 +164,6 @@ class PowerDing2018(PowerSpectrumFit):
         else:
             ks = self.data_dict[data_name]["ks_input"]
         return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_ss_nl", om))
-
-    @lru_cache(maxsize=4)
-    def get_damping(self, growth, om):
-        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_nl", om))
-
-    @lru_cache(maxsize=4)
-    def get_damping_aniso_par(self, growth, om, data_name=None):
-        if data_name is None:
-            ks = self.camb.ks
-        else:
-            ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_nl", om))
-
-    @lru_cache(maxsize=4)
-    def get_damping_aniso_perp(self, om, data_name=None):
-        if data_name is None:
-            ks = self.camb.ks
-        else:
-            ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_nl", om))
 
     def declare_parameters(self):
         super().declare_parameters()

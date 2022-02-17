@@ -2,19 +2,21 @@ import logging
 from functools import lru_cache
 import numpy as np
 from scipy import integrate
+from scipy.special import jn
 from barry.models.bao_power import PowerSpectrumFit
 from scipy.interpolate import splev, splrep
 
 
-class PowerSeo2016(PowerSpectrumFit):
-    """P(k) model inspired from Seo 2016.
+class PowerChen2019(PowerSpectrumFit):
+    """P(k) model inspired from Chen 2019.
 
-    See https://ui.adsabs.harvard.edu/abs/2016MNRAS.460.2453S for details.
+    See https://ui.adsabs.harvard.edu/abs/2019JCAP...09..017C/abstract for details.
+
     """
 
     def __init__(
         self,
-        name="Pk Seo 2016",
+        name="Pk Chen 2019",
         fix_params=("om", "beta"),
         smooth_type="hinton2017",
         recon=None,
@@ -50,11 +52,12 @@ class PowerSeo2016(PowerSpectrumFit):
             smooth=smooth,
             correction=correction,
             isotropic=isotropic,
+            poly_poles=poly_poles,
             marg=marg,
         )
 
-        if self.recon_type == "sym" or self.recon_type == "ani":
-            raise NotImplementedError("Symmetric and Anisotropic reconstruction not yet available for Seo2016 model")
+        if self.recon_type == "ani":
+            raise NotImplementedError("Anisotropic reconstruction not yet available for Chen2019 model")
 
         if self.marg:
             for pole in self.poly_poles:
@@ -68,78 +71,46 @@ class PowerSeo2016(PowerSpectrumFit):
     def precompute(self, camb, om, h0):
 
         c = camb.get_data(om, h0)
+        r_drag = c["r_s"]
         ks = c["ks"]
         pk_lin = c["pk_lin"]
+        j0 = jn(0, r_drag * ks)
         s = camb.smoothing_kernel
 
-        r1, r2 = self.get_Rs()
-
-        # R_1/P_lin, R_2/P_lin
-        R1 = ks ** 2 * integrate.simps(pk_lin * r1, x=ks, axis=1) / (4.0 * np.pi ** 2)
-        R2 = ks ** 2 * integrate.simps(pk_lin * r2, x=ks, axis=1) / (4.0 * np.pi ** 2)
-
         return {
-            "sigma": integrate.simps(pk_lin, x=ks) / (6.0 * np.pi ** 2),
-            "sigma_dd": integrate.simps(pk_lin * (1.0 - s) ** 2, x=ks) / (6.0 * np.pi ** 2),
-            "sigma_ss": integrate.simps(pk_lin * s ** 2, x=ks) / (6.0 * np.pi ** 2),
-            "R1": R1,
-            "R2": R2,
+            "sigma_nl": integrate.simps(pk_lin * (1.0 - j0), ks) / (6.0 * np.pi ** 2),
+            "sigma_dd_nl": integrate.simps(pk_lin * (1.0 - s) ** 2 * (1.0 - j0), ks) / (6.0 * np.pi ** 2),
+            "sigma_sd_nl": integrate.simps(pk_lin * (0.5 * (s ** 2 + (1.0 - s) ** 2) + j0 * s * (1.0 - s)), ks) / (6.0 * np.pi ** 2),
+            "sigma_ss_nl": integrate.simps(pk_lin * s ** 2 * (1.0 - j0), ks) / (6.0 * np.pi ** 2),
+            "sigma_sd_dd": integrate.simps(pk_lin * (1.0 - s) ** 2, ks) / (6.0 * np.pi ** 2),
+            "sigma_sd_sd": integrate.simps(pk_lin * j0 * s * (1.0 - s), ks) / (3.0 * np.pi ** 2),
+            "sigma_sd_ss": integrate.simps(pk_lin * s ** 2, ks) / (6.0 * np.pi ** 2),
         }
-
-    @lru_cache(maxsize=2)
-    def get_Rs(self):
-        ks = self.camb.ks
-        r = np.outer(1.0 / ks, ks)
-        R1 = -(1.0 + r ** 2) / (24.0 * r ** 2) * (3.0 - 14.0 * r ** 2 + 3.0 * r ** 4) + (r ** 2 - 1.0) ** 4 / (16.0 * r ** 3) * np.log(
-            np.fabs((1.0 + r) / (1.0 - r))
-        )
-        R2 = (1.0 - r ** 2) / (24.0 * r ** 2) * (3.0 - 2.0 * r ** 2 + 3.0 * r ** 4) + (r ** 2 - 1.0) ** 3 * (1.0 + r ** 2) / (
-            16.0 * r ** 3
-        ) * np.log(np.fabs((1.0 + r) / (1.0 - r)))
-
-        # We get NaNs in R1, R2 etc., when r = 1.0 (diagonals). We manually set these to the correct values.
-        # We also get numerical issues for large/small r, so we set these manually to asymptotic limits
-        R1[np.diag_indices(len(ks))] = 2.0 / 3.0
-        R2[np.diag_indices(len(ks))] = 0.0
-        index = np.where(r < 1.0e-3)
-        R1[index] = 16.0 / 15.0 * r[index] ** 2
-        R2[index] = 4.0 / 15.0 * r[index] ** 2
-        index = np.where(r > 1.0e2)
-        R1[index] = 16.0 / 15.0
-        R2[index] = 4.0 / 15.0
-        return R1, R2
-
-    @lru_cache(maxsize=4)
-    def get_pt_data(self, om):
-        return self.PT.get_data(om=om)
 
     @lru_cache(maxsize=4)
     def get_damping(self, growth, om):
-        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma", om) / 2.0)
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_dd(self, growth, om):
-        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_dd", om) / 2.0)
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_dd_nl", om))
+
+    @lru_cache(maxsize=4)
+    def get_damping_sd(self, growth, om):
+        return np.exp(-np.outer(1.0 + growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_sd_nl", om))
+
+    @lru_cache(maxsize=4)
+    def get_damping_sd_iso(self, growth, om):
+        inner = (
+            (1.0 + (2.0 + growth) * growth * self.mu ** 2) * self.get_pregen("sigma_sd_ss", om)
+            + (1.0 + growth * self.mu ** 2) * self.get_pregen("sigma_sd_sd", om)
+            + self.get_pregen("sigma_sd_ss", om)
+        )
+        return np.exp(-np.outer(inner, self.camb.ks ** 2))
 
     @lru_cache(maxsize=4)
     def get_damping_ss(self, om):
-        return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pregen("sigma_ss", om) / 2.0)
-
-    @lru_cache(maxsize=4)
-    def get_damping_aniso_par(self, growth, om, data_name=None):
-        if data_name is None:
-            ks = self.camb.ks
-        else:
-            ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma", om) / 2.0)
-
-    @lru_cache(maxsize=4)
-    def get_damping_aniso_perp(self, om, data_name=None):
-        if data_name is None:
-            ks = self.camb.ks
-        else:
-            ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma", om) / 2.0)
+        return np.exp(-np.tile(self.camb.ks ** 2, (self.nmu, 1)) * self.get_pregen("sigma_ss_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_dd_par(self, growth, om, data_name=None):
@@ -147,7 +118,7 @@ class PowerSeo2016(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_dd", om) / 2.0)
+        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_dd_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_dd_perp(self, om, data_name=None):
@@ -155,7 +126,23 @@ class PowerSeo2016(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_dd", om) / 2.0)
+        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_dd_nl", om))
+
+    @lru_cache(maxsize=4)
+    def get_damping_aniso_sd_par(self, growth, om, data_name=None):
+        if data_name is None:
+            ks = self.camb.ks
+        else:
+            ks = self.data_dict[data_name]["ks_input"]
+        return np.exp(-np.outer((1.0 + growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_sd_nl", om))
+
+    @lru_cache(maxsize=4)
+    def get_damping_aniso_sd_perp(self, om, data_name=None):
+        if data_name is None:
+            ks = self.camb.ks
+        else:
+            ks = self.data_dict[data_name]["ks_input"]
+        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_sd_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_ss_par(self, om, data_name=None):
@@ -163,7 +150,7 @@ class PowerSeo2016(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer(ks ** 2, self.mu ** 2) * self.get_pregen("sigma_ss", om) / 2.0)
+        return np.exp(-np.outer(ks ** 2, self.mu ** 2) * self.get_pregen("sigma_ss_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_ss_perp(self, om, data_name=None):
@@ -171,22 +158,38 @@ class PowerSeo2016(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_ss", om) / 2.0)
+        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_ss_nl", om))
+
+    @lru_cache(maxsize=4)
+    def get_damping_aniso_par(self, growth, om, data_name=None):
+        if data_name is None:
+            ks = self.camb.ks
+        else:
+            ks = self.data_dict[data_name]["ks_input"]
+        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_nl", om))
+
+    @lru_cache(maxsize=4)
+    def get_damping_aniso_perp(self, om, data_name=None):
+        if data_name is None:
+            ks = self.camb.ks
+        else:
+            ks = self.data_dict[data_name]["ks_input"]
+        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_nl", om))
 
     def declare_parameters(self):
         super().declare_parameters()
-        self.add_param("beta", r"$\beta$", 0.01, 4.0, 0.5)  # RSD parameter f/b
+        self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure
         self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
+        self.add_param("b_delta", r"$b_{\delta}$", 0.01, 10.0, 5.0)  # Non-linear galaxy bias
         for pole in self.poly_poles:
             self.add_param(f"a{{{pole}}}_1", f"$a_{{{pole},1}}$", -20000.0, 20000.0, 0)  # Monopole Polynomial marginalisation 1
             self.add_param(f"a{{{pole}}}_2", f"$a_{{{pole},2}}$", -20000.0, 20000.0, 0)  # Monopole Polynomial marginalisation 2
             self.add_param(f"a{{{pole}}}_3", f"$a_{{{pole},3}}$", -5000.0, 5000.0, 0)  # Monopole Polynomial marginalisation 3
-            if self.n_poly == 5:
-                self.add_param(f"a{{{pole}}}_4", f"$a_{{{pole},4}}$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
-                self.add_param(f"a{{{pole}}}_5", f"$a_{{{pole},5}}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
+            self.add_param(f"a{{{pole}}}_4", f"$a_{{{pole},4}}$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
+            self.add_param(f"a{{{pole}}}_5", f"$a_{{{pole},5}}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
 
     def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None):
-        """Computes the power spectrum model using the Seo et. al., 2016 method
+        """Computes the power spectrum model using the Ding et. al., 2018 EFT0 propagator
 
         Parameters
         ----------
@@ -196,6 +199,10 @@ class PowerSeo2016(PowerSpectrumFit):
             dictionary of parameter names to their values
         smooth : bool, optional
             Whether or not to generate a smooth model without the BAO feature
+        shape : bool, optional
+            Whether or not to include shape marginalisation terms.
+        dilate : bool, optional
+            Whether or not to dilate the k-values of the model based on the values of alpha (and epsilon)
 
         Returns
         -------
@@ -207,8 +214,7 @@ class PowerSeo2016(PowerSpectrumFit):
             the model quadrupole interpolated to kprime. Will be 'None' if the model is isotropic
         pk4 : np.ndarray
             the model hexadecapole interpolated to kprime. Will be 'None' if the model is isotropic
-        poly: np.ndarray
-            the additive terms in the model, necessary for analytical marginalisation
+
         """
 
         # Get the basic power spectrum components
@@ -219,7 +225,6 @@ class PowerSeo2016(PowerSpectrumFit):
             ks = self.kvals
             pk_smooth_lin, pk_ratio = self.pksmooth, self.pkratio
 
-        # We split for isotropic and anisotropic here. They are coded up quite differently to try and make things fast
         if self.isotropic:
 
             pk = [np.zeros(len(k))]
@@ -235,30 +240,26 @@ class PowerSeo2016(PowerSpectrumFit):
             else:
                 # Lets round some things for the sake of numerical speed
                 om = np.round(p["om"], decimals=5)
-                growth = np.round(p["beta"] * p["b"], decimals=5)
+                growth = np.round(p["b"] * p["beta"], decimals=5)
 
                 # Compute the BAO damping
                 if self.recon:
                     damping_dd = self.get_damping_dd(growth, om)
+                    damping_sd = self.get_damping_sd_iso(growth, om) if self.recon_type == "iso" else self.get_damping_sd(growth, om)
                     damping_ss = self.get_damping_ss(om)
 
-                    # Compute propagator
-                    smooth_prefac = np.tile(self.camb.smoothing_kernel / p["b"], (self.nmu, 1))
-                    kaiser_prefac = 1.0 + np.outer(p["beta"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel)
-                    propagator = (kaiser_prefac * damping_dd + smooth_prefac * (damping_ss - damping_dd)) ** 2
+                    kaiser_prefac = p["b"] + (1.0 + np.outer(growth * self.mu ** 2, 1.0 - self.camb.smoothing_kernel))
+                    smooth_prefac = np.outer(1.0 + growth * self.mu ** 2, self.camb.smoothing_kernel)
+
+                    propagator = (
+                        kaiser_prefac ** 2 * damping_dd
+                        + 2.0 * kaiser_prefac * self.camb.smoothing_kernel * damping_sd
+                        + smooth_prefac ** 2 * damping_ss
+                    )
                 else:
                     damping = self.get_damping(growth, om)
-
-                    prefac_k = 1.0 + np.tile(
-                        3.0 / 7.0 * (self.get_pregen("R1", om) * (1.0 - 4.0 / (9.0 * p["b"])) + self.get_pregen("R2", om)), (self.nmu, 1)
-                    )
-                    prefac_mu = np.outer(
-                        self.mu ** 2,
-                        p["beta"]
-                        + 3.0 / 7.0 * growth * self.get_pregen("R1", om) * (2.0 - 1.0 / (3.0 * p["b"]))
-                        + 6.0 / 7.0 * growth * self.get_pregen("R2", om),
-                    )
-                    propagator = ((prefac_k + prefac_mu) * damping) ** 2
+                    kaiser_prefac = 1.0 + np.tile(p["beta"] * self.mu ** 2, (len(ks), 1)).T
+                    propagator = kaiser_prefac ** 2 * damping
 
             if smooth:
                 prefac = np.ones(len(kprime))
@@ -288,10 +289,10 @@ class PowerSeo2016(PowerSpectrumFit):
 
             # Lets round some things for the sake of numerical speed
             om = np.round(p["om"], decimals=5)
-            growth = np.round(p["beta"] * p["b"], decimals=5)
+            growth = np.round(p["b"] * p["beta"], decimals=5)
 
             sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel))
-            kaiser_prefac = 1.0 + growth / p["b"] * muprime ** 2 * (1.0 - sprime)
+            kaiser_prefac = 1.0 + p["beta"] * muprime ** 2 * (1.0 - sprime)
 
             pk_smooth = p["b"] ** 2 * kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
 
@@ -301,10 +302,15 @@ class PowerSeo2016(PowerSpectrumFit):
                 # Compute the BAO damping
                 power_par = 1.0 / (p["alpha"] ** 2 * (1.0 + epsilon) ** 4)
                 power_perp = (1.0 + epsilon) ** 2 / p["alpha"] ** 2
+                bdelta_prefac = 0.5 * p["b_delta"] / (p["b"] * kaiser_prefac) * kprime ** 2
                 if self.recon:
                     damping_dd = (
                         self.get_damping_aniso_dd_par(growth, om, data_name=data_name) ** power_par
                         * self.get_damping_aniso_dd_perp(om, data_name=data_name) ** power_perp
+                    )
+                    damping_sd = (
+                        self.get_damping_aniso_sd_par(growth, om, data_name=data_name) ** power_par
+                        * self.get_damping_aniso_sd_perp(om, data_name=data_name) ** power_perp
                     )
                     damping_ss = (
                         self.get_damping_aniso_ss_par(om, data_name=data_name) ** power_par
@@ -312,22 +318,20 @@ class PowerSeo2016(PowerSpectrumFit):
                     )
 
                     # Compute propagator
-                    smooth_prefac = sprime / p["b"]
-                    propagator = (damping_dd + smooth_prefac / kaiser_prefac * (damping_ss - damping_dd)) ** 2
+                    smooth_prefac = sprime / (p["b"] * kaiser_prefac)
+                    propagator = (
+                        ((1.0 + bdelta_prefac - smooth_prefac) ** 2 - bdelta_prefac ** 2) * damping_dd
+                        + 2.0 * (1.0 + bdelta_prefac - smooth_prefac) * smooth_prefac * damping_sd
+                        + smooth_prefac ** 2 * damping_ss
+                    )
                 else:
                     damping = (
                         self.get_damping_aniso_par(growth, om, data_name=data_name) ** power_par
                         * self.get_damping_aniso_perp(om, data_name=data_name) ** power_perp
                     )
 
-                    R1_kprime = splev(kprime, splrep(ks, self.get_pregen("R1", om)))
-                    R2_kprime = splev(kprime, splrep(ks, self.get_pregen("R2", om)))
-
-                    prefac_k = 3.0 / 7.0 * (R1_kprime * (1.0 - 4.0 / (9.0 * p["b"])) + R2_kprime)
-                    prefac_mu = muprime ** 2 * (
-                        3.0 / 7.0 * growth * R1_kprime * (2.0 - 1.0 / (3.0 * p["b"])) + 6.0 / 7.0 * growth * R2_kprime
-                    )
-                    propagator = ((1.0 + prefac_k / kaiser_prefac + prefac_mu / kaiser_prefac) * damping) ** 2
+                    # Compute propagator
+                    propagator = (1.0 + 2.0 * bdelta_prefac) * damping
 
                 pk2d = pk_smooth * (1.0 + splev(kprime, splrep(ks, pk_ratio)) * propagator)
 
@@ -366,28 +370,10 @@ if __name__ == "__main__":
 
     print("Checking isotropic mock mean")
     dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
-    model = PowerSeo2016(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP)
+    model = PowerChen2019(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP)
     model.sanity_check(dataset)
 
     print("Checking isotropic mock mean")
     dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
-    model = PowerSeo2016(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP, n_poly=3)
-    model.sanity_check(dataset)
-
-    print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
-    model = PowerSeo2016(
-        recon=dataset.recon,
-        isotropic=dataset.isotropic,
-        marg="full",
-        poly_poles=[0, 2, 4],
-        correction=Correction.HARTLAP,
-    )
-    model.sanity_check(dataset)
-
-    print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
-    model = PowerSeo2016(
-        recon=dataset.recon, isotropic=dataset.isotropic, marg="full", poly_poles=[0, 2, 4], correction=Correction.HARTLAP, n_poly=3
-    )
+    model = PowerChen2019(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP, n_poly=3)
     model.sanity_check(dataset)

@@ -54,9 +54,14 @@ class PowerSpectrumFit(Model):
         self.recon_type = "None"
         if recon is not None:
             if recon.lower() != "None":
-                self.recon_type = "iso"
-                if recon.lower() == "ani":
+                if recon.lower() == "iso":
+                    self.recon_type = "iso"
+                elif recon.lower() == "ani":
                     self.recon_type = "ani"
+                elif recon.lower() == "sym":
+                    self.recon_type = "sym"
+                else:
+                    raise ValueError("recon not recognised, must be 'iso', 'ani' or 'sym'")
                 self.recon = True
 
         self.declare_parameters()

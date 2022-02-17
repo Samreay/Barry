@@ -25,15 +25,6 @@ class CorrBeutler2017(CorrelationFunctionFit):
         marg=None,
     ):
 
-        self.recon = False
-        self.recon_type = "None"
-        if recon is not None:
-            if recon.lower() is not "None":
-                self.recon_type = "iso"
-                if recon.lower() == "ani":
-                    self.recon_type = "ani"
-                self.recon = True
-
         self.recon_smoothing_scale = None
         if isotropic:
             poly_poles = [0]
