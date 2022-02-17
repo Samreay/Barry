@@ -44,6 +44,9 @@ class CorrelationFunction_ROSS_DR12(CorrelationFunction):
         fit_poles=(0,),
     ):
 
+        self.nredshift_bins = 3
+        self.nsmoothtypes = 1
+
         if recon.lower() != "iso":
             raise NotImplementedError("Only isotropic recon data not available for ROSS_DR12")
 
@@ -95,8 +98,11 @@ class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
         isotropic=True,
         fit_poles=(0,),
         covtype="cov-std",
-        smoothtype="15",
+        smoothtype=3,
     ):
+
+        self.nredshift_bins = 1
+        self.nsmoothtypes = 4
 
         if recon is None:
             raise NotImplementedError("Only Post recon data not available for DESIMockChallenge_Post")
@@ -105,16 +111,18 @@ class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
         if covtype.lower() not in covtypes:
             raise NotImplementedError("covtype not recognised, must be cov-std, cov-fix")
 
-        smoothtypes = ["5", "10", "15", "20"]
-        if smoothtype.lower() not in smoothtypes:
-            raise NotImplementedError("smoothtype not recognised, must be 5, 10, 15, 20")
+        smoothnames = ["5", "10", "15", "20"]
+        if smoothtype not in [1, 2, 3, 4]:
+            raise NotImplementedError(
+                "smoothtype not recognised, must be in 1, 2, 3 or 4 corresponding to smoothing scales of 5, 10, 15, 20 Mpc/h respectively"
+            )
 
         if any(pole in [1, 3] for pole in fit_poles):
             raise NotImplementedError("Only even multipoles included in DESIMockChallenge")
 
         reconname = "pre" if recon is None else recon.lower()
         covname = "" if covtype.lower() == "cov-fix" else "_nonfix"
-        smoothname = "" if recon is None else "_" + smoothtype.lower()
+        smoothname = "" if recon is None else "_" + smoothnames[smoothtype]
         datafile = "desi_mock_challenge_post_stage_2_xi_" + reconname + smoothname + covname + ".pkl"
 
         super().__init__(

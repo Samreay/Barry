@@ -32,6 +32,9 @@ class PowerSpectrum_SDSS_DR12(PowerSpectrum):
         fit_poles=(0,),
     ):
 
+        self.nredshift_bins = 3
+        self.nsmoothtypes = 1
+
         if redshift_bin not in [1, 2, 3]:
             raise NotImplementedError("Redshift bin for SDSS_DR12 must be 1, 2 or 3, corresponding to 0.38, 0.51 and 0.61 respectively")
 
@@ -76,7 +79,7 @@ class PowerSpectrum_Beutler2019(PowerSpectrum):
 
     def __init__(
         self,
-        redshift_bin=3,
+        redshift_bin=2,
         galactic_cap="ngc",
         name=None,
         min_k=0.02,
@@ -92,11 +95,14 @@ class PowerSpectrum_Beutler2019(PowerSpectrum):
         fit_poles=(0,),
     ):
 
+        self.nredshift_bins = 2
+        self.nsmoothtypes = 1
+
         if recon is not None:
             raise NotImplementedError("Post-recon data not available for Beutler2019 data")
 
-        if redshift_bin not in [1, 3]:
-            raise NotImplementedError("Redshift bin for Beutler2019 must be 1 or 3, corresponding to 0.38 and 0.61 respectively")
+        if redshift_bin not in [1, 2]:
+            raise NotImplementedError("Redshift bin for Beutler2019 must be 1 or 2, corresponding to 0.38 and 0.61 respectively")
 
         if galactic_cap.lower() not in ["ngc", "sgc"]:
             raise NotImplementedError("Galactic cap for Beutler2019 must be NGC or SGC")
@@ -106,7 +112,7 @@ class PowerSpectrum_Beutler2019(PowerSpectrum):
                 if realisation.lower() != "data":
                     raise ValueError("Realisation is not None (mock mean), an integer (mock realisation), or 'data'")
 
-        reds = ["z038", "z051", "z061"]
+        reds = ["z038", "z061"]
         datafile = "beutler_2019_dr12_" + reds[redshift_bin - 1] + "_pk_" + galactic_cap.lower() + ".pkl"
 
         super().__init__(
@@ -144,23 +150,28 @@ class PowerSpectrum_DESIMockChallenge_Post(PowerSpectrum):
         isotropic=True,
         fit_poles=(0,),
         covtype="cov-std",
-        smoothtype="15",
+        smoothtype=3,
     ):
+
+        self.nredshift_bins = 1
+        self.nsmoothtypes = 4
 
         covtypes = ["cov-std", "cov-fix"]
         if covtype.lower() not in covtypes:
             raise NotImplementedError("covtype not recognised, must be cov-std, cov-fix")
 
-        smoothtypes = ["5", "10", "15", "20"]
-        if smoothtype.lower() not in smoothtypes:
-            raise NotImplementedError("smoothtype not recognised, must be 5, 10, 15, 20")
+        smoothnames = ["5", "10", "15", "20"]
+        if smoothtype not in [1, 2, 3, 4]:
+            raise NotImplementedError(
+                "smoothtype not recognised, must be in 1, 2, 3 or 4 corresponding to smoothing scales of 5, 10, 15, 20 Mpc/h respectively"
+            )
 
         if any(pole in [1, 3] for pole in fit_poles):
             raise NotImplementedError("Only even multipoles included in DESIMockChallenge")
 
         reconname = "pre" if recon is None else recon.lower()
         covname = "" if covtype.lower() == "cov-fix" else "_nonfix"
-        smoothname = "" if recon is None else "_" + smoothtype.lower()
+        smoothname = "" if recon is None else "_" + smoothnames[smoothtype]
         datafile = "desi_mock_challenge_post_stage_2_pk_" + reconname + smoothname + covname + ".pkl"
 
         super().__init__(
@@ -199,6 +210,9 @@ class PowerSpectrum_DESILightcone_Mocks_Recon(PowerSpectrum):
         fit_poles=(0,),
         type="julian_reciso",
     ):
+
+        self.nredshift_bins = 1
+        self.nsmoothtypes = 1
 
         types = [
             "julian_reciso",
