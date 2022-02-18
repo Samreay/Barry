@@ -71,7 +71,6 @@ if __name__ == "__main__":
 
     # datasets = [c() for c in get_concrete(Dataset) if "DESI" in c.__name__]
     base_datasets = [c() for c in get_concrete(Dataset)]  # This returns all the dataset classes
-    print(base_datasets)
 
     # For each dataset, check nredshift_bins and nsmooth_types. Duplicate the dataset classes so that each combination
     # of redshift_bins and smooth_types is present.
@@ -79,7 +78,6 @@ if __name__ == "__main__":
     datasets = []
     for (c, variants) in zip(get_concrete(Dataset), ndatasets):
         if "DESI" not in c.__name__:  # Stops Barry from needing pregenerated stuff for DESI data that is not currently included in the repo
-            print(c, variants)
             if variants[0] > 1:
                 if variants[1] > 1:
                     datasets.extend([c(redshift_bin=i + 1, smoothtype=j + 1) for i in range(variants[0]) for j in range(variants[1])])

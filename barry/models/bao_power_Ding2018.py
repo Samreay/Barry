@@ -284,7 +284,7 @@ class PowerDing2018(PowerSpectrumFit):
             om = np.round(p["om"], decimals=5)
             growth = np.round(p["b"] * p["beta"], decimals=5)
 
-            sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel))
+            sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel)) if self.recon else 0.0
             kaiser_prefac = 1.0 + p["beta"] * muprime ** 2 * (1.0 - sprime)
 
             pk_smooth = p["b"] ** 2 * kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
