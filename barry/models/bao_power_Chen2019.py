@@ -71,6 +71,7 @@ class PowerChen2019(PowerSpectrumFit):
     def precompute(self, camb, om, h0):
 
         c = camb.get_data(om, h0)
+        print(om, h0, c)
         r_drag = c["r_s"]
         ks = c["ks"]
         pk_lin = c["pk_lin"]
