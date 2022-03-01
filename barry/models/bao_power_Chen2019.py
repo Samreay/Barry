@@ -71,7 +71,6 @@ class PowerChen2019(PowerSpectrumFit):
     def precompute(self, camb, om, h0):
 
         c = camb.get_data(om, h0)
-        print(om, h0, c)
         r_drag = c["r_s"]
         ks = c["ks"]
         pk_lin = c["pk_lin"]
@@ -227,9 +226,8 @@ class PowerChen2019(PowerSpectrumFit):
 
     def declare_parameters(self):
         super().declare_parameters()
-        self.add_param("f", r"$f$", 0.01, 1.0, 0.5)  # Growth rate of structure
+        self.add_param("beta", r"$\beta$", 0.01, 1.0, 0.5)  # Growth rate of structure
         self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
-        self.add_param("b_delta", r"$b_{\delta}$", 0.01, 10.0, 5.0)  # Non-linear galaxy bias
         for pole in self.poly_poles:
             self.add_param(f"a{{{pole}}}_1", f"$a_{{{pole},1}}$", -20000.0, 20000.0, 0)  # Monopole Polynomial marginalisation 1
             self.add_param(f"a{{{pole}}}_2", f"$a_{{{pole},2}}$", -20000.0, 20000.0, 0)  # Monopole Polynomial marginalisation 2
@@ -372,7 +370,7 @@ class PowerChen2019(PowerSpectrumFit):
                             * self.get_damping_aniso_sd_perp(om, data_name=data_name) ** power_perp
                         )
                     damping_ss = (
-                        self.get_damping_aniso_ss_par(om, data_name=data_name) ** power_par
+                        self.get_damping_aniso_ss_par(growth, om, data_name=data_name) ** power_par
                         * self.get_damping_aniso_ss_perp(om, data_name=data_name) ** power_perp
                     )
 
@@ -432,4 +430,29 @@ if __name__ == "__main__":
     print("Checking isotropic mock mean")
     dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
     model = PowerChen2019(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP, n_poly=3)
+    model.sanity_check(dataset)
+
+    print("Checking anisotropic mock mean")
+    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
+    model = PowerChen2019(
+        recon=dataset.recon,
+        isotropic=dataset.isotropic,
+        marg="full",
+        fix_params=["om"],
+        poly_poles=[0, 2, 4],
+        correction=Correction.HARTLAP,
+    )
+    model.sanity_check(dataset)
+
+    print("Checking anisotropic mock mean")
+    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
+    model = PowerChen2019(
+        recon=dataset.recon,
+        isotropic=dataset.isotropic,
+        marg="full",
+        fix_params=["om"],
+        poly_poles=[0, 2, 4],
+        correction=Correction.HARTLAP,
+        n_poly=3,
+    )
     model.sanity_check(dataset)

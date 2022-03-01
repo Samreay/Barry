@@ -71,6 +71,62 @@ class PowerSpectrum_SDSS_DR12(PowerSpectrum):
         )
 
 
+class PowerSpectrum_eBOSS_LRGpCMASS(PowerSpectrum):
+
+    """Power spectrum for SDSS DR12 eBOSS LRGpCMASS sample for NGC and SGC at redshift 0.698.
+    Only even multipoles.
+    """
+
+    def __init__(
+        self,
+        galactic_cap="ngc",
+        name=None,
+        min_k=0.02,
+        max_k=0.30,
+        step_size=1,
+        recon=None,
+        reduce_cov_factor=1,
+        num_mocks=None,
+        postprocess=None,
+        fake_diag=False,
+        realisation=None,
+        isotropic=True,
+        fit_poles=(0,),
+    ):
+
+        self.nredshift_bins = 1
+        self.nsmoothtypes = 1
+
+        if galactic_cap.lower() not in ["ngc", "sgc"]:
+            raise NotImplementedError("Galactic cap for SDSS_DR12 must be NGC or SGC")
+
+        if any(pole in [1, 3] for pole in fit_poles):
+            raise NotImplementedError("Only even multipoles included in SDSS_DR12")
+
+        if realisation is not None:
+            if not isinstance(realisation, int):
+                if realisation.lower() != "data":
+                    raise ValueError("Realisation is not None (mock mean), an integer (mock realisation), or 'data'")
+
+        datafile = "sdss_dr16_lrgpcmass_pk_" + galactic_cap.lower() + ".pkl"
+
+        super().__init__(
+            datafile,
+            name=name,
+            min_k=min_k,
+            max_k=max_k,
+            step_size=step_size,
+            recon=recon,
+            reduce_cov_factor=reduce_cov_factor,
+            num_mocks=num_mocks,
+            postprocess=postprocess,
+            fake_diag=fake_diag,
+            realisation=realisation,
+            isotropic=isotropic,
+            fit_poles=fit_poles,
+        )
+
+
 class PowerSpectrum_Beutler2019(PowerSpectrum):
 
     """Updated power spectrum for SDSS BOSS DR12 sample for NGC and SGC with mean redshift z = 0.38 and 0.61.
@@ -259,12 +315,60 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
-    # Plot the data and mock average for the SDSS_DR12 spectra
-    for j, recon in enumerate(["iso", None]):
-        for galactic_cap in ["ngc", "sgc"]:
-            for redshift_bin in [1, 2, 3]:
-                dataset = PowerSpectrum_SDSS_DR12(
-                    redshift_bin=redshift_bin,
+    if False:
+
+        # Plot the data and mock average for the SDSS_DR12 spectra
+        for j, recon in enumerate(["iso", None]):
+            for galactic_cap in ["ngc", "sgc"]:
+                for redshift_bin in [1, 2, 3]:
+                    dataset = PowerSpectrum_SDSS_DR12(
+                        redshift_bin=redshift_bin,
+                        galactic_cap=galactic_cap,
+                        isotropic=False,
+                        recon=recon,
+                        fit_poles=[0, 2, 4],
+                        min_k=0.02,
+                        max_k=0.30,
+                    )
+                    for i, realisation in enumerate([None, "data", 500]):
+                        dataset.set_realisation(realisation)
+                        data = dataset.get_data()
+                        label = [r"$P_{0}(k)$", r"$P_{2}(k)$", r"$P_{4}(k)$"] if i == 0 else [None, None, None]
+                        color = ["r", "b", "g"]
+                        fmt = "o" if i == 0 else "None"
+                        ls = "None" if i == 0 else "-"
+                        yerr = (
+                            [
+                                data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[0 : len(data[0]["ks"])],
+                                data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["ks"]) : 3 * len(data[0]["ks"])],
+                                data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[4 * len(data[0]["ks"]) : 5 * len(data[0]["ks"])],
+                            ]
+                            if i == 0
+                            else [None, None, None]
+                        )
+                        for m, pk in enumerate(["pk0", "pk2", "pk4"]):
+                            plt.errorbar(
+                                data[0]["ks"],
+                                data[0]["ks"] * data[0][pk],
+                                yerr=yerr[m],
+                                marker=fmt,
+                                ls=ls,
+                                c=color[m],
+                                zorder=i,
+                                label=label[m],
+                            )
+                    plt.xlabel(r"$k$")
+                    plt.ylabel(r"$k\,P(k)$")
+                    plt.title(dataset.name)
+                    plt.legend()
+                    plt.show()
+
+    if True:
+
+        # Plot the data and mock average for the eBOSS LRGpCMASS spectra
+        for j, recon in enumerate(["iso", None]):
+            for galactic_cap in ["ngc", "sgc"]:
+                dataset = PowerSpectrum_eBOSS_LRGpCMASS(
                     galactic_cap=galactic_cap,
                     isotropic=False,
                     recon=recon,
@@ -305,127 +409,46 @@ if __name__ == "__main__":
                 plt.legend()
                 plt.show()
 
-    # Plot the data and mock average for the Beutler2019 spectra
-    for j, recon in enumerate([None]):
-        for galactic_cap in ["ngc", "sgc"]:
-            for redshift_bin in [1, 3]:
-                dataset = PowerSpectrum_Beutler2019(
-                    redshift_bin=redshift_bin,
-                    galactic_cap=galactic_cap,
-                    isotropic=False,
-                    recon=recon,
-                    fit_poles=[0, 1, 2, 3, 4],
-                    min_k=0.02,
-                    max_k=0.30,
-                )
-                for i, realisation in enumerate([None, "data", 500]):
-                    dataset.set_realisation(realisation)
-                    data = dataset.get_data()
-                    label = (
-                        [r"$P_{0}(k)$", r"$P_{1}(k)$", r"$P_{2}(k)$", r"$P_{3}(k)$", r"$P_{4}(k)$"]
-                        if i == 0
-                        else [None, None, None, None, None]
+    if False:
+
+        # Plot the data and mock average for the Beutler2019 spectra
+        for j, recon in enumerate([None]):
+            for galactic_cap in ["ngc", "sgc"]:
+                for redshift_bin in [1, 3]:
+                    dataset = PowerSpectrum_Beutler2019(
+                        redshift_bin=redshift_bin,
+                        galactic_cap=galactic_cap,
+                        isotropic=False,
+                        recon=recon,
+                        fit_poles=[0, 1, 2, 3, 4],
+                        min_k=0.02,
+                        max_k=0.30,
                     )
-                    color = ["r", "b", "g", "orange", "purple"]
-                    fmt = "o" if i == 0 else "None"
-                    ls = "None" if i == 0 else "-"
-                    for m, pk in enumerate(["pk0", "pk1", "pk2", "pk3", "pk4"]):
-                        yerr = data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[m * len(data[0]["ks"]) : (m + 1) * len(data[0]["ks"])]
-                        plt.errorbar(
-                            data[0]["ks"],
-                            data[0]["ks"] * data[0][pk],
-                            yerr=yerr if i == 0 else None,
-                            marker=fmt,
-                            ls=ls,
-                            c=color[m],
-                            zorder=i,
-                            label=label[m],
+                    for i, realisation in enumerate([None, "data", 500]):
+                        dataset.set_realisation(realisation)
+                        data = dataset.get_data()
+                        label = (
+                            [r"$P_{0}(k)$", r"$P_{1}(k)$", r"$P_{2}(k)$", r"$P_{3}(k)$", r"$P_{4}(k)$"]
+                            if i == 0
+                            else [None, None, None, None, None]
                         )
-                plt.xlabel(r"$k$")
-                plt.ylabel(r"$k\,P(k)$")
-                plt.title(dataset.name)
-                plt.legend()
-                plt.show()
-
-    """"# Plot the data and for the DESI Lightcone mock challenge
-    for j, recon in enumerate(["iso", None]):
-        datasets = [
-            PowerSpectrum_DESILightcone_Mocks_Recon(
-                isotropic=False, recon=recon, fit_poles=[0, 2], min_k=0.02, max_k=0.30, type="julian_reciso"
-            ),
-            PowerSpectrum_DESILightcone_Mocks_Recon(
-                isotropic=False, recon=recon, fit_poles=[0, 2], min_k=0.02, max_k=0.30, type="julian_recsym"
-            ),
-            PowerSpectrum_DESILightcone_Mocks_Recon(
-                isotropic=False, recon=recon, fit_poles=[0, 2], min_k=0.02, max_k=0.30, type="martin_reciso"
-            ),
-            PowerSpectrum_DESILightcone_Mocks_Recon(
-                isotropic=False, recon=recon, fit_poles=[0, 2], min_k=0.02, max_k=0.30, type="martin_recsym"
-            ),
-        ]
-        for dataset in datasets:
-            for i, realisation in enumerate([None, "data", 50]):
-                dataset.set_realisation(realisation)
-                data = dataset.get_data()
-                label = [r"$P_{0}(k)$", r"$P_{2}(k)$", r"$P_{4}(k)$"] if i == 0 else [None, None, None]
-                fmt = "o" if i == 0 else "None"
-                ls = "None" if i == 0 else "-"
-                yerr = (
-                    [
-                        data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[0 : len(data[0]["ks"])],
-                        data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["ks"]) : 3 * len(data[0]["ks"])],
-                        data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[4 * len(data[0]["ks"]) : 5 * len(data[0]["ks"])],
-                    ]
-                    if i == 0
-                    else [None, None, None]
-                )
-                plt.errorbar(
-                    data[0]["ks"], data[0]["ks"] * data[0]["pk0"], yerr=yerr[0], marker=fmt, ls=ls, c="r", zorder=i, label=label[0]
-                )
-                plt.errorbar(
-                    data[0]["ks"], data[0]["ks"] * data[0]["pk2"], yerr=yerr[1], marker=fmt, ls=ls, c="b", zorder=i, label=label[1]
-                )
-                plt.errorbar(
-                    data[0]["ks"], data[0]["ks"] * data[0]["pk4"], yerr=yerr[2], marker=fmt, ls=ls, c="g", zorder=i, label=label[2]
-                )
-            plt.xlabel(r"$k$")
-            plt.ylabel(r"$k\,P(k)$")
-            plt.title(dataset.name)
-            plt.legend()
-            plt.show()"""
-
-    """# Plot the data and mock average for the sdss spectra
-    for j, recon in enumerate([None, "iso", "ani"]):
-        datasets = [
-            PowerSpectrum_DESIMockChallenge_Post(
-                isotropic=False, recon=recon, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, covtype="cov-std", smoothtype="15"
-            ),
-            PowerSpectrum_DESIMockChallenge_Post(
-                isotropic=False, recon=recon, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, covtype="cov-fix", smoothtype="15"
-            ),
-        ]
-        for dataset in datasets:
-            dataset.set_realisation(0)
-            data = dataset.get_data()
-            label = [r"$P_{0}(k)$", r"$P_{2}(k)$", r"$P_{4}(k)$"]
-            fmt = "o"
-            ls = "None"
-            yerr = [
-                data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[0 : len(data[0]["ks"])],
-                data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["ks"]) : 3 * len(data[0]["ks"])],
-                data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[4 * len(data[0]["ks"]) : 5 * len(data[0]["ks"])],
-            ]
-            plt.errorbar(
-                data[0]["ks"], data[0]["ks"] * data[0]["pk0"], yerr=10.0 * yerr[0], marker=fmt, ls=ls, c="r", zorder=0, label=label[0]
-            )
-            plt.errorbar(
-                data[0]["ks"], data[0]["ks"] * data[0]["pk2"], yerr=10.0 * yerr[1], marker=fmt, ls=ls, c="b", zorder=0, label=label[1]
-            )
-            plt.errorbar(
-                data[0]["ks"], data[0]["ks"] * data[0]["pk4"], yerr=10.0 * yerr[2], marker=fmt, ls=ls, c="g", zorder=0, label=label[2]
-            )
-            plt.xlabel(r"$k$")
-            plt.ylabel(r"$k\,P(k)$")
-            plt.title(dataset.name)
-            plt.legend()
-            plt.show()"""
+                        color = ["r", "b", "g", "orange", "purple"]
+                        fmt = "o" if i == 0 else "None"
+                        ls = "None" if i == 0 else "-"
+                        for m, pk in enumerate(["pk0", "pk1", "pk2", "pk3", "pk4"]):
+                            yerr = data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[m * len(data[0]["ks"]) : (m + 1) * len(data[0]["ks"])]
+                            plt.errorbar(
+                                data[0]["ks"],
+                                data[0]["ks"] * data[0][pk],
+                                yerr=yerr if i == 0 else None,
+                                marker=fmt,
+                                ls=ls,
+                                c=color[m],
+                                zorder=i,
+                                label=label[m],
+                            )
+                    plt.xlabel(r"$k$")
+                    plt.ylabel(r"$k\,P(k)$")
+                    plt.title(dataset.name)
+                    plt.legend()
+                    plt.show()
