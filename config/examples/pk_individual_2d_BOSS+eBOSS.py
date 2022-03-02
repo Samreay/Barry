@@ -75,7 +75,7 @@ if __name__ == "__main__":
     model = PowerBeutler2017(recon="iso", isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.HARTLAP, marg="full")
 
     for d in datasets:
-        for i in range(1000):
+        for i in range(999):
             d.set_realisation(i)
             fitter.add_model_and_dataset(model, d, name=d.name + " " + str(i), realisation=i)
 
