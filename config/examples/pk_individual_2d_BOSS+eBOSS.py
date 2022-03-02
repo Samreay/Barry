@@ -1,6 +1,7 @@
 import sys
 
 sys.path.append("..")
+sys.path.append("../..")
 from barry.samplers import DynestySampler, Optimiser
 from barry.cosmology.camb_generator import getCambGenerator
 from barry.postprocessing import BAOExtractor
