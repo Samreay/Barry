@@ -84,11 +84,11 @@ def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
     pre_res = {f.lower(): getpk(f) for f in pre_files}
     post_res = {f.lower(): getpk(f) for f in pre_files}
 
-    ks = len(next(iter(pre_res.items()))[1]["k"].to_numpy())
+    ks = next(iter(pre_res.items()))[1]["k"].to_numpy()
     pre_cov = format_pk_cov(len(ks), pre_covfile)
     print(np.shape(pre_cov), np.shape(ks))
 
-    ks = len(next(iter(pre_res.items()))[1]["k"].to_numpy())
+    ks = next(iter(pre_res.items()))[1]["k"].to_numpy()
     post_cov = format_pk_cov(len(ks), post_covfile)
     print(np.shape(post_cov), np.shape(ks))
 
