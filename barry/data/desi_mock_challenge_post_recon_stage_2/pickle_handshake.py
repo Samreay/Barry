@@ -61,15 +61,15 @@ def format_xi_cov(nss, covfile):
     nin = int(np.sqrt(len(cov)) / 3)
     cov_input = cov_flat.reshape((3 * nin, 3 * nin))
     cov = np.zeros((3 * nss, 3 * nss))
-    cov[:nss, :nss] = cov_input[start : start + nss, start : start + nss]
-    cov[:nss, nss : 2 * nss] = cov_input[start : start + nss, start + nin : start + nin + nss]
-    cov[:nss, 2 * nss :] = cov_input[start : start + nss, start + 2 * nin : start + 2 * nin + nss]
-    cov[nss : 2 * nss, :nss] = cov_input[start + nin : start + nin + nss, start : start + nss]
-    cov[nss : 2 * nss, nss : 2 * nss] = cov_input[start + nin : start + nin + nss, start + nin : start + nin + nss]
-    cov[nss : 2 * nss, 2 * nss :] = cov_input[start + nin : start + nin + nss, start + 2 * nin : start + 2 * nin + nss]
-    cov[2 * nss :, :nss] = cov_input[start + 2 * nin : start + 2 * nin + nss, start : start + nss]
-    cov[2 * nss :, nss : 2 * nss] = cov_input[start + 2 * nin : start + 2 * nin + nss, start + nin : start + nin + nss]
-    cov[2 * nss :, 2 * nss :] = cov_input[start + 2 * nin : start + 2 * nin + nss, start + 2 * nin : start + 2 * nin + nss]
+    cov[:nss, :nss] = cov_input[:nss, :nss]
+    cov[:nss, nss : 2 * nss] = cov_input[:nss, nin : nin + nss]
+    cov[:nss, 2 * nss :] = cov_input[:nss, 2 * nin : 2 * nin + nss]
+    cov[nss : 2 * nss, :nss] = cov_input[nin : nin + nss, :nss]
+    cov[nss : 2 * nss, nss : 2 * nss] = cov_input[nin : nin + nss, nin : nin + nss]
+    cov[nss : 2 * nss, 2 * nss :] = cov_input[nin : nin + nss, 2 * nin : 2 * nin + nss]
+    cov[2 * nss :, :nss] = cov_input[2 * nin : 2 * nin + nss, :nss]
+    cov[2 * nss :, nss : 2 * nss] = cov_input[2 * nin : 2 * nin + nss, nin : nin + nss]
+    cov[2 * nss :, 2 * nss :] = cov_input[2 * nin : 2 * nin + nss, 2 * nin : 2 * nin + nss]
 
     return cov
 
