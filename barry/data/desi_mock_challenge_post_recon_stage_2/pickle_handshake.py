@@ -181,8 +181,8 @@ if __name__ == "__main__":
         for i, smooth in enumerate([5, 10, 15]):
             pre_file = [ds + b + "/dk0.005kmin0.005/" + pre_files[i] + ".txt"]
             post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + ".txt"]
-            pre_covfile = covds + c + "/cov_matrix_pk-EZmocks-1Gpc-" + c[:6] + str("Sm%d" % i) + "-nonfix_rsd_pre.txt"
-            post_covfile = covds + c + "/cov_matrix_pk-EZmocks-1Gpc-" + c[:6] + str("Sm%d" % i) + "-nonfix_rsd_post.txt"
+            pre_covfile = covds + c + "/cov_matrix_pk-EZmocks-1Gpc-" + c[:6] + str("Sm%d" % smooth) + "-nonfix_rsd_pre.txt"
+            post_covfile = covds + c + "/cov_matrix_pk-EZmocks-1Gpc-" + c[:6] + str("Sm%d" % smooth) + "-nonfix_rsd_post.txt"
             collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix")
 
             """pre_file = [
