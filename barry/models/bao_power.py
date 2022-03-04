@@ -722,55 +722,57 @@ class PowerSpectrumFit(Model):
         cs = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00"]
         height = 2 + 1.4 * num_rows
 
-        fig, axes = plt.subplots(figsize=(9, height), nrows=num_rows, ncols=2, sharex=True, squeeze=False)
-        ratio = (height - 1) / height
-        plt.subplots_adjust(left=0.1, top=ratio, bottom=0.05, right=0.85, hspace=0, wspace=0.3)
-        for ax, err, mod, smooth, name, label, c in zip(axes, errs, mods, smooths, names, labels, cs):
+        if display is True or figname is not None:
 
-            # Plot ye old data
-            ax[0].errorbar(ks, ks * self.data[0][name], yerr=ks * err, fmt="o", ms=4, label="Data", c=c)
-            ax[1].errorbar(ks, ks * (self.data[0][name] - smooth), yerr=ks * err, fmt="o", ms=4, label="Data", c=c)
+            fig, axes = plt.subplots(figsize=(9, height), nrows=num_rows, ncols=2, sharex=True, squeeze=False)
+            ratio = (height - 1) / height
+            plt.subplots_adjust(left=0.1, top=ratio, bottom=0.05, right=0.85, hspace=0, wspace=0.3)
+            for ax, err, mod, smooth, name, label, c in zip(axes, errs, mods, smooths, names, labels, cs):
 
-            # Plot ye old model
-            ax[0].plot(ks, ks * mod, c=c, label="Model")
-            ax[1].plot(ks, ks * (mod - smooth), c=c, label="Model")
+                # Plot ye old data
+                ax[0].errorbar(ks, ks * self.data[0][name], yerr=ks * err, fmt="o", ms=4, label="Data", c=c)
+                ax[1].errorbar(ks, ks * (self.data[0][name] - smooth), yerr=ks * err, fmt="o", ms=4, label="Data", c=c)
 
-            if name in [f"pk{n}" for n in self.data[0]["poles"] if n % 2 == 0]:
-                ax[0].set_ylabel("$k \\times $ " + label)
+                # Plot ye old model
+                ax[0].plot(ks, ks * mod, c=c, label="Model")
+                ax[1].plot(ks, ks * (mod - smooth), c=c, label="Model")
+
+                if name in [f"pk{n}" for n in self.data[0]["poles"] if n % 2 == 0]:
+                    ax[0].set_ylabel("$k \\times $ " + label)
+                else:
+                    ax[0].set_ylabel("$ik \\times $ " + label)
+
+                if name not in [f"pk{n}" for n in self.data[0]["fit_poles"]]:
+                    ax[0].set_facecolor("#e1e1e1")
+                    ax[1].set_facecolor("#e1e1e1")
+
+            # Show the model parameters
+            self.data[0]["icov_m_w"] = icov_m_w
+            string = f"$\\mathcal{{L}}$: {self.get_likelihood(params, self.data[0]):0.3g}\n"
+            if self.marg:
+                string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items() if l not in self.fix_params])
             else:
-                ax[0].set_ylabel("$ik \\times $ " + label)
+                string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items()])
+            va = "center" if self.postprocess is None else "top"
+            ypos = 0.5 if self.postprocess is None else 0.98
+            fig.text(0.99, ypos, string, horizontalalignment="right", verticalalignment=va)
+            axes[-1, 0].set_xlabel("k")
+            axes[-1, 1].set_xlabel("k")
+            axes[0, 0].legend(frameon=False)
 
-            if name not in [f"pk{n}" for n in self.data[0]["fit_poles"]]:
-                ax[0].set_facecolor("#e1e1e1")
-                ax[1].set_facecolor("#e1e1e1")
+            if self.postprocess is None:
+                axes[0, 1].set_title("$P(k) - P_{\\rm smooth}(k)$")
+            else:
+                axes[0, 1].set_title("$P(k) - data$")
+            axes[0, 0].set_title("$k \\times P(k)$")
 
-        # Show the model parameters
-        self.data[0]["icov_m_w"] = icov_m_w
-        string = f"$\\mathcal{{L}}$: {self.get_likelihood(params, self.data[0]):0.3g}\n"
-        if self.marg:
-            string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items() if l not in self.fix_params])
-        else:
-            string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items()])
-        va = "center" if self.postprocess is None else "top"
-        ypos = 0.5 if self.postprocess is None else 0.98
-        fig.text(0.99, ypos, string, horizontalalignment="right", verticalalignment=va)
-        axes[-1, 0].set_xlabel("k")
-        axes[-1, 1].set_xlabel("k")
-        axes[0, 0].legend(frameon=False)
-
-        if self.postprocess is None:
-            axes[0, 1].set_title("$P(k) - P_{\\rm smooth}(k)$")
-        else:
-            axes[0, 1].set_title("$P(k) - data$")
-        axes[0, 0].set_title("$k \\times P(k)$")
-
-        if title is None:
-            title = self.data[0]["name"] + " + " + self.get_name()
-        fig.suptitle(title)
-        if figname is not None:
-            fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
-        if display:
-            plt.show()
+            if title is None:
+                title = self.data[0]["name"] + " + " + self.get_name()
+            fig.suptitle(title)
+            if figname is not None:
+                fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
+            if display:
+                plt.show()
 
         return new_chi_squared, dof, bband, mods, smooths
 
