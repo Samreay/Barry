@@ -206,17 +206,17 @@ if __name__ == "__main__":
     setup_logging()
 
     print("Checking isotropic mock mean")
-    dataset = PowerSpectrum_eBOSS_LRGpCMASS(isotropic=True, recon=None, galactic_cap="sgc")
+    dataset = PowerSpectrum_eBOSS_LRGpCMASS(realisation="data", isotropic=True, recon=None, galactic_cap="sgc")
     model = PowerBeutler2017(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP)
     model.sanity_check(dataset)
 
     print("Checking isotropic mock mean")
-    dataset = PowerSpectrum_eBOSS_LRGpCMASS(isotropic=True, recon="iso", galactic_cap="sgc")
+    dataset = PowerSpectrum_eBOSS_LRGpCMASS(realisation="data", isotropic=True, recon="iso", galactic_cap="sgc")
     model = PowerBeutler2017(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP)
     model.sanity_check(dataset)
 
     print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_eBOSS_LRGpCMASS(isotropic=False, recon=None, fit_poles=[0, 2, 4], galactic_cap="sgc")
+    dataset = PowerSpectrum_eBOSS_LRGpCMASS(realisation="data", isotropic=False, recon=None, fit_poles=[0, 2, 4], galactic_cap="sgc")
     model = PowerBeutler2017(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
@@ -228,7 +228,7 @@ if __name__ == "__main__":
     model.sanity_check(dataset)
 
     print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_eBOSS_LRGpCMASS(isotropic=False, recon="iso", fit_poles=[0, 2, 4], galactic_cap="sgc")
+    dataset = PowerSpectrum_eBOSS_LRGpCMASS(realisation="data", isotropic=False, recon="iso", fit_poles=[0, 2, 4], galactic_cap="sgc")
     model = PowerBeutler2017(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
