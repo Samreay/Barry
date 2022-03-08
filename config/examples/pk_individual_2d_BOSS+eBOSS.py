@@ -31,22 +31,22 @@ if __name__ == "__main__":
 
     datasets = [
         PowerSpectrum_SDSS_DR12(
-            redshift_bin=1, galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999
+            redshift_bin=1, galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
         ),
         PowerSpectrum_SDSS_DR12(
-            redshift_bin=1, galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999
+            redshift_bin=1, galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
         ),
         PowerSpectrum_SDSS_DR12(
-            redshift_bin=2, galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999
+            redshift_bin=2, galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
         ),
         PowerSpectrum_SDSS_DR12(
-            redshift_bin=2, galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.01, max_k=0.30, num_mocks=999
+            redshift_bin=2, galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
         ),
         PowerSpectrum_eBOSS_LRGpCMASS(
-            galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.01, max_k=0.30, num_mocks=999
+            galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.02, max_k=0.30, num_mocks=999
         ),
         PowerSpectrum_eBOSS_LRGpCMASS(
-            galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.01, max_k=0.30, num_mocks=999
+            galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.02, max_k=0.30, num_mocks=999
         ),
     ]
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
             counter = 0
             for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
-                n = extra["name"].split(",")[0].split()[3]
+                n = "_".join(extra["name"].split()[:-2])
                 print(n)
 
                 model.set_data(data)
@@ -128,13 +128,15 @@ if __name__ == "__main__":
                 pre_recon_data = pre_recon_datasets[dataset].set_realisation(counter % 999)
                 pre_recon_data = pre_recon_data.get_data()
 
-                print(alphas, new_chi_squared)
+                print(params["alpha"], params["epsilon"], alphas, new_chi_squared)
 
                 res.append(
                     [
                         n,
                         counter % 999,
                         new_chi_squared,
+                        params["alpha"],
+                        1.0 + params["epsilon"],
                         alphas[0],
                         alphas[1],
                         model.data[0]["ks"],
@@ -156,6 +158,8 @@ if __name__ == "__main__":
                     "patch",
                     "realisation",
                     "chi_squared",
+                    "alpha",
+                    "epsilon",
                     "alpha_par",
                     "alpha_perp",
                     "recon_ks",
@@ -185,11 +189,18 @@ if __name__ == "__main__":
             from scipy.interpolate import interp1d
 
             # Plots for each patch
-            for label in ["ngc_z1", "sgc_z1", "ngc_z2", "sgc_z2", "lrgpcmass_ngc", "lrgpcmass_sgc"]:
+            for label in [
+                "BOSS_DR12_Pk_ngc_z1",
+                "BOSS_DR12_Pk_sgc_z1",
+                "BOSS_DR12_Pk_ngc_z2",
+                "BOSS_DR12_Pk_sgc_z2",
+                "eBOSS_DR16_LRGpCMASS_Pk_NGC",
+                "eBOSS_DR16_LRGpCMASS_Pk_SGC",
+            ]:
                 df = res.drop(res[res["patch"] != label].index)
-                fig, axes = plt.subplots(2, 2, figsize=(10, 10), sharex=True)
-                labels = ["alpha_perp", "alpha_par"]
-                str_labels = [r"$\alpha_{\perp}$", r"$\alpha_{||}$"]
+                fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
+                labels = ["alpha", "epsilon", "alpha_perp", "alpha_par"]
+                str_labels = [r"$\alpha$", r"1 + $\epsilon$", r"$\alpha_{\perp}$", r"$\alpha_{||}$"]
 
                 for i, (label1, str_label1) in enumerate(zip(labels, str_labels)):
                     for j, (label2, str_label2) in enumerate(zip(labels, str_labels)):
@@ -213,7 +224,6 @@ if __name__ == "__main__":
                                 ax.set_xlabel(str_label2, fontsize=12)
                                 ax.set_xticks(ticks_alpha)
                         else:
-                            print(label1, label2)
                             a1 = np.array(res[label2])
                             a2 = np.array(res[label1])
                             c = np.fabs(1.0 - a2 ** (1.0 / 3.0) * a1 ** (2.0 / 3.0))
@@ -231,15 +241,14 @@ if __name__ == "__main__":
                             else:
                                 ax.set_ylabel(str_label1, fontsize=12)
                                 ax.set_yticks(ticks_alpha)
-                            if i == 1:
-                                ax.set_xlabel(str_label2, fontsize=12)
-                                ax.set_xticks(ticks_alpha)
+                            ax.set_xlabel(str_label2, fontsize=12)
+                            ax.set_xticks(ticks_alpha)
                 plt.subplots_adjust(hspace=0.0, wspace=0)
                 fig.savefig(pfn + "_" + label + "_alphacomp.png", bbox_inches="tight", dpi=300, transparent=True)
                 fig.savefig(pfn + "_" + label + "_alphacomp.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
         # Plot correlation coefficients
-        if True:
+        if False:
             from scipy.interpolate import interp1d
 
             # Plots for each patch
