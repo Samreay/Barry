@@ -31,16 +31,16 @@ if __name__ == "__main__":
 
     datasets = [
         PowerSpectrum_SDSS_DR12(
-            redshift_bin=1, galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.02, max_k=0.30, num_mocks=999
+            redshift_bin=1, galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
         ),
         PowerSpectrum_SDSS_DR12(
-            redshift_bin=1, galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.02, max_k=0.30, num_mocks=999
+            redshift_bin=1, galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
         ),
         PowerSpectrum_SDSS_DR12(
-            redshift_bin=2, galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.02, max_k=0.30, num_mocks=999
+            redshift_bin=2, galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
         ),
         PowerSpectrum_SDSS_DR12(
-            redshift_bin=2, galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.02, max_k=0.30, num_mocks=999
+            redshift_bin=2, galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
         ),
         PowerSpectrum_eBOSS_LRGpCMASS(
             galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.02, max_k=0.30, num_mocks=999
@@ -72,14 +72,18 @@ if __name__ == "__main__":
     ]
 
     # Standard Beutler Model
-    model = PowerBeutler2017(
+    model = PowerBeutler2017(recon="iso", isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.HARTLAP, marg="full")
+    model4 = PowerBeutler2017(
         recon="iso", isotropic=False, fix_params=["om"], poly_poles=[0, 2, 4], correction=Correction.HARTLAP, marg="full"
     )
 
     for d in datasets:
         for i in range(999):
             d.set_realisation(i)
-            fitter.add_model_and_dataset(model, d, name=d.name + " " + str(i), realisation=i)
+            if 4 in d.fit_poles:
+                fitter.add_model_and_dataset(model4, d, name=d.name + " " + str(i), realisation=i)
+            else:
+                fitter.add_model_and_dataset(model, d, name=d.name + " " + str(i), realisation=i)
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
