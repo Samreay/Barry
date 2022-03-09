@@ -21,7 +21,7 @@ from matplotlib import cm
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
-    fitter = Fitter(dir_name, remove_output=False)
+    fitter = Fitter(dir_name)
 
     c = getCambGenerator()
 
@@ -135,4 +135,4 @@ if __name__ == "__main__":
             for name, val in params.items():
                 model.set_default(name, val)
 
-            new_chi_squared, dof, bband, mods, smooths = model.plot(params, display=False)
+            new_chi_squared, dof, bband, mods, smooths = model.plot(params, display=True)
