@@ -12,6 +12,7 @@ def getdf(loc):
         delim_whitespace=True,
         names=["k", "kmean", "pk0", "pk2", "pk4", "nk", "shot"],
     )
+    df.loc[0, "k"] = 0.005  # The file has 0.005002, which causes a mismatch with the window function k.
     df["pk1"] = np.zeros(len(df))
     df["pk3"] = np.zeros(len(df))
     mask = df["nk"] >= 0
