@@ -111,7 +111,9 @@ if __name__ == "__main__":
         c = ChainConsumer()
         for i, (posterior, weight, chain, evidence, model, data, extra) in enumerate(fitter.load()):
 
-            fitname = " ".join(extra["name"].split()[:4])
+            fitname = "_".join(extra["name"].split()[:5])
+            extra["name"] = extra["name"].replace("_", " ")
+            print(fitname)
 
             color = plt.colors.rgb2hex(cmap(float(i / len(datasets))))
 
@@ -126,7 +128,7 @@ if __name__ == "__main__":
             df["$\\alpha_\\perp$"] = alpha_perp
 
             extra.pop("realisation", None)
-            c.add_chain(df, weights=weight, color=color, posterior=posterior, plot_contour=True, **extra)
+            c.add_chain(df, weights=weight, color=color, posterior=posterior, **extra)
 
             max_post = posterior.argmax()
             chi2 = -2 * posterior[max_post]
@@ -135,4 +137,14 @@ if __name__ == "__main__":
             for name, val in params.items():
                 model.set_default(name, val)
 
-            new_chi_squared, dof, bband, mods, smooths = model.plot(params, display=True)
+            new_chi_squared, dof, bband, mods, smooths = model.plot(params, figname=pfn + fitname + "_bestfit.pdf", display=False)
+
+        c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4, legend_location=(0, -1), plot_contour=True)
+        truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
+        c.plotter.plot(
+            filename=[pfn + "_contour.pdf"],
+            truth=truth,
+            parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+        )
+        results = c.analysis.get_summary(parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"])
+        print(results)
