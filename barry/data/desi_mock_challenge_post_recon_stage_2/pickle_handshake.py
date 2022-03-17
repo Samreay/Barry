@@ -6,7 +6,7 @@ import os
 
 def getxi(loc):
     df = pd.read_csv(loc, comment="#", skiprows=0, delim_whitespace=True, names=["s", "xi0", "xi2", "xi4"], header=None)
-    mask = df["s"] <= 205.0
+    mask = df["s"] <= 200.0
     masked = df.loc[mask, ["s", "xi0", "xi2", "xi4"]]
     print(masked)
     return masked.astype(np.float32)
@@ -201,7 +201,9 @@ if __name__ == "__main__":
             )
             collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix")
 
-            pre_file = [ds + b + "/dk0.005kmin0.005/" + pre_files[i] + "_xi_gs_han4.txt"]
+            pre_file = [
+                "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
+            ]
             post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
             pre_covfile = (
                 covds
