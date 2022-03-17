@@ -201,10 +201,24 @@ if __name__ == "__main__":
             )
             collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix")
 
-            """pre_file = [
-                "/global/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
-            ]
+            pre_file = [ds + b + "/dk0.005kmin0.005/" + pre_files[i] + "_xi_gs_han4.txt"]
             post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
-            pre_covfile = "/global/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/EZmocks/xi_EZmocks_nonfix/covariance_3Gpc_v2/cov_matrix_xi-EZmocks-3Gpc-nonfix_rsd_centerbin.txt"
-            post_covfile = covds + c + "cov_matrix_pk-EZmocks-1Gpc-" + c[:6] + str("Sm%d" % i) + "-nonfix_rsd_post.txt"
-            collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix")"""
+            pre_covfile = (
+                covds
+                + c
+                + str("_Sm%d" % smooth)
+                + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
+                + c[:6]
+                + str("Sm%d" % smooth)
+                + "-nonfix_rsd_pre.txt"
+            )
+            post_covfile = (
+                covds
+                + c
+                + str("_Sm%d" % smooth)
+                + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
+                + c[:6]
+                + str("Sm%d" % smooth)
+                + "-nonfix_rsd_post.txt"
+            )
+            collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix")
