@@ -51,7 +51,7 @@ def format_pk_cov(nks, covfile):
     cov[4 * nks :, 2 * nks : 3 * nks] = cov_input[2 * nin : 2 * nin + nks, nin : nin + nks]
     cov[4 * nks :, 4 * nks :] = cov_input[2 * nin : 2 * nin + nks, 2 * nin : 2 * nin + nks]
 
-    return cov
+    return cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
 
 
 def format_xi_cov(nss, covfile):
@@ -71,7 +71,7 @@ def format_xi_cov(nss, covfile):
     cov[2 * nss :, nss : 2 * nss] = cov_input[2 * nin : 2 * nin + nss, nin : nin + nss]
     cov[2 * nss :, 2 * nss :] = cov_input[2 * nin : 2 * nin + nss, 2 * nin : 2 * nin + nss]
 
-    return cov
+    return cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
 
 
 def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth, fix):

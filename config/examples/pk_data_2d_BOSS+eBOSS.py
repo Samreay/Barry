@@ -144,7 +144,7 @@ if __name__ == "__main__":
         c.plotter.plot(
             filename=[pfn + "_contour.pdf"],
             truth=truth,
-            parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+            parameters=["$\\alpha$", "$\\epsilon$"],
         )
         results = c.analysis.get_summary(parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"])
         print(results)
