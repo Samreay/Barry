@@ -8,7 +8,6 @@ def getxi(loc):
     df = pd.read_csv(loc, comment="#", skiprows=0, delim_whitespace=True, names=["s", "xi0", "xi2", "xi4"], header=None)
     mask = df["s"] <= 200.0
     masked = df.loc[mask, ["s", "xi0", "xi2", "xi4"]]
-    print(masked)
     return masked.astype(np.float32)
 
 
@@ -132,8 +131,8 @@ def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
     pre_cov = format_xi_cov(nss, pre_covfile)
     print(np.shape(pre_cov), nss)
 
-    ks = len(next(iter(pre_res.items()))[1]["k"].to_numpy())
-    post_cov = format_pk_cov(len(ks), post_covfile)
+    nss = len(next(iter(pre_res.items()))[1]["s"].to_numpy())
+    post_cov = format_pk_cov(nss, post_covfile)
     print(np.shape(post_cov), nss)
 
     split = {
