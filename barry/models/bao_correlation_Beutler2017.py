@@ -106,13 +106,13 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_correlation_function import CorrelationFunction_ROSS_DR12
+    from barry.datasets.dataset_correlation_function import CorrelationFunction_ROSS_DR12, CorrelationFunction_DESIMockChallenge_Post
     from barry.config import setup_logging
     from barry.models.model import Correction
 
     setup_logging()
 
-    print("Checking isotropic data")
+    """print("Checking isotropic data")
     dataset = CorrelationFunction_ROSS_DR12(isotropic=True, recon="iso", realisation="data")
     model = CorrBeutler2017(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.NONE)
     model.sanity_check(dataset)
@@ -125,6 +125,20 @@ if __name__ == "__main__":
         marg="full",
         fix_params=["om"],
         poly_poles=[0, 2],
+        correction=Correction.NONE,
+    )
+    model.sanity_check(dataset)"""
+
+    print("Checking anisotropic data")
+    dataset = CorrelationFunction_DESIMockChallenge_Post(
+        isotropic=False, recon="iso", fit_poles=[0, 2, 4], min_dist=35, max_dist=157.5, num_mocks=998
+    )
+    model = CorrBeutler2017(
+        recon=dataset.recon,
+        isotropic=dataset.isotropic,
+        marg="full",
+        fix_params=["om", "beta"],
+        poly_poles=[0, 2, 4],
         correction=Correction.NONE,
     )
     model.sanity_check(dataset)

@@ -496,7 +496,6 @@ class CorrelationFunctionFit(Model):
             mod = mod + bband @ polymod
             mod_fit = mod_fit + bband @ polymod_fit
 
-            print(len(self.get_active_params()) + len(bband))
             print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
             new_chi_squared = self.get_chi2_likelihood(
                 self.data[0]["xi"],
@@ -541,55 +540,53 @@ class CorrelationFunctionFit(Model):
         cs = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00"]
         height = 2 + 1.4 * num_rows
 
-        fig, axes = plt.subplots(figsize=(9, height), nrows=num_rows, ncols=2, sharex=True, squeeze=False)
-        ratio = (height - 1) / height
-        plt.subplots_adjust(left=0.1, top=ratio, bottom=0.05, right=0.85, hspace=0, wspace=0.3)
-        for ax, err, mod, smooth, name, label, c in zip(axes, errs, mods, smooths, names, labels, cs):
+        if display is True or figname is not None:
 
-            # Plot ye old data
-            ax[0].errorbar(ss, ss ** 2 * self.data[0][name], yerr=ss ** 2 * err, fmt="o", ms=4, label="Data", c=c)
-            ax[1].errorbar(ss, ss ** 2 * (self.data[0][name] - smooth), yerr=ss ** 2 * err, fmt="o", ms=4, label="Data", c=c)
+            fig, axes = plt.subplots(figsize=(9, height), nrows=num_rows, ncols=2, sharex=True, squeeze=False)
+            ratio = (height - 1) / height
+            plt.subplots_adjust(left=0.1, top=ratio, bottom=0.05, right=0.85, hspace=0, wspace=0.3)
+            for ax, err, mod, smooth, name, label, c in zip(axes, errs, mods, smooths, names, labels, cs):
 
-            # Plot ye old model
-            ax[0].plot(ss, ss ** 2 * mod, c=c, label="Model")
-            ax[1].plot(ss, ss ** 2 * (mod - smooth), c=c, label="Model")
+                # Plot ye old data
+                ax[0].errorbar(ss, ss ** 2 * self.data[0][name], yerr=ss ** 2 * err, fmt="o", ms=4, label="Data", c=c)
+                ax[1].errorbar(ss, ss ** 2 * (self.data[0][name] - smooth), yerr=ss ** 2 * err, fmt="o", ms=4, label="Data", c=c)
 
-            ax[0].set_ylabel("$s^{2} \\times $ " + label)
+                # Plot ye old model
+                ax[0].plot(ss, ss ** 2 * mod, c=c, label="Model")
+                ax[1].plot(ss, ss ** 2 * (mod - smooth), c=c, label="Model")
 
-            if name not in [f"xi{n}" for n in self.data[0]["fit_poles"]]:
-                ax[0].set_facecolor("#e1e1e1")
-                ax[1].set_facecolor("#e1e1e1")
+                ax[0].set_ylabel("$s^{2} \\times $ " + label)
 
-        # Show the model parameters
-        string = f"$\\mathcal{{L}}$: {self.get_likelihood(params, self.data[0]):0.3g}\n"
-        if self.marg:
-            string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items() if l not in self.fix_params])
-            string += "\n"
-            string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items() if l is "om"])
-            string += "\n"
-            string += "\n".join([f"{self.param_dict[v].label}={bband[l-1]:0.4g}" for l, v in enumerate(self.fix_params) if v is not "om"])
-        else:
-            string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items()])
-        va = "center" if self.postprocess is None else "top"
-        ypos = 0.5 if self.postprocess is None else 0.98
-        fig.text(0.99, ypos, string, horizontalalignment="right", verticalalignment=va)
-        axes[-1, 0].set_xlabel("s")
-        axes[-1, 1].set_xlabel("s")
-        axes[0, 0].legend(frameon=False)
+                if name not in [f"xi{n}" for n in self.data[0]["fit_poles"]]:
+                    ax[0].set_facecolor("#e1e1e1")
+                    ax[1].set_facecolor("#e1e1e1")
 
-        if self.postprocess is None:
-            axes[0, 1].set_title("$\\xi(s) - \\xi_{\\rm smooth}(s)$")
-        else:
-            axes[0, 1].set_title("$\\xi(s) - data$")
-        axes[0, 0].set_title("$s^{2} \\times \\xi(s)$")
+            # Show the model parameters
+            string = f"$\\mathcal{{L}}$: {self.get_likelihood(params, self.data[0]):0.3g}\n"
+            if self.marg:
+                string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items() if l not in self.fix_params])
+            else:
+                string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items()])
+            va = "center" if self.postprocess is None else "top"
+            ypos = 0.5 if self.postprocess is None else 0.98
+            fig.text(0.99, ypos, string, horizontalalignment="right", verticalalignment=va)
+            axes[-1, 0].set_xlabel("s")
+            axes[-1, 1].set_xlabel("s")
+            axes[0, 0].legend(frameon=False)
 
-        if title is None:
-            title = self.data[0]["name"] + " + " + self.get_name()
-        fig.suptitle(title)
-        if figname is not None:
-            fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
-        if display:
-            plt.show()
+            if self.postprocess is None:
+                axes[0, 1].set_title("$\\xi(s) - \\xi_{\\rm smooth}(s)$")
+            else:
+                axes[0, 1].set_title("$\\xi(s) - data$")
+            axes[0, 0].set_title("$s^{2} \\times \\xi(s)$")
+
+            if title is None:
+                title = self.data[0]["name"] + " + " + self.get_name()
+            fig.suptitle(title)
+            if figname is not None:
+                fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
+            if display:
+                plt.show()
 
         return new_chi_squared, dof, bband, mods, smooths
 
