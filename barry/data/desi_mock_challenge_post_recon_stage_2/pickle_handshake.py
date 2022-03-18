@@ -140,12 +140,10 @@ def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
     if not np.all(np.isclose(v, 1)):
         print("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
         print(f"These should all be 1: {v}")
-        exit()
     v = np.diag(post_cov @ np.linalg.inv(post_cov))
     if not np.all(np.isclose(v, 1)):
         print("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
         print(f"These should all be 1: {v}")
-        exit()
 
     split = {
         "pre-recon data": [v for k, v in pre_res.items()],
