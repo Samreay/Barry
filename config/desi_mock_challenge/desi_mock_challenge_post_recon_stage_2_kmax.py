@@ -28,12 +28,12 @@ if __name__ == "__main__":
     ]
     cmap = plt.cm.get_cmap("viridis")
 
-    smoothscales = ["5", "10", "15"]
+    smoothtypes = [1, 2, 3]  # [5, 10, 15] Mpc/h
     kmaxs = [0.15, 0.20, 0.25, 0.30]
 
     counter = 0
     for i, recon in enumerate(["iso", "ani"]):
-        for smoothscale in smoothscales:
+        for smoothtype in smoothtypes:
             for fit_poles in [[0, 2], [0, 2, 4]]:
                 for n_poly in [3, 5]:
                     for kmax in kmaxs:
@@ -45,7 +45,7 @@ if __name__ == "__main__":
                             min_k=0.0075,
                             max_k=kmax,
                             num_mocks=998,
-                            smoothscale=smoothscale,
+                            smoothtype=smoothtype,
                             covtype="nonfix",
                         )
                         model = PowerBeutler2017(
@@ -57,9 +57,10 @@ if __name__ == "__main__":
                             correction=Correction.NONE,
                             n_poly=n_poly,
                         )
+                        smoothnames = [" 5", " 10", " 15"]
                         hexname = " Hexa " if 4 in fit_poles else " "
                         polyname = "3-Poly " if n_poly == 3 else "5-Poly "
-                        name = names[i] + recon + " " + smoothscale + hexname + polyname + str(r"$k_{max}=%3.2lf$" % kmax)
+                        name = names[i] + recon + smoothnames[smoothtype - 1] + hexname + polyname + str(r"$k_{max}=%3.2lf$" % kmax)
                         print(name)
                         fitter.add_model_and_dataset(model, data, name=name)
                         counter += 1
