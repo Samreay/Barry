@@ -35,10 +35,7 @@ def getcomp(ks):
 
 def format_pk_cov(nks, covfile):
 
-    if "AnalyticGaussian" in covfile:
-        cov = pd.read_csv(covfile, delim_whitespace=True, header=None, skiprows=8).to_numpy()
-    else:
-        cov = pd.read_csv(covfile, delim_whitespace=True, header=None).to_numpy()
+    cov = pd.read_csv(covfile, comment="#", delim_whitespace=True, header=None).to_numpy()
     cov_flat = cov.astype(np.float64)[:, 2]
     nin = int(np.sqrt(len(cov)) / 3)
     cov_input = cov_flat.reshape((3 * nin, 3 * nin))
@@ -58,10 +55,7 @@ def format_pk_cov(nks, covfile):
 
 def format_xi_cov(nss, covfile):
 
-    if "AnalyticGaussian" in covfile:
-        cov = pd.read_csv(covfile, delim_whitespace=True, header=None, skiprows=8).to_numpy()
-    else:
-        cov = pd.read_csv(covfile, delim_whitespace=True, header=None).to_numpy()
+    cov = pd.read_csv(covfile, comment="#", delim_whitespace=True, header=None).to_numpy()
     cov = pd.read_csv(covfile, delim_whitespace=True, header=None).to_numpy()
     cov_flat = cov.astype(np.float32)[:, 2]
     nin = int(np.sqrt(len(cov)) / 3)
