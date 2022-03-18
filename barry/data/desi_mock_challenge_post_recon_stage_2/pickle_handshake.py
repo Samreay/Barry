@@ -132,7 +132,7 @@ def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
     print(np.shape(pre_cov), nss)
 
     nss = len(next(iter(pre_res.items()))[1]["s"].to_numpy())
-    post_cov = format_pk_cov(nss, post_covfile)
+    post_cov = format_xi_cov(nss, post_covfile)
     print(np.shape(post_cov), nss)
 
     # Check the covariance matrices
