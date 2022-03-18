@@ -5,7 +5,7 @@ from chainconsumer import ChainConsumer
 sys.path.append("..")
 from barry.samplers import DynestySampler
 from barry.config import setup
-from barry.models import PowerBeutler2017, PowerBeutler2017_3poly
+from barry.models import PowerBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESIMockChallenge_Post
 from barry.fitter import Fitter
 import numpy as np
@@ -20,61 +20,49 @@ if __name__ == "__main__":
     print(pfn)
     fitter = Fitter(dir_name, remove_output=True)
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
 
     names = [
-        "PostRecon Iso Fix",
-        "PostRecon Iso NonFix",
-        "PostRecon Ani Fix",
-        "PostRecon Ani NonFix",
+        "PostRecon Yuyu NonFix ",
+        "PostRecon Yuyu NonFix ",
     ]
     cmap = plt.cm.get_cmap("viridis")
 
-    types = ["cov-fix", "cov-std", "cov-fix", "cov-std"]
-    recons = ["iso", "iso", "ani", "ani"]
+    smoothscales = ["5", "10", "15"]
     kmaxs = [0.15, 0.20, 0.25, 0.30]
 
     counter = 0
-    for h, fittype in enumerate(["Hexa", "No-Hexa"]):
-        fit_poles = [0, 2] if fittype == "No-Hexa" else [0, 2, 4]
-        poly_poles = [0, 2] if fittype == "No-Hexa" else [0, 2, 4]
-        for m, modeltype in enumerate(["5-Poly", "3-Poly"]):
-            for i, type in enumerate(types):
-                for j, kmax in enumerate(kmaxs):
-                    data = PowerSpectrum_DESIMockChallenge_Post(
-                        isotropic=False,
-                        recon=recons[i],
-                        realisation=0,
-                        fit_poles=fit_poles,
-                        min_k=0.0075,
-                        max_k=kmax,
-                        num_mocks=1000,
-                        covtype=type,
-                        smoothtype="15",
-                    )
-                    model = (
-                        PowerBeutler2017(
+    for i, recon in enumerate(["iso", "ani"]):
+        for smoothscale in smoothscales:
+            for fit_poles in [[0, 2], [0, 2, 4]]:
+                for n_poly in [3, 5]:
+                    for kmax in kmaxs:
+                        data = PowerSpectrum_DESIMockChallenge_Post(
+                            isotropic=False,
+                            recon=recon,
+                            realisation="data",
+                            fit_poles=fit_poles,
+                            min_k=0.0075,
+                            max_k=kmax,
+                            num_mocks=998,
+                            smoothscale=smoothscale,
+                            covtype="nonfix",
+                        )
+                        model = PowerBeutler2017(
                             recon=data.recon,
                             isotropic=data.isotropic,
                             marg="full",
-                            fix_params=["om"],
-                            poly_poles=poly_poles,
+                            fix_params=["om", "beta"],
+                            poly_poles=fit_poles,
                             correction=Correction.NONE,
+                            n_poly=n_poly,
                         )
-                        if modeltype == "5-Poly"
-                        else PowerBeutler2017_3poly(
-                            recon=data.recon,
-                            isotropic=data.isotropic,
-                            marg="full",
-                            fix_params=["om"],
-                            poly_poles=poly_poles,
-                            correction=Correction.NONE,
-                        )
-                    )
-                    name = names[i] + " " + fittype + " " + modeltype + str(r" $k_{max}=%3.2lf$" % kmax)
-                    print(name)
-                    fitter.add_model_and_dataset(model, data, name=name)
-                    counter += 1
+                        hexname = " Hexa " if 4 in fit_poles else " "
+                        polyname = "3-Poly " if n_poly == 3 else "5-Poly "
+                        name = names[i] + recon + " " + smoothscale + hexname + polyname + str(r"$k_{max}=%3.2lf$" % kmax)
+                        print(name)
+                        fitter.add_model_and_dataset(model, data, name=name)
+                        counter += 1
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)

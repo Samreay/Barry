@@ -329,7 +329,7 @@ class PowerSpectrumFit(Model):
 
         if self.isotropic:
             if self.recon:
-                shape = p["a{0}_1"] * k ** 2 + p["a{0}_2"] + p["a{0}_3"] / k
+                shape = p["a{0}_1"] * k + p["a{0}_2"] + p["a{0}_3"] / k
             else:
                 shape = p["a{0}_1"] * k + p["a{0}_2"] + p["a{0}_3"] / k
 
@@ -403,7 +403,7 @@ class PowerSpectrumFit(Model):
                 for i, pole in enumerate(self.poly_poles):
                     if self.recon:
                         poly[5 * i + 1 : 5 * (i + 1) + 1, pole] = [
-                            kpoly ** 2,
+                            kpoly,
                             np.ones(len(kpoly)),
                             1.0 / kpoly,
                             1.0 / (kpoly * kpoly),
@@ -423,7 +423,7 @@ class PowerSpectrumFit(Model):
                 for pole in self.poly_poles:
                     if self.recon:
                         shape[pole] = (
-                            p[f"a{{{pole}}}_1"] * kpoly ** 2
+                            p[f"a{{{pole}}}_1"] * kpoly
                             + p[f"a{{{pole}}}_2"]
                             + p[f"a{{{pole}}}_3"] / kpoly
                             + p[f"a{{{pole}}}_4"] / (kpoly * kpoly)

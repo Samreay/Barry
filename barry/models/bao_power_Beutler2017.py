@@ -199,13 +199,17 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12, PowerSpectrum_eBOSS_LRGpCMASS
+    from barry.datasets.dataset_power_spectrum import (
+        PowerSpectrum_SDSS_DR12,
+        PowerSpectrum_eBOSS_LRGpCMASS,
+        PowerSpectrum_DESIMockChallenge_Post,
+    )
     from barry.config import setup_logging
     from barry.models.model import Correction
 
     setup_logging()
 
-    print("Checking isotropic mock mean")
+    """print("Checking isotropic mock mean")
     dataset = PowerSpectrum_SDSS_DR12(realisation=0, isotropic=True, recon="iso", galactic_cap="ngc")
     model = PowerBeutler2017(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP)
     model.sanity_check(dataset)
@@ -219,5 +223,20 @@ if __name__ == "__main__":
         fix_params=["om"],
         poly_poles=[0, 2],
         correction=Correction.HARTLAP,
+    )
+    model.sanity_check(dataset)"""
+
+    print("Checking anisotropic mock mean")
+    dataset = PowerSpectrum_DESIMockChallenge_Post(
+        realisation="data", isotropic=False, fit_poles=[0, 2, 4], recon="ani", min_k=0.0075, max_k=0.30
+    )
+    model = PowerBeutler2017(
+        recon=dataset.recon,
+        isotropic=dataset.isotropic,
+        marg="full",
+        fix_params=["om", "beta"],
+        poly_poles=[0, 2, 4],
+        n_poly=3,
+        correction=Correction.NONE,
     )
     model.sanity_check(dataset)
