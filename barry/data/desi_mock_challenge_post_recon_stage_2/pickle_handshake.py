@@ -209,7 +209,7 @@ if __name__ == "__main__":
                     + str("Sm%d" % smooth)
                     + "-nonfix_rsd_post.txt"
                 )
-                collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix", "ELG")
+                collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix", "elg")
 
                 pre_file = [
                     "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
@@ -233,7 +233,7 @@ if __name__ == "__main__":
                     + str("Sm%d" % smooth)
                     + "-nonfix_rsd_post.txt"
                 )
-                collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix", "ELG")
+                collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix", "elg")
 
     # ===========================
     # Analytic Covariance matrices
