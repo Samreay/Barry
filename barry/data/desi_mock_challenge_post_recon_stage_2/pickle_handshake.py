@@ -100,6 +100,8 @@ def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
     post_cov = post_cov if fix.lower() == "analytic" else post_cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
     print(np.shape(post_cov), np.shape(ks))
 
+    print(post_cov)
+
     # Check the covariance matrices
     v = np.diag(pre_cov @ np.linalg.inv(pre_cov))
     if not np.all(np.isclose(v, 1)):
