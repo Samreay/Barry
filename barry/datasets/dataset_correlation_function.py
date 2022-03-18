@@ -90,40 +90,31 @@ class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
         name=None,
         min_dist=30.0,
         max_dist=200.0,
-        recon="iso",
+        recon=None,
         reduce_cov_factor=1,
         num_mocks=None,
         fake_diag=False,
         realisation=None,
         isotropic=True,
         fit_poles=(0,),
-        covtype="cov-std",
-        smoothtype=3,
+        covtype="nonfix",
+        smoothscale="15",
     ):
 
         self.nredshift_bins = 1
-        self.nsmoothtypes = 4
+        self.nsmoothtypes = 3
 
-        if recon is None:
-            raise NotImplementedError("Only Post recon data not available for DESIMockChallenge_Post")
+        if covtype.lower() not in ["fix", "nonfix"]:
+            raise NotImplementedError("covtype not recognised, must be fix or nonfix")
 
-        covtypes = ["cov-std", "cov-fix"]
-        if covtype.lower() not in covtypes:
-            raise NotImplementedError("covtype not recognised, must be cov-std, cov-fix")
-
-        smoothnames = ["5", "10", "15", "20"]
-        if smoothtype not in [1, 2, 3, 4]:
-            raise NotImplementedError(
-                "smoothtype not recognised, must be in 1, 2, 3 or 4 corresponding to smoothing scales of 5, 10, 15, 20 Mpc/h respectively"
-            )
+        if smoothscale.lower() not in ["5", "10", "15"]:
+            raise NotImplementedError("smoothscale not recognised, must be 5, 10 or 15 (Mpc/h) respectively")
 
         if any(pole in [1, 3] for pole in fit_poles):
             raise NotImplementedError("Only even multipoles included in DESIMockChallenge")
 
-        reconname = "pre" if recon is None else recon.lower()
-        covname = "" if covtype.lower() == "cov-fix" else "_nonfix"
-        smoothname = "" if recon is None else "_" + smoothnames[smoothtype]
-        datafile = "desi_mock_challenge_post_stage_2_xi_" + reconname + smoothname + covname + ".pkl"
+        reconname = "iso" if recon is None else recon.lower()
+        datafile = "desi_mock_challenge_post_stage_2_xi_" + reconname + "_" + smoothscale.lower() + "_" + covtype + ".pkl"
 
         super().__init__(
             datafile,
@@ -148,109 +139,83 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
-    # Plot the data for the ROSS DR12 Correlation function
-    for j, recon in enumerate(["iso"]):
-        for redshift_bin in [1, 2, 3]:
-            dataset = CorrelationFunction_ROSS_DR12(
-                redshift_bin=redshift_bin,
-                isotropic=False,
-                recon=recon,
-                realisation="data",
-                fit_poles=[0, 2],
-                min_dist=0.0,
-                max_dist=200.0,
-            )
-            data = dataset.get_data()
-            label = [r"$\xi_{0}(s)$", r"$\xi_{2}(s)$", r"$\xi_{4}(s)$"]
-            fmt = "o"
-            ls = "None"
-            yerr = [
-                data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[: len(data[0]["dist"])],
-                data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[len(data[0]["dist"]) : 2 * len(data[0]["dist"])],
-                data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["dist"]) :],
-            ]
-            plt.errorbar(
-                data[0]["dist"],
-                data[0]["dist"] ** 2 * data[0]["xi0"],
-                yerr=yerr[0],
-                marker=fmt,
-                ls=ls,
-                c="r",
-                label=label[0],
-            )
-            plt.errorbar(
-                data[0]["dist"],
-                data[0]["dist"] ** 2 * data[0]["xi2"],
-                yerr=yerr[1],
-                marker=fmt,
-                ls=ls,
-                c="b",
-                label=label[1],
-            )
-            plt.errorbar(
-                data[0]["dist"],
-                data[0]["dist"] ** 2 * data[0]["xi4"],
-                yerr=yerr[2],
-                marker=fmt,
-                ls=ls,
-                c="g",
-                label=label[2],
-            )
-            plt.xlabel(r"$s$")
-            plt.ylabel(r"$s^{2}\xi_{\ell}(s)$")
-            plt.title(dataset.name)
-            plt.legend()
-            plt.show()
+    if False:
 
-    for j, recon in enumerate(["iso", "ani"]):
-        datasets = [
-            CorrelationFunction_DESIMockChallenge_Post(
-                isotropic=False, recon=recon, fit_poles=[0, 2, 4], min_dist=0.0, max_dist=200.0, covtype="cov-std", smoothtype="15"
-            ),
-            CorrelationFunction_DESIMockChallenge_Post(
-                isotropic=False, recon=recon, fit_poles=[0, 2, 4], min_dist=0.0, max_dist=200.0, covtype="cov-fix", smoothtype="15"
-            ),
-        ]
-        for dataset in datasets:
-            dataset.set_realisation(0)
-            data = dataset.get_data()
-            label = [r"$\xi_{0}(s)$", r"$\xi_{2}(s)$", r"$\xi_{4}(s)$"]
-            fmt = "o"
-            ls = "None"
-            yerr = [
-                data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[: len(data[0]["dist"])],
-                data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[len(data[0]["dist"]) : 2 * len(data[0]["dist"])],
-                data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["dist"]) :],
-            ]
-            plt.errorbar(
-                data[0]["dist"],
-                data[0]["dist"] ** 2 * data[0]["xi0"],
-                yerr=yerr[0],
-                marker=fmt,
-                ls=ls,
-                c="r",
-                label=label[0],
-            )
-            plt.errorbar(
-                data[0]["dist"],
-                data[0]["dist"] ** 2 * data[0]["xi2"],
-                yerr=yerr[1],
-                marker=fmt,
-                ls=ls,
-                c="b",
-                label=label[1],
-            )
-            plt.errorbar(
-                data[0]["dist"],
-                data[0]["dist"] ** 2 * data[0]["xi4"],
-                yerr=yerr[2],
-                marker=fmt,
-                ls=ls,
-                c="g",
-                label=label[2],
-            )
-            plt.xlabel(r"$s$")
-            plt.ylabel(r"$s^{2}\xi_{\ell}(s)$")
-            plt.title(dataset.name)
-            plt.legend()
-            plt.show()
+        # Plot the data for the ROSS DR12 Correlation function
+        for j, recon in enumerate(["iso"]):
+            for redshift_bin in [1, 2, 3]:
+                dataset = CorrelationFunction_ROSS_DR12(
+                    redshift_bin=redshift_bin,
+                    isotropic=False,
+                    recon=recon,
+                    realisation="data",
+                    fit_poles=[0, 2],
+                    min_dist=0.0,
+                    max_dist=200.0,
+                )
+                data = dataset.get_data()
+                label = [r"$\xi_{0}(s)$", r"$\xi_{2}(s)$", r"$\xi_{4}(s)$"]
+                color = ["r", "b", "g"]
+                fmt = "o"
+                ls = "None"
+                yerr = [
+                    data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[: len(data[0]["dist"])],
+                    data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[len(data[0]["dist"]) : 2 * len(data[0]["dist"])],
+                    data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["dist"]) :],
+                ]
+                for m, xi in enumerate(["xi0", "xi2", "xi4"]):
+                    plt.errorbar(
+                        data[0]["dist"],
+                        data[0]["dist"] ** 2 * data[0][xi],
+                        yerr=yerr[m],
+                        marker=fmt,
+                        ls=ls,
+                        c=color[m],
+                        label=label[m],
+                    )
+                plt.xlabel(r"$s$")
+                plt.ylabel(r"$s^{2}\xi_{\ell}(s)$")
+                plt.title(dataset.name)
+                plt.legend()
+                plt.show()
+
+    if True:
+
+        # Plot the desi mock challenge spectra
+        for j, recon in enumerate([None, "iso", "ani"]):
+            for smoothscale in ["5", "10", "15"]:
+                dataset = CorrelationFunction_DESIMockChallenge_Post(
+                    isotropic=False,
+                    recon=recon,
+                    fit_poles=[0, 2, 4],
+                    min_dist=35.0,
+                    max_dist=157.5,
+                    smoothscale=smoothscale,
+                    covtype="nonfix",
+                    realisation="data",
+                )
+                data = dataset.get_data()
+                label = [r"$\xi_{0}(s)$", r"$\xi_{2}(s)$", r"$\xi_{4}(s)$"]
+                color = ["r", "b", "g"]
+                fmt = "o"
+                ls = "None"
+                yerr = [
+                    data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[: len(data[0]["dist"])],
+                    data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[len(data[0]["dist"]) : 2 * len(data[0]["dist"])],
+                    data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["dist"]) :],
+                ]
+                for m, xi in enumerate(["xi0", "xi2", "xi4"]):
+                    plt.errorbar(
+                        data[0]["dist"],
+                        data[0]["dist"] ** 2 * data[0][xi],
+                        yerr=yerr[m],
+                        marker=fmt,
+                        ls=ls,
+                        c=color[m],
+                        label=label[m],
+                    )
+                plt.xlabel(r"$s$")
+                plt.ylabel(r"$s^{2}\xi_{\ell}(s)$")
+                plt.title(dataset.name)
+                plt.legend()
+                plt.show()

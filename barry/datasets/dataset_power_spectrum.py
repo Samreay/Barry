@@ -205,30 +205,24 @@ class PowerSpectrum_DESIMockChallenge_Post(PowerSpectrum):
         realisation=None,
         isotropic=True,
         fit_poles=(0,),
-        covtype="cov-std",
-        smoothtype=3,
+        covtype="nonfix",
+        smoothscale="15",
     ):
 
         self.nredshift_bins = 1
-        self.nsmoothtypes = 4
+        self.nsmoothtypes = 3
 
-        covtypes = ["cov-std", "cov-fix"]
-        if covtype.lower() not in covtypes:
-            raise NotImplementedError("covtype not recognised, must be cov-std, cov-fix")
+        if covtype.lower() not in ["fix", "nonfix"]:
+            raise NotImplementedError("covtype not recognised, must be fix or nonfix")
 
-        smoothnames = ["5", "10", "15", "20"]
-        if smoothtype not in [1, 2, 3, 4]:
-            raise NotImplementedError(
-                "smoothtype not recognised, must be in 1, 2, 3 or 4 corresponding to smoothing scales of 5, 10, 15, 20 Mpc/h respectively"
-            )
+        if smoothscale.lower() not in ["5", "10", "15"]:
+            raise NotImplementedError("smoothscale not recognised, must be 5, 10 or 15 (Mpc/h) respectively")
 
         if any(pole in [1, 3] for pole in fit_poles):
             raise NotImplementedError("Only even multipoles included in DESIMockChallenge")
 
-        reconname = "pre" if recon is None else recon.lower()
-        covname = "" if covtype.lower() == "cov-fix" else "_nonfix"
-        smoothname = "" if recon is None else "_" + smoothnames[smoothtype]
-        datafile = "desi_mock_challenge_post_stage_2_pk_" + reconname + smoothname + covname + ".pkl"
+        reconname = "iso" if recon is None else recon.lower()
+        datafile = "desi_mock_challenge_post_stage_2_pk_" + reconname + "_" + smoothscale.lower() + "_" + covtype + ".pkl"
 
         super().__init__(
             datafile,
@@ -363,7 +357,7 @@ if __name__ == "__main__":
                     plt.legend()
                     plt.show()
 
-    if True:
+    if False:
 
         # Plot the data and mock average for the eBOSS LRGpCMASS spectra
         for j, recon in enumerate(["iso", None]):
@@ -452,3 +446,38 @@ if __name__ == "__main__":
                     plt.title(dataset.name)
                     plt.legend()
                     plt.show()
+
+    if True:
+
+        # Plot the desi mock challenge spectra
+        for j, recon in enumerate([None, "iso", "ani"]):
+            for smoothscale in ["5", "10", "15"]:
+                dataset = PowerSpectrum_DESIMockChallenge_Post(
+                    isotropic=False,
+                    recon=recon,
+                    fit_poles=[0, 2, 4],
+                    min_k=0.02,
+                    max_k=0.30,
+                    smoothscale=smoothscale,
+                    covtype="nonfix",
+                    realisation="data",
+                )
+                data = dataset.get_data()
+                label = [r"$P_{0}(k)$", r"$P_{2}(k)$", r"$P_{4}(k)$"]
+                color = ["r", "b", "g"]
+                for m, pk in enumerate(["pk0", "pk2", "pk4"]):
+                    yerr = data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[m * len(data[0]["ks"]) : (m + 1) * len(data[0]["ks"])]
+                    plt.errorbar(
+                        data[0]["ks"],
+                        data[0]["ks"] * data[0][pk],
+                        yerr=yerr,
+                        marker="o",
+                        ls="None",
+                        c=color[m],
+                        label=label[m],
+                    )
+                plt.xlabel(r"$k$")
+                plt.ylabel(r"$k\,P(k)$")
+                plt.title(dataset.name)
+                plt.legend()
+                plt.show()

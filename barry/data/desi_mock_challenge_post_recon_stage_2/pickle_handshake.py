@@ -135,6 +135,18 @@ def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
     post_cov = format_pk_cov(nss, post_covfile)
     print(np.shape(post_cov), nss)
 
+    # Check the covariance matrices
+    v = np.diag(pre_cov @ np.linalg.inv(pre_cov))
+    if not np.all(np.isclose(v, 1)):
+        print("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
+        print(f"These should all be 1: {v}")
+        exit()
+    v = np.diag(post_cov @ np.linalg.inv(post_cov))
+    if not np.all(np.isclose(v, 1)):
+        print("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
+        print(f"These should all be 1: {v}")
+        exit()
+
     split = {
         "pre-recon data": [v for k, v in pre_res.items()],
         "pre-recon cov": pre_cov,
@@ -151,7 +163,7 @@ def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
             "mnu": 0.00064 * 93.14,
             "reconsmoothscale": smooth,
         },
-        "name": f"DESI Mock Challenge Stage 2 Xi" + a + " " + str(smooth) + " " + fix,
+        "name": f"DESI Mock Challenge Stage 2 Xi " + a + " " + str(smooth) + " " + fix,
     }
 
     with open(f"../desi_mock_challenge_post_stage_2_xi_" + a + "_" + str(smooth) + "_" + fix + ".pkl", "wb") as f:
