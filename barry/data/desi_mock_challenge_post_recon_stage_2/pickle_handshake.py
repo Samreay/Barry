@@ -253,35 +253,39 @@ if __name__ == "__main__":
             "b0s15rsd0g0512postmultipoles",
             "b0s20rsd0g0512postmultipoles",
         ]
-        for j, (a, b, c) in enumerate(zip(["ELGHD", "ELGMD", "ELGLD"], ["Yuyu_UNIT"], ["RecIso"])):
-            for i, smooth in enumerate([5, 10, 15]):
-                pre_file = [ds + a[:-2] + "/" + b + "/UNI" + a + "-" + pre_files[i] + ".txt"]
-                post_file = [ds + a[:-2] + "/" + b + "/UNI" + a + "-" + post_files[i] + ".txt"]
-                pre_covfile = covds + a[:-2] + "/" + b + "/cov_matrix_pk-AnalyticGaussian-UNI" + a + "-" + post_files[i] + ".txt"
-                post_covfile = covds + a[:-2] + "/" + b + "/cov_matrix_pk-AnalyticGaussian-UNI" + a + "-" + post_files[i] + ".txt"
+        for k, rec in enumerate(["RecIso"]):
+            for j, a in enumerate(["ELGHD", "ELGMD", "ELGLD"]):
+                for i, smooth in enumerate([5, 10, 15, 20]):
+                    for m, name in enumerate(["Yuyu_UNIT"]):
+                        pre_file = [ds + a[:-2] + "/" + name + "/UNI" + a + "-" + pre_files[i] + ".txt"]
+                        post_file = [ds + a[:-2] + "/" + name + "/UNI" + a + "-" + post_files[i] + ".txt"]
+                        pre_covfile = covds + a[:-2] + "/" + name + "/cov_matrix_pk-AnalyticGaussian-UNI" + a + "-" + post_files[i] + ".txt"
+                        post_covfile = (
+                            covds + a[:-2] + "/" + name + "/cov_matrix_pk-AnalyticGaussian-UNI" + a + "-" + post_files[i] + ".txt"
+                        )
 
-                collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a.lower(), smooth, "analytic")
+                        collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a.lower(), smooth, "analytic")
 
-                pre_file = [
-                    "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
-                ]
-                post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
-                """pre_covfile = (
-                    covds
-                    + c
-                    + str("_Sm%d" % smooth)
-                    + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
-                    + c[:6]
-                    + str("Sm%d" % smooth)
-                    + "-nonfix_rsd_pre.txt"
-                )
-                post_covfile = (
-                    covds
-                    + c
-                    + str("_Sm%d" % smooth)
-                    + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
-                    + c[:6]
-                    + str("Sm%d" % smooth)
-                    + "-nonfix_rsd_post.txt"
-                )
-                collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a.lower(), smooth, "analytic")"""
+                        pre_file = [
+                            "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
+                        ]
+                        post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
+                    """pre_covfile = (
+                        covds
+                        + c
+                        + str("_Sm%d" % smooth)
+                        + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
+                        + c[:6]
+                        + str("Sm%d" % smooth)
+                        + "-nonfix_rsd_pre.txt"
+                    )
+                    post_covfile = (
+                        covds
+                        + c
+                        + str("_Sm%d" % smooth)
+                        + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
+                        + c[:6]
+                        + str("Sm%d" % smooth)
+                        + "-nonfix_rsd_post.txt"
+                    )
+                    collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a.lower(), smooth, "analytic")"""
