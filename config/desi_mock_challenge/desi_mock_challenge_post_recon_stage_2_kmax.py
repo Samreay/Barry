@@ -3,6 +3,7 @@ import sys
 from chainconsumer import ChainConsumer
 
 sys.path.append("..")
+sys.path.append("../..")
 from barry.samplers import DynestySampler
 from barry.config import setup
 from barry.models import PowerBeutler2017
@@ -17,7 +18,6 @@ from matplotlib import cm
 
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
-    print(pfn)
     fitter = Fitter(dir_name, remove_output=True)
 
     sampler = DynestySampler(temp_dir=dir_name, nlive=500)
