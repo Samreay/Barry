@@ -77,7 +77,7 @@ def format_xi_cov(nss, covfile):
     cov[2 * nss :, nss : 2 * nss] = cov_input[2 * nin : 2 * nin + nss, nin : nin + nss]
     cov[2 * nss :, 2 * nss :] = cov_input[2 * nin : 2 * nin + nss, 2 * nin : 2 * nin + nss]
 
-    return cov  # Rescaled covariance by volume from 1Gpc to 3Gpc
+    return cov
 
 
 def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth, fix):
@@ -279,7 +279,7 @@ if __name__ == "__main__":
             for i, smooth in enumerate([5, 10, 15]):
                 pre_file = [ds + a[:-2] + "/" + b + "/UNI" + a + "-" + pre_files[i] + ".txt"]
                 post_file = [ds + a[:-2] + "/" + b + "/UNI" + a + "-" + post_files[i] + ".txt"]
-                pre_covfile = "/global/project/projectdirs/desi/users/jmen_a/EZmocks/EZmocks_1Gpc_recons_nonfix/RecIsoNonfix_Sm15/covariance/cov_matrix_pk-EZmocks-1Gpc-RecIsoSm15-nonfix_rsd_pre.txt"
+                pre_covfile = covds + a[:-2] + "/" + b + "/cov_matrix_pk-AnalyticGaussian-UNI" + a + "-" + post_files[i] + ".txt"
                 post_covfile = covds + a[:-2] + "/" + b + "/cov_matrix_pk-AnalyticGaussian-UNI" + a + "-" + post_files[i] + ".txt"
 
                 collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a.lower(), smooth, "analytic")
