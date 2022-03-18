@@ -239,16 +239,16 @@ if __name__ == "__main__":
     covds = f"/global/project/projectdirs/desi/users/oalves/UNIT-BAO-RSD-challenge/GaussianCovariance/"
 
     pre_files = [
-        "b0s05rsd0g1536premultipoles",
-        "b0s10rsd0g1536premultipoles",
-        "b0s15rsd0g1536premultipoles",
-        "b0s20rsd0g1536premultipoles",
+        "b0s05rsd0g0512premultipoles",
+        "b0s10rsd0g0512premultipoles",
+        "b0s15rsd0g0512premultipoles",
+        "b0s20rsd0g0512premultipoles",
     ]
     post_files = [
-        "b0s05rsd0g1536postmultipoles",
-        "b0s10rsd0g1536postmultipoles",
-        "b0s15rsd0g1536postmultipoles",
-        "b0s20rsd0g1536postmultipoles",
+        "b0s05rsd0g0512postmultipoles",
+        "b0s10rsd0g0512postmultipoles",
+        "b0s15rsd0g0512postmultipoles",
+        "b0s20rsd0g0512postmultipoles",
     ]
     for j, (a, b, c) in enumerate(zip(["ELGHD", "ELGMD", "ELGLD"], ["Yuyu_UNIT"], ["RecIso"])):
         for i, smooth in enumerate([5, 10, 15]):
