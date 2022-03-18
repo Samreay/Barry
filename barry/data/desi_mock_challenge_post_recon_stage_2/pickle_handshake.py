@@ -85,6 +85,7 @@ def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
     post_res = {f.lower(): getpk(f) for f in post_files}
 
     ks = next(iter(pre_res.items()))[1]["k"].to_numpy()
+    print(ks)
     pre_cov = format_pk_cov(len(ks), pre_covfile)
     pre_cov = pre_cov if fix.lower() == "analytic" else pre_cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
     print(np.shape(pre_cov), np.shape(ks))
