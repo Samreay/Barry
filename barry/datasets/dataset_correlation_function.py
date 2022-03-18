@@ -94,7 +94,7 @@ class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
         reduce_cov_factor=1,
         num_mocks=None,
         fake_diag=False,
-        realisation=None,
+        realisation="data",
         isotropic=True,
         fit_poles=(0,),
         covtype="nonfix",

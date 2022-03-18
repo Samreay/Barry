@@ -202,7 +202,7 @@ class PowerSpectrum_DESIMockChallenge_Post(PowerSpectrum):
         num_mocks=None,
         postprocess=None,
         fake_diag=False,
-        realisation=None,
+        realisation="data",
         isotropic=True,
         fit_poles=(0,),
         covtype="nonfix",
