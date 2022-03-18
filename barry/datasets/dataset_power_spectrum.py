@@ -205,9 +205,9 @@ class PowerSpectrum_DESIMockChallenge_Post(PowerSpectrum):
         realisation="data",
         isotropic=True,
         fit_poles=(0,),
-        covtype="nonfix",
-        smoothscale="15",
-        tracer="elg",
+        covtype="analytic",
+        smoothtype=3,
+        tracer="elghd",
     ):
 
         self.nredshift_bins = 1
@@ -216,8 +216,11 @@ class PowerSpectrum_DESIMockChallenge_Post(PowerSpectrum):
         if covtype.lower() not in ["fix", "nonfix", "analytic"]:
             raise NotImplementedError("covtype not recognised, must be fix, nonfix or analytic")
 
-        if smoothscale.lower() not in ["5", "10", "15", "20"]:
-            raise NotImplementedError("smoothscale not recognised, must be 5, 10, 15 or 20 (Mpc/h)")
+        smoothscales = ["5", "10", "15", "20"]
+        if smoothtype not in [1, 2, 3, 4]:
+            raise NotImplementedError(
+                "smoothscale not recognised, must be 1, 2, 3 or 4, corresponding to 5, 10, 15 or 20 (Mpc/h) respectively"
+            )
 
         if tracer.lower() not in ["elg", "elghd", "elgmd", "elgld"]:
             raise NotImplementedError("tracer not recognised, must be elg, elghd, elgmd, or elgld")
@@ -226,7 +229,9 @@ class PowerSpectrum_DESIMockChallenge_Post(PowerSpectrum):
             raise NotImplementedError("Only even multipoles included in DESIMockChallenge")
 
         reconname = "iso" if recon is None else recon.lower()
-        datafile = "desi_mock_challenge_post_stage_2_pk_" + reconname + "_" + smoothscale.lower() + "_" + covtype + "_" + tracer + ".pkl"
+        datafile = (
+            "desi_mock_challenge_post_stage_2_pk_" + reconname + "_" + smoothscales[smoothtype - 1] + "_" + covtype + "_" + tracer + ".pkl"
+        )
 
         super().__init__(
             datafile,
@@ -459,18 +464,18 @@ if __name__ == "__main__":
         covtypes = ["nonfix", "nonfix", "nonfix", "analytic", "analytic", "analytic"]
         for j, (recon, tracer, covtype) in enumerate(zip(recons, tracers, covtypes)):
             if recon == None:
-                smoothscales = "5"
+                smoothtypes = [1]
             else:
-                smoothscales = ["5", "10", "15"] if covtype == "nonfix" else ["5", "10", "15", "20"]
-            print(recon, tracer, covtype, smoothscales)
-            for smoothscale in smoothscales:
+                smoothtypes = [1, 2, 3] if covtype == "nonfix" else [1, 2, 3, 4]
+            print(recon, tracer, covtype, smoothtypes)
+            for smoothtype in smoothtypes:
                 dataset = PowerSpectrum_DESIMockChallenge_Post(
                     isotropic=False,
                     recon=recon,
                     fit_poles=[0, 2, 4],
                     min_k=0.02,
                     max_k=0.30,
-                    smoothscale=smoothscale,
+                    smoothtype=smoothtype,
                     covtype=covtype,
                     realisation="data",
                     tracer=tracer,
