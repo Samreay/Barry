@@ -35,7 +35,10 @@ def getcomp(ks):
 
 def format_pk_cov(nks, covfile):
 
-    cov = pd.read_csv(covfile, delim_whitespace=True, header=None).to_numpy()
+    if "AnalyticGaussian" in covfile:
+        cov = pd.read_csv(covfile, delim_whitespace=True, header=None, skiprows=8).to_numpy()
+    else:
+        cov = pd.read_csv(covfile, delim_whitespace=True, header=None).to_numpy()
     cov_flat = cov.astype(np.float64)[:, 2]
     nin = int(np.sqrt(len(cov)) / 3)
     cov_input = cov_flat.reshape((3 * nin, 3 * nin))
@@ -50,11 +53,15 @@ def format_pk_cov(nks, covfile):
     cov[4 * nks :, 2 * nks : 3 * nks] = cov_input[2 * nin : 2 * nin + nks, nin : nin + nks]
     cov[4 * nks :, 4 * nks :] = cov_input[2 * nin : 2 * nin + nks, 2 * nin : 2 * nin + nks]
 
-    return cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
+    return cov
 
 
 def format_xi_cov(nss, covfile):
 
+    if "AnalyticGaussian" in covfile:
+        cov = pd.read_csv(covfile, delim_whitespace=True, header=None, skiprows=8).to_numpy()
+    else:
+        cov = pd.read_csv(covfile, delim_whitespace=True, header=None).to_numpy()
     cov = pd.read_csv(covfile, delim_whitespace=True, header=None).to_numpy()
     cov_flat = cov.astype(np.float32)[:, 2]
     nin = int(np.sqrt(len(cov)) / 3)
@@ -70,7 +77,7 @@ def format_xi_cov(nss, covfile):
     cov[2 * nss :, nss : 2 * nss] = cov_input[2 * nin : 2 * nin + nss, nin : nin + nss]
     cov[2 * nss :, 2 * nss :] = cov_input[2 * nin : 2 * nin + nss, 2 * nin : 2 * nin + nss]
 
-    return cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
+    return cov  # Rescaled covariance by volume from 1Gpc to 3Gpc
 
 
 def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth, fix):
@@ -85,11 +92,23 @@ def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
 
     ks = next(iter(pre_res.items()))[1]["k"].to_numpy()
     pre_cov = format_pk_cov(len(ks), pre_covfile)
+    pre_cov = pre_cov if fix.lower() == "analytic" else pre_cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
     print(np.shape(pre_cov), np.shape(ks))
 
     ks = next(iter(pre_res.items()))[1]["k"].to_numpy()
     post_cov = format_pk_cov(len(ks), post_covfile)
+    post_cov = post_cov if fix.lower() == "analytic" else post_cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
     print(np.shape(post_cov), np.shape(ks))
+
+    # Check the covariance matrices
+    v = np.diag(pre_cov @ np.linalg.inv(pre_cov))
+    if not np.all(np.isclose(v, 1)):
+        print("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
+        print(f"These should all be 1: {v}")
+    v = np.diag(post_cov @ np.linalg.inv(post_cov))
+    if not np.all(np.isclose(v, 1)):
+        print("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
+        print(f"These should all be 1: {v}")
 
     split = {
         "pre-recon data": [v for k, v in pre_res.items()],
@@ -129,10 +148,12 @@ def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
 
     nss = len(next(iter(pre_res.items()))[1]["s"].to_numpy())
     pre_cov = format_xi_cov(nss, pre_covfile)
+    pre_cov = pre_cov if fix.lower() == "analytic" else pre_cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
     print(np.shape(pre_cov), nss)
 
     nss = len(next(iter(pre_res.items()))[1]["s"].to_numpy())
     post_cov = format_xi_cov(nss, post_covfile)
+    post_cov = post_cov if fix.lower() == "analytic" else post_cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
     print(np.shape(post_cov), nss)
 
     # Check the covariance matrices
@@ -172,113 +193,115 @@ if __name__ == "__main__":
 
     # ===========================
     # Non-Fix Covariance matrices
-    ds = f"/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/Reconstruction/Stage2_3Gpc/Multipoles/"
-    covds = f"/global/project/projectdirs/desi/users/jmen_a/EZmocks/EZmocks_1Gpc_recons_nonfix/"
+    if False:
+        ds = f"/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/Reconstruction/Stage2_3Gpc/Multipoles/"
+        covds = f"/global/project/projectdirs/desi/users/jmen_a/EZmocks/EZmocks_1Gpc_recons_nonfix/"
 
-    pre_files = [
-        "UNIELG-b0s05rsd0g1536premultipoles",
-        "UNIELG-b0s10rsd0g1536premultipoles",
-        "UNIELG-b0s15rsd0g1536premultipoles",
-    ]
-    post_files = [
-        "UNIELG-b0s05rsd0g1536postmultipoles",
-        "UNIELG-b0s10rsd0g1536postmultipoles",
-        "UNIELG-b0s15rsd0g1536postmultipoles",
-    ]
-    for j, (a, b, c) in enumerate(zip(["iso", "ani"], ["Yuyu_RecIso", "Yuyu_RecAni"], ["RecIsoNonfix", "RecAniNonfix"])):
-        for i, smooth in enumerate([5, 10, 15]):
-            pre_file = [ds + b + "/dk0.005kmin0.005/" + pre_files[i] + ".txt"]
-            post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + ".txt"]
-            pre_covfile = (
-                covds
-                + c
-                + str("_Sm%d" % smooth)
-                + "/covariance/cov_matrix_pk-EZmocks-1Gpc-"
-                + c[:6]
-                + str("Sm%d" % smooth)
-                + "-nonfix_rsd_pre.txt"
-            )
-            post_covfile = (
-                covds
-                + c
-                + str("_Sm%d" % smooth)
-                + "/covariance/cov_matrix_pk-EZmocks-1Gpc-"
-                + c[:6]
-                + str("Sm%d" % smooth)
-                + "-nonfix_rsd_post.txt"
-            )
-            collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix")
+        pre_files = [
+            "UNIELG-b0s05rsd0g1536premultipoles",
+            "UNIELG-b0s10rsd0g1536premultipoles",
+            "UNIELG-b0s15rsd0g1536premultipoles",
+        ]
+        post_files = [
+            "UNIELG-b0s05rsd0g1536postmultipoles",
+            "UNIELG-b0s10rsd0g1536postmultipoles",
+            "UNIELG-b0s15rsd0g1536postmultipoles",
+        ]
+        for j, (a, b, c) in enumerate(zip(["iso", "ani"], ["Yuyu_RecIso", "Yuyu_RecAni"], ["RecIsoNonfix", "RecAniNonfix"])):
+            for i, smooth in enumerate([5, 10, 15]):
+                pre_file = [ds + b + "/dk0.005kmin0.005/" + pre_files[i] + ".txt"]
+                post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + ".txt"]
+                pre_covfile = (
+                    covds
+                    + c
+                    + str("_Sm%d" % smooth)
+                    + "/covariance/cov_matrix_pk-EZmocks-1Gpc-"
+                    + c[:6]
+                    + str("Sm%d" % smooth)
+                    + "-nonfix_rsd_pre.txt"
+                )
+                post_covfile = (
+                    covds
+                    + c
+                    + str("_Sm%d" % smooth)
+                    + "/covariance/cov_matrix_pk-EZmocks-1Gpc-"
+                    + c[:6]
+                    + str("Sm%d" % smooth)
+                    + "-nonfix_rsd_post.txt"
+                )
+                collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix")
 
-            pre_file = [
-                "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
-            ]
-            post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
-            pre_covfile = (
-                covds
-                + c
-                + str("_Sm%d" % smooth)
-                + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
-                + c[:6]
-                + str("Sm%d" % smooth)
-                + "-nonfix_rsd_pre.txt"
-            )
-            post_covfile = (
-                covds
-                + c
-                + str("_Sm%d" % smooth)
-                + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
-                + c[:6]
-                + str("Sm%d" % smooth)
-                + "-nonfix_rsd_post.txt"
-            )
-            collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix")
+                pre_file = [
+                    "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
+                ]
+                post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
+                pre_covfile = (
+                    covds
+                    + c
+                    + str("_Sm%d" % smooth)
+                    + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
+                    + c[:6]
+                    + str("Sm%d" % smooth)
+                    + "-nonfix_rsd_pre.txt"
+                )
+                post_covfile = (
+                    covds
+                    + c
+                    + str("_Sm%d" % smooth)
+                    + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
+                    + c[:6]
+                    + str("Sm%d" % smooth)
+                    + "-nonfix_rsd_post.txt"
+                )
+                collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix")
 
     # ===========================
     # Analytic Covariance matrices
-    ds = f"/global/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/Reconstruction/Results_stage2/"
-    covds = f"/global/project/projectdirs/desi/users/oalves/UNIT-BAO-RSD-challenge/GaussianCovariance/"
+    if True:
+        ds = f"/global/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/Reconstruction/Results_stage2/"
+        covds = f"/global/project/projectdirs/desi/users/oalves/UNIT-BAO-RSD-challenge/GaussianCovariance/"
 
-    pre_files = [
-        "b0s05rsd0g0512premultipoles",
-        "b0s10rsd0g0512premultipoles",
-        "b0s15rsd0g0512premultipoles",
-        "b0s20rsd0g0512premultipoles",
-    ]
-    post_files = [
-        "b0s05rsd0g0512postmultipoles",
-        "b0s10rsd0g0512postmultipoles",
-        "b0s15rsd0g0512postmultipoles",
-        "b0s20rsd0g0512postmultipoles",
-    ]
-    for j, (a, b, c) in enumerate(zip(["ELGHD", "ELGMD", "ELGLD"], ["Yuyu_UNIT"], ["RecIso"])):
-        for i, smooth in enumerate([5, 10, 15]):
-            pre_file = [ds + a[:-2] + "/" + b + "/UNI" + a + "-" + pre_files[i] + ".txt"]
-            post_file = [ds + a[:-2] + "/" + b + "/UNI" + a + "-" + post_files[i] + ".txt"]
-            pre_covfile = "/global/project/projectdirs/desi/users/jmen_a/EZmocks/EZmocks_1Gpc_recons_nonfix/RecIsoNonfix_Sm15//covariance/cov_matrix_xi-EZmocks-1Gpc-RecIsoSm15-nonfix_rsd_pre.txt"
-            post_covfile = covds + a[:-2] + "/" + b + "/cov_matrix_pk-AnalyticGaussian-UNI" + a + "-" + post_files[i] + ".txt"
+        pre_files = [
+            "b0s05rsd0g0512premultipoles",
+            "b0s10rsd0g0512premultipoles",
+            "b0s15rsd0g0512premultipoles",
+            "b0s20rsd0g0512premultipoles",
+        ]
+        post_files = [
+            "b0s05rsd0g0512postmultipoles",
+            "b0s10rsd0g0512postmultipoles",
+            "b0s15rsd0g0512postmultipoles",
+            "b0s20rsd0g0512postmultipoles",
+        ]
+        for j, (a, b, c) in enumerate(zip(["ELGHD", "ELGMD", "ELGLD"], ["Yuyu_UNIT"], ["RecIso"])):
+            for i, smooth in enumerate([5, 10, 15]):
+                pre_file = [ds + a[:-2] + "/" + b + "/UNI" + a + "-" + pre_files[i] + ".txt"]
+                post_file = [ds + a[:-2] + "/" + b + "/UNI" + a + "-" + post_files[i] + ".txt"]
+                pre_covfile = "/global/project/projectdirs/desi/users/jmen_a/EZmocks/EZmocks_1Gpc_recons_nonfix/RecIsoNonfix_Sm15//covariance/cov_matrix_xi-EZmocks-1Gpc-RecIsoSm15-nonfix_rsd_pre.txt"
+                post_covfile = covds + a[:-2] + "/" + b + "/cov_matrix_pk-AnalyticGaussian-UNI" + a + "-" + post_files[i] + ".txt"
 
-            collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a.lower(), smooth, "analytic")
+                collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a.lower(), smooth, "analytic")
 
-            pre_file = [
-                "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
-            ]
-            post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
-            """pre_covfile = (
-                covds
-                + c
-                + str("_Sm%d" % smooth)
-                + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
-                + c[:6]
-                + str("Sm%d" % smooth)
-                + "-nonfix_rsd_pre.txt"
-            )
-            post_covfile = (
-                covds
-                + c
-                + str("_Sm%d" % smooth)
-                + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
-                + c[:6]
-                + str("Sm%d" % smooth)
-                + "-nonfix_rsd_post.txt"
-            )
-            collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a.lower(), smooth, "analytic")"""
+                pre_file = [
+                    "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
+                ]
+                post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
+                """pre_covfile = (
+                    covds
+                    + c
+                    + str("_Sm%d" % smooth)
+                    + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
+                    + c[:6]
+                    + str("Sm%d" % smooth)
+                    + "-nonfix_rsd_pre.txt"
+                )
+                post_covfile = (
+                    covds
+                    + c
+                    + str("_Sm%d" % smooth)
+                    + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
+                    + c[:6]
+                    + str("Sm%d" % smooth)
+                    + "-nonfix_rsd_post.txt"
+                )
+                collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a.lower(), smooth, "analytic")"""
