@@ -100,7 +100,7 @@ def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
     post_cov = post_cov if fix.lower() == "analytic" else post_cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
     print(np.shape(post_cov), np.shape(ks))
 
-    print(post_cov)
+    print(pre_cov, post_cov)
 
     # Check the covariance matrices
     v = np.diag(pre_cov @ np.linalg.inv(pre_cov))
@@ -279,7 +279,7 @@ if __name__ == "__main__":
             for i, smooth in enumerate([5, 10, 15]):
                 pre_file = [ds + a[:-2] + "/" + b + "/UNI" + a + "-" + pre_files[i] + ".txt"]
                 post_file = [ds + a[:-2] + "/" + b + "/UNI" + a + "-" + post_files[i] + ".txt"]
-                pre_covfile = "/global/project/projectdirs/desi/users/jmen_a/EZmocks/EZmocks_1Gpc_recons_nonfix/RecIsoNonfix_Sm15//covariance/cov_matrix_xi-EZmocks-1Gpc-RecIsoSm15-nonfix_rsd_pre.txt"
+                pre_covfile = "/global/project/projectdirs/desi/users/jmen_a/EZmocks/EZmocks_1Gpc_recons_nonfix/RecIsoNonfix_Sm15/covariance/cov_matrix_pk-EZmocks-1Gpc-RecIsoSm15-nonfix_rsd_pre.txt"
                 post_covfile = covds + a[:-2] + "/" + b + "/cov_matrix_pk-AnalyticGaussian-UNI" + a + "-" + post_files[i] + ".txt"
 
                 collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a.lower(), smooth, "analytic")
