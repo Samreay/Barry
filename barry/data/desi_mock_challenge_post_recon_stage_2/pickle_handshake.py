@@ -170,12 +170,11 @@ def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
 
 if __name__ == "__main__":
 
-    # =======
-    # Non-Fix
+    # ===========================
+    # Non-Fix Covariance matrices
     ds = f"/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/Reconstruction/Stage2_3Gpc/Multipoles/"
     covds = f"/global/project/projectdirs/desi/users/jmen_a/EZmocks/EZmocks_1Gpc_recons_nonfix/"
 
-    # Power Spectrum
     pre_files = [
         "UNIELG-b0s05rsd0g1536premultipoles",
         "UNIELG-b0s10rsd0g1536premultipoles",
@@ -233,3 +232,53 @@ if __name__ == "__main__":
                 + "-nonfix_rsd_post.txt"
             )
             collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix")
+
+    # ===========================
+    # Analytic Covariance matrices
+    ds = f"/global/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/Reconstruction/Results_stage2/"
+    covds = f"/global/project/projectdirs/desi/users/oalves/UNIT-BAO-RSD-challenge/GaussianCovariance/"
+
+    pre_files = [
+        "b0s05rsd0g1536premultipoles",
+        "b0s10rsd0g1536premultipoles",
+        "b0s15rsd0g1536premultipoles",
+        "b0s20rsd0g1536premultipoles",
+    ]
+    post_files = [
+        "b0s05rsd0g1536postmultipoles",
+        "b0s10rsd0g1536postmultipoles",
+        "b0s15rsd0g1536postmultipoles",
+        "b0s20rsd0g1536postmultipoles",
+    ]
+    for j, (a, b, c) in enumerate(zip(["ELGHD", "ELGMD", "ELGLD"], ["Yuyu_UNIT"], ["RecIso"])):
+        for i, smooth in enumerate([5, 10, 15]):
+            pre_file = [ds + a[:-2] + "/" + b + "/UNI" + a + "-" + pre_files[i] + ".txt"]
+            post_file = [ds + a[:-2] + "/" + b + "/UNI" + a + "-" + post_files[i] + ".txt"]
+            pre_covfile = "/global/project/projectdirs/desi/users/jmen_a/EZmocks/EZmocks_1Gpc_recons_nonfix/RecIsoNonfix_Sm15//covariance/cov_matrix_xi-EZmocks-1Gpc-RecIsoSm15-nonfix_rsd_pre.txt"
+            post_covfile = covds + a[:-2] + "/" + b + "/cov_matrix_pk-AnalyticGaussian-UNI" + a + "-" + post_files[i] + ".txt"
+
+            collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a.lower(), smooth, "analytic")
+
+            pre_file = [
+                "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
+            ]
+            post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
+            """pre_covfile = (
+                covds
+                + c
+                + str("_Sm%d" % smooth)
+                + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
+                + c[:6]
+                + str("Sm%d" % smooth)
+                + "-nonfix_rsd_pre.txt"
+            )
+            post_covfile = (
+                covds
+                + c
+                + str("_Sm%d" % smooth)
+                + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
+                + c[:6]
+                + str("Sm%d" % smooth)
+                + "-nonfix_rsd_post.txt"
+            )
+            collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a.lower(), smooth, "analytic")"""
