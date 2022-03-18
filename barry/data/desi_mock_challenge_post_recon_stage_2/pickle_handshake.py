@@ -100,18 +100,6 @@ def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
     post_cov = post_cov if fix.lower() == "analytic" else post_cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
     print(np.shape(post_cov), np.shape(ks))
 
-    print(pre_cov, post_cov)
-
-    # Check the covariance matrices
-    v = np.diag(pre_cov @ np.linalg.inv(pre_cov))
-    if not np.all(np.isclose(v, 1)):
-        print("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
-        print(f"These should all be 1: {v}")
-    v = np.diag(post_cov @ np.linalg.inv(post_cov))
-    if not np.all(np.isclose(v, 1)):
-        print("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
-        print(f"These should all be 1: {v}")
-
     split = {
         "pre-recon data": [v for k, v in pre_res.items()],
         "pre-recon cov": pre_cov,
@@ -157,16 +145,6 @@ def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
     post_cov = format_xi_cov(nss, post_covfile)
     post_cov = post_cov if fix.lower() == "analytic" else post_cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
     print(np.shape(post_cov), nss)
-
-    # Check the covariance matrices
-    v = np.diag(pre_cov @ np.linalg.inv(pre_cov))
-    if not np.all(np.isclose(v, 1)):
-        print("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
-        print(f"These should all be 1: {v}")
-    v = np.diag(post_cov @ np.linalg.inv(post_cov))
-    if not np.all(np.isclose(v, 1)):
-        print("ERROR, setting an inappropriate covariance matrix that is almost singular!!!!")
-        print(f"These should all be 1: {v}")
 
     split = {
         "pre-recon data": [v for k, v in pre_res.items()],
