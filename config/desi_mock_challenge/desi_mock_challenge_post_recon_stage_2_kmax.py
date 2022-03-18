@@ -47,6 +47,7 @@ if __name__ == "__main__":
                             num_mocks=998,
                             smoothtype=smoothtype,
                             covtype="nonfix",
+                            tracer="elg",
                         )
                         model = PowerBeutler2017(
                             recon=data.recon,
