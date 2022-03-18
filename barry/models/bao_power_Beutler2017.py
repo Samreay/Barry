@@ -228,7 +228,7 @@ if __name__ == "__main__":
 
     print("Checking anisotropic mock mean")
     dataset = PowerSpectrum_DESIMockChallenge_Post(
-        realisation="data", isotropic=False, fit_poles=[0, 2, 4], recon="ani", min_k=0.0075, max_k=0.30
+        realisation="data", isotropic=False, fit_poles=[0, 2, 4], recon="iso", min_k=0.0075, max_k=0.30, covtype="analytic", tracer="elgld"
     )
     model = PowerBeutler2017(
         recon=dataset.recon,

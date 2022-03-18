@@ -24,8 +24,8 @@ if __name__ == "__main__":
     sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
 
     names = [
-        "PostRecon Iso NonFix",
-        "PostRecon Ani NonFix",
+        "PostRecon Yuyu NonFix ",
+        "PostRecon Yuyu NonFix ",
     ]
     cmap = plt.cm.get_cmap("viridis")
 
