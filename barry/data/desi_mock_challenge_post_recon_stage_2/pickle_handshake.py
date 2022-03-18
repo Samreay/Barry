@@ -113,7 +113,7 @@ def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
         "m_mat": getcomp(ks),
     }
 
-    with open(f"../desi_mock_challenge_post_stage_2_pk_" + a + "_" + str(smooth) + fix + ".pkl", "wb") as f:
+    with open(f"../desi_mock_challenge_post_stage_2_pk_" + a + "_" + str(smooth) + "_" + fix + ".pkl", "wb") as f:
         pickle.dump(split, f)
 
 
@@ -154,7 +154,7 @@ def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
         "name": f"DESI Mock Challenge Stage 2 Xi" + a + " " + str(smooth) + " " + fix,
     }
 
-    with open(f"../desi_mock_challenge_post_stage_2_xi_" + a + "_" + str(smooth) + fix + ".pkl", "wb") as f:
+    with open(f"../desi_mock_challenge_post_stage_2_xi_" + a + "_" + str(smooth) + "_" + fix + ".pkl", "wb") as f:
         pickle.dump(split, f)
 
 
