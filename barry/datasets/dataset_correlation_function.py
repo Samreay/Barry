@@ -99,22 +99,26 @@ class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
         fit_poles=(0,),
         covtype="nonfix",
         smoothscale="15",
+        tracer="elg",
     ):
 
         self.nredshift_bins = 1
-        self.nsmoothtypes = 3
+        self.nsmoothtypes = 4
 
-        if covtype.lower() not in ["fix", "nonfix"]:
-            raise NotImplementedError("covtype not recognised, must be fix or nonfix")
+        if covtype.lower() not in ["fix", "nonfix", "analytic"]:
+            raise NotImplementedError("covtype not recognised, must be fix, nonfix or analytic")
 
-        if smoothscale.lower() not in ["5", "10", "15"]:
-            raise NotImplementedError("smoothscale not recognised, must be 5, 10 or 15 (Mpc/h) respectively")
+        if smoothscale.lower() not in ["5", "10", "15", "20"]:
+            raise NotImplementedError("smoothscale not recognised, must be 5, 10, 15 or 20 (Mpc/h)")
+
+        if tracer.lower() not in ["elg"]:
+            raise NotImplementedError("tracer not recognised, must be elg")
 
         if any(pole in [1, 3] for pole in fit_poles):
             raise NotImplementedError("Only even multipoles included in DESIMockChallenge")
 
         reconname = "iso" if recon is None else recon.lower()
-        datafile = "desi_mock_challenge_post_stage_2_xi_" + reconname + "_" + smoothscale.lower() + "_" + covtype + ".pkl"
+        datafile = "desi_mock_challenge_post_stage_2_xi_" + reconname + "_" + smoothscale.lower() + "_" + covtype + "_" + tracer + ".pkl"
 
         super().__init__(
             datafile,
@@ -182,14 +186,23 @@ if __name__ == "__main__":
     if True:
 
         # Plot the desi mock challenge spectra
-        for j, recon in enumerate([None, "iso", "ani"]):
-            for smoothscale in ["5", "10", "15"]:
+        # Plot the desi mock challenge spectra
+        recons = [None, "ani", "iso"]
+        tracers = ["elg", "elg", "elg"]
+        covtypes = ["nonfix", "nonfix", "nonfix"]
+        for j, (recon, tracer, covtype) in enumerate(zip(recons, tracers, covtypes)):
+            if recon == None:
+                smoothscales = "5"
+            else:
+                smoothscales = ["5", "10", "15"] if covtype == "nonfix" else ["5", "10", "15", "20"]
+            print(recon, tracer, covtype, smoothscales)
+            for smoothscale in smoothscales:
                 dataset = CorrelationFunction_DESIMockChallenge_Post(
                     isotropic=False,
                     recon=recon,
                     fit_poles=[0, 2, 4],
-                    min_dist=35.0,
-                    max_dist=157.5,
+                    min_dist=10.0,
+                    max_dist=200.0,
                     smoothscale=smoothscale,
                     covtype="nonfix",
                     realisation="data",
