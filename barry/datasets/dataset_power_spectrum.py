@@ -207,22 +207,26 @@ class PowerSpectrum_DESIMockChallenge_Post(PowerSpectrum):
         fit_poles=(0,),
         covtype="nonfix",
         smoothscale="15",
+        tracer=None,
     ):
 
         self.nredshift_bins = 1
-        self.nsmoothtypes = 3
+        self.nsmoothtypes = 4
 
-        if covtype.lower() not in ["fix", "nonfix"]:
-            raise NotImplementedError("covtype not recognised, must be fix or nonfix")
+        if covtype.lower() not in ["fix", "nonfix", "analytic"]:
+            raise NotImplementedError("covtype not recognised, must be fix, nonfix or analytic")
 
-        if smoothscale.lower() not in ["5", "10", "15"]:
-            raise NotImplementedError("smoothscale not recognised, must be 5, 10 or 15 (Mpc/h) respectively")
+        if smoothscale.lower() not in ["5", "10", "15", "20"]:
+            raise NotImplementedError("smoothscale not recognised, must be 5, 10, 15 or 20 (Mpc/h) respectively")
 
         if any(pole in [1, 3] for pole in fit_poles):
             raise NotImplementedError("Only even multipoles included in DESIMockChallenge")
 
         reconname = "iso" if recon is None else recon.lower()
-        datafile = "desi_mock_challenge_post_stage_2_pk_" + reconname + "_" + smoothscale.lower() + "_" + covtype + ".pkl"
+        if tracer is None:
+            datafile = "desi_mock_challenge_post_stage_2_pk_" + reconname + "_" + smoothscale.lower() + "_" + covtype + ".pkl"
+        else:
+            datafile = "desi_mock_challenge_post_stage_2_pk_" + reconname + "_" + smoothscale.lower() + "_" + covtype + ".pkl"
 
         super().__init__(
             datafile,

@@ -80,7 +80,7 @@ def format_xi_cov(nss, covfile):
     return cov
 
 
-def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth, fix):
+def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth, fix, tracer):
 
     print(pre_files)
     print(post_files)
@@ -116,17 +116,17 @@ def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
             "mnu": 0.00064 * 93.14,
             "reconsmoothscale": smooth,
         },
-        "name": f"DESI Mock Challenge Stage 2 Pk " + a + " " + str(smooth) + " " + fix,
+        "name": f"DESI Mock Challenge Stage 2 Pk " + a + " " + str(smooth) + " " + fix + " " + tracer,
         "winfit": getwin(ks),
         "winpk": None,  # We can set this to None; Barry will set it to zeroes given the length of the data vector.
         "m_mat": getcomp(ks),
     }
 
-    with open(f"../desi_mock_challenge_post_stage_2_pk_" + a + "_" + str(smooth) + "_" + fix + ".pkl", "wb") as f:
+    with open(f"../desi_mock_challenge_post_stage_2_pk_" + a + "_" + str(smooth) + "_" + fix + "_" + tracer + ".pkl", "wb") as f:
         pickle.dump(split, f)
 
 
-def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth, fix):
+def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth, fix, tracer):
 
     print(pre_files)
     print(post_files)
@@ -165,7 +165,7 @@ def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
         "name": f"DESI Mock Challenge Stage 2 Xi " + a + " " + str(smooth) + " " + fix,
     }
 
-    with open(f"../desi_mock_challenge_post_stage_2_xi_" + a + "_" + str(smooth) + "_" + fix + ".pkl", "wb") as f:
+    with open(f"../desi_mock_challenge_post_stage_2_xi_" + a + "_" + str(smooth) + "_" + fix + "_" + tracer + ".pkl", "wb") as f:
         pickle.dump(split, f)
 
 
@@ -173,7 +173,7 @@ if __name__ == "__main__":
 
     # ===========================
     # Non-Fix Covariance matrices
-    if False:
+    if True:
         ds = f"/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/Reconstruction/Stage2_3Gpc/Multipoles/"
         covds = f"/global/project/projectdirs/desi/users/jmen_a/EZmocks/EZmocks_1Gpc_recons_nonfix/"
 
@@ -209,7 +209,7 @@ if __name__ == "__main__":
                     + str("Sm%d" % smooth)
                     + "-nonfix_rsd_post.txt"
                 )
-                collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix")
+                collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix", "ELG")
 
                 pre_file = [
                     "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
@@ -233,7 +233,7 @@ if __name__ == "__main__":
                     + str("Sm%d" % smooth)
                     + "-nonfix_rsd_post.txt"
                 )
-                collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix")
+                collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix", "ELG")
 
     # ===========================
     # Analytic Covariance matrices
@@ -253,7 +253,7 @@ if __name__ == "__main__":
             "b0s15rsd0g0512postmultipoles",
             "b0s20rsd0g0512postmultipoles",
         ]
-        for k, rec in enumerate(["RecIso"]):
+        for k, rec in enumerate(["iso"]):
             for j, a in enumerate(["ELGHD", "ELGMD", "ELGLD"]):
                 for i, smooth in enumerate([5, 10, 15, 20]):
                     for m, name in enumerate(["Yuyu_UNIT"]):
@@ -264,7 +264,7 @@ if __name__ == "__main__":
                             covds + a[:-2] + "/" + name + "/cov_matrix_pk-AnalyticGaussian-UNI" + a + "-" + post_files[i] + ".txt"
                         )
 
-                        collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a.lower(), smooth, "analytic")
+                        collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, rec, smooth, "analytic", a.lower())
 
                         pre_file = [
                             "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
