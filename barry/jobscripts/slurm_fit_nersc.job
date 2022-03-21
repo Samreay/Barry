@@ -13,7 +13,7 @@
 
 source ~/.bashrc.ext
 IDIR={directory}
-conda activate {conda_env}
+source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
 
 echo "Activated python"
 executable=$(which python)

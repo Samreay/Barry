@@ -1,11 +1,12 @@
 # Setting up Barry on NERSC
 
 1. Git clone the Barry repository onto both your local computer and NERSC: `git clone https://github.com/Samreay/Barry.git`
-
-
-
-5. Update `config.yml` with the name of your conda enviroment under `nersc: conda_env`
-6. Add `export HPC=nersc` to your `~/.bashrc.ext` file
+2. Load Arnaud de Mattia's cosmodesi environment
+    ```
+    source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
+    ```
+3. Install the additional python requirements `cd Barry && pip install -r requirements.txt`
+4. Add `export HPC=nersc` to your `~/.bashrc.ext` file
 7. Barry should now be more or less good to go. Now let's run some tests. From the main Barry directory try:
     1. `cd barry && python generate.py`: This will run through all the datasets and models and check
     that you have the corresponding CAMB power spectrum templates and non-linear integrals. Unless you have
