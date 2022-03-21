@@ -70,7 +70,7 @@ if __name__ == "__main__":
     parser.add_argument("--desi", action="store_true", default=False)
     args = parser.parse_args()
 
-    base_datasets = [c() for c in get_concrete(Dataset)]  # This returns all the dataset classes
+    base_datasets = [c() for c in get_concrete(Dataset) if "DESI" not in c.__name__ or args.desi]  # This returns all the dataset classes
 
     # For each dataset, check nredshift_bins and nsmooth_types. Duplicate the dataset classes so that each combination
     # of redshift_bins and smooth_types is present.

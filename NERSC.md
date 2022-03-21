@@ -6,7 +6,7 @@
     source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
     ```
 3. Install the additional python requirements `cd Barry && pip install -r requirements.txt`
-4. Add `export HPC=nersc` to your `~/.bashrc.ext` file
+4. Add `export HPC=nersc` to your `~/.bashrc.ext` file and `source ~/.bashrc.ext` it.
 7. Barry should now be more or less good to go. Now let's run some tests. From the main Barry directory try:
     1. `cd barry && python generate.py`: This will run through all the datasets and models and check
     that you have the corresponding CAMB power spectrum templates and non-linear integrals. Unless you have

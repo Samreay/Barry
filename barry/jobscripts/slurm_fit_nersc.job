@@ -12,8 +12,8 @@
 #SBATCH -o {output_dir}/{name}.o%j
 
 source ~/.bashrc.ext
-IDIR={directory}
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
+IDIR={directory}
 
 echo "Activated python"
 executable=$(which python)
