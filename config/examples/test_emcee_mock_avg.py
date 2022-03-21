@@ -29,7 +29,7 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         posterior, weight, chain, evidence, model, data, extra = fitter.load()[0]
-        chi2, dof, bband, mods, smooths = plot_bestfit(posterior, chain, model, name=extra["name"], figname=pfn + "_bestfit.pdf")
+        chi2, dof, bband, mods, smooths = plot_bestfit(posterior, chain, model, title=extra["name"], figname=pfn + "_bestfit.pdf")
 
         c = ChainConsumer()
         c.add_chain(chain, weights=weight, parameters=model.get_labels())

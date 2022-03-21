@@ -61,7 +61,7 @@ if __name__ == "__main__":
                     smoothnames = [" 5", " 10", " 15"]
                     hexname = " Hexa " if 4 in fit_poles else " No-Hexa "
                     name = names[i] + recon + smoothnames[smoothtype - 1] + hexname + str(r"$s_{min}=%3.1lf$" % smin)
-                    print(name)
+                    allnames.append(name)
                     fitter.add_model_and_dataset(model, data, name=name)
                     counter += 1
 
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         output = {}
         print(allnames)
         for name in allnames:
-            fitname = " ".join(name.split()[:7])
+            fitname = " ".join(name.split()[:6])
             output[fitname] = []
 
         c = ChainConsumer()
@@ -89,7 +89,7 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             smin = extra["name"].split(" ")[-1][9:-1]
-            fitname = " ".join(extra["name"].split()[:7])
+            fitname = " ".join(extra["name"].split()[:6])
 
             color = plt.colors.rgb2hex(cmap(float(counter) / (len(smins) - 1)))
 
@@ -127,7 +127,6 @@ if __name__ == "__main__":
                         "$\\alpha_\\parallel$",
                         "$\\alpha_\\perp$",
                         "$\\Sigma_s$",
-                        "$\\beta$",
                         "$\\Sigma_{nl,||}$",
                         "$\\Sigma_{nl,\\perp}$",
                     ]
@@ -139,15 +138,15 @@ if __name__ == "__main__":
             corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
             if "No-Hexa" in fitname:
                 output[fitname].append(
-                    f"{smin:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:8.1f}, {bband[5]:8.1f}, {bband[6]:8.1f}"
+                    f"{smin:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[3]:7.3f}, {mean[4]:7.3f}, {mean[2]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:8.1f}, {bband[5]:8.1f}, {bband[6]:8.1f},  {bband[7]:8.1f}"
                 )
             else:
                 output[fitname].append(
-                    f"{smin:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[4]:7.3f}, {mean[5]:7.3f}, {mean[2]:7.3f}, {mean[3]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:8.1f}, {bband[5]:8.1f}, {bband[6]:8.1f}, {bband[7]:8.1f}, {bband[8]:8.1f}, {bband[9]:8.1f}"
+                    f"{smin:3s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {chi2:7.3f}, {dof:4d}, {mean[3]:7.3f}, {mean[4]:7.3f}, {mean[2]:7.3f}, {bband[0]:7.3f}, {bband[1]:8.1f}, {bband[2]:8.1f}, {bband[3]:8.1f}, {bband[4]:8.1f}, {bband[5]:8.1f}, {bband[6]:8.1f}, {bband[7]:8.1f}, {bband[8]:8.1f}, {bband[9]:8.1f}, {bband[10]:8.1f}, {bband[11]:8.1f}"
                 )
 
             counter += 1
-            if counter >= 4:
+            if counter >= 3:
                 counter = 0
                 c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4, legend_location=(0, -1), plot_contour=True)
                 c.plotter.plot(
@@ -162,11 +161,11 @@ if __name__ == "__main__":
             with open(dir_name + "/Queensland_bestfit_" + name.replace(" ", "_") + ".txt", "w") as f:
                 if "No-Hexa" in name:
                     f.write(
-                        "# smin, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a2_1, a2_2, a2_3\n"
+                        "# smin, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, b0, a0_1, a0_2, a0_3, b2, a2_1, a2_2, a2_3\n"
                     )
                 else:
                     f.write(
-                        "# smin, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, beta, b, a0_1, a0_2, a0_3, a2_1, a2_2, a2_3, a4_1, a4_2, a4_3\n"
+                        "# smin, best_fit_alpha_par, best_fit_alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof, sigma_nl_par, sigma_nl_per, sigma_fog, b0, a0_1, a0_2, a0_3, b2, a2_1, a2_2, a2_3, a4_1, a4_2, a4_3\n"
                     )
                 for l in output[name]:
                     f.write(l + "\n")

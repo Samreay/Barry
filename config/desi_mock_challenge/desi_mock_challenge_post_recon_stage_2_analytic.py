@@ -86,7 +86,7 @@ if __name__ == "__main__":
         output = {}
         print(allnames)
         for name in allnames:
-            fitname = " ".join(name.split()[:7])
+            fitname = " ".join(name.split()[:8])
             output[fitname] = []
 
         c = ChainConsumer()
@@ -95,7 +95,7 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             kmax = extra["name"].split(" ")[-1][9:-1]
-            fitname = " ".join(extra["name"].split()[:7])
+            fitname = " ".join(extra["name"].split()[:8])
 
             color = plt.colors.rgb2hex(cmap(float(counter) / (len(kmaxs) - 1)))
 
