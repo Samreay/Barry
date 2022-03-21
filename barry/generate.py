@@ -70,13 +70,14 @@ if __name__ == "__main__":
     parser.add_argument("--desi", action="store_true", default=False)
     args = parser.parse_args()
 
+    base_names = [c for c in get_concrete(Dataset) if "DESI" not in c.__name__ or args.desi]
     base_datasets = [c() for c in get_concrete(Dataset) if "DESI" not in c.__name__ or args.desi]  # This returns all the dataset classes
 
     # For each dataset, check nredshift_bins and nsmooth_types. Duplicate the dataset classes so that each combination
     # of redshift_bins and smooth_types is present.
     ndatasets = [[d.nredshift_bins, d.nsmoothtypes] for d in base_datasets]
     datasets = []
-    for (c, variants) in zip(get_concrete(Dataset), ndatasets):
+    for (c, variants) in zip(base_names, ndatasets):
         # Stops Barry from needing pregenerated stuff for DESI data that is not currently included in the repo
         if "DESI" not in c.__name__ or args.desi:
             if variants[0] > 1:

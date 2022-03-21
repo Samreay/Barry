@@ -11,7 +11,10 @@
     1. `cd barry && python generate.py`: This will run through all the datasets and models and check
     that you have the corresponding CAMB power spectrum templates and non-linear integrals. Unless you have
     added a new dataset or model, they should all be present. If any are missing, Barry will create a job script 
-    to compute it in `jobs/` and submit it. Give it some time to run.
+    to compute it in `jobs/` and submit it. Give it some time to run. 
+        * Note that this will not check the DESI datasets as these are not public or in the Git repo. 
+          If you do want to also check DESI files run `python generate.py --desi`, but this
+          will only work if the necessary data files are in `data/`.
     2. `cd ../ && pytest -v`: This will do some unit tests. They should all pass, but might not if `generate.py`
     has already identified that some templates are missing.
     3. `cd config/examples && python test_emcee_mock_avg.py`. This should submit a fit to the BOSS DR12 z3 NGC mock
