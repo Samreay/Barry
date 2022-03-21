@@ -13,9 +13,8 @@ hpcs:
 
   nersc:
     account: desi
-    conda_env: cosmopipe
     job_script_name: nersc
     num_fits_per_job: 32
-    mpi_module: openmpi
-    fort_compile_module: intel
+    mpi_module: cray-mpich/7.7.19
+    fort_compile_module: gcc
 

@@ -34,4 +34,3 @@ for ((i=0;i<END;i++)); do
     echo "Executing $executable $PROG $ANUM"
     srun -u --exclusive --nodes 1 --ntasks 1 --mem-per-cpu=4GB --output "{output_dir}/{name}_$ANUM.log" $executable $PROG $ANUM  &
 done
-wait
