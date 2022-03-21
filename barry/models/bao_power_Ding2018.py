@@ -258,18 +258,18 @@ class PowerDing2018(PowerSpectrumFit):
                 prefac = np.ones(len(kprime))
             else:
                 prefac = splev(kprime, splrep(ks, integrate.simps((1.0 + pk_ratio * propagator), self.mu, axis=0)))
-            shape, poly = (
-                self.add_three_poly(ks, k, p, prefac, np.zeros(len(k)))
-                if self.n_poly == 3
-                else self.add_five_poly(ks, k, p, prefac, np.zeros(len(k)))
-            )
-
-            if self.marg:
-                poly = poly[1:]  # Remove the bias marginalisation.
 
             if for_corr:
+                poly = None
                 pk1d = integrate.simps(pk_smooth * (1.0 + pk_ratio * propagator), self.mu, axis=0)
             else:
+                shape, poly = (
+                    self.add_three_poly(ks, k, p, prefac, np.zeros(len(k)))
+                    if self.n_poly == 3
+                    else self.add_five_poly(ks, k, p, prefac, np.zeros(len(k)))
+                )
+                if self.marg:
+                    poly = poly[1:]  # Remove the bias marginalisation.
                 pk1d = integrate.simps((pk_smooth + shape) * (1.0 + pk_ratio * propagator), self.mu, axis=0)
 
             pk[0] = splev(kprime, splrep(ks, pk1d))

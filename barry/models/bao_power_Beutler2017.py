@@ -139,11 +139,14 @@ class PowerBeutler2017(PowerSpectrumFit):
                 propagator = 1.0 + splev(kprime, splrep(ks, pk_ratio)) * C
             prefac = np.ones(len(kprime)) if smooth else propagator
 
-            shape, poly = (
-                self.add_three_poly(k, k, p, prefac, pk_smooth) if self.n_poly == 3 else self.add_five_poly(k, k, p, prefac, pk_smooth)
-            )
-
-            pk[0] = pk_smooth * propagator if for_corr else (pk_smooth + shape) * propagator
+            if for_corr:
+                poly = None
+                pk[0] = pk_smooth * propagator
+            else:
+                shape, poly = (
+                    self.add_three_poly(k, k, p, prefac, pk_smooth) if self.n_poly == 3 else self.add_five_poly(k, k, p, prefac, pk_smooth)
+                )
+                pk[0] = (pk_smooth + shape) * propagator
 
         else:
 
