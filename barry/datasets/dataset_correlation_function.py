@@ -191,7 +191,6 @@ if __name__ == "__main__":
     if True:
 
         # Plot the desi mock challenge spectra
-        # Plot the desi mock challenge spectra
         recons = [None, "ani", "iso"]
         tracers = ["elg", "elg", "elg"]
         covtypes = ["nonfix", "nonfix", "nonfix"]

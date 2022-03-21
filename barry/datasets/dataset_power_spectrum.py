@@ -366,7 +366,7 @@ if __name__ == "__main__":
                     plt.legend()
                     plt.show()
 
-    if False:
+    if True:
 
         # Plot the data and mock average for the eBOSS LRGpCMASS spectra
         for j, recon in enumerate(["iso", None]):
@@ -456,7 +456,7 @@ if __name__ == "__main__":
                     plt.legend()
                     plt.show()
 
-    if True:
+    if False:
 
         # Plot the desi mock challenge spectra
         recons = [None, "ani", "iso", "iso", "iso", "iso"]
