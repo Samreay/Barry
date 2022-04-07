@@ -27,21 +27,13 @@ class PowerDing2018(PowerSpectrumFit):
         poly_poles=(0, 2),
         marg=None,
         n_poly=5,
+        n_data=1,
+        data_share_bias=False,
+        data_share_poly=False,
     ):
 
-        self.n_poly = n_poly
-        if n_poly not in [3, 5]:
-            raise NotImplementedError("Models require n_poly to be 3 or 5 polynomial terms per multipole")
-
-        if isotropic:
-            poly_poles = [0]
-        if marg is not None:
-            fix_params = list(fix_params)
-            for pole in poly_poles:
-                if n_poly == 3:
-                    fix_params.extend([f"a{{{pole}}}_1", f"a{{{pole}}}_2", f"a{{{pole}}}_3"])
-                else:
-                    fix_params.extend([f"a{{{pole}}}_1", f"a{{{pole}}}_2", f"a{{{pole}}}_3", f"a{{{pole}}}_4", f"a{{{pole}}}_5"])
+        if n_poly not in [0, 3, 5]:
+            raise NotImplementedError("Models require n_poly to be 0, 3 or 5 polynomial terms per multipole")
 
         super().__init__(
             name=name,
@@ -54,19 +46,14 @@ class PowerDing2018(PowerSpectrumFit):
             isotropic=isotropic,
             poly_poles=poly_poles,
             marg=marg,
+            n_poly=n_poly,
+            n_data=n_data,
+            data_share_bias=data_share_bias,
+            data_share_poly=data_share_poly,
         )
 
         if self.recon_type == "sym" or self.recon_type == "ani":
             raise NotImplementedError("Symmetric and Anisotropic reconstruction not yet available for Ding2018 model")
-
-        if self.marg:
-            for pole in self.poly_poles:
-                self.set_default(f"a{{{pole}}}_1", 0.0)
-                self.set_default(f"a{{{pole}}}_2", 0.0)
-                self.set_default(f"a{{{pole}}}_3", 0.0)
-                if n_poly == 5:
-                    self.set_default(f"a{{{pole}}}_4", 0.0)
-                    self.set_default(f"a{{{pole}}}_5", 0.0)
 
     def precompute(self, camb, om, h0):
 
@@ -170,13 +157,15 @@ class PowerDing2018(PowerSpectrumFit):
         self.add_param("beta", r"$\beta$", 0.01, 4.0, 0.5)  # RSD parameter f/b
         self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
         self.add_param("b_delta", r"$b_{\delta}$", -5.0, 5.0, 0.0)  # Non-linear galaxy bias
-        for pole in self.poly_poles:
-            self.add_param(f"a{{{pole}}}_1", f"$a_{{{pole},1}}$", -20000.0, 20000.0, 0)  # Monopole Polynomial marginalisation 1
-            self.add_param(f"a{{{pole}}}_2", f"$a_{{{pole},2}}$", -20000.0, 20000.0, 0)  # Monopole Polynomial marginalisation 2
-            self.add_param(f"a{{{pole}}}_3", f"$a_{{{pole},3}}$", -5000.0, 5000.0, 0)  # Monopole Polynomial marginalisation 3
-            if self.n_poly == 5:
-                self.add_param(f"a{{{pole}}}_4", f"$a_{{{pole},4}}$", -200.0, 200.0, 0)  # Monopole Polynomial marginalisation 4
-                self.add_param(f"a{{{pole}}}_5", f"$a_{{{pole},5}}$", -3.0, 3.0, 0)  # Monopole Polynomial marginalisation 5
+        for i in range(self.n_data_poly):
+            for pole in self.poly_poles:
+                if self.n_poly >= 3:
+                    self.add_param(f"a{{{pole}}}_1_{{{i+1}}}", f"$a_{{{pole},1,{i+1}}}$", -20000.0, 20000.0, 0)
+                    self.add_param(f"a{{{pole}}}_2_{{{i+1}}}", f"$a_{{{pole},2,{i+1}}}$", -20000.0, 20000.0, 0)
+                    self.add_param(f"a{{{pole}}}_3_{{{i+1}}}", f"$a_{{{pole},3,{i+1}}}$", -5000.0, 5000.0, 0)
+                if self.n_poly == 5:
+                    self.add_param(f"a{{{pole}}}_4_{{{i+1}}}", f"$a_{{{pole},4,{i+1}}}$", -200.0, 200.0, 0)
+                    self.add_param(f"a{{{pole}}}_5_{{{i+1}}}", f"$a_{{{pole},5,{i+1}}}$", -3.0, 3.0, 0)
 
     def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None):
         """Computes the power spectrum model using the Ding et. al., 2018 EFT0 propagator

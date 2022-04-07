@@ -48,7 +48,7 @@ class Model(ABC):
 
     """
 
-    def __init__(self, name, postprocess=None, correction=None, isotropic=True, marg=None):
+    def __init__(self, name, postprocess=None, correction=None, isotropic=True, marg=None, n_data=1):
         """Create a new model.
 
         Parameters
@@ -66,6 +66,7 @@ class Model(ABC):
         self.logger = logging.getLogger("barry")
         self.data = None
         self.data_dict = None
+        self.n_data = n_data
 
         # For pregeneration
         self.camb = None

@@ -38,8 +38,8 @@ class PowerSpectrum_SDSS_DR12(PowerSpectrum):
         if redshift_bin not in [1, 2, 3]:
             raise NotImplementedError("Redshift bin for SDSS_DR12 must be 1, 2 or 3, corresponding to 0.38, 0.51 and 0.61 respectively")
 
-        if galactic_cap.lower() not in ["ngc", "sgc"]:
-            raise NotImplementedError("Galactic cap for SDSS_DR12 must be NGC or SGC")
+        if galactic_cap.lower() not in ["ngc", "sgc", "both"]:
+            raise NotImplementedError("Galactic cap for SDSS_DR12 must be ngc, sgc or both")
 
         if any(pole in [1, 3] for pole in fit_poles):
             raise NotImplementedError("Only even multipoles included in SDSS_DR12")
@@ -318,22 +318,22 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
-    if False:
+    if True:
 
         # Plot the data and mock average for the SDSS_DR12 spectra
         for j, recon in enumerate(["iso", None]):
-            for galactic_cap in ["ngc", "sgc"]:
-                for redshift_bin in [1, 2, 3]:
+            for galactic_cap in ["both", "ngc", "sgc"]:
+                for redshift_bin in [1]:
                     dataset = PowerSpectrum_SDSS_DR12(
                         redshift_bin=redshift_bin,
                         galactic_cap=galactic_cap,
-                        isotropic=False,
+                        isotropic=True,
                         recon=recon,
                         fit_poles=[0, 2, 4],
                         min_k=0.02,
                         max_k=0.30,
                     )
-                    for i, realisation in enumerate([None, "data", 500]):
+                    for i, realisation in enumerate(["data"]):
                         dataset.set_realisation(realisation)
                         data = dataset.get_data()
                         label = [r"$P_{0}(k)$", r"$P_{2}(k)$", r"$P_{4}(k)$"] if i == 0 else [None, None, None]
@@ -352,7 +352,7 @@ if __name__ == "__main__":
                         for m, pk in enumerate(["pk0", "pk2", "pk4"]):
                             plt.errorbar(
                                 data[0]["ks"],
-                                data[0]["ks"] * data[0][pk],
+                                data[0]["ks"] * data[0][pk][0],
                                 yerr=yerr[m],
                                 marker=fmt,
                                 ls=ls,
@@ -360,13 +360,24 @@ if __name__ == "__main__":
                                 zorder=i,
                                 label=label[m],
                             )
+                            if galactic_cap.lower() == "both":
+                                plt.errorbar(
+                                    data[0]["ks"],
+                                    data[0]["ks"] * data[0][pk][1],
+                                    yerr=yerr[m],
+                                    marker=fmt,
+                                    ls="None",
+                                    mfc="w",
+                                    mec=color[m],
+                                    zorder=i,
+                                )
                     plt.xlabel(r"$k$")
                     plt.ylabel(r"$k\,P(k)$")
                     plt.title(dataset.name)
                     plt.legend()
                     plt.show()
 
-    if True:
+    if False:
 
         # Plot the data and mock average for the eBOSS LRGpCMASS spectra
         for j, recon in enumerate(["iso", None]):

@@ -2,6 +2,7 @@ from functools import lru_cache
 
 from scipy.integrate import simps
 from scipy.interpolate import splev, splrep
+from scipy.linalg import block_diag
 
 from barry.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
 from barry.models.model import Model, Omega_m_z
@@ -25,6 +26,10 @@ class PowerSpectrumFit(Model):
         isotropic=True,
         poly_poles=(0, 2),
         marg=None,
+        n_poly=0,
+        n_data=1,
+        data_share_bias=False,
+        data_share_poly=False,
     ):
         """Generic power spectrum function model
 
@@ -43,12 +48,20 @@ class PowerSpectrumFit(Model):
         correction : `Correction` enum.
             Defaults to `Correction.SELLENTIN
         """
-        super().__init__(name, postprocess=postprocess, correction=correction, isotropic=isotropic, marg=marg)
+        super().__init__(name, postprocess=postprocess, correction=correction, isotropic=isotropic, marg=marg, n_data=n_data)
         self.smooth_type = smooth_type.lower()
         if not validate_smooth_method(smooth_type):
             exit(0)
 
+        self.n_data_bias = 1 if data_share_bias else self.n_data
+        self.n_data_poly = 1 if data_share_poly else self.n_data
+
+        if n_poly > 0 and self.isotropic:
+            poly_poles = [0]
+
+        self.n_poly = n_poly
         self.poly_poles = poly_poles
+        self.data_share_poly = data_share_poly
 
         self.recon = False
         self.recon_type = "None"
@@ -65,7 +78,31 @@ class PowerSpectrumFit(Model):
                 self.recon = True
 
         self.declare_parameters()
+
+        if marg is not None:
+            fix_params = list(fix_params)
+            for i in range(self.n_data_bias):
+                fix_params.extend([f"b_{{{i+1}}}"])
+            for i in range(self.n_data_poly):
+                for pole in poly_poles:
+                    if n_poly >= 3:
+                        fix_params.extend([f"a{{{pole}}}_1_{{{i+1}}}", f"a{{{pole}}}_2_{{{i+1}}}", f"a{{{pole}}}_3_{{{i+1}}}"])
+                    if n_poly == 5:
+                        fix_params.extend([f"a{{{pole}}}_4_{{{i+1}}}", f"a{{{pole}}}_5_{{{i+1}}}"])
         self.set_fix_params(fix_params)
+
+        if self.marg:
+            for i in range(self.n_data_bias):
+                self.set_default(f"b_{{{i+1}}}", 1.0)
+            for i in range(self.n_data_poly):
+                for pole in self.poly_poles:
+                    if n_poly >= 3:
+                        self.set_default(f"a{{{pole}}}_1_{{{i+1}}}", 0.0)
+                        self.set_default(f"a{{{pole}}}_2_{{{i+1}}}", 0.0)
+                        self.set_default(f"a{{{pole}}}_3_{{{i+1}}}", 0.0)
+                    if n_poly == 5:
+                        self.set_default(f"a{{{pole}}}_4_{{{i+1}}}", 0.0)
+                        self.set_default(f"a{{{pole}}}_5_{{{i+1}}}", 0.0)
 
         # Set up data structures for model fitting
         self.smooth = smooth
@@ -110,16 +147,17 @@ class PowerSpectrumFit(Model):
             self.logger.info(f"Default kval for setting beta prior (0.2) larger than kmax={kmax:4.3f}, setting kval=kmax")
 
         c = data["cosmology"]
-        datapk = splev(kval, splrep(data["ks"], data["pk0"]))
-        cambpk = self.camb.get_data(om=c["om"], h0=c["h0"])
-        modelpk = splev(kval, splrep(cambpk["ks"], cambpk["pk_lin"]))
-        kaiserfac = datapk / modelpk
-        f = self.get_default("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
-        b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f ** 2)
-        if not self.marg:
-            min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
-            self.set_default("b", b ** 2, min=min_b ** 2, max=max_b ** 2)
-            self.logger.info(f"Setting default bias to b={b:0.5f} with {width:0.5f} fractional width")
+        for i in range(self.n_data_bias):
+            datapk = splev(kval, splrep(data["ks"], data["pk0"][i]))
+            cambpk = self.camb.get_data(om=c["om"], h0=c["h0"])
+            modelpk = splev(kval, splrep(cambpk["ks"], cambpk["pk_lin"]))
+            kaiserfac = datapk / modelpk
+            f = self.get_default("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
+            b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f ** 2)
+            if not self.marg:
+                min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
+                self.set_default(f"b_{{{i+1}}}", b ** 2, min=min_b ** 2, max=max_b ** 2)
+                self.logger.info(f"Setting default bias to b_{{{i+1}}}={b:0.5f} with {width:0.5f} fractional width")
         if self.param_dict.get("beta") is not None:
             beta, beta_min, beta_max = f / b, (1.0 - width) * f / b, (1.0 + width) * f / b
             self.set_default("beta", beta, beta_min, beta_max)
@@ -127,7 +165,8 @@ class PowerSpectrumFit(Model):
 
     def declare_parameters(self):
         """ Defines model parameters, their bounds and default value. """
-        self.add_param("b", r"$b$", 0.1, 10.0, 1.0)  # Galaxy bias
+        for i in range(self.n_data_bias):
+            self.add_param(f"b_{{{i+1}}}", f"$b_{{{i+1}}}$", 0.1, 10.0, 1.0)  # Galaxy bias
         self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.31)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch for monopole
         if not self.isotropic:
@@ -338,6 +377,7 @@ class PowerSpectrumFit(Model):
                 poly = prefac * [pk, kpoly, np.ones(len(kpoly)), 1.0 / kpoly]
                 if self.recon:
                     poly[1] *= kpoly
+            poly = poly[:, None, :]
         else:
             shape = np.zeros((5, len(k)))
             if self.marg:
@@ -395,6 +435,8 @@ class PowerSpectrumFit(Model):
                 poly = prefac * [pk, kpoly, np.ones(len(kpoly)), 1.0 / kpoly, 1.0 / (kpoly * kpoly), 1.0 / (kpoly ** 3)]
                 if self.recon:
                     poly[1] *= kpoly
+            poly = poly[:, None, :]
+
         else:
             shape = np.zeros((5, len(k)))
             if self.marg:
@@ -470,10 +512,14 @@ class PowerSpectrumFit(Model):
                 p0 = np.sum(data["w_scale"] * pk_generated)
                 integral_constraint = data["w_pk"] * p0
 
-                pk_convolved = np.atleast_2d(pk_generated) @ data["w_transform"]
+                pk_convolved = data["w_transform"] @ pk_generated
                 pk_normalised = (pk_convolved - integral_constraint).flatten()
             else:
-                pk_normalised = splev(data["ks_output"], splrep(data["ks_input"], pk_generated))
+                pk_normalised = []
+                pkin = np.split(pk_generated, data["ndata"])
+                for i in range(data["ndata"]):
+                    pk_normalised.append(splev(data["ks_output"], splrep(data["ks_input"], pkin[i])))
+                pk_normalised = np.hstack(pk_normalised)
 
         else:
 
@@ -491,13 +537,18 @@ class PowerSpectrumFit(Model):
                 else:
                     # Just interpolate the models to the values of ks_output without convolution or wide angle effects
                     pk_normalised = []
-                    for i in range(len(data["poles"])):
-                        pk_normalised.append(
-                            splev(
-                                data["ks_output"],
-                                splrep(data["ks_input"], pk_generated[i * len(data["ks_input"]) : (i + 1) * len(data["ks_input"])]),
+                    nk = len(data["poles"]) * len(data["ks_input"])
+                    for i in range(data["ndata"]):
+                        for l in range(len(data["poles"][[data["poles"] % 2 == 0]])):
+                            pk_normalised.append(
+                                splev(
+                                    data["ks_output"],
+                                    splrep(
+                                        data["ks_input"],
+                                        pk_generated[i * nk + l * len(data["ks_input"]) : i * nk + (l + 1) * len(data["ks_input"])],
+                                    ),
+                                )
                             )
-                        )
                     pk_normalised = np.array(pk_normalised).flatten()
 
         return pk_normalised
@@ -528,7 +579,7 @@ class PowerSpectrumFit(Model):
 
         if self.marg:
             if self.isotropic or d["icov_m_w"][0] is None:
-                len_poly = len(d["ks"]) if self.isotropic else len(d["ks"]) * len(d["fit_poles"])
+                len_poly = d["ndata"] * len(d["ks"]) if self.isotropic else d["ndata"] * len(d["ks"]) * len(d["fit_poles"])
                 poly_model_fit = np.zeros((np.shape(poly_model)[0], len_poly))
                 poly_model_fit_odd = np.zeros((np.shape(poly_model)[0], len_poly))
                 for n in range(np.shape(poly_model)[0]):
@@ -557,14 +608,14 @@ class PowerSpectrumFit(Model):
                 d["pk"], pk_model, pk_model_odd, d["icov"], d["icov_m_w"], num_mocks=num_mocks, num_params=num_params
             )
 
-    def get_model(self, p, d, smooth=False, data_name=None):
+    def get_model(self, params, d, smooth=False, data_name=None):
         """Gets the model prediction using the data passed in and parameter location specified
 
         Parameters
         ----------
-        p : dict
+        params : dict
             A dictionary of parameter names to parameter values
-        data : dict
+        d : dict
             A specific set of data to compute the model for. For correlation functions, this needs to
             have a key of 'dist' which contains the Mpc/h value of distances to compute.
         smooth : bool, optional
@@ -581,23 +632,46 @@ class PowerSpectrumFit(Model):
             k values correspond to d['ks_output']
         """
 
-        # Morph it into a model representative of our survey and its selection/window/binning effects
-        ks, pks, poly = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth, data_name=data_name)
+        # Loop over the constituent (correlated) datasets in d and generate their models
+        all_pks = []
+        all_polys = []
+        for i in range(d["ndata"]):
+            p = params.copy()
+            p["b"] = params[f"b_{{{1}}}"] if self.n_data_bias == 1 else params[f"b_{{{i+1}}}"]
+            for pole in self.poly_poles:
+                if self.n_poly >= 3:
+                    p[f"a{{{pole}}}_1"] = p[f"a{{{pole}}}_1_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_1_{{{i + 1}}}"]
+                    p[f"a{{{pole}}}_2"] = p[f"a{{{pole}}}_2_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_2_{{{i + 1}}}"]
+                    p[f"a{{{pole}}}_3"] = p[f"a{{{pole}}}_3_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_3_{{{i + 1}}}"]
+                if self.n_poly == 5:
+                    p[f"a{{{pole}}}_4"] = p[f"a{{{pole}}}_4_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_4_{{{i + 1}}}"]
+                    p[f"a{{{pole}}}_5"] = p[f"a{{{pole}}}_5_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_5_{{{i + 1}}}"]
 
+            # Generate the underlying models
+            ks, pks, poly = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth, data_name=data_name)
+            all_pks.append(pks)
+            all_polys.append(poly)
+
+        all_polys = np.array(all_polys)
+
+        # Morph it into a model representative of our survey and its selection/window/binning effects
         # Split the model into even and odd components
-        pk_generated = pks[0] if self.isotropic else np.concatenate([pks[0], pks[2]])
-        if 4 in d["poles"] and not self.isotropic:
-            pk_generated = np.concatenate([pk_generated, pks[4]])
+        if self.isotropic:
+            pk_generated = np.concatenate([all_pks[i][0] for i in range(d["ndata"])])
+        else:
+            pk_generated = np.concatenate(
+                [np.concatenate([all_pks[i][l] for i in range(d["ndata"])]) for l in d["poles"][d["poles"] % 2 == 0]]
+            )
 
         if self.isotropic:
             pk_model, mask = self.adjust_model_window_effects(pk_generated, d), d["m_w_mask"]
             if self.postprocess is not None:
                 pk_model = self.postprocess(ks=d["ks_output"], pk=pk_model, mask=mask)
-            pk_model_odd = np.zeros(len(d["ks_output"]))
+            pk_model_odd = np.zeros(d["ndata"] * len(d["ks_output"]))
         else:
-            pk_model_odd = np.zeros(5 * len(ks))
-            pk_model_odd[len(ks) : 2 * len(ks)] += pks[1]
-            pk_model_odd[3 * len(ks) : 4 * len(ks)] += pks[3]
+            pk_model_odd = np.zeros(d["ndata"] * 5 * len(ks))
+            pk_model_odd[1 * d["ndata"] * len(ks) : 2 * d["ndata"] * len(ks)] += np.concatenate([all_pks[i][1] for i in range(d["ndata"])])
+            pk_model_odd[3 * d["ndata"] * len(ks) : 4 * d["ndata"] * len(ks)] += np.concatenate([all_pks[i][3] for i in range(d["ndata"])])
             if d["icov_m_w"][0] is None:
                 pk_model, mask = self.adjust_model_window_effects(pk_generated, d), d["m_w_mask"]
                 pk_model_odd = self.adjust_model_window_effects(pk_model_odd, d, wide_angle=False)
@@ -606,25 +680,65 @@ class PowerSpectrumFit(Model):
 
         poly_model, poly_model_odd = None, None
         if self.marg:
-            n_poly_fac = np.shape(poly)[1] if d["icov_m_w"][0] is None else np.shape(poly)[1] - 2
-            len_poly_k = len(d["ks_output"]) if d["icov_m_w"][0] is None else len(d["ks_input"])
-            len_poly = len(d["ks_output"]) if self.isotropic else len_poly_k * n_poly_fac
-            len_poly_odd = len(d["ks_output"]) if self.isotropic else len_poly_k * np.shape(poly)[1]
+
+            # Concatenate the poly matrix in the correct way for our datasets based on the parameters they are sharing
+            nmarg, nell = np.shape(all_polys)[1:3]
+            if self.n_data_bias == 1:
+                if self.n_data_poly == 1:
+                    # Everything shared
+                    poly = np.array([[np.concatenate(all_polys[:, n, l]) for l in range(nell)] for n in range(nmarg)])
+                else:
+                    # Only bias shared
+                    poly_b = np.array([[np.concatenate(all_polys[:, 0, l]) for l in range(nell)]]) if nmarg > self.n_poly else []
+                    poly_poly = np.array([block_diag(*all_polys[:, 1:, l]) for l in range(nell)]).transpose((1, 0, 2))
+                    poly = np.vstack([poly_b, poly_poly])
+            else:
+                if self.n_data_poly == 1:
+                    # Only polynomials shared
+                    poly_b = (
+                        np.array([block_diag(*all_polys[:, 0, l]) for l in range(nell)]).transpose((1, 0, 2)) if nmarg > self.n_poly else []
+                    )
+                    poly_poly = np.array([[np.concatenate(all_polys[:, n + 1, l]) for l in range(nell)] for n in range(self.n_poly)])
+                    poly = np.vstack([poly_b, poly_poly])
+                else:
+                    # Nothing shared
+                    poly = np.array([block_diag(*all_polys[:, :, l]) for l in range(nell)]).transpose((1, 0, 2))
+
+            nell = np.shape(poly)[1] if d["icov_m_w"][0] is None else np.shape(poly)[1] - 2
+            len_poly_k = d["ndata"] * len(d["ks_output"]) if d["icov_m_w"][0] is None else d["ndata"] * len(d["ks_input"])
+            len_poly = d["ndata"] * len(d["ks_output"]) if self.isotropic else len_poly_k * nell
+            len_poly_odd = d["ndata"] * len(d["ks_output"]) if self.isotropic else len_poly_k * np.shape(poly)[1]
             poly_model = np.zeros((np.shape(poly)[0], len_poly))
             poly_model_odd = np.zeros((np.shape(poly)[0], len_poly_odd))
             for n in range(np.shape(poly)[0]):
-                poly_generated = poly[n] if self.isotropic else np.concatenate([poly[n, 0], poly[n, 2]])
-                if 4 in d["poles"] and not self.isotropic:
-                    poly_generated = np.concatenate([poly_generated, poly[n, 4]])
+
+                # poly_split = np.split(poly[n], d["ndata"], axis=-1)
+
+                if self.isotropic:
+                    poly_generated = poly[n, 0]
+                else:
+                    poly_generated = np.concatenate([poly[n, l, :] for l in d["poles"][d["poles"] % 2 == 0]])
+
+                """if self.isotropic:
+                    poly_generated = np.concatenate([poly_split[i][0] for i in range(d["ndata"])])
+                else:
+                    poly_generated = np.concatenate(
+                        [np.concatenate([poly_split[i][l, :] for l in d["poles"][d["poles"] % 2 == 0]]) for i in range(d["ndata"])]
+                    )"""
+
                 if self.isotropic:
                     poly_model_long = self.adjust_model_window_effects(poly_generated, d)
                     if self.postprocess is not None:
                         poly_model_long = self.postprocess(ks=d["ks_output"], pk=poly_model_long, mask=mask)
                     poly_model[n] = poly_model_long
                 else:
-                    poly_generated_odd = np.zeros(5 * len(ks))
-                    poly_generated_odd[len(ks) : 2 * len(ks)] += poly[n, 1]
-                    poly_generated_odd[3 * len(ks) : 4 * len(ks)] += poly[n, 3]
+                    nk = d["ndata"] * len(ks)
+                    poly_generated_odd = np.zeros(d["ndata"] * 5 * len(ks))
+                    # for i in range(d["ndata"]):
+                    #    poly_generated_odd[(i * 5 + 1) * len(ks) : (i * 5 + 2) * len(ks)] += poly_split[i][1]
+                    #    poly_generated_odd[(i * 5 + 3) * len(ks) : (i * 5 + 4) * len(ks)] += poly_split[i][3]
+                    poly_generated_odd[1 * nk : 2 * nk] += poly[n, 1]
+                    poly_generated_odd[3 * nk : 4 * nk] += poly[n, 3]
                     if d["icov_m_w"][0] is None:
                         poly_model[n] = self.adjust_model_window_effects(poly_generated, d)
                         poly_model_odd[n] = self.adjust_model_window_effects(poly_generated_odd, d, wide_angle=False)
@@ -658,7 +772,11 @@ class PowerSpectrumFit(Model):
             mod_fit, mod_fit_odd = mod[mask], mod_odd[mask]
             smooth_fit, smooth_fit_odd = smooth[mask], smooth_odd[mask]
 
-            len_poly = len(self.data[0]["ks"]) if self.isotropic else len(self.data[0]["ks"]) * len(self.data[0]["fit_poles"])
+            len_poly = (
+                self.data[0]["ndata"] * len(self.data[0]["ks"])
+                if self.isotropic
+                else self.data[0]["ndata"] * len(self.data[0]["ks"]) * len(self.data[0]["fit_poles"])
+            )
             polymod_fit, polymod_fit_odd = np.empty((np.shape(polymod)[0], len_poly)), np.zeros((np.shape(polymod)[0], len_poly))
             polysmooth_fit, polysmooth_fit_odd = np.empty((np.shape(polymod)[0], len_poly)), np.zeros((np.shape(polymod)[0], len_poly))
             for n in range(np.shape(polymod)[0]):
@@ -670,6 +788,8 @@ class PowerSpectrumFit(Model):
             )
             mod = mod + mod_odd + bband @ (polymod + polymod_odd)
             mod_fit = mod_fit + mod_fit_odd + bband @ (polymod_fit + polymod_fit_odd)
+
+            print(bband, mod, mod_fit)
 
             print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
             new_chi_squared = self.get_chi2_likelihood(
@@ -702,6 +822,8 @@ class PowerSpectrumFit(Model):
             new_chi_squared = 0.0
             bband = None
 
+        print(mod)
+
         # Mask the model to match the data points
         mod = mod[self.data[0]["w_mask"]]
         smooth = smooth[self.data[0]["w_mask"]]
@@ -709,9 +831,9 @@ class PowerSpectrumFit(Model):
         # Split up the different multipoles if we have them
         if len(err) > len(ks):
             assert len(err) % len(ks) == 0, f"Cannot split your data - have {len(err)} points and {len(ks)} modes"
-        errs = [row for row in err.reshape((-1, len(ks)))]
-        mods = [row for row in mod.reshape((-1, len(ks)))]
-        smooths = [row for row in smooth.reshape((-1, len(ks)))]
+        errs = err.reshape((-1, self.data[0]["ndata"], len(ks)))
+        mods = mod.reshape((-1, self.data[0]["ndata"], len(ks)))
+        smooths = smooth.reshape((-1, self.data[0]["ndata"], len(ks)))
         if self.isotropic:
             names = [f"pk0"]
         else:
@@ -721,6 +843,8 @@ class PowerSpectrumFit(Model):
         cs = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00"]
         height = 2 + 1.4 * num_rows
 
+        print(mods)
+
         if display is True or figname is not None:
 
             fig, axes = plt.subplots(figsize=(9, height), nrows=num_rows, ncols=2, sharex=True, squeeze=False)
@@ -728,22 +852,42 @@ class PowerSpectrumFit(Model):
             plt.subplots_adjust(left=0.1, top=ratio, bottom=0.05, right=0.85, hspace=0, wspace=0.3)
             for ax, err, mod, smooth, name, label, c in zip(axes, errs, mods, smooths, names, labels, cs):
 
-                # Plot ye old data
-                ax[0].errorbar(ks, ks * self.data[0][name], yerr=ks * err, fmt="o", ms=4, label="Data", c=c)
-                ax[1].errorbar(ks, ks * (self.data[0][name] - smooth), yerr=ks * err, fmt="o", ms=4, label="Data", c=c)
+                # print(name, err, mod, smooth)
 
-                # Plot ye old model
-                ax[0].plot(ks, ks * mod, c=c, label="Model")
-                ax[1].plot(ks, ks * (mod - smooth), c=c, label="Model")
+                for i in range(self.data[0]["ndata"]):
 
-                if name in [f"pk{n}" for n in self.data[0]["poles"] if n % 2 == 0]:
-                    ax[0].set_ylabel("$k \\times $ " + label)
-                else:
-                    ax[0].set_ylabel("$ik \\times $ " + label)
+                    mfc = c if i == 0 else "w"
+                    ls = "-" if i == 0 else "--"
+                    l = "Data" if i == 0 else None
 
-                if name not in [f"pk{n}" for n in self.data[0]["fit_poles"]]:
-                    ax[0].set_facecolor("#e1e1e1")
-                    ax[1].set_facecolor("#e1e1e1")
+                    # Plot ye old data
+                    ax[0].errorbar(ks, ks * self.data[0][name][i], yerr=ks * err[i], fmt="o", ms=4, label=l, mec=c, mfc=mfc, c=c)
+                    ax[1].errorbar(
+                        ks,
+                        ks * (self.data[0][name][i] - smooth[i]),
+                        yerr=ks * err[i],
+                        fmt="o",
+                        ms=4,
+                        label=l,
+                        mec=c,
+                        mfc=mfc,
+                        c=c,
+                    )
+
+                    l = "Model" if i == 0 else None
+
+                    # Plot ye old model
+                    ax[0].plot(ks, ks * mod[i], c=c, ls=ls, label=l)
+                    ax[1].plot(ks, ks * (mod[i] - smooth[i]), c=c, ls=ls, label=l)
+
+                    if name in [f"pk{n}" for n in self.data[0]["poles"] if n % 2 == 0]:
+                        ax[0].set_ylabel("$k \\times $ " + label)
+                    else:
+                        ax[0].set_ylabel("$ik \\times $ " + label)
+
+                    if name not in [f"pk{n}" for n in self.data[0]["fit_poles"]]:
+                        ax[0].set_facecolor("#e1e1e1")
+                        ax[1].set_facecolor("#e1e1e1")
 
             # Show the model parameters
             self.data[0]["icov_m_w"] = icov_m_w

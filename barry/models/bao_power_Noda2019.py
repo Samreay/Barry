@@ -30,7 +30,6 @@ class PowerNoda2019(PowerSpectrumFit):
         smooth=False,
         correction=None,
         isotropic=True,
-        marg=None,
     ):
         self.recon = recon
         if gammaval is None:
@@ -38,9 +37,6 @@ class PowerNoda2019(PowerSpectrumFit):
                 gammaval = 4.0
             else:
                 gammaval = 1.0
-
-        if marg is not None:
-            raise NotImplementedError("Analytic marginalisation not possible for Noda2019 model as there are no linear order parameters")
 
         super().__init__(
             name=name,
@@ -51,7 +47,10 @@ class PowerNoda2019(PowerSpectrumFit):
             smooth=smooth,
             correction=correction,
             isotropic=isotropic,
-            marg=marg,
+            marg=None,
+            n_poly=0,
+            n_data=n_data,
+            data_share_poly=False,
         )
 
         if self.recon_type == "ani":

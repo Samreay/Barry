@@ -5,6 +5,7 @@ import pickle
 from abc import ABC
 
 import numpy as np
+from scipy.linalg import block_diag
 
 from barry.datasets.dataset import Dataset, MultiDataset
 from barry.utils import break2d_into_blocks, break_matrix_and_get_blocks, break_vector_and_get_blocks
@@ -41,6 +42,7 @@ class PowerSpectrum(Dataset, ABC):
         name = name or self.data_obj["name"] + " Recon" if recon else self.data_obj["name"] + " Prerecon"
         super().__init__(name, isotropic=isotropic, recon=recon, realisation=realisation)
 
+        self.ndata = self.data_obj["n_data"]
         self.cosmology = self.data_obj["cosmology"]
         dataname = "post-recon data" if recon else "pre-recon data"
         self.true_data = self.data_obj[dataname] if dataname in self.data_obj else None
@@ -73,11 +75,11 @@ class PowerSpectrum(Dataset, ABC):
 
         # Rebin the data and mocks as necessary
         rebinned = [self._rebin_data(df) for df in self.true_data] if self.true_data is not None else None
-        self.ks = rebinned[0][0] if rebinned is not None else None
+        self.ks = np.split(rebinned[0][0], self.ndata)[0] if rebinned is not None else None
         self.true_data = [x[1] for x in rebinned] if rebinned is not None else None
 
         rebinned = [self._rebin_data(df) for df in self.mock_data] if self.mock_data is not None else None
-        self.ks = rebinned[0][0] if rebinned is not None else self.ks
+        self.ks = np.split(rebinned[0][0], self.ndata)[0] if rebinned is not None else self.ks
         self.mock_data = [x[1] for x in rebinned] if rebinned is not None else None
 
         self._load_winfit()
@@ -152,11 +154,11 @@ class PowerSpectrum(Dataset, ABC):
                 if pole not in self.fit_poles:
                     w_mask_poles[i] = np.zeros(len(self.w_mask), dtype=bool)
             w_mask_poles = np.concatenate(w_mask_poles)
-            self.icov_w = self.w_transform[w_mask_poles, :].T @ self.icov
-            self.icov_mw = self.m_w_transform[w_mask_poles, :].T @ self.icov
-            self.icov_ww = self.icov_w @ self.w_transform[w_mask_poles, :]
-            self.icov_mww = self.icov_mw @ self.w_transform[w_mask_poles, :]
-            self.icov_mwmw = self.icov_mw @ self.m_w_transform[w_mask_poles, :]
+            # self.icov_w = self.w_transform[w_mask_poles, :].T @ self.icov
+            # self.icov_mw = self.m_w_transform[w_mask_poles, :].T @ self.icov
+            # self.icov_ww = self.icov_w @ self.w_transform[w_mask_poles, :]
+            # self.icov_mww = self.icov_mw @ self.w_transform[w_mask_poles, :]
+            # self.icov_mwmw = self.icov_mw @ self.m_w_transform[w_mask_poles, :]
             self.m_w_mask = w_mask_poles
 
     def _compute_cov(self):
@@ -212,19 +214,19 @@ class PowerSpectrum(Dataset, ABC):
         self.w_ks_input = self.data_obj["winfit"][self.step_size]["w_ks_input"]
         self.w_transform = self.data_obj["winfit"][self.step_size]["w_transform"]
         self.w_ks_output = self.data_obj["winfit"][self.step_size]["w_ks_output"]
-        self.w_mask = np.array([np.isclose(x, self.ks).any() for x in self.w_ks_output])
+        self.w_mask = np.tile(np.array([np.isclose(x, self.ks).any() for x in self.w_ks_output]), self.ndata)
         self.w_k0_scale = self.data_obj["winfit"][self.step_size]["w_k0_scale"]
         # For isotropic, we'll ignore the contributions from higher order multipoles
         # Not strictly correct, but consistent with most past treatments of the power spectrum.
         if self.isotropic:
-            self.w_transform = self.w_transform[: len(self.w_ks_output), : len(self.w_ks_input)].T
+            self.w_transform = self.w_transform[: self.ndata * len(self.w_ks_output), : self.ndata * len(self.w_ks_input)]
         self.logger.info(f"Winfit matrix has shape {self.w_transform.shape}")
 
     def _load_winpk_file(self):
         # data files contain (index, k, pk, nk)
         data = self.data_obj["winpk"]
         if data is None:
-            self.w_pk = np.zeros(len(self.w_ks_output))
+            self.w_pk = np.zeros(self.ndata * len(self.w_ks_output))
         else:
             if self.step_size == 1:
                 self.w_pk = data[:, 2]
@@ -251,6 +253,7 @@ class PowerSpectrum(Dataset, ABC):
 
     def get_data(self):
         d = {
+            "ndata": self.ndata,
             "ks_output": self.w_ks_output,
             "ks": self.ks,
             "cov": self.cov,
@@ -267,7 +270,7 @@ class PowerSpectrum(Dataset, ABC):
             "isotropic": self.isotropic,
             "m_transform": self.m_transform,
             "w_m_transform": self.m_w_transform,
-            "poles": self.poles,
+            "poles": np.array(self.poles),
             "fit_poles": self.fit_poles,
             "fit_pole_indices": self.fit_pole_indices,
             "min_k": self.min_k,
@@ -278,12 +281,12 @@ class PowerSpectrum(Dataset, ABC):
         if self.isotropic:
             d.update({"w_mask": self.w_mask})
             d.update({"m_w_mask": self.w_mask})
-            d.update({"pk": self.data[:, 0]})
+            d.update({"pk": self.data[:, 0].reshape(self.ndata, len(self.ks)).flatten()})
         else:
             d.update({"w_mask": np.tile(self.w_mask, len(self.poles))})
             d.update({"m_w_mask": self.m_w_mask})
-            d.update({"pk": self.data[:, self.fit_pole_indices].T.flatten()})
-        d.update({f"pk{d}": self.data[:, i] for i, d in enumerate(self.poles)})
+            d.update({"pk": self.data[:, self.fit_pole_indices].flatten("F")})
+        d.update({f"pk{d}": np.split(self.data[:, i], self.ndata) for i, d in enumerate(self.poles)})
         return [d]
 
 
