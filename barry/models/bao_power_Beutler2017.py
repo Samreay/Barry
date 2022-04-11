@@ -51,6 +51,8 @@ class PowerBeutler2017(PowerSpectrumFit):
             data_share_poly=data_share_poly,
         )
 
+        self.set_marg(fix_params, poly_poles, n_poly, do_bias=True)
+
     def declare_parameters(self):
         super().declare_parameters()
         self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 20.0, 10.0)  # Fingers-of-god damping
@@ -200,7 +202,7 @@ if __name__ == "__main__":
 
     setup_logging()
 
-    print("Checking isotropic mock mean")
+    """print("Checking isotropic mock mean")
     dataset = PowerSpectrum_SDSS_DR12(realisation=0, isotropic=True, recon="iso", galactic_cap="ngc")
     model = PowerBeutler2017(
         recon=dataset.recon,
@@ -209,7 +211,7 @@ if __name__ == "__main__":
         correction=Correction.HARTLAP,
         n_data=1,
     )
-    model.sanity_check(dataset)
+    model.sanity_check(dataset)"""
 
     print("Checking anisotropic mock mean")
     dataset = PowerSpectrum_SDSS_DR12(realisation=0, isotropic=False, fit_poles=[0, 2], recon="iso", galactic_cap="both")
@@ -228,7 +230,7 @@ if __name__ == "__main__":
     model.sanity_check(dataset)
 
     """print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_DESIMockChallenge_Post(
+    dataset = PowerSpectrum_DESIMockChallenge_Post(git push
         realisation="data", isotropic=False, fit_poles=[0, 2, 4], recon="iso", min_k=0.0075, max_k=0.30, covtype="analytic", tracer="elgld"
     )
     model = PowerBeutler2017(

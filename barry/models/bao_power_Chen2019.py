@@ -35,6 +35,8 @@ class PowerChen2019(PowerSpectrumFit):
         if n_poly not in [0, 3, 5]:
             raise NotImplementedError("Models require n_poly to be 0, 3 or 5 polynomial terms per multipole")
 
+        self.marg_bias = False
+
         super().__init__(
             name=name,
             fix_params=fix_params,
@@ -54,6 +56,8 @@ class PowerChen2019(PowerSpectrumFit):
 
         if self.recon_type == "ani":
             raise NotImplementedError("Anisotropic reconstruction not yet available for Chen2019 model")
+
+        self.set_marg(fix_params, poly_poles, n_poly)
 
     def precompute(self, camb, om, h0):
 

@@ -122,10 +122,23 @@ class Model(ABC):
         if self.cosmology != c:
             mnu = c.get("mnu", 0.0)
             c["mnu"] = mnu
-            self.camb = getCambGenerator(
-                h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], mnu=c["mnu"], recon_smoothing_scale=c["reconsmoothscale"]
-            )
             self.set_default("om", c["om"])
+            if "om" in self.fix_params:
+                self.camb = getCambGenerator(
+                    om_resolution=1,
+                    h0=c["h0"],
+                    ob=c["ob"],
+                    redshift=c["z"],
+                    ns=c["ns"],
+                    mnu=c["mnu"],
+                    recon_smoothing_scale=c["reconsmoothscale"],
+                )
+                self.camb.omch2s = [(self.get_default("om") - c["ob"]) * c["h0"] ** 2]
+
+            else:
+                self.camb = getCambGenerator(
+                    h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], mnu=c["mnu"], recon_smoothing_scale=c["reconsmoothscale"]
+                )
             self.pregen_path = os.path.abspath(os.path.join(self.data_location, self.get_unique_cosmo_name()))
             self.cosmology = c
             if load_pregen:
@@ -429,10 +442,13 @@ class Model(ABC):
 
     def _load_precomputed_data(self):
         if self._needs_precompute():
-            assert os.path.exists(self.pregen_path), f"You need to pregenerate the required data for {self.pregen_path}"
-            with open(self.pregen_path, "rb") as f:
-                self.pregen = pickle.load(f)
-            self.logger.info(f"Pregen data loaded from {self.pregen_path}")
+            if self.camb.singleval:
+                self.pregen = self.generate_precomputed_data([[0, 0]])[0][2:][0]
+            else:
+                assert os.path.exists(self.pregen_path), f"You need to pregenerate the required data for {self.pregen_path}"
+                with open(self.pregen_path, "rb") as f:
+                    self.pregen = pickle.load(f)
+                self.logger.info(f"Pregen data loaded from {self.pregen_path}")
         else:
             self.logger.info("Dont need to load any pregen data")
 
@@ -458,7 +474,10 @@ class Model(ABC):
         if h0 is None:
             h0 = self.camb.h0
         data = self.pregen[key]
-        return self.camb.interpolate(om, h0, data)
+        if self.camb.singleval:
+            return data
+        else:
+            return self.camb.interpolate(om, h0, data)
 
     def _needs_precompute(self):
         func2 = getattr(super(type(self), self), self.precompute.__name__)

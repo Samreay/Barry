@@ -71,6 +71,7 @@ class CambGenerator(object):
         self.h0_resolution = h0_resolution
         self.h0 = h0
         self.redshift = redshift
+        self.singleval = True if om_resolution == 1 and h0_resolution == 1 else False
 
         self.data_dir = os.path.normpath(os.path.dirname(inspect.stack()[0][1]) + "/../generated/")
         hh = int(h0 * 10000)
@@ -114,9 +115,18 @@ class CambGenerator(object):
         if h0 is None:
             h0 = self.h0
         if self.data is None:
-            self.load_data()
-        omch2 = (om - self.omega_b) * h0 * h0
-        data = self._interpolate(omch2, h0)
+            # If we are not interested in varying om, we can run CAMB this once to avoid precomputing
+            if self.singleval:
+                self.logger.info(f"Running CAMB")
+                self.data = self._generate_data(savedata=False)[0, 0]
+                print(self.data)
+            else:
+                self.load_data()
+        if self.singleval:
+            data = self.data
+        else:
+            omch2 = (om - self.omega_b) * h0 * h0
+            data = self._interpolate(omch2, h0)
         return {
             "r_s": data[0],
             "ks": self.ks,
@@ -125,7 +135,7 @@ class CambGenerator(object):
             "pk_nl_z": data[1 + 2 * self.k_num :],
         }
 
-    def _generate_data(self):
+    def _generate_data(self, savedata=True):
         self.logger.info(f"Generating CAMB data with {self.om_resolution} x {self.h0_resolution}")
         os.makedirs(self.data_dir, exist_ok=True)
         import camb
@@ -139,7 +149,7 @@ class CambGenerator(object):
         data = np.zeros((self.om_resolution, self.h0_resolution, 1 + 3 * self.k_num))
         for i, omch2 in enumerate(self.omch2s):
             for j, h0 in enumerate(self.h0s):
-                self.logger.debug("Generating %d:%d  %0.3f  %0.3f" % (i, j, omch2, h0))
+                self.logger.debug("Generating %d:%d  %0.4f  %0.4f" % (i, j, omch2, h0))
                 pars.set_cosmology(
                     H0=h0 * 100,
                     omch2=omch2,
@@ -161,8 +171,9 @@ class CambGenerator(object):
                 data[i, j, 0] = rdrag
                 data[i, j, 1 : 1 + self.k_num] = pk_lin[1, :]
                 data[i, j, 1 + self.k_num :] = pk_nonlin.flatten()
-        self.logger.info(f"Saving to {self.filename}")
-        np.save(self.filename, data)
+        if savedata:
+            self.logger.info(f"Saving to {self.filename}")
+            np.save(self.filename, data)
         return data
 
     def interpolate(self, om, h0, data=None):

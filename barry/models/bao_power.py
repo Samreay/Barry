@@ -79,31 +79,6 @@ class PowerSpectrumFit(Model):
 
         self.declare_parameters()
 
-        if marg is not None:
-            fix_params = list(fix_params)
-            for i in range(self.n_data_bias):
-                fix_params.extend([f"b_{{{i+1}}}"])
-            for i in range(self.n_data_poly):
-                for pole in poly_poles:
-                    if n_poly >= 3:
-                        fix_params.extend([f"a{{{pole}}}_1_{{{i+1}}}", f"a{{{pole}}}_2_{{{i+1}}}", f"a{{{pole}}}_3_{{{i+1}}}"])
-                    if n_poly == 5:
-                        fix_params.extend([f"a{{{pole}}}_4_{{{i+1}}}", f"a{{{pole}}}_5_{{{i+1}}}"])
-        self.set_fix_params(fix_params)
-
-        if self.marg:
-            for i in range(self.n_data_bias):
-                self.set_default(f"b_{{{i+1}}}", 1.0)
-            for i in range(self.n_data_poly):
-                for pole in self.poly_poles:
-                    if n_poly >= 3:
-                        self.set_default(f"a{{{pole}}}_1_{{{i+1}}}", 0.0)
-                        self.set_default(f"a{{{pole}}}_2_{{{i+1}}}", 0.0)
-                        self.set_default(f"a{{{pole}}}_3_{{{i+1}}}", 0.0)
-                    if n_poly == 5:
-                        self.set_default(f"a{{{pole}}}_4_{{{i+1}}}", 0.0)
-                        self.set_default(f"a{{{pole}}}_5_{{{i+1}}}", 0.0)
-
         # Set up data structures for model fitting
         self.smooth = smooth
 
@@ -113,6 +88,35 @@ class PowerSpectrumFit(Model):
         self.kvals = None
         self.pksmooth = None
         self.pkratio = None
+
+    def set_marg(self, fix_params, poly_poles, n_poly, do_bias=False):
+
+        if self.marg is not None:
+            fix_params = list(fix_params)
+            if do_bias:
+                for i in range(self.n_data_bias):
+                    fix_params.extend([f"b_{{{i+1}}}"])
+            for i in range(self.n_data_poly):
+                for pole in poly_poles:
+                    if n_poly >= 3:
+                        fix_params.extend([f"a{{{pole}}}_1_{{{i + 1}}}", f"a{{{pole}}}_2_{{{i + 1}}}", f"a{{{pole}}}_3_{{{i + 1}}}"])
+                    if n_poly == 5:
+                        fix_params.extend([f"a{{{pole}}}_4_{{{i + 1}}}", f"a{{{pole}}}_5_{{{i + 1}}}"])
+        self.set_fix_params(fix_params)
+
+        if self.marg:
+            if do_bias:
+                for i in range(self.n_data_bias):
+                    self.set_default(f"b_{{{i+1}}}", 1.0)
+            for i in range(self.n_data_poly):
+                for pole in self.poly_poles:
+                    if n_poly >= 3:
+                        self.set_default(f"a{{{pole}}}_1_{{{i + 1}}}", 0.0)
+                        self.set_default(f"a{{{pole}}}_2_{{{i + 1}}}", 0.0)
+                        self.set_default(f"a{{{pole}}}_3_{{{i + 1}}}", 0.0)
+                    if n_poly == 5:
+                        self.set_default(f"a{{{pole}}}_4_{{{i + 1}}}", 0.0)
+                        self.set_default(f"a{{{pole}}}_5_{{{i + 1}}}", 0.0)
 
     def set_data(self, data, parent=False):
         """Sets the models data, including fetching the right cosmology and PT generator.

@@ -35,6 +35,8 @@ class PowerDing2018(PowerSpectrumFit):
         if n_poly not in [0, 3, 5]:
             raise NotImplementedError("Models require n_poly to be 0, 3 or 5 polynomial terms per multipole")
 
+        self.marg_bias = False
+
         super().__init__(
             name=name,
             fix_params=fix_params,
@@ -54,6 +56,8 @@ class PowerDing2018(PowerSpectrumFit):
 
         if self.recon_type == "sym" or self.recon_type == "ani":
             raise NotImplementedError("Symmetric and Anisotropic reconstruction not yet available for Ding2018 model")
+
+        self.set_marg(fix_params, poly_poles, n_poly)
 
     def precompute(self, camb, om, h0):
 
@@ -355,25 +359,18 @@ if __name__ == "__main__":
     model = PowerDing2018(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP)
     model.sanity_check(dataset)
 
-    print("Checking isotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
-    model = PowerDing2018(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP, n_poly=3)
-    model.sanity_check(dataset)
-
     print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
+    dataset = PowerSpectrum_SDSS_DR12(realisation=0, isotropic=False, fit_poles=[0, 2], recon="iso", galactic_cap="both")
     model = PowerDing2018(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
-        poly_poles=[0, 2, 4],
+        fix_params=["om"],
+        poly_poles=[0, 2],
         correction=Correction.HARTLAP,
-    )
-    model.sanity_check(dataset)
-
-    print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
-    model = PowerDing2018(
-        recon=dataset.recon, isotropic=dataset.isotropic, marg="full", poly_poles=[0, 2, 4], correction=Correction.HARTLAP, n_poly=3
+        n_data=2,
+        data_share_bias=False,
+        data_share_poly=True,
+        n_poly=5,
     )
     model.sanity_check(dataset)
