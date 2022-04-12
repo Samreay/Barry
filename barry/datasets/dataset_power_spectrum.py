@@ -380,7 +380,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
-    if False:
+    if True:
 
         # Plot the data and mock average for the SDSS_DR12 spectra
         for j, recon in enumerate(["iso", None]):
@@ -438,50 +438,3 @@ if __name__ == "__main__":
                     plt.title(dataset.name)
                     plt.legend()
                     plt.show()
-
-    if True:
-
-        # Plot the desi KP4 data
-        color = ["r", "b", "g"]
-        label = [r"$P_{0}(k)$", r"$P_{2}(k)$", r"$P_{4}(k)$"]
-
-        tracers = ["lrg", "lrg", "lrg"]
-        nzbins = [1, 3, 3]
-        mocktypes = ["abacus_cubicbox", "abacus_cutsky", "ezmock_cutsky"]
-        realisations = [25, 25, 1000]
-        for j, (tracer, redshift_bins, mocktype) in enumerate(zip(tracers, nzbins, mocktypes)):
-            for z in range(redshift_bins):
-                dataset = PowerSpectrum_DESI_KP4(
-                    isotropic=False,
-                    recon=None,
-                    fit_poles=[0, 2, 4],
-                    min_k=0.02,
-                    max_k=0.30,
-                    mocktype=mocktype,
-                    tracer=tracer,
-                    redshift_bin=z + 1,
-                    realisation=None,
-                )
-                for m, pk in enumerate(["pk0", "pk2", "pk4"]):
-                    dataset.set_realisation(None)
-                    data = dataset.get_data()[0]
-                    ks, err = data["ks"], np.sqrt(np.diag(data["cov"]))
-                    yerr = ks * err[2 * m * len(ks) : (2 * m + 1) * len(ks)]
-                    plt.errorbar(
-                        ks,
-                        ks * data[pk][0],
-                        yerr=yerr,
-                        marker="o",
-                        ls="None",
-                        c=color[m],
-                        label=label[m],
-                    )
-                    for i in range(dataset.num_mocks):
-                        dataset.set_realisation(i)
-                        data = dataset.get_data()[0]
-                        plt.errorbar(ks, ks * data[pk][0], marker="None", ls="-", c="k", alpha=1.0 / np.sqrt(dataset.num_mocks))
-                plt.xlabel(r"$k$")
-                plt.ylabel(r"$k\,P(k)$")
-                plt.title(dataset.name)
-                plt.legend()
-                plt.show()

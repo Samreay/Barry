@@ -119,7 +119,6 @@ class CambGenerator(object):
             if self.singleval:
                 self.logger.info(f"Running CAMB")
                 self.data = self._generate_data(savedata=False)[0, 0]
-                print(self.data)
             else:
                 self.load_data()
         if self.singleval:
