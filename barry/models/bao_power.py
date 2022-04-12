@@ -799,7 +799,7 @@ class PowerSpectrumFit(Model):
             mod = mod + mod_odd + bband @ (polymod + polymod_odd)
             mod_fit = mod_fit + mod_fit_odd + bband @ (polymod_fit + polymod_fit_odd)
 
-            print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
+            # print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
             new_chi_squared = self.get_chi2_likelihood(
                 self.data[0]["pk"],
                 mod_fit,
@@ -811,7 +811,7 @@ class PowerSpectrumFit(Model):
             )
             alphas = params["alpha"] if self.isotropic else self.get_alphas(params["alpha"], params["epsilon"])
             dof = len(self.data[0]["pk"]) - len(self.get_active_params()) - len(bband)
-            print(-2.0 * new_chi_squared, dof, alphas)
+            # print(-2.0 * new_chi_squared, dof, alphas)
 
             bband_smooth = self.get_ML_nuisance(
                 self.data[0]["pk"],

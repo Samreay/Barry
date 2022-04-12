@@ -197,16 +197,13 @@ if __name__ == "__main__":
     sys.path.append("../..")
     from barry.datasets.dataset_power_spectrum import (
         PowerSpectrum_SDSS_DR12,
-        PowerSpectrum_eBOSS_LRGpCMASS,
-        PowerSpectrum_DESIMockChallenge_Post,
-        PowerSpectrum_DESI_KP4,
     )
     from barry.config import setup_logging
     from barry.models.model import Correction
 
     setup_logging()
 
-    """print("Checking isotropic mock mean")
+    print("Checking isotropic mock mean")
     dataset = PowerSpectrum_SDSS_DR12(realisation=0, isotropic=True, recon="iso", galactic_cap="ngc")
     model = PowerBeutler2017(
         recon=dataset.recon,
@@ -215,10 +212,10 @@ if __name__ == "__main__":
         correction=Correction.HARTLAP,
         n_data=1,
     )
-    model.sanity_check(dataset)"""
+    model.sanity_check(dataset)
 
     print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(realisation=0, isotropic=False, fit_poles=[0, 2], recon="iso", galactic_cap="both")
+    dataset = PowerSpectrum_SDSS_DR12(realisation=0, isotropic=False, fit_poles=[0, 2], recon=None, galactic_cap="both")
     model = PowerBeutler2017(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
@@ -226,24 +223,9 @@ if __name__ == "__main__":
         fix_params=["om"],
         poly_poles=[0, 2],
         correction=Correction.HARTLAP,
-        n_data=2,
+        n_data=1,
         data_share_bias=False,
         data_share_poly=True,
         n_poly=5,
     )
     model.sanity_check(dataset)
-
-    """print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_DESIMockChallenge_Post(git push
-        realisation="data", isotropic=False, fit_poles=[0, 2, 4], recon="iso", min_k=0.0075, max_k=0.30, covtype="analytic", tracer="elgld"
-    )
-    model = PowerBeutler2017(
-        recon=dataset.recon,
-        isotropic=dataset.isotropic,
-        marg="full",
-        fix_params=["om", "beta"],
-        poly_poles=[0, 2, 4],
-        n_poly=3,
-        correction=Correction.NONE,
-    )
-    model.sanity_check(dataset)"""
