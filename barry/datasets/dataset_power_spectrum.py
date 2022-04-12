@@ -315,21 +315,15 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
 
     def __init__(
         self,
-        name=None,
         min_k=0.02,
         max_k=0.30,
-        step_size=None,
         recon=None,
         reduce_cov_factor=1,
-        num_mocks=None,
-        postprocess=None,
-        fake_diag=False,
         realisation=None,
-        isotropic=True,
         mocktype="abacus_cubicbox",
         fit_poles=(0,),
         tracer="lrg",
-        redshift_bin=3,
+        redshift_bin=1,
     ):
 
         reds = {"lrg": [["0.4", "0.6", 0.5], ["0.6", "0.8", 0.7], ["0.8", "1.1", 0.95]]}
@@ -363,17 +357,17 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
 
         super().__init__(
             datafile,
-            name=name,
+            name=None,
             min_k=min_k,
             max_k=max_k,
-            step_size=step_size,
+            step_size=1,
             recon=recon,
             reduce_cov_factor=reduce_cov_factor,
-            num_mocks=num_mocks,
-            postprocess=postprocess,
-            fake_diag=fake_diag,
+            num_mocks=None,
+            postprocess=None,
+            fake_diag=None,
             realisation=realisation,
-            isotropic=isotropic,
+            isotropic=False,
             fit_poles=fit_poles,
         )
 
@@ -485,7 +479,7 @@ if __name__ == "__main__":
                     for i in range(dataset.num_mocks):
                         dataset.set_realisation(i)
                         data = dataset.get_data()[0]
-                        plt.errorbar(ks, ks * data[pk][0], marker="None", ls="-", c="k", alpha=1.0 / dataset.num_mocks)
+                        plt.errorbar(ks, ks * data[pk][0], marker="None", ls="-", c="k", alpha=1.0 / np.sqrt(dataset.num_mocks))
                 plt.xlabel(r"$k$")
                 plt.ylabel(r"$k\,P(k)$")
                 plt.title(dataset.name)

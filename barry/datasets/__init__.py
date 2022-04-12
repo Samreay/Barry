@@ -33,6 +33,8 @@ from barry.datasets.dataset_correlation_function import (
 from barry.datasets.dataset_power_spectrum import (
     PowerSpectrum_SDSS_DR12,
     PowerSpectrum_Beutler2019,
+    PowerSpectrum_eBOSS_LRGpCMASS,
+    PowerSpectrum_DESI_KP4,
 )
 
 __all__ = [
