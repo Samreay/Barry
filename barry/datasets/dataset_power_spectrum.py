@@ -310,6 +310,74 @@ class PowerSpectrum_DESILightcone_Mocks_Recon(PowerSpectrum):
         )
 
 
+class PowerSpectrum_DESI_KP4(PowerSpectrum):
+    """ Power spectra for DESI KP4  """
+
+    def __init__(
+        self,
+        name=None,
+        min_k=0.02,
+        max_k=0.30,
+        step_size=None,
+        recon=None,
+        reduce_cov_factor=1,
+        num_mocks=None,
+        postprocess=None,
+        fake_diag=False,
+        realisation=None,
+        isotropic=True,
+        mocktype="abacus_cubicbox",
+        fit_poles=(0,),
+        tracer="lrg",
+        redshift_bin=3,
+    ):
+
+        reds = {"lrg": [["0.4", "0.6", 0.5], ["0.6", "0.8", 0.7], ["0.8", "1.1", 0.95]]}
+
+        if mocktype.lower() not in ["abacus_cubicbox", "abacus_cutsky", "ezmock_cutsky"]:
+            raise NotImplementedError("mocktype not recognised, must be abacus_cubic, abacus_cutsky or ezmock_cutsky")
+
+        if tracer.lower() not in reds.keys():
+            raise NotImplementedError(f"tracer not recognised, must be in {reds.keys()}")
+
+        if any(pole in [1, 3] for pole in fit_poles):
+            raise NotImplementedError("Only even multipoles included in DESI KP4, do not include 1 or 3 in fit_poles")
+
+        if realisation is not None:
+            if not isinstance(realisation, int):
+                raise NotImplementedError("No data yet in DESI KP4, set realisation = None or an integer mock")
+
+        if recon is not None:
+            raise NotImplementedError("Only pre-reconstruction currently included in DESI KP4, set recon = None")
+
+        self.nredshift_bins = len(reds[tracer.lower()])
+        self.nsmoothtypes = 1
+
+        datafile = "desi_kp4_" + mocktype + "_pk_" + tracer
+        if mocktype.lower() == "abacus_cubicbox":
+            datafile += ".pkl"
+        else:
+            zmin = reds[tracer][redshift_bin][0]
+            zmax = reds[tracer][redshift_bin][1]
+            datafile += "_zmin" + zmin + "_zmax" + zmax + ".pkl"
+
+        super().__init__(
+            datafile,
+            name=name,
+            min_k=min_k,
+            max_k=max_k,
+            step_size=step_size,
+            recon=recon,
+            reduce_cov_factor=reduce_cov_factor,
+            num_mocks=num_mocks,
+            postprocess=postprocess,
+            fake_diag=fake_diag,
+            realisation=realisation,
+            isotropic=isotropic,
+            fit_poles=fit_poles,
+        )
+
+
 if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
@@ -318,7 +386,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)20s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.ERROR)
 
-    if True:
+    if False:
 
         # Plot the data and mock average for the SDSS_DR12 spectra
         for j, recon in enumerate(["iso", None]):
@@ -377,134 +445,47 @@ if __name__ == "__main__":
                     plt.legend()
                     plt.show()
 
-    if False:
+    if True:
 
-        # Plot the data and mock average for the eBOSS LRGpCMASS spectra
-        for j, recon in enumerate(["iso", None]):
-            for galactic_cap in ["ngc", "sgc"]:
-                dataset = PowerSpectrum_eBOSS_LRGpCMASS(
-                    galactic_cap=galactic_cap,
+        # Plot the desi KP4 data
+        color = ["r", "b", "g"]
+        label = [r"$P_{0}(k)$", r"$P_{2}(k)$", r"$P_{4}(k)$"]
+
+        tracers = ["lrg", "lrg", "lrg"]
+        nzbins = [1, 3, 3]
+        mocktypes = ["abacus_cubicbox", "abacus_cutsky", "ezmock_cutsky"]
+        realisations = [25, 25, 1000]
+        for j, (tracer, redshift_bins, mocktype) in enumerate(zip(tracers, nzbins, mocktypes)):
+            for z in range(redshift_bins):
+                dataset = PowerSpectrum_DESI_KP4(
                     isotropic=False,
-                    recon=recon,
+                    recon=None,
                     fit_poles=[0, 2, 4],
                     min_k=0.02,
                     max_k=0.30,
-                )
-                for i, realisation in enumerate([None, "data", 500]):
-                    dataset.set_realisation(realisation)
-                    data = dataset.get_data()
-                    label = [r"$P_{0}(k)$", r"$P_{2}(k)$", r"$P_{4}(k)$"] if i == 0 else [None, None, None]
-                    color = ["r", "b", "g"]
-                    fmt = "o" if i == 0 else "None"
-                    ls = "None" if i == 0 else "-"
-                    yerr = (
-                        [
-                            data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[0 : len(data[0]["ks"])],
-                            data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["ks"]) : 3 * len(data[0]["ks"])],
-                            data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[4 * len(data[0]["ks"]) : 5 * len(data[0]["ks"])],
-                        ]
-                        if i == 0
-                        else [None, None, None]
-                    )
-                    for m, pk in enumerate(["pk0", "pk2", "pk4"]):
-                        plt.errorbar(
-                            data[0]["ks"],
-                            data[0]["ks"] * data[0][pk],
-                            yerr=yerr[m],
-                            marker=fmt,
-                            ls=ls,
-                            c=color[m],
-                            zorder=i,
-                            label=label[m],
-                        )
-                plt.xlabel(r"$k$")
-                plt.ylabel(r"$k\,P(k)$")
-                plt.title(dataset.name)
-                plt.legend()
-                plt.show()
-
-    if False:
-
-        # Plot the data and mock average for the Beutler2019 spectra
-        for j, recon in enumerate([None]):
-            for galactic_cap in ["ngc", "sgc"]:
-                for redshift_bin in [1, 3]:
-                    dataset = PowerSpectrum_Beutler2019(
-                        redshift_bin=redshift_bin,
-                        galactic_cap=galactic_cap,
-                        isotropic=False,
-                        recon=recon,
-                        fit_poles=[0, 1, 2, 3, 4],
-                        min_k=0.02,
-                        max_k=0.30,
-                    )
-                    for i, realisation in enumerate([None, "data", 500]):
-                        dataset.set_realisation(realisation)
-                        data = dataset.get_data()
-                        label = (
-                            [r"$P_{0}(k)$", r"$P_{1}(k)$", r"$P_{2}(k)$", r"$P_{3}(k)$", r"$P_{4}(k)$"]
-                            if i == 0
-                            else [None, None, None, None, None]
-                        )
-                        color = ["r", "b", "g", "orange", "purple"]
-                        fmt = "o" if i == 0 else "None"
-                        ls = "None" if i == 0 else "-"
-                        for m, pk in enumerate(["pk0", "pk1", "pk2", "pk3", "pk4"]):
-                            yerr = data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[m * len(data[0]["ks"]) : (m + 1) * len(data[0]["ks"])]
-                            plt.errorbar(
-                                data[0]["ks"],
-                                data[0]["ks"] * data[0][pk],
-                                yerr=yerr if i == 0 else None,
-                                marker=fmt,
-                                ls=ls,
-                                c=color[m],
-                                zorder=i,
-                                label=label[m],
-                            )
-                    plt.xlabel(r"$k$")
-                    plt.ylabel(r"$k\,P(k)$")
-                    plt.title(dataset.name)
-                    plt.legend()
-                    plt.show()
-
-    if False:
-
-        # Plot the desi mock challenge spectra
-        recons = [None, "ani", "iso", "iso", "iso", "iso"]
-        tracers = ["elg", "elg", "elg", "elghd", "elgmd", "elgld"]
-        covtypes = ["nonfix", "nonfix", "nonfix", "analytic", "analytic", "analytic"]
-        for j, (recon, tracer, covtype) in enumerate(zip(recons, tracers, covtypes)):
-            if recon == None:
-                smoothtypes = [1]
-            else:
-                smoothtypes = [1, 2, 3] if covtype == "nonfix" else [1, 2, 3, 4]
-            print(recon, tracer, covtype, smoothtypes)
-            for smoothtype in smoothtypes:
-                dataset = PowerSpectrum_DESIMockChallenge_Post(
-                    isotropic=False,
-                    recon=recon,
-                    fit_poles=[0, 2, 4],
-                    min_k=0.02,
-                    max_k=0.30,
-                    smoothtype=smoothtype,
-                    covtype=covtype,
-                    realisation="data",
+                    mocktype=mocktype,
                     tracer=tracer,
+                    redshift_bin=z,
+                    realisation=None,
                 )
-                data = dataset.get_data()
-                label = [r"$P_{0}(k)$", r"$P_{2}(k)$", r"$P_{4}(k)$"]
-                color = ["r", "b", "g"]
                 for m, pk in enumerate(["pk0", "pk2", "pk4"]):
-                    yerr = data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[m * len(data[0]["ks"]) : (m + 1) * len(data[0]["ks"])]
+                    dataset.set_realisation(None)
+                    data = dataset.get_data()[0]
+                    ks, err = data["ks"], np.sqrt(np.diag(data["cov"]))
+                    yerr = ks * err[2 * m * len(ks) : (2 * m + 1) * len(ks)]
                     plt.errorbar(
-                        data[0]["ks"],
-                        data[0]["ks"] * data[0][pk],
+                        ks,
+                        ks * data[pk][0],
                         yerr=yerr,
                         marker="o",
                         ls="None",
                         c=color[m],
                         label=label[m],
                     )
+                    for i in range(dataset.num_mocks):
+                        dataset.set_realisation(i)
+                        data = dataset.get_data()[0]
+                        plt.errorbar(ks, ks * data[pk][0], marker="None", ls="-", c="k", alpha=1.0 / dataset.num_mocks)
                 plt.xlabel(r"$k$")
                 plt.ylabel(r"$k\,P(k)$")
                 plt.title(dataset.name)

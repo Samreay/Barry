@@ -793,8 +793,6 @@ class PowerSpectrumFit(Model):
             mod = mod + mod_odd + bband @ (polymod + polymod_odd)
             mod_fit = mod_fit + mod_fit_odd + bband @ (polymod_fit + polymod_fit_odd)
 
-            print(bband, mod, mod_fit)
-
             print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
             new_chi_squared = self.get_chi2_likelihood(
                 self.data[0]["pk"],
@@ -826,8 +824,6 @@ class PowerSpectrumFit(Model):
             new_chi_squared = 0.0
             bband = None
 
-        print(mod)
-
         # Mask the model to match the data points
         mod = mod[self.data[0]["w_mask"]]
         smooth = smooth[self.data[0]["w_mask"]]
@@ -846,8 +842,6 @@ class PowerSpectrumFit(Model):
         num_rows = len(names)
         cs = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00"]
         height = 2 + 1.4 * num_rows
-
-        print(mods)
 
         if display is True or figname is not None:
 
