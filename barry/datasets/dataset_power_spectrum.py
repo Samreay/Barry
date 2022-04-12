@@ -351,8 +351,8 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
         if mocktype.lower() == "abacus_cubicbox":
             datafile += ".pkl"
         else:
-            zmin = reds[tracer][redshift_bin][0]
-            zmax = reds[tracer][redshift_bin][1]
+            zmin = reds[tracer][redshift_bin - 1][0]
+            zmax = reds[tracer][redshift_bin - 1][1]
             datafile += "_zmin" + zmin + "_zmax" + zmax + ".pkl"
 
         super().__init__(
@@ -459,7 +459,7 @@ if __name__ == "__main__":
                     max_k=0.30,
                     mocktype=mocktype,
                     tracer=tracer,
-                    redshift_bin=z,
+                    redshift_bin=z + 1,
                     realisation=None,
                 )
                 for m, pk in enumerate(["pk0", "pk2", "pk4"]):
