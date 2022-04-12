@@ -196,6 +196,7 @@ if __name__ == "__main__":
         PowerSpectrum_SDSS_DR12,
         PowerSpectrum_eBOSS_LRGpCMASS,
         PowerSpectrum_DESIMockChallenge_Post,
+        PowerSpectrum_DESI_KP4,
     )
     from barry.config import setup_logging
     from barry.models.model import Correction
