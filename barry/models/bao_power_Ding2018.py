@@ -208,7 +208,8 @@ class PowerDing2018(PowerSpectrumFit):
             ks = self.kvals
             pk_smooth_lin, pk_ratio = self.pksmooth, self.pkratio
 
-        p["b"] = p["b"] if "b" in p else p[f"b_{{{1}}}"]
+        if "b" not in p:
+            p = self.deal_with_ndata(p, 0)
 
         if self.isotropic:
 

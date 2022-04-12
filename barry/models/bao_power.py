@@ -612,6 +612,21 @@ class PowerSpectrumFit(Model):
                 d["pk"], pk_model, pk_model_odd, d["icov"], d["icov_m_w"], num_mocks=num_mocks, num_params=num_params
             )
 
+    def deal_with_ndata(self, params, i):
+
+        p = params.copy()
+        p["b"] = params[f"b_{{{1}}}"] if self.n_data_bias == 1 else params[f"b_{{{i + 1}}}"]
+        for pole in self.poly_poles:
+            if self.n_poly >= 3:
+                p[f"a{{{pole}}}_1"] = p[f"a{{{pole}}}_1_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_1_{{{i + 1}}}"]
+                p[f"a{{{pole}}}_2"] = p[f"a{{{pole}}}_2_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_2_{{{i + 1}}}"]
+                p[f"a{{{pole}}}_3"] = p[f"a{{{pole}}}_3_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_3_{{{i + 1}}}"]
+            if self.n_poly == 5:
+                p[f"a{{{pole}}}_4"] = p[f"a{{{pole}}}_4_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_4_{{{i + 1}}}"]
+                p[f"a{{{pole}}}_5"] = p[f"a{{{pole}}}_5_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_5_{{{i + 1}}}"]
+
+        return p
+
     def get_model(self, params, d, smooth=False, data_name=None):
         """Gets the model prediction using the data passed in and parameter location specified
 
@@ -640,16 +655,7 @@ class PowerSpectrumFit(Model):
         all_pks = []
         all_polys = []
         for i in range(d["ndata"]):
-            p = params.copy()
-            p["b"] = params[f"b_{{{1}}}"] if self.n_data_bias == 1 else params[f"b_{{{i+1}}}"]
-            for pole in self.poly_poles:
-                if self.n_poly >= 3:
-                    p[f"a{{{pole}}}_1"] = p[f"a{{{pole}}}_1_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_1_{{{i + 1}}}"]
-                    p[f"a{{{pole}}}_2"] = p[f"a{{{pole}}}_2_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_2_{{{i + 1}}}"]
-                    p[f"a{{{pole}}}_3"] = p[f"a{{{pole}}}_3_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_3_{{{i + 1}}}"]
-                if self.n_poly == 5:
-                    p[f"a{{{pole}}}_4"] = p[f"a{{{pole}}}_4_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_4_{{{i + 1}}}"]
-                    p[f"a{{{pole}}}_5"] = p[f"a{{{pole}}}_5_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_5_{{{i + 1}}}"]
+            p = self.deal_with_ndata(params, i)
 
             # Generate the underlying models
             ks, pks, poly = self.compute_power_spectrum(d["ks_input"], p, smooth=smooth, data_name=data_name)
