@@ -140,6 +140,63 @@ class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
         )
 
 
+class CorrelationFunction_DESI_KP4(CorrelationFunction):
+    """ Correlation Function for DESI KP4  """
+
+    def __init__(
+        self,
+        min_dist=30.0,
+        max_dist=200.0,
+        recon=None,
+        reduce_cov_factor=1,
+        realisation=None,
+        mocktype="abacus_cubicbox",
+        fit_poles=(0,),
+        tracer="lrg",
+        redshift_bin=1,
+    ):
+
+        reds = {"lrg": [["0.4", "0.6", 0.5], ["0.6", "0.8", 0.7], ["0.8", "1.1", 0.95]]}
+
+        if mocktype.lower() not in ["abacus_cubicbox", "abacus_cutsky", "ezmock_cutsky"]:
+            raise NotImplementedError("mocktype not recognised, must be abacus_cubic, abacus_cutsky or ezmock_cutsky")
+
+        if tracer.lower() not in reds.keys():
+            raise NotImplementedError(f"tracer not recognised, must be in {reds.keys()}")
+
+        if realisation is not None:
+            if not isinstance(realisation, int):
+                raise NotImplementedError("No data yet in DESI KP4, set realisation = None or an integer mock")
+
+        if recon is not None:
+            raise NotImplementedError("Only pre-reconstruction currently included in DESI KP4, set recon = None")
+
+        self.nredshift_bins = len(reds[tracer.lower()])
+        self.nsmoothtypes = 1
+
+        datafile = "desi_kp4_" + mocktype + "_xi_" + tracer
+        if mocktype.lower() == "abacus_cubicbox":
+            datafile += ".pkl"
+        else:
+            zmin = reds[tracer][redshift_bin - 1][0]
+            zmax = reds[tracer][redshift_bin - 1][1]
+            datafile += "_zmin" + zmin + "_zmax" + zmax + ".pkl"
+
+        super().__init__(
+            datafile,
+            name=None,
+            min_dist=min_dist,
+            max_dist=max_dist,
+            recon=recon,
+            reduce_cov_factor=reduce_cov_factor,
+            num_mocks=None,
+            fake_diag=None,
+            realisation=realisation,
+            isotropic=False,
+            fit_poles=fit_poles,
+        )
+
+
 if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
@@ -188,51 +245,46 @@ if __name__ == "__main__":
                 plt.legend()
                 plt.show()
 
-    if True:
+    tracers = ["lrg", "lrg", "lrg"]
+    nzbins = [1, 3, 3]
+    mocktypes = ["abacus_cubicbox", "abacus_cutsky", "ezmock_cutsky"]
+    for j, (tracer, redshift_bins, mocktype) in enumerate(zip(tracers, nzbins, mocktypes)):
+        for z in range(redshift_bins):
+            dataset = CorrelationFunction_DESI_KP4(
+                recon=None,
+                fit_poles=[0, 2, 4],
+                min_dist=30.0,
+                max_dist=200.0,
+                mocktype=mocktype,
+                tracer=tracer,
+                redshift_bin=z + 1,
+                realisation=None,
+            )
 
-        # Plot the desi mock challenge spectra
-        recons = [None, "ani", "iso"]
-        tracers = ["elg", "elg", "elg"]
-        covtypes = ["nonfix", "nonfix", "nonfix"]
-        for j, (recon, tracer, covtype) in enumerate(zip(recons, tracers, covtypes)):
-            if recon == None:
-                smoothtypes = [1]
-            else:
-                smoothtypes = [1, 2, 3] if covtype == "nonfix" else [1, 2, 3, 4]
-            print(recon, tracer, covtype, smoothtypes)
-            for smoothtype in smoothtypes:
-                dataset = CorrelationFunction_DESIMockChallenge_Post(
-                    isotropic=False,
-                    recon=recon,
-                    fit_poles=[0, 2, 4],
-                    min_dist=10.0,
-                    max_dist=200.0,
-                    smoothtype=smoothtype,
-                    covtype="nonfix",
-                    realisation="data",
+            color = ["r", "b", "g"]
+            label = [r"$\xi_{0}(k)$", r"$\xi_{2}(k)$", r"$\xi_{4}(k)$"]
+
+            # Plot xome xi data
+            for m, xi in enumerate(["xi0", "xi2", "xi4"]):
+                dataset.set_realisation(None)  # Sets the data to the mock mean.
+                data = dataset.get_data()[0]
+                ss, err = data["dist"], np.sqrt(np.diag(data["cov"]))
+                yerr = ss ** 2 * err[m * len(ss) : (m + 1) * len(ss)]
+                plt.errorbar(
+                    ss,
+                    ss ** 2 * data[xi][0],
+                    yerr=yerr,
+                    marker="o",
+                    ls="None",
+                    c=color[m],
+                    label=label[m],
                 )
-                data = dataset.get_data()
-                label = [r"$\xi_{0}(s)$", r"$\xi_{2}(s)$", r"$\xi_{4}(s)$"]
-                color = ["r", "b", "g"]
-                fmt = "o"
-                ls = "None"
-                yerr = [
-                    data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[: len(data[0]["dist"])],
-                    data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[len(data[0]["dist"]) : 2 * len(data[0]["dist"])],
-                    data[0]["dist"] ** 2 * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["dist"]) :],
-                ]
-                for m, xi in enumerate(["xi0", "xi2", "xi4"]):
-                    plt.errorbar(
-                        data[0]["dist"],
-                        data[0]["dist"] ** 2 * data[0][xi],
-                        yerr=yerr[m],
-                        marker=fmt,
-                        ls=ls,
-                        c=color[m],
-                        label=label[m],
-                    )
-                plt.xlabel(r"$s$")
-                plt.ylabel(r"$s^{2}\xi_{\ell}(s)$")
-                plt.title(dataset.name)
-                plt.legend()
-                plt.show()
+                for i in range(data["num_mocks"]):
+                    dataset.set_realisation(i)  # Changes the realisation to one of the mocks, and plots that.
+                    data = dataset.get_data()[0]
+                    plt.errorbar(ss, ss ** 2 * data[xi][0], marker="None", ls="-", c="k", alpha=1.0 / data["num_mocks"] ** (3.0 / 4.0))
+            plt.xlabel(r"$s$")
+            plt.ylabel(r"$s^{2}\,\xi(s)$")
+            plt.title(dataset.name)
+            plt.legend()
+            plt.show()
