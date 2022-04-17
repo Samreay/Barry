@@ -111,8 +111,9 @@ class PowerBeutler2017(PowerSpectrumFit):
         # of code and a few nested if statements, but it's perhaps more readable and a little faster (because we only
         # need one interpolation for the whole isotropic monopole, rather than separately for the smooth and wiggle components)
 
-        if "b" not in p:
-            p = self.deal_with_ndata(p, 0)
+        if not for_corr:
+            if "b" not in p:
+                p = self.deal_with_ndata(p, 0)
 
         if self.isotropic:
             pk = [np.zeros(len(k))]

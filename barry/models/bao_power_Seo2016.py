@@ -212,8 +212,9 @@ class PowerSeo2016(PowerSpectrumFit):
             ks = self.kvals
             pk_smooth_lin, pk_ratio = self.pksmooth, self.pkratio
 
-        if "b" not in p:
-            p = self.deal_with_ndata(p, 0)
+        if not for_corr:
+            if "b" not in p:
+                p = self.deal_with_ndata(p, 0)
 
         # We split for isotropic and anisotropic here. They are coded up quite differently to try and make things fast
         if self.isotropic:

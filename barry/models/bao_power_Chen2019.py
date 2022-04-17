@@ -266,8 +266,9 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.kvals
             pk_smooth_lin, pk_ratio = self.pksmooth, self.pkratio
 
-        if "b" not in p:
-            p = self.deal_with_ndata(p, 0)
+        if not for_corr:
+            if "b" not in p:
+                p = self.deal_with_ndata(p, 0)
 
         if self.isotropic:
 
