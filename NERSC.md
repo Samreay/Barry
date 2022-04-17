@@ -8,20 +8,12 @@
 3. Install the additional python requirements `cd Barry && pip install -r requirements.txt`
 4. Add `export HPC=nersc` to your `~/.bashrc.ext` file and `source ~/.bashrc.ext` it.
 5. Barry should now be more or less good to go. Now let's run some tests. From the main Barry directory try:
-    1. `cd barry && python generate.py`: This will run through all the datasets and models and check
-    that you have the corresponding CAMB power spectrum templates and non-linear integrals. Unless you have
-    added a new dataset or model, they should all be present. If any are missing, Barry will create a job script 
-    to compute it in `jobs/` and submit it. Give it some time to run. 
-        * Note that this will not check the DESI datasets as these are not public or in the Git repo. 
-          If you do want to also check DESI files run `python generate.py --desi`, but this
-          will only work if the necessary data files are in `data/`. Email Cullan if you want access to these.
-    2. `cd ../ && pytest -v`: This will do some unit tests. They should all pass, but might not if `generate.py`
-    has already identified that some templates are missing.
-    3. `cd config/examples && python test_emcee_mock_avg.py`. This should submit a fit to the BOSS DR12 z3 NGC mock
+    1. `pytest -v`: This will do some unit tests. They should all pass.
+    2. `cd config/examples && python test_emcee_mock_avg.py`. This should submit a fit to the BOSS DR12 z3 NGC mock
     average and return a chain. Will take a few minutes to run. The auto generated job scripts and 
     SLURM output files can be found in `job_files/` and `out_files/` respectively. Once the chain has finished, 
     you can find it in `plots/test_emcee_mock_avg/output`. 
-    4. Now run `python test_emcee_mock_avg.py plot`, or copy the directory structure in the previous step (from `plots/` downwards) 
+    3. Now run `python test_emcee_mock_avg.py plot`, or copy the directory structure in the previous step (from `plots/` downwards) 
     into `config/examples/` on your local computer and run `python test_emcee_mock_avg.py` again. This will now 
     analyse the chain and put some plots in `plots/test_emcee_mock_avg/`.
 6. If you are feeling adventurous you can try looking at and running some of the other `test_` codes in `examples`.
