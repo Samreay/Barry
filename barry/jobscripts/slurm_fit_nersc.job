@@ -12,8 +12,9 @@
 #SBATCH -o {output_dir}/{name}.o%j
 
 source ~/.bashrc.ext
-source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
 IDIR={directory}
+
+module load parallel
 
 echo "Activated python"
 executable=$(which python)
@@ -25,13 +26,21 @@ END={num_fits_per_job}
 
 echo "$PROG $PARAMS"
 
-cd $IDIR
-sleep $((RANDOM % 5))
+func() {
+    ANUM=`expr $PARAMS \* $END + $1`
+    echo ${executable} $PROG $ANUM > "{output_dir}/{name}_$ANUM.log"
+}
+export -f func
 
-for ((i=0;i<END;i++)); do
-    echo "Loop iteration $i"
-    ANUM=`expr $PARAMS \* $END + $i`
-    echo "Executing $executable $PROG $ANUM"
-    srun -u --exclusive --nodes 1 --ntasks 1 --mem-per-cpu=4GB --output "{output_dir}/{name}_$ANUM.log" $executable $PROG $ANUM  &
-done
-wait
+srun parallel --jobs $END func ::: $(seq $END)
+
+#cd $IDIR
+#sleep $((RANDOM % 5))
+
+#for ((i=0;i<END;i++)); do
+#    echo "Loop iteration $i"
+#    ANUM=`expr $PARAMS \* $END + $i`
+#    echo "Executing $executable $PROG $ANUM"
+#    srun -u --exclusive --nodes 1 --ntasks 1 --mem-per-cpu=4GB --output "{output_dir}/{name}_$ANUM.log" $executable $PROG $ANUM  &
+#done
+#wait

@@ -77,7 +77,7 @@ if __name__ == "__main__":
                 fitter.add_model_and_dataset(model, dataset, name=name)
                 allnames.append(name)
 
-    # Submit all the jobs to NERSC. We have quite a few (104), so we'll
+    # Submit all the jobs to NERSC. We have quite a few (78), so we'll
     # only assign 1 walker (processor) to each. Note that this will only run if the
     # directory is empty (i.e., it won't overwrite existing chains)
     fitter.set_sampler(sampler)
