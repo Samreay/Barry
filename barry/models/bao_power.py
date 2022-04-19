@@ -5,7 +5,7 @@ from scipy.interpolate import splev, splrep
 from scipy.linalg import block_diag
 
 from barry.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
-from barry.models.model import Model, Omega_m_z
+from barry.models.model import Model, Omega_m_z, Correction
 import numpy as np
 
 from barry.utils import break_vector_and_get_blocks
@@ -132,6 +132,12 @@ class PowerSpectrumFit(Model):
         super().set_data(data)
         if not parent:
             self.set_bias(data[0])
+        if self.correction is Correction.HARTLAP:  # From Hartlap 2007
+            for d in self.data:
+                hartlap_factor = (d["num_mocks"] - len(d["pk"]) - 2) / (d["num_mocks"] - 1)
+                d["icov"] *= hartlap_factor
+                if d["icov_m_w"][0] is not None:
+                    d["icov_m_w"] = [cov * hartlap_factor for cov in d["icov_m_w"]]
 
     def set_bias(self, data, kval=0.2, width=0.4):
         """Sets the bias default value by comparing the data monopole and linear pk

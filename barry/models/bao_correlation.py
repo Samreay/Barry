@@ -3,7 +3,7 @@ import numpy as np
 
 from barry.cosmology.pk2xi import PowerToCorrelationGauss
 from barry.cosmology.power_spectrum_smoothing import validate_smooth_method, smooth
-from barry.models.model import Model, Omega_m_z
+from barry.models.model import Model, Omega_m_z, Correction
 from barry.models.bao_power import PowerSpectrumFit
 from scipy.interpolate import splev, splrep
 from scipy.integrate import simps
@@ -78,6 +78,9 @@ class CorrelationFunctionFit(Model):
         self.pk2xi_4 = PowerToCorrelationGauss(self.camb.ks, ell=4)
         self.set_bias(data[0])
         self.parent.set_data(data, parent=True)
+        if self.correction is Correction.HARTLAP:  # From Hartlap 2007
+            for d in self.data:
+                d["icov"] *= (d["num_mocks"] - len(d["xi"]) - 2) / (d["num_mocks"] - 1)
 
     def set_bias(self, data, sval=50.0, width=0.3):
         """Sets the bias default value by comparing the data monopole and linear model

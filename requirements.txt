@@ -1,5 +1,6 @@
 numpy
 scipy
+pandas
 camb
 matplotlib>=3.0.0
 hankel
