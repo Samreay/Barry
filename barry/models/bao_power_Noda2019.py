@@ -378,7 +378,7 @@ class PowerNoda2019(PowerSpectrumFit):
 
             pk0, pk2, pk4 = self.integrate_mu(pk2d)
 
-            pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4]
+            pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4, np.zeros(len(k))]
             poly = np.zeros((1, 5, len(k)))
 
         return kprime, pk, poly

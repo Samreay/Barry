@@ -332,7 +332,7 @@ class PowerSeo2016(PowerSpectrumFit):
             pk0, pk2, pk4 = self.integrate_mu(pk2d)
 
             # Polynomial shape
-            pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4]
+            pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4, np.zeros(len(k))]
 
             if for_corr:
                 poly = None

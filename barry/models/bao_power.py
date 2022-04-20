@@ -292,9 +292,9 @@ class PowerSpectrumFit(Model):
         # differs from our implementation of the Beutler2017 isotropic model quite a bit. This results in some duplication
         # of code and a few nested if statements, but it's perhaps more readable and a little faster (because we only
         # need one interpolation for the whole isotropic monopole, rather than separately for the smooth and wiggle components)
-        pk = [np.zeros(len(k)), np.zeros(len(k)), np.zeros(len(k))]
 
         if self.isotropic:
+            pk = [np.zeros(len(k))]
             kprime = k if for_corr else k / p["alpha"]
             pk_smooth = splev(kprime, splrep(ks, pk_smooth_lin))
             if not for_corr:
@@ -336,18 +336,18 @@ class PowerSpectrumFit(Model):
             pk0, pk2, pk4 = self.integrate_mu(pk2d)
 
             # Polynomial shape
-            pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4]
+            pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4, np.zeros(len(k))]
 
             if for_corr:
                 poly = None
                 kprime = k
             else:
                 if self.marg:
-                    poly = np.zeros((1, 5, len(k)))
+                    poly = np.zeros((1, 6, len(k)))
                     poly[0, :, :] = pk
-                    pk = [np.zeros(len(k))] * 5
+                    pk = [np.zeros(len(k))] * 6
                 else:
-                    poly = np.zeros((1, 5, len(k)))
+                    poly = np.zeros((1, 6, len(k)))
 
         return kprime, pk, poly
 
@@ -389,9 +389,9 @@ class PowerSpectrumFit(Model):
                     poly[1] *= kpoly
             poly = poly[:, None, :]
         else:
-            shape = np.zeros((5, len(k)))
+            shape = np.zeros((6, len(k)))
             if self.marg:
-                poly = np.zeros((3 * len(self.poly_poles) + 1, 5, len(kpoly)))
+                poly = np.zeros((3 * len(self.poly_poles) + 1, 6, len(kpoly)))
                 poly[0, :, :] = pk
                 for i, pole in enumerate(self.poly_poles):
                     if self.recon:
@@ -400,7 +400,7 @@ class PowerSpectrumFit(Model):
                         poly[3 * i + 1 : 3 * (i + 1) + 1, pole] = [kpoly, np.ones(len(kpoly)), 1.0 / kpoly]
 
             else:
-                poly = np.zeros((1, 5, len(kpoly)))
+                poly = np.zeros((1, 6, len(kpoly)))
                 for pole in self.poly_poles:
                     if self.recon:
                         shape[pole] = p[f"a{{{pole}}}_1"] * k ** 2 + p[f"a{{{pole}}}_2"] + p[f"a{{{pole}}}_3"] / k
@@ -448,9 +448,9 @@ class PowerSpectrumFit(Model):
             poly = poly[:, None, :]
 
         else:
-            shape = np.zeros((5, len(k)))
+            shape = np.zeros((6, len(k)))
             if self.marg:
-                poly = np.zeros((5 * len(self.poly_poles) + 1, 5, len(kpoly)))
+                poly = np.zeros((5 * len(self.poly_poles) + 1, 6, len(kpoly)))
                 poly[0, :, :] = pk
                 for i, pole in enumerate(self.poly_poles):
                     if self.recon:
@@ -471,7 +471,7 @@ class PowerSpectrumFit(Model):
                         ]
 
             else:
-                poly = np.zeros((1, 5, len(kpoly)))
+                poly = np.zeros((1, 6, len(kpoly)))
                 for pole in self.poly_poles:
                     if self.recon:
                         shape[pole] = (
@@ -685,9 +685,10 @@ class PowerSpectrumFit(Model):
                 pk_model = self.postprocess(ks=d["ks_output"], pk=pk_model, mask=mask)
             pk_model_odd = np.zeros(d["ndata"] * len(d["ks_output"]))
         else:
-            pk_model_odd = np.zeros(d["ndata"] * 5 * len(ks))
+            pk_model_odd = np.zeros(d["ndata"] * 6 * len(ks))
             pk_model_odd[1 * d["ndata"] * len(ks) : 2 * d["ndata"] * len(ks)] += np.concatenate([all_pks[i][1] for i in range(d["ndata"])])
             pk_model_odd[3 * d["ndata"] * len(ks) : 4 * d["ndata"] * len(ks)] += np.concatenate([all_pks[i][3] for i in range(d["ndata"])])
+            pk_model_odd[5 * d["ndata"] * len(ks) : 6 * d["ndata"] * len(ks)] += np.concatenate([all_pks[i][5] for i in range(d["ndata"])])
             if d["icov_m_w"][0] is None:
                 pk_model, mask = self.adjust_model_window_effects(pk_generated, d), d["m_w_mask"]
                 pk_model_odd = self.adjust_model_window_effects(pk_model_odd, d, wide_angle=False)
@@ -749,12 +750,10 @@ class PowerSpectrumFit(Model):
                     poly_model[n] = poly_model_long
                 else:
                     nk = d["ndata"] * len(ks)
-                    poly_generated_odd = np.zeros(d["ndata"] * 5 * len(ks))
-                    # for i in range(d["ndata"]):
-                    #    poly_generated_odd[(i * 5 + 1) * len(ks) : (i * 5 + 2) * len(ks)] += poly_split[i][1]
-                    #    poly_generated_odd[(i * 5 + 3) * len(ks) : (i * 5 + 4) * len(ks)] += poly_split[i][3]
+                    poly_generated_odd = np.zeros(d["ndata"] * 6 * len(ks))
                     poly_generated_odd[1 * nk : 2 * nk] += poly[n, 1]
                     poly_generated_odd[3 * nk : 4 * nk] += poly[n, 3]
+                    poly_generated_odd[5 * nk : 6 * nk] += poly[n, 5]
                     if d["icov_m_w"][0] is None:
                         poly_model[n] = self.adjust_model_window_effects(poly_generated, d)
                         poly_model_odd[n] = self.adjust_model_window_effects(poly_generated_odd, d, wide_angle=False)

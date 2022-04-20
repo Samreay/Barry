@@ -172,7 +172,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             pk0, pk2, pk4 = self.integrate_mu(pk2d)
 
             # Polynomial shape
-            pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4]
+            pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4, np.zeros(len(k))]
 
             if for_corr:
                 poly = None
@@ -184,7 +184,7 @@ class PowerBeutler2017(PowerSpectrumFit):
                     else self.add_five_poly(k, k, p, np.ones(len(k)), pk)
                 )
                 if self.marg:
-                    pk = [np.zeros(len(k))] * 5
+                    pk = [np.zeros(len(k))] * 6
                 else:
                     for pole in self.poly_poles:
                         pk[pole] += shape[pole]
