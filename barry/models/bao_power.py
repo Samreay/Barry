@@ -721,10 +721,10 @@ class PowerSpectrumFit(Model):
                     # Nothing shared
                     poly = np.array([block_diag(*all_polys[:, :, l]) for l in range(nell)]).transpose((1, 0, 2))
 
-            nell = np.shape(poly)[1] if d["icov_m_w"][0] is None else np.shape(poly)[1] - 3
+            nell = np.shape(poly)[1] - 1 if d["icov_m_w"][0] is None else np.shape(poly)[1] - 3
             len_poly_k = d["ndata"] * len(d["ks_output"]) if d["icov_m_w"][0] is None else d["ndata"] * len(d["ks_input"])
             len_poly = d["ndata"] * len(d["ks_output"]) if self.isotropic else len_poly_k * nell
-            len_poly_odd = d["ndata"] * len(d["ks_output"]) if self.isotropic else len_poly_k * np.shape(poly)[1]
+            len_poly_odd = d["ndata"] * len(d["ks_output"]) if self.isotropic else len_poly_k * (np.shape(poly)[1] - 1)
             poly_model = np.zeros((np.shape(poly)[0], len_poly))
             poly_model_odd = np.zeros((np.shape(poly)[0], len_poly_odd))
             for n in range(np.shape(poly)[0]):
