@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
 #SBATCH --mem=0
-#SBATCH -t 24:00:00
+#SBATCH -t 01:00:00
 #SBATCH -o {output_dir}/{name}.o%j
 
 source ~/.bashrc.ext
@@ -17,31 +17,28 @@ IDIR={directory}
 module load parallel
 
 echo "Activated python"
-executable=$(which python)
+export executable=$(which python)
 echo $executable
 
-PROG={executable}
-PARAMS=`expr ${{SLURM_ARRAY_TASK_ID}} - 1`
-END={num_fits_per_job}
+export PROG={executable}
+export PARAMS=`expr ${{SLURM_ARRAY_TASK_ID}} - 1`
+export END={num_fits_per_job}
 
-echo "$PROG $PARAMS"
+echo "$PROG $PARAMS $END"
 
-func() {
-    ANUM=`expr $PARAMS \* $END + $1`
-    echo ${executable} $PROG $ANUM > "{output_dir}/{name}_$ANUM.log"
-}
-export -f func
-
-cd $IDIR
-srun parallel --jobs $END func ::: $(seq $END)
+#func() {{ let ANUM=$PARAMS*$END+$1; echo $executable $PROG $ANUM > {output_dir}/{name}_$ANUM.log; }}
+#export -f func
 
 #cd $IDIR
-#sleep $((RANDOM % 5))
+#srun parallel 'let ANUM=$PARAMS*$END+{{1}}; $executable $PROG $ANUM > {output_dir}/{name}_$ANUM.log' ::: $(seq $END)
 
-#for ((i=0;i<END;i++)); do
-#    echo "Loop iteration $i"
-#    ANUM=`expr $PARAMS \* $END + $i`
-#    echo "Executing $executable $PROG $ANUM"
-#    srun -u --exclusive --nodes 1 --ntasks 1 --mem-per-cpu=4GB --output "{output_dir}/{name}_$ANUM.log" $executable $PROG $ANUM  &
-#done
-#wait
+cd $IDIR
+sleep $((RANDOM % 5))
+
+for ((i=0;i<END;i++)); do
+    echo "Loop iteration $i"
+    ANUM=`expr $PARAMS \* $END + $i`
+    echo "Executing $executable $PROG $ANUM"
+    srun -u --exclusive --nodes 1 --ntasks 1 --mem-per-cpu=4GB --output "{output_dir}/{name}_$ANUM.log" $executable $PROG $ANUM  &
+done
+wait
