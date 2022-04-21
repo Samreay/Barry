@@ -4,8 +4,8 @@ sys.path.append("..")
 sys.path.append("../..")
 from barry.samplers import DynestySampler
 from barry.config import setup
-from barry.models import PowerBeutler2017
-from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESI_KP4
+from barry.models import CorrBeutler2017
+from barry.datasets.dataset_correlation_function import CorrelationFunction_DESI_KP4
 from barry.fitter import Fitter
 import numpy as np
 import pandas as pd
@@ -37,11 +37,11 @@ if __name__ == "__main__":
 
             # Create the data. We'll fit mono-, quad- and hexadecapole between k=0.02 and 0.3.
             # First load up mock mean and add it to the fitting list.
-            dataset = PowerSpectrum_DESI_KP4(
+            dataset = CorrelationFunction_DESI_KP4(
                 recon=None,
                 fit_poles=[0, 2, 4],
-                min_k=0.02,
-                max_k=0.30,
+                min_dist=50.0,
+                max_dist=170.0,
                 mocktype=mocktype,
                 redshift_bin=z + 1,
                 realisation=None,
@@ -51,14 +51,13 @@ if __name__ == "__main__":
             # Set up the model we'll use. Fix Omega_m and beta. 5 polynomials (default)
             # for each of the fitted multipoles. Use full analytic marginalisation for speed
             # Apply the Hartlap correction to the covariance matrix.
-            model = PowerBeutler2017(
+            model = CorrBeutler2017(
                 recon=dataset.recon,
                 isotropic=dataset.isotropic,
                 marg="full",
                 fix_params=["om", "beta"],
                 poly_poles=dataset.fit_poles,
                 correction=Correction.HARTLAP,
-                n_poly=5,
             )
 
             # Create a unique name for the fit and add it to the list
