@@ -330,7 +330,7 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
         reds = {"lrg": [["0.4", "0.6", 0.5], ["0.6", "0.8", 0.7], ["0.8", "1.1", 0.95]]}
 
         if mocktype.lower() not in ["abacus_cubicbox", "abacus_cutsky", "ezmock_cutsky"]:
-            raise NotImplementedError("mocktype not recognised, must be abacus_cubic, abacus_cutsky or ezmock_cutsky")
+            raise NotImplementedError("mocktype not recognised, must be abacus_cubicbox, abacus_cutsky or ezmock_cutsky")
 
         if tracer.lower() not in reds.keys():
             raise NotImplementedError(f"tracer not recognised, must be in {reds.keys()}")

@@ -25,8 +25,8 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name, remove_output=True)
     sampler = DynestySampler(temp_dir=dir_name, nlive=500)
 
-    mocktypes = ["abacus_cutsky"]
-    nzbins = [3]
+    mocktypes = ["abacus_cubicbox"]
+    nzbins = [1]
 
     # Loop over the mocktypes
     allnames = []

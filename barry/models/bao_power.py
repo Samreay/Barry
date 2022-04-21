@@ -736,13 +736,6 @@ class PowerSpectrumFit(Model):
                 else:
                     poly_generated = np.concatenate([poly[n, l, :] for l in d["poles"][d["poles"] % 2 == 0]])
 
-                """if self.isotropic:
-                    poly_generated = np.concatenate([poly_split[i][0] for i in range(d["ndata"])])
-                else:
-                    poly_generated = np.concatenate(
-                        [np.concatenate([poly_split[i][l, :] for l in d["poles"][d["poles"] % 2 == 0]]) for i in range(d["ndata"])]
-                    )"""
-
                 if self.isotropic:
                     poly_model_long = self.adjust_model_window_effects(poly_generated, d)
                     if self.postprocess is not None:
