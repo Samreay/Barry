@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     # Set up the Fitting class and Dynesty sampler with 100 live points.
     fitter = Fitter(dir_name, remove_output=True)
-    sampler = DynestySampler(temp_dir=dir_name, nlive=100)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=250)
 
     mocktypes = ["abacus_cutsky"]
     nzbins = [3]
@@ -126,13 +126,12 @@ if __name__ == "__main__":
             extra.pop("realisation", None)
             if realisation == None:
                 fitname.append(data[0]["name"].replace(" ", "_"))
-                c[redshift_bin].add_chain(df, weights=weight, posterior=posterior, **extra)
+                c[redshift_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
             else:
                 c[redshift_bin].add_marker(params, **extra)
 
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
         for z in range(nzbins[0]):
-            c[z].configure(shade=True, bins=20, legend_artists=True, max_ticks=4, legend_location=(0, -1), plot_contour=True)
             c[z].plotter.plot(
                 filename=[pfn + "_" + fitname[z] + "_contour.pdf"],
                 truth=truth,
