@@ -2,7 +2,7 @@ import sys
 
 sys.path.append("..")
 sys.path.append("../..")
-from barry.samplers import DynestySampler
+from barry.samplers import DynestySampler, EnsembleSampler
 from barry.config import setup
 from barry.models import PowerBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESI_KP4
@@ -21,9 +21,9 @@ if __name__ == "__main__":
     # Get the relative file paths and names
     pfn, dir_name, file = setup(__file__)
 
-    # Set up the Fitting class and Dynesty sampler with 500 live points.
+    # Set up the Fitting class and Dynesty sampler with 100 live points.
     fitter = Fitter(dir_name, remove_output=True)
-    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=100)
 
     mocktypes = ["abacus_cutsky"]
     nzbins = [3]
