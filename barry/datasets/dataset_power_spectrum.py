@@ -189,7 +189,7 @@ class PowerSpectrum_Beutler2019(PowerSpectrum):
 
 
 class PowerSpectrum_DESIMockChallenge_Post(PowerSpectrum):
-    """ Post reconstruction power spectra from the DESI Mock Challenge in cubic boxes  """
+    """Post reconstruction power spectra from the DESI Mock Challenge in cubic boxes"""
 
     def __init__(
         self,
@@ -251,7 +251,7 @@ class PowerSpectrum_DESIMockChallenge_Post(PowerSpectrum):
 
 
 class PowerSpectrum_DESILightcone_Mocks_Recon(PowerSpectrum):
-    """ Power spectrum from the DESI Mock Challenge on lightcones """
+    """Power spectrum from the DESI Mock Challenge on lightcones"""
 
     def __init__(
         self,
@@ -311,7 +311,7 @@ class PowerSpectrum_DESILightcone_Mocks_Recon(PowerSpectrum):
 
 
 class PowerSpectrum_DESI_KP4(PowerSpectrum):
-    """ Power spectra for DESI KP4  """
+    """Power spectra for DESI KP4"""
 
     def __init__(
         self,
@@ -319,6 +319,7 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
         max_k=0.30,
         recon=None,
         reduce_cov_factor=1,
+        fake_diag=False,
         realisation=None,
         num_mocks=1000,
         mocktype="abacus_cubicbox",
@@ -366,7 +367,7 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
             reduce_cov_factor=reduce_cov_factor,
             num_mocks=num_mocks,
             postprocess=None,
-            fake_diag=None,
+            fake_diag=fake_diag,
             realisation=realisation,
             isotropic=False,
             fit_poles=fit_poles,

@@ -4,7 +4,7 @@ from barry.datasets.dataset_correlation_function_abc import CorrelationFunction
 
 
 class CorrelationFunction_SDSS_DR12_Z061_NGC:
-    """ Correlation function for SDSS BOSS DR12 sample for the NGC with mean redshift z = 0.61    """
+    """Correlation function for SDSS BOSS DR12 sample for the NGC with mean redshift z = 0.61"""
 
     def __init__(self, name=None, min_dist=30, max_dist=200, recon=True, reduce_cov_factor=1, realisation=None, isotropic=True):
 
@@ -83,7 +83,7 @@ class CorrelationFunction_ROSS_DR12(CorrelationFunction):
 
 
 class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
-    """ Power spectrum from the DESI Mock Challenge  """
+    """Power spectrum from the DESI Mock Challenge"""
 
     def __init__(
         self,
@@ -141,13 +141,14 @@ class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
 
 
 class CorrelationFunction_DESI_KP4(CorrelationFunction):
-    """ Correlation Function for DESI KP4  """
+    """Correlation Function for DESI KP4"""
 
     def __init__(
         self,
         min_dist=30.0,
         max_dist=200.0,
         recon=None,
+        fake_diag=False,
         reduce_cov_factor=1,
         realisation=None,
         num_mocks=1000,
@@ -191,7 +192,7 @@ class CorrelationFunction_DESI_KP4(CorrelationFunction):
             recon=recon,
             reduce_cov_factor=reduce_cov_factor,
             num_mocks=num_mocks,
-            fake_diag=None,
+            fake_diag=fake_diag,
             realisation=realisation,
             isotropic=False,
             fit_poles=fit_poles,
