@@ -38,7 +38,7 @@ class DynestySampler(Sampler):
         self.logger.info("Using dynesty Sampler")
         if self.dynamic:
             sampler = dynesty.DynamicNestedSampler(log_likelihood, prior_transform, num_dim)
-            sampler.run_nested(maxiter=self.max_iter, print_progress=True, nlive_init=self.nlive, nlive_batch=100, maxbatch=10)
+            sampler.run_nested(maxiter=self.max_iter, print_progress=False, nlive_init=self.nlive, nlive_batch=100, maxbatch=10)
         else:
             sampler = dynesty.NestedSampler(log_likelihood, prior_transform, num_dim, nlive=self.nlive)
             sampler.run_nested(maxiter=self.max_iter, print_progress=False)

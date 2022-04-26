@@ -12,7 +12,7 @@ from barry.utils import break_vector_and_get_blocks
 
 
 class PowerSpectrumFit(Model):
-    """ Generic power spectrum model """
+    """Generic power spectrum model"""
 
     def __init__(
         self,
@@ -132,12 +132,12 @@ class PowerSpectrumFit(Model):
         super().set_data(data)
         if not parent:
             self.set_bias(data[0])
-        if self.correction is Correction.HARTLAP:  # From Hartlap 2007
-            for d in self.data:
-                hartlap_factor = (d["num_mocks"] - len(d["pk"]) - 2) / (d["num_mocks"] - 1)
-                d["icov"] *= hartlap_factor
-                if d["icov_m_w"][0] is not None:
-                    d["icov_m_w"] = [cov * hartlap_factor for cov in d["icov_m_w"]]
+            if self.correction is Correction.HARTLAP:  # From Hartlap 2007
+                for d in self.data:
+                    hartlap_factor = (d["num_mocks"] - len(d["pk"]) - 2) / (d["num_mocks"] - 1)
+                    d["icov"] *= hartlap_factor
+                    if d["icov_m_w"][0] is not None:
+                        d["icov_m_w"] = [cov * hartlap_factor for cov in d["icov_m_w"]]
 
     def set_bias(self, data, kval=0.2, width=0.4):
         """Sets the bias default value by comparing the data monopole and linear pk
@@ -163,10 +163,10 @@ class PowerSpectrumFit(Model):
             modelpk = splev(kval, splrep(cambpk["ks"], cambpk["pk_lin"]))
             kaiserfac = datapk / modelpk
             f = self.get_default("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
-            b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f ** 2)
+            b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f**2)
             if not self.marg:
                 min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
-                self.set_default(f"b_{{{i+1}}}", b ** 2, min=min_b ** 2, max=max_b ** 2)
+                self.set_default(f"b_{{{i+1}}}", b**2, min=min_b**2, max=max_b**2)
                 self.logger.info(f"Setting default bias to b_{{{i+1}}}={b:0.5f} with {width:0.5f} fractional width")
         if self.param_dict.get("beta") is not None:
             beta, beta_min, beta_max = f / b, (1.0 - width) * f / b, (1.0 + width) * f / b
@@ -174,7 +174,7 @@ class PowerSpectrumFit(Model):
             self.logger.info(f"Setting default RSD parameter to beta={beta:0.5f} with {width:0.5f} fractional width")
 
     def declare_parameters(self):
-        """ Defines model parameters, their bounds and default value. """
+        """Defines model parameters, their bounds and default value."""
         for i in range(self.n_data_bias):
             self.add_param(f"b_{{{i+1}}}", f"$b_{{{i+1}}}$", 0.1, 10.0, 1.0)  # Galaxy bias
         self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.31)  # Cosmology
@@ -222,9 +222,9 @@ class PowerSpectrumFit(Model):
             The mu dependent prefactor for dilating a k value
 
         """
-        musq = self.mu ** 2
+        musq = self.mu**2
         epsilonsq = (1.0 + epsilon) ** 2
-        kprimefac = np.sqrt(musq / epsilonsq ** 2 + (1.0 - musq) * epsilonsq)
+        kprimefac = np.sqrt(musq / epsilonsq**2 + (1.0 - musq) * epsilonsq)
         return kprimefac
 
     @lru_cache(maxsize=32)
@@ -242,7 +242,7 @@ class PowerSpectrumFit(Model):
             The dilated mu values
 
         """
-        musq = self.mu ** 2
+        musq = self.mu**2
         muprime = self.mu / np.sqrt(musq + (1.0 + epsilon) ** 6 * (1.0 - musq))
         return muprime
 
@@ -252,8 +252,8 @@ class PowerSpectrumFit(Model):
             pk2 = None
             pk4 = None
         else:
-            pk2 = 3.0 * simps(pk2d * self.mu ** 2, self.mu)
-            pk4 = 1.125 * (35.0 * simps(pk2d * self.mu ** 4, self.mu, axis=1) - 10.0 * pk2 + 3.0 * pk0)
+            pk2 = 3.0 * simps(pk2d * self.mu**2, self.mu)
+            pk4 = 1.125 * (35.0 * simps(pk2d * self.mu**4, self.mu, axis=1) - 10.0 * pk2 + 3.0 * pk0)
             pk2 = 2.5 * (pk2 - pk0)
         return pk0, pk2, pk4
 
@@ -319,10 +319,10 @@ class PowerSpectrumFit(Model):
             kprime = np.tile(k, (self.nmu, 1)).T if for_corr else np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
             muprime = self.mu if for_corr else self.get_muprime(epsilon)
             if self.recon_type.lower() == "iso":
-                kaiser_prefac = 1.0 + p["beta"] * muprime ** 2 * (1.0 - splev(kprime, splrep(self.camb.ks, self.camb.smoothing_kernel)))
+                kaiser_prefac = 1.0 + p["beta"] * muprime**2 * (1.0 - splev(kprime, splrep(self.camb.ks, self.camb.smoothing_kernel)))
             else:
-                kaiser_prefac = 1.0 + p["beta"] * muprime ** 2
-            pk_smooth = kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin))
+                kaiser_prefac = 1.0 + p["beta"] * muprime**2
+            pk_smooth = kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin))
             if not for_corr:
                 pk_smooth *= p["b"]
 
@@ -395,7 +395,7 @@ class PowerSpectrumFit(Model):
                 poly[0, :, :] = pk
                 for i, pole in enumerate(self.poly_poles):
                     if self.recon:
-                        poly[3 * i + 1 : 3 * (i + 1) + 1, pole] = [kpoly ** 2, np.ones(len(kpoly)), 1.0 / kpoly]
+                        poly[3 * i + 1 : 3 * (i + 1) + 1, pole] = [kpoly**2, np.ones(len(kpoly)), 1.0 / kpoly]
                     else:
                         poly[3 * i + 1 : 3 * (i + 1) + 1, pole] = [kpoly, np.ones(len(kpoly)), 1.0 / kpoly]
 
@@ -403,7 +403,7 @@ class PowerSpectrumFit(Model):
                 poly = np.zeros((1, 6, len(kpoly)))
                 for pole in self.poly_poles:
                     if self.recon:
-                        shape[pole] = p[f"a{{{pole}}}_1"] * k ** 2 + p[f"a{{{pole}}}_2"] + p[f"a{{{pole}}}_3"] / k
+                        shape[pole] = p[f"a{{{pole}}}_1"] * k**2 + p[f"a{{{pole}}}_2"] + p[f"a{{{pole}}}_3"] / k
                     else:
                         shape[pole] = p[f"a{{{pole}}}_1"] * k + p[f"a{{{pole}}}_2"] + p[f"a{{{pole}}}_3"] / k
 
@@ -436,13 +436,13 @@ class PowerSpectrumFit(Model):
 
         if self.isotropic:
             if self.recon:
-                shape = p["a{0}_1"] * k ** 2 + p["a{0}_2"] + p["a{0}_3"] / k + p["a{0}_4"] / (k * k) + p["a{0}_5"] / (k ** 3)
+                shape = p["a{0}_1"] * k**2 + p["a{0}_2"] + p["a{0}_3"] / k + p["a{0}_4"] / (k * k) + p["a{0}_5"] / (k**3)
             else:
-                shape = p["a{0}_1"] * k + p["a{0}_2"] + p["a{0}_3"] / k + p["a{0}_4"] / (k * k) + p["a{0}_5"] / (k ** 3)
+                shape = p["a{0}_1"] * k + p["a{0}_2"] + p["a{0}_3"] / k + p["a{0}_4"] / (k * k) + p["a{0}_5"] / (k**3)
 
             poly = np.zeros((1, len(kpoly)))
             if self.marg:
-                poly = prefac * [pk, kpoly, np.ones(len(kpoly)), 1.0 / kpoly, 1.0 / (kpoly * kpoly), 1.0 / (kpoly ** 3)]
+                poly = prefac * [pk, kpoly, np.ones(len(kpoly)), 1.0 / kpoly, 1.0 / (kpoly * kpoly), 1.0 / (kpoly**3)]
                 if self.recon:
                     poly[1] *= kpoly
             poly = poly[:, None, :]
@@ -459,7 +459,7 @@ class PowerSpectrumFit(Model):
                             np.ones(len(kpoly)),
                             1.0 / kpoly,
                             1.0 / (kpoly * kpoly),
-                            1.0 / (kpoly ** 3),
+                            1.0 / (kpoly**3),
                         ]
                     else:
                         poly[5 * i + 1 : 5 * (i + 1) + 1, pole] = [
@@ -467,7 +467,7 @@ class PowerSpectrumFit(Model):
                             np.ones(len(kpoly)),
                             1.0 / kpoly,
                             1.0 / (kpoly * kpoly),
-                            1.0 / (kpoly ** 3),
+                            1.0 / (kpoly**3),
                         ]
 
             else:
@@ -479,7 +479,7 @@ class PowerSpectrumFit(Model):
                             + p[f"a{{{pole}}}_2"]
                             + p[f"a{{{pole}}}_3"] / kpoly
                             + p[f"a{{{pole}}}_4"] / (kpoly * kpoly)
-                            + p[f"a{{{pole}}}_5"] / (kpoly ** 3)
+                            + p[f"a{{{pole}}}_5"] / (kpoly**3)
                         )
                     else:
                         shape[pole] = (
@@ -487,7 +487,7 @@ class PowerSpectrumFit(Model):
                             + p[f"a{{{pole}}}_2"]
                             + p[f"a{{{pole}}}_3"] / kpoly
                             + p[f"a{{{pole}}}_4"] / (kpoly * kpoly)
-                            + p[f"a{{{pole}}}_5"] / (kpoly ** 3)
+                            + p[f"a{{{pole}}}_5"] / (kpoly**3)
                         )
 
         return shape, poly
