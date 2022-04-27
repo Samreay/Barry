@@ -11,10 +11,41 @@ import numpy as np
 import pandas as pd
 from barry.models.model import Correction
 from barry.utils import weighted_avg_and_cov
-import matplotlib as plt
+import matplotlib.pyplot as plt
 from chainconsumer import ChainConsumer
 
 # Config file to fit the abacus cutsky mock means and individual realisations using Dynesty.
+
+# Convenience function to plot histograms of the errors and cross-correlation coefficients
+def plot_errors(stats, figname):
+
+    nstats = len(stats)
+    means = np.mean(stats, axis=0)
+    covs = np.cov(stats, rowvar=False)
+    corr = covs[0, 1] / np.sqrt(covs[0, 0] * covs[1, 1])
+
+    labels = [r"$\sigma_{\alpha,||}$", r"$\sigma_{\alpha,\perp}$", r"$\rho(\alpha_{||},\alpha_{\perp})$"]
+    colors = ["r", "b", "g"]
+    fig, axes = plt.subplots(figsize=(7, 2), nrows=1, ncols=3, sharey=True, squeeze=False)
+    plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.3)
+    for ax, vals, avgs, stds, l, c in zip(
+        axes.T, np.array(stats).T[2:5], means[2:5], [np.sqrt(covs[0, 0]), np.sqrt(covs[1, 1]), corr], labels, colors
+    ):
+
+        print(ax, vals, avgs, l, c)
+
+        ax[0].hist(vals, 10, color=c, histtype="stepfilled", alpha=0.2, density=False, zorder=0)
+        ax[0].hist(vals, 10, color=c, histtype="step", alpha=1.0, lw=1.3, density=False, zorder=1)
+        ax[0].axvline(avgs, color="k", ls="--", zorder=2)
+        ax[0].axvline(stds, color="k", ls=":", zorder=2)
+        ax[0].set_xlabel(l)
+
+    axes[0, 0].set_ylabel(r"$N_{\mathrm{mocks}}$")
+
+    fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
+
+    return nstats, means, covs, corr
+
 
 if __name__ == "__main__":
 
@@ -119,10 +150,9 @@ if __name__ == "__main__":
             params_dict = model.get_param_dict(chain[max_post])
             for name, val in params_dict.items():
                 model.set_default(name, val)
-            print(params_dict)
 
             # Get some useful properties of the fit, and plot the MAP if it's the mock mean
-            figname = pfn + "_" + extra["name"].replace(" ", "_") + "_bestfit.pdf" if realisation == "mean" else None
+            figname = pfn + "_" + extra["name"].replace(" ", "_") + "_bestfit.pdf" if realisation == "mean" or realisation == "10" else None
             new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname)
 
             # Add the chain or MAP to the Chainconsumer plots
@@ -148,8 +178,7 @@ if __name__ == "__main__":
             )
 
             corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
-            print(fitname, redshift_bin, [np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr])
-            stats[fitname[redshift_bin]].append([np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr])
+            stats[fitname[redshift_bin]].append([mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared])
             output[fitname[redshift_bin]].append(
                 f"{realisation:s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
             )
@@ -163,7 +192,9 @@ if __name__ == "__main__":
                 parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
                 legend=False,
             )
-            print(c[z].analysis.get_correlations())
+
+            # Plot histograms of the errors and r_off
+            nstats, means, covs, corr = plot_errors(stats[fitname[z]], pfn + "_" + fitname[z] + "_errors.pdf")
 
             # Save all the numbers to a file
             with open(dir_name + "/Barry_fit_" + fitname[z] + ".txt", "w") as f:
@@ -172,3 +203,12 @@ if __name__ == "__main__":
                 )
                 for l in output[fitname[z]]:
                     f.write(l + "\n")
+
+                # And now the average of all the individual realisations
+                f.write("# ---------------------------------------------------\n")
+                f.write(
+                    "# <alpha_par>, <alpha_perp>, <sigma_alpha_par>, <sigma_alpha_perp>, <corr_alpha_par_perp>, std_alpha_par, std_alpha_perp, corr_alpha_par_perp, <bf_chi2>\n"
+                )
+                f.write(
+                    f"{means[0]:6.4f}, {means[1]:6.4f}, {means[2]:6.4f}, {means[3]:6.4f}, {means[4]:6.4f}, {np.sqrt(covs[0,0]):6.4f}, {np.sqrt(covs[1,1]):6.4f}, {corr:6.4f}, {means[5]:7.3f}\n"
+                )

@@ -468,7 +468,6 @@ class CorrelationFunctionFit(Model):
             )
 
     def plot(self, params, smooth_params=None, figname=None, title=None, display=True):
-        self.logger.info("Create plot")
         import matplotlib.pyplot as plt
 
         # Ensures we plot the window convolved model
@@ -504,7 +503,7 @@ class CorrelationFunctionFit(Model):
             mod = mod + bband @ polymod
             mod_fit = mod_fit + bband @ polymod_fit
 
-            print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
+            # print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
             new_chi_squared = -2.0 * self.get_chi2_likelihood(
                 self.data[0]["xi"],
                 mod_fit,
@@ -516,7 +515,6 @@ class CorrelationFunctionFit(Model):
             )
             alphas = params["alpha"] if self.isotropic else self.get_alphas(params["alpha"], params["epsilon"])
             dof = len(self.data[0]["xi"]) - len(self.get_active_params()) - len(bband)
-            print(new_chi_squared, dof, alphas)
 
             bband_smooth = self.get_ML_nuisance(
                 self.data[0]["xi"],
@@ -549,6 +547,7 @@ class CorrelationFunctionFit(Model):
         height = 2 + 1.4 * num_rows
 
         if display is True or figname is not None:
+            self.logger.info("Create plot")
 
             fig, axes = plt.subplots(figsize=(9, height), nrows=num_rows, ncols=2, sharex=True, squeeze=False)
             ratio = (height - 1) / height
