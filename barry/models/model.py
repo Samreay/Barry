@@ -109,7 +109,7 @@ class Model(ABC):
         return self.name
 
     def get_unique_cosmo_name(self):
-        """ Unique name used to save out any pregenerated data. """
+        """Unique name used to save out any pregenerated data."""
         return self.__class__.__name__ + "_" + self.camb.filename_unique + ".pkl"
 
     def set_cosmology(self, c, load_pregen=True):
@@ -181,19 +181,19 @@ class Model(ABC):
         return dic.get(name, self.get_default(name))
 
     def get_active_params(self):
-        """ Returns a list of the active (non-fixed) parameters """
+        """Returns a list of the active (non-fixed) parameters"""
         return [p for p in self.params if p.active]
 
     def get_inactive_params(self):
-        """ Returns a list of the inactive (fixed) parameters"""
+        """Returns a list of the inactive (fixed) parameters"""
         return [p for p in self.params if not p.active]
 
     def get_default(self, name):
-        """ Returns the default value of a given parameter name """
+        """Returns the default value of a given parameter name"""
         return self.param_dict[name].default
 
     def set_default(self, name, default, min=None, max=None):
-        """ Sets the default value for a parameter """
+        """Sets the default value for a parameter"""
         self.param_dict[name].default = default
         if min is not None:
             self.param_dict[name].min = min
@@ -201,23 +201,23 @@ class Model(ABC):
             self.param_dict[name].max = max
 
     def get_defaults(self):
-        """ Returns a list of default values for all active parameters """
+        """Returns a list of default values for all active parameters"""
         return [x.default for x in self.get_active_params()]
 
     def get_defaults_dict(self):
-        """ Returns a list of default values for all active parameters """
+        """Returns a list of default values for all active parameters"""
         return {x.name: x.default for x in self.get_active_params()}
 
     def get_labels(self):
-        """ Gets a list of the label for all active parameters """
+        """Gets a list of the label for all active parameters"""
         return [x.label for x in self.get_active_params()]
 
     def get_names(self):
-        """ Get a list of the names for all active parameters """
+        """Get a list of the names for all active parameters"""
         return [x.name for x in self.get_active_params()]
 
     def get_extents(self):
-        """ Gets a list of (min, max) extents for all active parameters """
+        """Gets a list of (min, max) extents for all active parameters"""
         return [(x.min, x.max) for x in self.get_active_params()]
 
     def get_prior(self, params):
@@ -231,7 +231,7 @@ class Model(ABC):
                 return -np.inf
         return 0
 
-    def get_chi2_likelihood(self, data, model, model_odd, icov, icov_m_w, num_mocks=None, num_params=None):
+    def get_chi2_likelihood(self, data, model, model_odd, icov, icov_m_w, num_mocks=None, num_data=None):
         """Computes the chi2 corrected likelihood.
 
         Parameters
@@ -242,8 +242,8 @@ class Model(ABC):
             Inverted covariance matrix.
         num_mocks : int, optional
             The number of mocks used to estimate the covariance. Used for corrections.
-        num_params : int, optional
-            The number of parameters in the model. Used for corrections.
+        num_data : int, optional
+            The length of the data vector. Used for corrections.
 
         Returns
         -------
@@ -269,13 +269,19 @@ class Model(ABC):
                 num_mocks > 0
             ), "Cannot use HARTLAP  or SELLENTIN correction with covariance not determined from mocks. Set correction to Correction.NONE"
 
+        if self.correction is Correction.HARTLAP:  # From Hartlap 2007
+            key = f"{num_mocks}_{num_data}"
+            if key not in self.correction_data:
+                self.correction_data[key] = (num_mocks - num_data - 2.0) / (num_mocks - 1.0)
+            c_p = self.correction_data[key]
+            return -0.5 * chi2 * c_p
         if self.correction is Correction.SELLENTIN:  # From Sellentin 2016
-            key = f"{num_mocks}_{num_params}"
+            key = f"{num_mocks}_{num_data}"
             if key not in self.correction_data:
                 self.correction_data[key] = (
                     loggamma(num_mocks / 2).real
-                    - (num_params / 2) * np.log(np.pi * (num_mocks - 1))
-                    - loggamma((num_mocks - num_params) * 0.5).real
+                    - (num_data / 2) * np.log(np.pi * (num_mocks - 1))
+                    - loggamma((num_mocks - num_data) * 0.5).real
                 )
             c_p = self.correction_data[key]
             log_likelihood = c_p - (num_mocks / 2) * np.log(1 + chi2 / (num_mocks - 1))
@@ -283,7 +289,7 @@ class Model(ABC):
         else:
             return -0.5 * chi2
 
-    def get_chi2_marg_likelihood(self, data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w, num_mocks=None):
+    def get_chi2_marg_likelihood(self, data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w, num_mocks=None, num_data=None):
         """Computes the chi2 corrected likelihood.
 
         Parameters
@@ -345,10 +351,17 @@ class Model(ABC):
                 num_mocks > 0
             ), "Cannot use HARTLAP correction with covariance not determined from mocks. Set correction to Correction.NONE"
 
-        return -0.5 * (chi2 + np.log(np.linalg.det(F2)))
+        if self.correction is Correction.HARTLAP:  # From Hartlap 2007
+            key = f"{num_mocks}_{num_data}"
+            if key not in self.correction_data:
+                self.correction_data[key] = (num_mocks - num_data - 2.0) / (num_mocks - 1.0)
+            c_p = self.correction_data[key]
+            return -0.5 * (chi2 * c_p + np.log(np.linalg.det(F2)) + np.shape(F2)[0] * np.log(c_p))
+        else:
+            return -0.5 * (chi2 + np.log(np.linalg.det(F2)))
 
     def get_chi2_partial_marg_likelihood(
-        self, data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w, num_mocks=None, num_params=None
+        self, data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w, num_mocks=None, num_data=None
     ):
         """Computes the chi2 corrected likelihood.
 
@@ -380,7 +393,7 @@ class Model(ABC):
         model += bband @ marg_model
         model_odd += bband @ marg_model_odd
 
-        return self.get_chi2_likelihood(data, model, model_odd, icov, icov_m_w, num_mocks=num_mocks, num_params=num_params)
+        return self.get_chi2_likelihood(data, model, model_odd, icov, icov_m_w, num_mocks=num_mocks, num_data=num_data)
 
     def get_ML_nuisance(self, data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w):
 
@@ -432,7 +445,7 @@ class Model(ABC):
         return alpha * (1.0 + epsilon) ** 2, alpha / (1.0 + epsilon)
 
     def get_raw_start(self):
-        """ Gets a uniformly distributed starting point between parameter min and max constraints """
+        """Gets a uniformly distributed starting point between parameter min and max constraints"""
         start_random = np.array([uniform(x.min, x.max) for x in self.get_active_params()])
         return start_random
 
@@ -498,7 +511,7 @@ class Model(ABC):
         return None
 
     def get_start(self, num_walkers=1):
-        """ Gets an optimised `n` starting points by calculating a best fit starting point using basinhopping """
+        """Gets an optimised `n` starting points by calculating a best fit starting point using basinhopping"""
         self.logger.info("Getting start position")
 
         def minimise(scale_params):
@@ -532,25 +545,25 @@ class Model(ABC):
         return unscaled_samples
 
     def get_num_dim(self):
-        """ Gets the number of dimensions (active, free parameters) in the model """
+        """Gets the number of dimensions (active, free parameters) in the model"""
         return len(self.get_active_params())
 
     def get_start_scaled(self):
-        """ Gets a scaled (unit hypercube) optimised starting position."""
+        """Gets a scaled (unit hypercube) optimised starting position."""
         return self.scale(self.get_start())
 
     def get_param_dict(self, params):
-        """ Converts a list of parameter values into a dictionary of parameter values """
+        """Converts a list of parameter values into a dictionary of parameter values"""
         ps = OrderedDict([(p.name, v) for p, v in zip(self.get_active_params(), params)])
         ps.update({(p.name, p.default) for p in self.get_inactive_params()})
         return ps
 
     def get_posterior_scaled(self, scaled):
-        """ Gets the posterior using an input scaled (unit hypercube) location in parameter space"""
+        """Gets the posterior using an input scaled (unit hypercube) location in parameter space"""
         return self.get_posterior(self.unscale(scaled))
 
     def get_posterior(self, params):
-        """ Returns the posterior given a list of param values."""
+        """Returns the posterior given a list of param values."""
         ps = self.get_param_dict(params)
         prior = self.get_prior(ps)
         if not np.isfinite(prior):
@@ -561,12 +574,12 @@ class Model(ABC):
         return posterior
 
     def scale(self, params):
-        """ Scale parameter values to the unit hypercube. Assumes uniform priors. If you want other dists and nested sampling, overwrite this """
+        """Scale parameter values to the unit hypercube. Assumes uniform priors. If you want other dists and nested sampling, overwrite this"""
         scaled = np.array([(s - p.min) / (p.max - p.min) for s, p in zip(params, self.get_active_params())])
         return scaled
 
     def unscale(self, scaled):
-        """ Unscale from the unit hypercube to parameter values. Assumes uniform. if you want other dists and nested sampling, overwrite this."""
+        """Unscale from the unit hypercube to parameter values. Assumes uniform. if you want other dists and nested sampling, overwrite this."""
         params = [p.min + s * (p.max - p.min) for s, p in zip(scaled, self.get_active_params())]
         return params
 
@@ -603,7 +616,7 @@ class Model(ABC):
 
     @abstractmethod
     def plot(self, params, smooth_params=None, figname=None):
-        """ Plots the predictions given some input parameter dictionary. """
+        """Plots the predictions given some input parameter dictionary."""
         pass
 
     def sanity_check(self, dataset, niter=200, maxiter=10000, figname=None, plot=True):

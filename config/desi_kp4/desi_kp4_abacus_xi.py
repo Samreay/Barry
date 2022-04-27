@@ -61,14 +61,14 @@ if __name__ == "__main__":
             )
 
             # Create a unique name for the fit and add it to the list
-            name = dataset.name + "mock mean"
+            name = dataset.name + " mock mean"
             fitter.add_model_and_dataset(model, dataset, name=name)
             allnames.append(name)
 
             # Now add the individual realisations to the list
             for i in range(len(dataset.mock_data)):
                 dataset.set_realisation(i)
-                name = dataset.name + f"realisation {i}"
+                name = dataset.name + f" realisation {i}"
                 fitter.add_model_and_dataset(model, dataset, name=name)
                 allnames.append(name)
 
@@ -95,11 +95,13 @@ if __name__ == "__main__":
         c = [ChainConsumer(), ChainConsumer(), ChainConsumer()]
 
         # Loop over all the chains
+        stats = {}
+        output = {}
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number and redshift bin
             redshift_bin = [i for i, zmin in enumerate(zmins) if zmin in extra["name"].split("_")[1]][0]
-            realisation = extra["name"].split()[:-1] if "realisation" in extra["name"] else None
+            realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -111,6 +113,7 @@ if __name__ == "__main__":
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
+            r_s = model.camb.get_data()["r_s"]
             max_post = posterior.argmax()
             params = df.loc[max_post]
             params_dict = model.get_param_dict(chain[max_post])
@@ -119,21 +122,53 @@ if __name__ == "__main__":
             print(params_dict)
 
             # Get some useful properties of the fit, and plot the MAP if it's the mock mean
-            figname = pfn + "_" + extra["name"].replace(" ", "_") + "_bestfit.pdf" if realisation == None else None
+            figname = pfn + "_" + extra["name"].replace(" ", "_") + "_bestfit.pdf" if realisation == "mean" else None
             new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname)
 
-            # Add the chain or MAP to the plot
+            # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
-            if realisation == None:
+            if realisation == "mean":
                 fitname.append(data[0]["name"].replace(" ", "_"))
+                stats[fitname[redshift_bin]] = []
+                output[fitname[redshift_bin]] = []
                 c[redshift_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
             else:
                 c[redshift_bin].add_marker(params, **extra)
 
+            # Compute some summary statistics and add them to a dictionary
+            mean, cov = weighted_avg_and_cov(
+                df[
+                    [
+                        "$\\alpha_\\parallel$",
+                        "$\\alpha_\\perp$",
+                    ]
+                ],
+                weight,
+                axis=0,
+            )
+
+            corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
+            print(fitname, redshift_bin, [np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr])
+            stats[fitname[redshift_bin]].append([np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr])
+            output[fitname[redshift_bin]].append(
+                f"{realisation:s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
+            )
+
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
         for z in range(nzbins[0]):
+            c[z].configure(bins=20)
             c[z].plotter.plot(
                 filename=[pfn + "_" + fitname[z] + "_contour.pdf"],
                 truth=truth,
                 parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+                legend=False,
             )
+            print(c[z].analysis.get_correlations())
+
+            # Save all the numbers to a file
+            with open(dir_name + "/Barry_fit_" + fitname[z] + ".txt", "w") as f:
+                f.write(
+                    "# Realisation, alpha_par, alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
+                )
+                for l in output[fitname[z]]:
+                    f.write(l + "\n")

@@ -132,12 +132,6 @@ class PowerSpectrumFit(Model):
         super().set_data(data)
         if not parent:
             self.set_bias(data[0])
-            if self.correction is Correction.HARTLAP:  # From Hartlap 2007
-                for d in self.data:
-                    hartlap_factor = (d["num_mocks"] - len(d["pk"]) - 2) / (d["num_mocks"] - 1)
-                    d["icov"] *= hartlap_factor
-                    if d["icov_m_w"][0] is not None:
-                        d["icov_m_w"] = [cov * hartlap_factor for cov in d["icov_m_w"]]
 
     def set_bias(self, data, kval=0.2, width=0.4):
         """Sets the bias default value by comparing the data monopole and linear pk
@@ -580,7 +574,7 @@ class PowerSpectrumFit(Model):
             The corrected log likelihood
         """
         num_mocks = d["num_mocks"]
-        num_params = len(self.get_active_params())
+        num_data = len(d["pk"])
 
         pk_model, pk_model_odd, poly_model, poly_model_odd, mask = self.get_model(p, d, smooth=self.smooth, data_name=d["name"])
 
@@ -607,15 +601,29 @@ class PowerSpectrumFit(Model):
                 d["icov"],
                 d["icov_m_w"],
                 num_mocks=num_mocks,
-                num_params=num_params,
+                num_data=num_data,
             )
         elif self.marg_type == "full":
             return self.get_chi2_marg_likelihood(
-                d["pk"], pk_model, pk_model_odd, poly_model_fit, poly_model_fit_odd, d["icov"], d["icov_m_w"], num_mocks=num_mocks
+                d["pk"],
+                pk_model,
+                pk_model_odd,
+                poly_model_fit,
+                poly_model_fit_odd,
+                d["icov"],
+                d["icov_m_w"],
+                num_mocks=num_mocks,
+                num_data=num_data,
             )
         else:
             return self.get_chi2_likelihood(
-                d["pk"], pk_model, pk_model_odd, d["icov"], d["icov_m_w"], num_mocks=num_mocks, num_params=num_params
+                d["pk"],
+                pk_model,
+                pk_model_odd,
+                d["icov"],
+                d["icov_m_w"],
+                num_mocks=num_mocks,
+                num_data=num_data,
             )
 
     def deal_with_ndata(self, params, i):
@@ -805,7 +813,7 @@ class PowerSpectrumFit(Model):
                 self.data[0]["icov"],
                 self.data[0]["icov_m_w"],
                 num_mocks=self.data[0]["num_mocks"],
-                num_params=len(self.get_active_params()) + len(bband),
+                num_data=len(self.data[0]["pk"]),
             )
             alphas = params["alpha"] if self.isotropic else self.get_alphas(params["alpha"], params["epsilon"])
             dof = len(self.data[0]["pk"]) - len(self.get_active_params()) - len(bband)
