@@ -181,7 +181,7 @@ if __name__ == "__main__":
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
         c.configure(bins=20)
         c.plotter.plot(
-            filename=[pfn + "_" + fitname[z] + "_contour.pdf"],
+            filename=[pfn + "_" + fitname + "_contour.pdf"],
             truth=truth,
             parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
             legend=False,

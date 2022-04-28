@@ -32,8 +32,6 @@ def plot_errors(stats, figname):
         axes.T, np.array(stats).T[2:5], means[2:5], [np.sqrt(covs[0, 0]), np.sqrt(covs[1, 1]), corr], labels, colors
     ):
 
-        print(ax, vals, avgs, l, c)
-
         ax[0].hist(vals, 10, color=c, histtype="stepfilled", alpha=0.2, density=False, zorder=0)
         ax[0].hist(vals, 10, color=c, histtype="step", alpha=1.0, lw=1.3, density=False, zorder=1)
         ax[0].axvline(avgs, color="k", ls="--", zorder=2)
