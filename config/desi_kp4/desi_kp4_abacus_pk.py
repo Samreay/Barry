@@ -50,8 +50,8 @@ if __name__ == "__main__":
     # Get the relative file paths and names
     pfn, dir_name, file = setup(__file__)
 
-    # Set up the Fitting class and Dynesty sampler with 100 live points.
-    fitter = Fitter(dir_name, remove_output=True)
+    # Set up the Fitting class and Dynesty sampler with 250 live points.
+    fitter = Fitter(dir_name, remove_output=False)
     sampler = DynestySampler(temp_dir=dir_name, nlive=250)
 
     mocktypes = ["abacus_cutsky"]
