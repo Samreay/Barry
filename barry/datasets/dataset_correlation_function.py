@@ -160,8 +160,8 @@ class CorrelationFunction_DESI_KP4(CorrelationFunction):
 
         reds = {"lrg": [["0.4", "0.6", 0.5], ["0.6", "0.8", 0.7], ["0.8", "1.1", 0.95]]}
 
-        if mocktype.lower() not in ["abacus_cubicbox", "abacus_cutsky", "ezmock_cutsky"]:
-            raise NotImplementedError("mocktype not recognised, must be abacus_cubic, abacus_cutsky or ezmock_cutsky")
+        if mocktype.lower() not in ["abacus_cubicbox", "abacus_cutsky", "ezmock_cubicbox", "ezmock_cutsky"]:
+            raise NotImplementedError("mocktype not recognised, must be abacus_cubic, abacus_cutsky, ezmock_cubicbox or ezmock_cutsky")
 
         if tracer.lower() not in reds.keys():
             raise NotImplementedError(f"tracer not recognised, must be in {reds.keys()}")
@@ -177,7 +177,7 @@ class CorrelationFunction_DESI_KP4(CorrelationFunction):
         self.nsmoothtypes = 1
 
         datafile = "desi_kp4_" + mocktype + "_xi_" + tracer
-        if mocktype.lower() == "abacus_cubicbox":
+        if "cubicbox" in mocktype.lower():
             datafile += ".pkl"
         else:
             zmin = reds[tracer][redshift_bin - 1][0]
