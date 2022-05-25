@@ -275,7 +275,7 @@ class Model(ABC):
                 self.correction_data[key] = (num_mocks - num_data - 2.0) / (num_mocks - 1.0)
             c_p = self.correction_data[key]
             return -0.5 * chi2 * c_p
-        if self.correction is Correction.SELLENTIN:  # From Sellentin 2016
+        elif self.correction is Correction.SELLENTIN:  # From Sellentin 2016
             key = f"{num_mocks}_{num_data}"
             if key not in self.correction_data:
                 self.correction_data[key] = (
@@ -642,7 +642,9 @@ class Model(ABC):
         print("Starting model optimisation. This may take some time.")
         p, minv = self.optimize()
 
-        print(f"Model optimisation with value {minv:0.3f} has parameters are {dict(p)}")
+        print(f"Model optimisation with value {minv:0.3f} has parameters {dict(p)}")
+        if not self.isotropic:
+            print(f"\\alpha_{{||}}, \\alpha_{{\\perp}} = ", self.get_alphas(p["alpha"], p["epsilon"]))
 
         if plot:
             print("Plotting model and data")

@@ -66,6 +66,7 @@ if __name__ == "__main__":
         res = {f.lower(): getdf(f) for f in files}
         print([k for k, v in res.items() if "post_recon" in k and "patchy" in k])
         split = {
+            "n_data": 1,
             "pre-recon data": [v for k, v in res.items() if "pre_recon" in k and "patchy" not in k],
             "post-recon data": None,
             "pre-recon mocks": [v for k, v in res.items() if "pre_recon" in k and "patchy" in k],

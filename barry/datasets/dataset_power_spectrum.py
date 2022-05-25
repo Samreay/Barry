@@ -34,6 +34,7 @@ class PowerSpectrum_SDSS_DR12(PowerSpectrum):
 
         self.nredshift_bins = 3
         self.nsmoothtypes = 1
+        self.ndata = 2 if galactic_cap.lower() == "both" else 1
 
         if redshift_bin not in [1, 2, 3]:
             raise NotImplementedError("Redshift bin for SDSS_DR12 must be 1, 2 or 3, corresponding to 0.38, 0.51 and 0.61 respectively")
@@ -96,12 +97,13 @@ class PowerSpectrum_eBOSS_LRGpCMASS(PowerSpectrum):
 
         self.nredshift_bins = 1
         self.nsmoothtypes = 1
+        self.ndata = 2 if galactic_cap.lower() == "both" else 1
 
-        if galactic_cap.lower() not in ["ngc", "sgc"]:
-            raise NotImplementedError("Galactic cap for SDSS_DR12 must be NGC or SGC")
+        if galactic_cap.lower() not in ["ngc", "sgc", "both"]:
+            raise NotImplementedError("Galactic cap for eBOSS_LRGpCMASS must be ngc, sgc or both")
 
         if any(pole in [1, 3] for pole in fit_poles):
-            raise NotImplementedError("Only even multipoles included in SDSS_DR12")
+            raise NotImplementedError("Only even multipoles included in eBOSS_LRGpCMASS")
 
         if realisation is not None:
             if not isinstance(realisation, int):
@@ -153,6 +155,7 @@ class PowerSpectrum_Beutler2019(PowerSpectrum):
 
         self.nredshift_bins = 2
         self.nsmoothtypes = 1
+        self.ndata = 1
 
         if recon is not None:
             raise NotImplementedError("Post-recon data not available for Beutler2019 data")
@@ -212,6 +215,7 @@ class PowerSpectrum_DESIMockChallenge_Post(PowerSpectrum):
 
         self.nredshift_bins = 1
         self.nsmoothtypes = 4
+        self.ndata = 1
 
         if covtype.lower() not in ["fix", "nonfix", "analytic"]:
             raise NotImplementedError("covtype not recognised, must be fix, nonfix or analytic")
@@ -272,6 +276,7 @@ class PowerSpectrum_DESILightcone_Mocks_Recon(PowerSpectrum):
 
         self.nredshift_bins = 1
         self.nsmoothtypes = 1
+        self.ndata = 1
 
         types = [
             "julian_reciso",
@@ -348,6 +353,7 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
 
         self.nredshift_bins = len(reds[tracer.lower()])
         self.nsmoothtypes = 1
+        self.ndata = 1
 
         datafile = "desi_kp4_" + mocktype + "_pk_" + tracer
         if "cubicbox" in mocktype.lower():
@@ -387,7 +393,7 @@ if __name__ == "__main__":
         # Plot the data and mock average for the SDSS_DR12 spectra
         for j, recon in enumerate(["iso", None]):
             for galactic_cap in ["both", "ngc", "sgc"]:
-                for redshift_bin in [1]:
+                for redshift_bin in [1, 2, 3]:
                     dataset = PowerSpectrum_SDSS_DR12(
                         redshift_bin=redshift_bin,
                         galactic_cap=galactic_cap,
@@ -404,15 +410,26 @@ if __name__ == "__main__":
                         color = ["r", "b", "g"]
                         fmt = "o" if i == 0 else "None"
                         ls = "None" if i == 0 else "-"
-                        yerr = (
-                            [
-                                data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[0 : len(data[0]["ks"])],
-                                data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["ks"]) : 3 * len(data[0]["ks"])],
-                                data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[4 * len(data[0]["ks"]) : 5 * len(data[0]["ks"])],
-                            ]
-                            if i == 0
-                            else [None, None, None]
-                        )
+                        if galactic_cap.lower() == "both":
+                            yerr = (
+                                [
+                                    data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[0 : len(data[0]["ks"])],
+                                    data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[4 * len(data[0]["ks"]) : 5 * len(data[0]["ks"])],
+                                    data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[8 * len(data[0]["ks"]) : 9 * len(data[0]["ks"])],
+                                ]
+                                if i == 0
+                                else [None, None, None]
+                            )
+                        else:
+                            yerr = (
+                                [
+                                    data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[0 : len(data[0]["ks"])],
+                                    data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[2 * len(data[0]["ks"]) : 3 * len(data[0]["ks"])],
+                                    data[0]["ks"] * np.sqrt(np.diag(data[0]["cov"]))[4 * len(data[0]["ks"]) : 5 * len(data[0]["ks"])],
+                                ]
+                                if i == 0
+                                else [None, None, None]
+                            )
                         for m, pk in enumerate(["pk0", "pk2", "pk4"]):
                             plt.errorbar(
                                 data[0]["ks"],
@@ -428,7 +445,6 @@ if __name__ == "__main__":
                                 plt.errorbar(
                                     data[0]["ks"],
                                     data[0]["ks"] * data[0][pk][1],
-                                    yerr=yerr[m],
                                     marker=fmt,
                                     ls="None",
                                     mfc="w",

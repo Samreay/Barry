@@ -31,50 +31,40 @@ if __name__ == "__main__":
 
     datasets = [
         PowerSpectrum_SDSS_DR12(
-            redshift_bin=1, galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
+            redshift_bin=1, galactic_cap="both", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
         ),
         PowerSpectrum_SDSS_DR12(
-            redshift_bin=1, galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
-        ),
-        PowerSpectrum_SDSS_DR12(
-            redshift_bin=2, galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
-        ),
-        PowerSpectrum_SDSS_DR12(
-            redshift_bin=2, galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
+            redshift_bin=2, galactic_cap="both", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
         ),
         PowerSpectrum_eBOSS_LRGpCMASS(
-            galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.02, max_k=0.30, num_mocks=999
-        ),
-        PowerSpectrum_eBOSS_LRGpCMASS(
-            galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.02, max_k=0.30, num_mocks=999
+            galactic_cap="both", recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.02, max_k=0.30, num_mocks=999
         ),
     ]
 
     pre_recon_datasets = [
         PowerSpectrum_SDSS_DR12(
-            redshift_bin=1, galactic_cap="ngc", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999
+            redshift_bin=1, galactic_cap="both", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999
         ),
         PowerSpectrum_SDSS_DR12(
-            redshift_bin=1, galactic_cap="sgc", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999
-        ),
-        PowerSpectrum_SDSS_DR12(
-            redshift_bin=2, galactic_cap="ngc", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999
-        ),
-        PowerSpectrum_SDSS_DR12(
-            redshift_bin=2, galactic_cap="sgc", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999
+            redshift_bin=2, galactic_cap="both", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999
         ),
         PowerSpectrum_eBOSS_LRGpCMASS(
-            galactic_cap="ngc", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999
-        ),
-        PowerSpectrum_eBOSS_LRGpCMASS(
-            galactic_cap="sgc", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999
+            galactic_cap="both", recon=None, isotropic=False, fit_poles=[0, 2, 4], min_k=0.0, max_k=0.30, num_mocks=999
         ),
     ]
 
     # Standard Beutler Model
-    model = PowerBeutler2017(recon="iso", isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.HARTLAP, marg="full")
+    model = PowerBeutler2017(
+        recon="iso", isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.HARTLAP, marg="full", n_data=2
+    )
     model4 = PowerBeutler2017(
-        recon="iso", isotropic=False, fix_params=["om"], poly_poles=[0, 2, 4], correction=Correction.HARTLAP, marg="full"
+        recon="iso",
+        isotropic=False,
+        fix_params=["om"],
+        poly_poles=[0, 2, 4],
+        correction=Correction.HARTLAP,
+        marg="full",
+        n_data=2,
     )
 
     for d in datasets:

@@ -157,11 +157,11 @@ class PowerSpectrum(Dataset, ABC):
                 if pole not in self.fit_poles:
                     w_mask_poles[i] = np.zeros(len(self.w_mask), dtype=bool)
             w_mask_poles = np.concatenate(w_mask_poles)
-            #self.icov_w = self.w_transform[w_mask_poles, :].T @ self.icov
-            #self.icov_mw = self.m_w_transform[w_mask_poles, :].T @ self.icov
-            #self.icov_ww = self.icov_w @ self.w_transform[w_mask_poles, :]
-            #self.icov_mww = self.icov_mw @ self.w_transform[w_mask_poles, :]
-            #self.icov_mwmw = self.icov_mw @ self.m_w_transform[w_mask_poles, :]
+            # self.icov_w = self.w_transform[w_mask_poles, :].T @ self.icov
+            # self.icov_mw = self.m_w_transform[w_mask_poles, :].T @ self.icov
+            # self.icov_ww = self.icov_w @ self.w_transform[w_mask_poles, :]
+            # self.icov_mww = self.icov_mw @ self.w_transform[w_mask_poles, :]
+            # self.icov_mwmw = self.icov_mw @ self.m_w_transform[w_mask_poles, :]
             self.m_w_mask = w_mask_poles
 
     def _compute_cov(self):
