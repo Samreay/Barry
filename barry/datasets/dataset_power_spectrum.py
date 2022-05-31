@@ -335,7 +335,7 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
 
         reds = {"lrg": [["0.4", "0.6", 0.5], ["0.6", "0.8", 0.7], ["0.8", "1.1", 0.95]]}
 
-        if mocktype.lower() not in ["abacus_cubicbox", "abacus_cutsky", "ezmock_cubicbox", "ezmock_cutsky"]:
+        if mocktype.lower() not in ["abacus_analytic", "abacus_cubicbox", "abacus_cutsky", "ezmock_cubicbox", "ezmock_cutsky"]:
             raise NotImplementedError("mocktype not recognised, must be abacus_cubic, abacus_cutsky, ezmock_cubicbox or ezmock_cutsky")
 
         if tracer.lower() not in reds.keys():
@@ -347,9 +347,6 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
         if realisation is not None:
             if not isinstance(realisation, int):
                 raise NotImplementedError("No data yet in DESI KP4, set realisation = None or an integer mock")
-
-        if recon is not None:
-            raise NotImplementedError("Only pre-reconstruction currently included in DESI KP4, set recon = None")
 
         self.nredshift_bins = len(reds[tracer.lower()])
         self.nsmoothtypes = 1
