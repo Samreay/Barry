@@ -64,44 +64,48 @@ if __name__ == "__main__":
         # Loop over the available redshift bins for each mock type
         for z in range(redshift_bins):
 
-            # Create the data. We'll fit mono-, quad- and hexadecapole between k=0.02 and 0.3.
-            # First load up mock mean and add it to the fitting list. Use only the diagonal parts
-            # of the covariance matrix
-            dataset = CorrelationFunction_DESI_KP4(
-                recon=None,
-                fit_poles=[0, 2, 4],
-                min_dist=50.0,
-                max_dist=170.0,
-                fake_diag=True,
-                mocktype=mocktype,
-                redshift_bin=z + 1,
-                realisation=None,
-                num_mocks=1000,
-            )
+            # Loop over pre- and post-recon measurements
+            for recon in [None]:
 
-            # Set up the model we'll use. Fix Omega_m and beta. 5 polynomials (default)
-            # for each of the fitted multipoles. Use full analytic marginalisation for speed
-            # Apply the Hartlap correction to the covariance matrix.
-            model = CorrBeutler2017(
-                recon=dataset.recon,
-                isotropic=dataset.isotropic,
-                marg="full",
-                fix_params=["om", "beta"],
-                poly_poles=dataset.fit_poles,
-                correction=Correction.HARTLAP,
-            )
+                # Create the data. We'll fit mono-, quad- and hexadecapole between k=0.02 and 0.3.
+                # First load up mock mean and add it to the fitting list. Use only the diagonal parts
+                # of the covariance matrix
+                dataset = CorrelationFunction_DESI_KP4(
+                    recon=recon,
+                    fit_poles=[0, 2],
+                    min_dist=50.0,
+                    max_dist=170.0,
+                    mocktype=mocktype,
+                    redshift_bin=z + 1,
+                    realisation=None,
+                    num_mocks=1000,
+                )
 
-            # Create a unique name for the fit and add it to the list
-            name = dataset.name + " mock mean"
-            fitter.add_model_and_dataset(model, dataset, name=name)
-            allnames.append(name)
+                # Set up the model we'll use. Fix Omega_m and beta. 5 polynomials (default)
+                # for each of the fitted multipoles. Use full analytic marginalisation for speed
+                # Apply the Hartlap correction to the covariance matrix.
+                model = CorrBeutler2017(
+                    recon=dataset.recon,
+                    isotropic=dataset.isotropic,
+                    marg="full",
+                    fix_params=["om", "beta"],
+                    poly_poles=dataset.fit_poles,
+                    correction=Correction.HARTLAP,
+                )
 
-            # Now add the individual realisations to the list
-            for i in range(len(dataset.mock_data)):
-                dataset.set_realisation(i)
-                name = dataset.name + f" realisation {i}"
+                # Create a unique name for the fit and add it to the list
+                name = dataset.name + " mock mean"
                 fitter.add_model_and_dataset(model, dataset, name=name)
                 allnames.append(name)
+
+                model.sanity_check(dataset)
+
+                # Now add the individual realisations to the list
+                for i in range(len(dataset.mock_data)):
+                    dataset.set_realisation(i)
+                    name = dataset.name + f" realisation {i}"
+                    fitter.add_model_and_dataset(model, dataset, name=name)
+                    allnames.append(name)
 
     # Submit all the jobs to NERSC. We have quite a few (78), so we'll
     # only assign 1 walker (processor) to each. Note that this will only run if the

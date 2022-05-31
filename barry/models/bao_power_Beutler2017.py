@@ -176,7 +176,6 @@ class PowerBeutler2017(PowerSpectrumFit):
 
             if for_corr:
                 poly = None
-                kprime = k
             else:
                 shape, poly = (
                     self.add_three_poly(k, k, p, np.ones(len(k)), pk)
