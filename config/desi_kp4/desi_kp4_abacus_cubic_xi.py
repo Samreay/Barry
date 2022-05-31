@@ -121,7 +121,8 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
-        c = ChainConsumer()
+        fitname = []
+        c = [ChainConsumer(), ChainConsumer()]
 
         # Loop over all the chains
         stats = {}
@@ -129,6 +130,7 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number and redshift bin
+            recon_bin = 0 if "Prerecon" in extra["name"] else 1
             realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
 
             # Store the chain in a dictionary with parameter names
@@ -149,18 +151,22 @@ if __name__ == "__main__":
                 model.set_default(name, val)
 
             # Get some useful properties of the fit, and plot the MAP model against the data if it's the mock mean
-            figname = pfn + "_" + extra["name"].replace(" ", "_") + "_bestfit.png" if realisation == "mean" or realisation == "10" else None
+            figname = (
+                "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
+                if realisation == "mean" or realisation == "10"
+                else None
+            )
             new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname)
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
             if realisation == "mean":
-                fitname = data[0]["name"].replace(" ", "_")
-                stats[fitname] = []
-                output[fitname] = []
-                c.add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+                fitname.append(data[0]["name"].replace(" ", "_"))
+                stats[fitname[recon_bin]] = []
+                output[fitname[recon_bin]] = []
+                c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
             else:
-                c.add_marker(params, **extra)
+                c[recon_bin].add_marker(params, **extra)
 
             # Compute some summary statistics and add them to a dictionary
             mean, cov = weighted_avg_and_cov(
@@ -177,36 +183,41 @@ if __name__ == "__main__":
             )
 
             corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
-            stats[fitname].append([mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared, mean[2], mean[3]])
-            output[fitname].append(
+            stats[fitname[recon_bin]].append(
+                [mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared, mean[2], mean[3]]
+            )
+            output[fitname[recon_bin]].append(
                 f"{realisation:s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {mean[3]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
             )
 
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
-        c.configure(bins=20)
-        c.plotter.plot(
-            filename=[pfn + "_" + fitname + "_contour.png"],
-            truth=truth,
-            parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
-            legend=False,
-        )
-
-        # Plot histograms of the errors and r_off
-        nstats, means, covs, corr = plot_errors(stats[fitname], pfn + "_" + fitname + "_errors.png")
-
-        # Save all the numbers to a file
-        with open(dir_name + "/Barry_fit_" + fitname + ".txt", "w") as f:
-            f.write(
-                "# Realisation, alpha_par, alpha_perp, Sigma_nl_par, Sigma_nl_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
+        for recon_bin in range(1):
+            c[recon_bin].configure(bins=20)
+            c[recon_bin].plotter.plot(
+                filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour.png"],
+                truth=truth,
+                parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+                legend=False,
             )
-            for l in output[fitname]:
-                f.write(l + "\n")
 
-            # And now the average of all the individual realisations
-            f.write("# ---------------------------------------------------\n")
-            f.write(
-                "# <alpha_par>, <alpha_perp>, <Sigma_nl_par>, <Sigma_nl_perp>, <sigma_alpha_par>, <sigma_alpha_perp>, <corr_alpha_par_perp>, std_alpha_par, std_alpha_perp, corr_alpha_par_perp, <bf_chi2>\n"
+            # Plot histograms of the errors and r_off
+            nstats, means, covs, corr = plot_errors(
+                stats[fitname[recon_bin]], "/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_errors.png"
             )
-            f.write(
-                f"{means[0]:6.4f}, {means[1]:6.4f}, {means[6]:6.4f}, {means[7]:6.4f}, {means[2]:6.4f}, {means[3]:6.4f}, {means[4]:6.4f}, {np.sqrt(covs[0, 0]):6.4f}, {np.sqrt(covs[1, 1]):6.4f}, {corr:6.4f}, {means[5]:7.3f}\n"
-            )
+
+            # Save all the numbers to a file
+            with open(dir_name + "/Barry_fit_" + fitname[recon_bin] + ".txt", "w") as f:
+                f.write(
+                    "# Realisation, alpha_par, alpha_perp, Sigma_nl_par, Sigma_nl_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
+                )
+                for l in output[fitname[recon_bin]]:
+                    f.write(l + "\n")
+
+                # And now the average of all the individual realisations
+                f.write("# ---------------------------------------------------\n")
+                f.write(
+                    "# <alpha_par>, <alpha_perp>, <Sigma_nl_par>, <Sigma_nl_perp>, <sigma_alpha_par>, <sigma_alpha_perp>, <corr_alpha_par_perp>, std_alpha_par, std_alpha_perp, corr_alpha_par_perp, <bf_chi2>\n"
+                )
+                f.write(
+                    f"{means[0]:6.4f}, {means[1]:6.4f}, {means[6]:6.4f}, {means[7]:6.4f}, {means[2]:6.4f}, {means[3]:6.4f}, {means[4]:6.4f}, {np.sqrt(covs[0, 0]):6.4f}, {np.sqrt(covs[1, 1]):6.4f}, {corr:6.4f}, {means[5]:7.3f}\n"
+                )

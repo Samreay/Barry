@@ -764,7 +764,6 @@ class PowerSpectrumFit(Model):
         return pk_model, pk_model_odd, poly_model, poly_model_odd, mask
 
     def plot(self, params, smooth_params=None, figname=None, title=None, display=True):
-        self.logger.info("Create plot")
         import matplotlib.pyplot as plt
 
         # Ensures we plot the window convolved model

@@ -64,44 +64,47 @@ if __name__ == "__main__":
         # Loop over the available redshift bins for each mock type
         for z in range(redshift_bins):
 
-            # Create the data. We'll fit mono-, quad- and hexadecapole between k=0.02 and 0.3.
-            # First load up mock mean and add it to the fitting list.
-            dataset = CorrelationFunction_DESI_KP4(
-                recon=None,
-                fit_poles=[0, 2, 4],
-                min_dist=50.0,
-                max_dist=170.0,
-                mocktype=mocktype,
-                redshift_bin=z + 1,
-                realisation=None,
-                num_mocks=1000,
-            )
+            # Loop over pre- and post-recon measurements
+            for recon in [None, "sym"]:
 
-            # Set up the model we'll use. Fix Omega_m and beta. 5 polynomials (default)
-            # for each of the fitted multipoles. Use full analytic marginalisation for speed
-            # Apply the Hartlap correction to the covariance matrix.
-            model = CorrBeutler2017(
-                recon=dataset.recon,
-                isotropic=dataset.isotropic,
-                marg="full",
-                fix_params=["om", "beta"],
-                poly_poles=dataset.fit_poles,
-                correction=Correction.HARTLAP,
-            )
+                # Create the data. We'll fit mono-, quad- and hexadecapole between k=0.02 and 0.3.
+                # First load up mock mean and add it to the fitting list.
+                dataset = CorrelationFunction_DESI_KP4(
+                    recon=None,
+                    fit_poles=[0, 2],
+                    min_dist=50.0,
+                    max_dist=170.0,
+                    mocktype=mocktype,
+                    redshift_bin=z + 1,
+                    realisation=None,
+                    num_mocks=1000,
+                )
 
-            # Create a unique name for the fit and add it to the list
-            name = dataset.name + " mock mean"
-            fitter.add_model_and_dataset(model, dataset, name=name)
-            allnames.append(name)
+                # Set up the model we'll use. Fix Omega_m and beta. 5 polynomials (default)
+                # for each of the fitted multipoles. Use full analytic marginalisation for speed
+                # Apply the Hartlap correction to the covariance matrix.
+                model = CorrBeutler2017(
+                    recon=dataset.recon,
+                    isotropic=dataset.isotropic,
+                    marg="full",
+                    fix_params=["om", "beta"],
+                    poly_poles=dataset.fit_poles,
+                    correction=Correction.HARTLAP,
+                )
 
-            # Now add the individual realisations to the list
-            for i in range(len(dataset.mock_data)):
-                dataset.set_realisation(i)
-                name = dataset.name + f" realisation {i}"
+                # Create a unique name for the fit and add it to the list
+                name = dataset.name + " mock mean"
                 fitter.add_model_and_dataset(model, dataset, name=name)
                 allnames.append(name)
 
-    # Submit all the jobs to NERSC. We have quite a few (78), so we'll
+                # Now add the individual realisations to the list
+                for i in range(len(dataset.mock_data)):
+                    dataset.set_realisation(i)
+                    name = dataset.name + f" realisation {i}"
+                    fitter.add_model_and_dataset(model, dataset, name=name)
+                    allnames.append(name)
+
+    # Submit all the jobs to NERSC. We have quite a few (156), so we'll
     # only assign 1 walker (processor) to each. Note that this will only run if the
     # directory is empty (i.e., it won't overwrite existing chains)
     fitter.set_sampler(sampler)
@@ -130,6 +133,7 @@ if __name__ == "__main__":
 
             # Get the realisation number and redshift bin
             redshift_bin = [i for i, zmin in enumerate(zmins) if zmin in extra["name"].split("_")[1]][0]
+            recon_bin = redshift_bin if "Prerecon" in extra["name"] else redshift_bin + len(zmins)
             realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
 
             # Store the chain in a dictionary with parameter names
@@ -150,18 +154,22 @@ if __name__ == "__main__":
                 model.set_default(name, val)
 
             # Get some useful properties of the fit, and plot the MAP if it's the mock mean
-            figname = pfn + "_" + extra["name"].replace(" ", "_") + "_bestfit.png" if realisation == "mean" or realisation == "10" else None
+            figname = (
+                "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
+                if realisation == "mean" or realisation == "10"
+                else None
+            )
             new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname)
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
             if realisation == "mean":
                 fitname.append(data[0]["name"].replace(" ", "_"))
-                stats[fitname[redshift_bin]] = []
-                output[fitname[redshift_bin]] = []
-                c[redshift_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+                stats[fitname[recon_bin]] = []
+                output[fitname[recon_bin]] = []
+                c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
             else:
-                c[redshift_bin].add_marker(params, **extra)
+                c[recon_bin].add_marker(params, **extra)
 
             # Compute some summary statistics and add them to a dictionary
             mean, cov = weighted_avg_and_cov(
@@ -178,25 +186,25 @@ if __name__ == "__main__":
             )
 
             corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
-            stats[fitname[redshift_bin]].append(
+            stats[fitname[recon_bin]].append(
                 [mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared, mean[2], mean[3]]
             )
-            output[fitname[redshift_bin]].append(
+            output[fitname[recon_bin]].append(
                 f"{realisation:s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {mean[3]:6.4f}, {np.sqrt(cov[0,0]):6.4f}, {np.sqrt(cov[1,1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
             )
 
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
-        for z in range(nzbins[0]):
+        for z in range(6):
             c[z].configure(bins=20)
             c[z].plotter.plot(
-                filename=[pfn + "_" + fitname[z] + "_contour.png"],
+                filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[z] + "_contour.png"],
                 truth=truth,
                 parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
                 legend=False,
             )
 
             # Plot histograms of the errors and r_off
-            nstats, means, covs, corr = plot_errors(stats[fitname[z]], pfn + "_" + fitname[z] + "_errors.png")
+            nstats, means, covs, corr = plot_errors(stats[fitname[z]], "/".join(pfn.split("/")[:-1]) + "/" + fitname[z] + "_errors.png")
 
             # Save all the numbers to a file
             with open(dir_name + "/Barry_fit_" + fitname[z] + ".txt", "w") as f:
