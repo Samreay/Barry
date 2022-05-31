@@ -180,12 +180,9 @@ if __name__ == "__main__":
 
             # Plots for each patch
             for label in [
-                "BOSS_DR12_Pk_ngc_z1",
-                "BOSS_DR12_Pk_sgc_z1",
-                "BOSS_DR12_Pk_ngc_z2",
-                "BOSS_DR12_Pk_sgc_z2",
-                "eBOSS_DR16_LRGpCMASS_Pk_NGC",
-                "eBOSS_DR16_LRGpCMASS_Pk_SGC",
+                "BOSS_DR12_Pk_ngc+sgc_z1",
+                "BOSS_DR12_Pk_ngc+sgc_z2",
+                "eBOSS_DR16_LRGpCMASS_Pk_ngc+sgc",
             ]:
                 df = res.drop(res[res["patch"] != label].index)
                 fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True)
@@ -238,20 +235,16 @@ if __name__ == "__main__":
                 fig.savefig(pfn + "_" + label + "_alphacomp.pdf", bbox_inches="tight", dpi=300, transparent=True)
 
         # Plot correlation coefficients
-        if False:
+        if True:
             from scipy.interpolate import interp1d
 
             # Plots for each patch
             for label in [
-                "BOSS_DR12_Pk_ngc_z1",
-                "BOSS_DR12_Pk_sgc_z1",
-                "BOSS_DR12_Pk_ngc_z2",
-                "BOSS_DR12_Pk_sgc_z2",
-                "eBOSS_DR16_LRGpCMASS_Pk_NGC",
-                "eBOSS_DR16_LRGpCMASS_Pk_SGC",
+                "BOSS_DR12_Pk_ngc+sgc_z1",
+                "BOSS_DR12_Pk_ngc+sgc_z2",
+                "eBOSS_DR16_LRGpCMASS_Pk_ngc+sgc",
             ]:
                 df = res.drop(res[res["patch"] != label].index).reset_index()
-                print(df)
 
                 data = np.array(
                     [
@@ -259,9 +252,9 @@ if __name__ == "__main__":
                             [
                                 [df["alpha_perp"][i]],
                                 [df["alpha_par"][i]],
-                                df["pk0"].to_numpy()[i],
-                                df["pk2"].to_numpy()[i],
-                                df["pk4"].to_numpy()[i],
+                                np.concatenate(df["pk0"].to_numpy()[i]),
+                                np.concatenate(df["pk2"].to_numpy()[i]),
+                                np.concatenate(df["pk4"].to_numpy()[i]),
                             ]
                         )
                         for i in range(len(df))
@@ -275,27 +268,33 @@ if __name__ == "__main__":
 
                 labels = ["alpha_perp", "alpha_par"]
                 str_labels = [r"$\alpha_{\perp}$", r"$\alpha_{||}$"]
+                caps = [r"$\mathrm{NGC}$", r"$\mathrm{SGC}$"]
 
-                fig, axes = plt.subplots(1, 2, figsize=(6, 2.5), sharey=True)
+                fig, axes = plt.subplots(2, 2, figsize=(6, 6), sharey=True)
                 for i, (label1, str_label1) in enumerate(zip(labels, str_labels)):
+                    for j, cap in enumerate(caps):
 
-                    ax = axes[i]
-                    print(label1)
+                        ax = axes[i, j]
+                        print(i, j, label1, cap)
 
-                    ax.plot(df["ks"][0], corr[i, 2 : len(df["ks"][0]) + 2], color="r", ls="-")
-                    ax.plot(df["ks"][0], corr[i, len(df["ks"][0]) + 2 : 2 * len(df["ks"][0]) + 2], color="b", ls="-")
-                    ax.plot(df["ks"][0], corr[i, 2 * len(df["ks"][0]) + 2 :], color="g", ls="-")
-                    ax.axhline(y=0.0, c="k", lw=1, alpha=0.3, ls=":")
+                        ax.plot(df["ks"][0], corr[i, j * len(df["ks"][0]) + 2 : (j + 1) * len(df["ks"][0]) + 2], color="r", ls="-")
+                        ax.plot(df["ks"][0], corr[i, (j + 2) * len(df["ks"][0]) + 2 : (j + 3) * len(df["ks"][0]) + 2], color="b", ls="-")
+                        ax.plot(df["ks"][0], corr[i, (j + 4) * len(df["ks"][0]) + 2 : (j + 5) * len(df["ks"][0]) + 2], color="g", ls="-")
+                        ax.axhline(y=0.0, c="k", lw=1, alpha=0.3, ls=":")
 
-                    ax.set_xlim(0.0, 0.3)
-                    ax.set_ylim(-0.25, 0.25)
+                        ax.set_xlim(0.0, 0.3)
+                        ax.set_ylim(-0.25, 0.25)
 
-                    if i != 0:
-                        ax.tick_params(axis="y", left=False)
-                    else:
-                        ax.set_ylabel(r"$\rho_{\alpha,P}$", fontsize=12)
-                    ax.set_xlabel(r"$k\,(h\,\mathrm{Mpc^{-1}})$", fontsize=12)
-                    ax.annotate(str_label1, (0.02, 0.96), xycoords="axes fraction", horizontalalignment="left", verticalalignment="top")
+                        if j != 0:
+                            ax.tick_params(axis="y", left=False, labelleft=False)
+                        else:
+                            ax.set_ylabel(r"$\rho_{\alpha,P}$", fontsize=12)
+                        if i == 0:
+                            ax.tick_params(axis="both", bottom=False, labelbottom=False)
+                        else:
+                            ax.set_xlabel(r"$k\,(h\,\mathrm{Mpc^{-1}})$", fontsize=12)
+                        ax.annotate(str_label1, (0.02, 0.96), xycoords="axes fraction", horizontalalignment="left", verticalalignment="top")
+                        ax.annotate(cap, (0.82, 0.96), xycoords="axes fraction", horizontalalignment="left", verticalalignment="top")
                 plt.subplots_adjust(hspace=0.0, wspace=0)
                 fig.savefig(pfn + "_" + label + "_alphacorr.png", bbox_inches="tight", dpi=300, transparent=True)
                 fig.savefig(pfn + "_" + label + "_alphacorr.pdf", bbox_inches="tight", dpi=300, transparent=True)
@@ -305,10 +304,8 @@ if __name__ == "__main__":
 
             data = []
             for label in [
-                "BOSS_DR12_Pk_ngc_z1",
-                "BOSS_DR12_Pk_sgc_z1",
-                "BOSS_DR12_Pk_ngc_z2",
-                "BOSS_DR12_Pk_sgc_z2",
+                "BOSS_DR12_Pk_ngc+sgc_z1",
+                "BOSS_DR12_Pk_ngc+sgc_z2",
             ]:
                 df = res.drop(res[res["patch"] != label].index).reset_index()
                 data.append(
@@ -316,9 +313,9 @@ if __name__ == "__main__":
                         [
                             np.concatenate(
                                 [
-                                    df["pk0"].to_numpy()[i],
-                                    df["pk2"].to_numpy()[i],
-                                    df["pk4"].to_numpy()[i],
+                                    np.concatenate(df["pk0"].to_numpy()[i]),
+                                    np.concatenate(df["pk2"].to_numpy()[i]),
+                                    np.concatenate(df["pk4"].to_numpy()[i]),
                                     [df["alpha_perp"][i]],
                                     [df["alpha_par"][i]],
                                 ]
@@ -334,7 +331,7 @@ if __name__ == "__main__":
 
             data = []
             for label in [
-                "eBOSS_DR16_LRGpCMASS_Pk_NGC",
+                "eBOSS_DR16_LRGpCMASS_Pk_ngc+sgc",
             ]:
                 df = res.drop(res[res["patch"] != label].index).reset_index()
                 data.append(
@@ -342,9 +339,9 @@ if __name__ == "__main__":
                         [
                             np.concatenate(
                                 [
-                                    df["pk0"].to_numpy()[i],
-                                    df["pk2"].to_numpy()[i],
-                                    df["pk4"].to_numpy()[i],
+                                    np.concatenate(df["pk0"].to_numpy()[i]),
+                                    np.concatenate(df["pk2"].to_numpy()[i]),
+                                    np.concatenate(df["pk4"].to_numpy()[i]),
                                     [df["alpha_perp"][i]],
                                     [df["alpha_par"][i]],
                                 ]
@@ -357,29 +354,3 @@ if __name__ == "__main__":
 
             cov = np.cov(data)
             np.savetxt(pfn + "Cov_matrix_eBOSS_DR16_LRGpCMASS_NGC_kmax_0.3_deltak_0p01_Mono+Quad+Hex_postreconBAO.txt", cov)
-
-            data = []
-            for label in [
-                "eBOSS_DR16_LRGpCMASS_Pk_SGC",
-            ]:
-                df = res.drop(res[res["patch"] != label].index).reset_index()
-                data.append(
-                    np.array(
-                        [
-                            np.concatenate(
-                                [
-                                    df["pk0"].to_numpy()[i],
-                                    df["pk2"].to_numpy()[i],
-                                    df["pk4"].to_numpy()[i],
-                                    [df["alpha_perp"][i]],
-                                    [df["alpha_par"][i]],
-                                ]
-                            )
-                            for i in range(len(df))
-                        ]
-                    ).T
-                )
-            data = np.concatenate(data)
-
-            cov = np.cov(data)
-            np.savetxt(pfn + "Cov_matrix_eBOSS_DR16_LRGpCMASS_SGC_kmax_0.3_deltak_0p01_Mono+Quad+Hex_postreconBAO.txt", cov)
