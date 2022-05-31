@@ -98,8 +98,6 @@ if __name__ == "__main__":
                 fitter.add_model_and_dataset(model, dataset, name=name)
                 allnames.append(name)
 
-                model.sanity_check(dataset)
-
                 # Now add the individual realisations to the list
                 for i in range(len(dataset.mock_data)):
                     dataset.set_realisation(i)
