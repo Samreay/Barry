@@ -77,13 +77,14 @@ def getwin(winfile):
     files = [winfile]
     winfits = {}
     for winfit_file in files:
+        matrix = np.eye(5 * nkout, 6 * nkth)
         print(f"Loading winfit from {winfit_file}")
 
         res = {}
         winfits[step_size] = res
 
         df = pd.read_csv(winfit_file, comment="#", delim_whitespace=True, header=None)
-        matrix = df.to_numpy().astype(np.float32)
+        matrix[: 5 * nkout, : 5 * nkth] = df.to_numpy().astype(np.float32)
 
         winfits[step_size] = res
         res["w_ks_input"] = np.linspace(kmin, kmax, nkth, endpoint=False) + 0.5 * (kmax - kmin) / nkth
@@ -104,14 +105,16 @@ def getwin_comb(winfiles):
     winfits = {}
     matrices = []
     for winfit_file in winfiles:
+        matrix = np.eye(5 * nkout, 6 * nkth)
         print(f"Loading winfit from {winfit_file}")
 
         df = pd.read_csv(winfit_file, comment="#", delim_whitespace=True, header=None)
-        matrices.append(df.to_numpy().astype(np.float32))
-        print(np.shape(df.to_numpy().astype(np.float32)))
+        matrix[: 5 * nkout, : 5 * nkth] = df.to_numpy().astype(np.float32)
+        matrices.append(matrix)
+        print(np.shape(matrix))
 
     nw = len(winfiles)
-    matrix = np.zeros((nw * 5 * nkout, nw * 5 * nkth))
+    matrix = np.zeros((nw * 5 * nkout, nw * 6 * nkth))
     for i in range(5):
         for j in range(5):
             minth, maxth = i * nkth, (i + 1) * nkth
@@ -130,21 +133,20 @@ def getwin_comb(winfiles):
 
 def getcomp():
     nkth = 400
-    matrix = np.zeros((5 * nkth, 3 * nkth))
+    matrix = np.zeros((6 * nkth, 3 * nkth))
     matrix[:nkth, :nkth] = np.diag(np.ones(nkth))
     matrix[2 * nkth : 3 * nkth, nkth : 2 * nkth] = np.diag(np.ones(nkth))
-    matrix[4 * nkth :, 2 * nkth :] = np.diag(np.ones(nkth))
+    matrix[4 * nkth : 5 * nkth, 2 * nkth :] = np.diag(np.ones(nkth))
     return matrix
 
 
 def getcomp_comb(ncomb):
 
     nkth = 400
-    matrix = np.zeros((ncomb * 5 * nkth, ncomb * 3 * nkth))
+    matrix = np.zeros((ncomb * 6 * nkth, ncomb * 3 * nkth))
     matrix[: ncomb * nkth, : ncomb * nkth] = np.diag(np.ones(ncomb * nkth))
     matrix[2 * ncomb * nkth : 3 * ncomb * nkth, ncomb * nkth : 2 * ncomb * nkth] = np.diag(np.ones(ncomb * nkth))
-    matrix[4 * ncomb * nkth :, 2 * ncomb * nkth :] = np.diag(np.ones(ncomb * nkth))
-
+    matrix[4 * ncomb * nkth : 5 * ncomb * nkth, 2 * ncomb * nkth :] = np.diag(np.ones(ncomb * nkth))
     return matrix
 
 

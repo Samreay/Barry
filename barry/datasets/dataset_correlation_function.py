@@ -46,6 +46,7 @@ class CorrelationFunction_ROSS_DR12(CorrelationFunction):
 
         self.nredshift_bins = 3
         self.nsmoothtypes = 1
+        self.ndata = 1
 
         if recon.lower() != "iso":
             raise NotImplementedError("Only isotropic recon data not available for ROSS_DR12")
@@ -104,6 +105,7 @@ class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
 
         self.nredshift_bins = 1
         self.nsmoothtypes = 3
+        self.ndata = 1
 
         if covtype.lower() not in ["fix", "nonfix", "analytic"]:
             raise NotImplementedError("covtype not recognised, must be fix, nonfix or analytic")
@@ -175,6 +177,7 @@ class CorrelationFunction_DESI_KP4(CorrelationFunction):
 
         self.nredshift_bins = len(reds[tracer.lower()])
         self.nsmoothtypes = 1
+        self.ndata = 1
 
         datafile = "desi_kp4_" + mocktype + "_xi_" + tracer
         if "cubicbox" in mocktype.lower():

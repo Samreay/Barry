@@ -22,6 +22,7 @@ Concrete
 
    PowerSpectrum_SDSS_DR12
    PowerSpectrum_Beutler2019
+   PowerSpectrum_eBOSS_LRGpCMASS
    CorrelationFunction_ROSS_DR12
 """
 

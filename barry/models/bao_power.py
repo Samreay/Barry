@@ -91,7 +91,7 @@ class PowerSpectrumFit(Model):
 
     def set_marg(self, fix_params, poly_poles, n_poly, do_bias=False):
 
-        if self.marg is not None:
+        if self.marg:
             fix_params = list(fix_params)
             if do_bias:
                 for i in range(self.n_data_bias):

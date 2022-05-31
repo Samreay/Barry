@@ -119,9 +119,9 @@ class PowerBeutler2017(PowerSpectrumFit):
             pk = [np.zeros(len(k))]
             kprime = k if for_corr else k / p["alpha"]
             if self.dilate_smooth:
-                pk_smooth = splev(kprime, splrep(ks, pk_smooth_lin)) / (1.0 + kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
+                pk_smooth = splev(kprime, splrep(ks, pk_smooth_lin)) / (1.0 + kprime**2 * p["sigma_s"] ** 2 / 2.0) ** 2
             else:
-                pk_smooth = splev(k, splrep(ks, pk_smooth_lin)) / (1.0 + k ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
+                pk_smooth = splev(k, splrep(ks, pk_smooth_lin)) / (1.0 + k**2 * p["sigma_s"] ** 2 / 2.0) ** 2
             if not for_corr:
                 pk_smooth *= p["b"]
 
@@ -129,7 +129,7 @@ class PowerBeutler2017(PowerSpectrumFit):
                 propagator = np.ones(len(kprime))
             else:
                 # Compute the propagator
-                C = np.exp(-0.5 * kprime ** 2 * p["sigma_nl"] ** 2)
+                C = np.exp(-0.5 * kprime**2 * p["sigma_nl"] ** 2)
                 propagator = 1.0 + splev(kprime, splrep(ks, pk_ratio)) * C
             prefac = np.ones(len(kprime)) if smooth else propagator
 
@@ -148,16 +148,16 @@ class PowerBeutler2017(PowerSpectrumFit):
             kprime = np.tile(k, (self.nmu, 1)).T if for_corr else np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
             muprime = self.mu if for_corr else self.get_muprime(epsilon)
             if self.dilate_smooth:
-                fog = 1.0 / (1.0 + muprime ** 2 * kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
+                fog = 1.0 / (1.0 + muprime**2 * kprime**2 * p["sigma_s"] ** 2 / 2.0) ** 2
                 reconfac = splev(kprime, splrep(self.camb.ks, self.camb.smoothing_kernel)) if self.recon_type.lower() == "iso" else 0.0
-                kaiser_prefac = 1.0 + p["beta"] * muprime ** 2 * (1.0 - reconfac)
-                pk_smooth = kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+                kaiser_prefac = 1.0 + p["beta"] * muprime**2 * (1.0 - reconfac)
+                pk_smooth = kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
             else:
                 ktile = np.tile(k, (self.nmu, 1)).T
-                fog = 1.0 / (1.0 + muprime ** 2 * ktile ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
+                fog = 1.0 / (1.0 + muprime**2 * ktile**2 * p["sigma_s"] ** 2 / 2.0) ** 2
                 reconfac = splev(ktile, splrep(self.camb.ks, self.camb.smoothing_kernel)) if self.recon_type.lower() == "iso" else 0.0
-                kaiser_prefac = 1.0 + p["beta"] * muprime ** 2 * (1.0 - reconfac)
-                pk_smooth = kaiser_prefac ** 2 * splev(ktile, splrep(ks, pk_smooth_lin)) * fog
+                kaiser_prefac = 1.0 + p["beta"] * muprime**2 * (1.0 - reconfac)
+                pk_smooth = kaiser_prefac**2 * splev(ktile, splrep(ks, pk_smooth_lin)) * fog
 
             if not for_corr:
                 pk_smooth *= p["b"]
@@ -166,7 +166,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             if smooth:
                 pk2d = pk_smooth
             else:
-                C = np.exp(-0.5 * kprime ** 2 * (muprime ** 2 * p["sigma_nl_par"] ** 2 + (1.0 - muprime ** 2) * p["sigma_nl_perp"] ** 2))
+                C = np.exp(-0.5 * kprime**2 * (muprime**2 * p["sigma_nl_par"] ** 2 + (1.0 - muprime**2) * p["sigma_nl_perp"] ** 2))
                 pk2d = pk_smooth * (1.0 + splev(kprime, splrep(ks, pk_ratio)) * C)
 
             pk0, pk2, pk4 = self.integrate_mu(pk2d)
@@ -198,6 +198,7 @@ if __name__ == "__main__":
     sys.path.append("../..")
     from barry.datasets.dataset_power_spectrum import (
         PowerSpectrum_SDSS_DR12,
+        PowerSpectrum_eBOSS_LRGpCMASS,
     )
     from barry.config import setup_logging
     from barry.models.model import Correction
@@ -205,28 +206,27 @@ if __name__ == "__main__":
     setup_logging()
 
     print("Checking isotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(realisation=0, isotropic=True, recon="iso", galactic_cap="ngc")
+    dataset = PowerSpectrum_eBOSS_LRGpCMASS(realisation=None, isotropic=True, recon=None, galactic_cap="both")
     model = PowerBeutler2017(
         recon=dataset.recon,
         marg="full",
         isotropic=dataset.isotropic,
         correction=Correction.HARTLAP,
-        n_data=1,
+        n_data=dataset.ndata,
+        n_poly=3,
     )
     model.sanity_check(dataset)
 
     print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(realisation=0, isotropic=False, fit_poles=[0, 2], recon=None, galactic_cap="both")
+    dataset = PowerSpectrum_eBOSS_LRGpCMASS(realisation=None, isotropic=False, fit_poles=[0, 2, 4], recon="iso", galactic_cap="both")
     model = PowerBeutler2017(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
         fix_params=["om"],
-        poly_poles=[0, 2],
+        poly_poles=[0, 2, 4],
         correction=Correction.HARTLAP,
-        n_data=1,
-        data_share_bias=False,
-        data_share_poly=True,
-        n_poly=5,
+        n_data=dataset.ndata,
+        n_poly=3,
     )
     model.sanity_check(dataset)
