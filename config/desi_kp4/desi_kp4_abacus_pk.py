@@ -124,7 +124,7 @@ if __name__ == "__main__":
         fitname = []
         zmins = ["0.4", "0.6", "0.8"]
 
-        c = [ChainConsumer(), ChainConsumer(), ChainConsumer()]
+        c = [ChainConsumer(), ChainConsumer(), ChainConsumer(), ChainConsumer(), ChainConsumer(), ChainConsumer()]
 
         # Loop over all the chains
         stats = {}
@@ -132,8 +132,8 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number and redshift bin
-            redshift_bin = [i for i, zmin in enumerate(zmins) if zmin in extra["name"].split("_")[1]][0]
-            recon_bin = redshift_bin if "Prerecon" in extra["name"] else redshift_bin + len(zmins)
+            recon_bin = 0 if "Prerecon" in extra["name"] else 1
+            redshift_bin = [recon_bin + 2 * i for i, zmin in enumerate(zmins) if zmin in extra["name"].split("_")[1]][0]
             realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
 
             # Store the chain in a dictionary with parameter names
@@ -156,7 +156,7 @@ if __name__ == "__main__":
             # Get some useful properties of the fit, and plot the MAP model against the data if it's the mock mean
             figname = (
                 "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
-                if realisation == "mean" or realisation == "10"
+                if realisation == "mean" or realisation == "10" or realisation == "23"
                 else None
             )
             new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname)
@@ -165,11 +165,11 @@ if __name__ == "__main__":
             extra.pop("realisation", None)
             if realisation == "mean":
                 fitname.append(data[0]["name"].replace(" ", "_"))
-                stats[fitname[recon_bin]] = []
-                output[fitname[recon_bin]] = []
-                c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+                stats[fitname[redshift_bin]] = []
+                output[fitname[redshift_bin]] = []
+                c[redshift_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
             else:
-                c[recon_bin].add_marker(params, **extra)
+                c[redshift_bin].add_marker(params, **extra)
 
             # Compute some summary statistics and add them to a dictionary
             mean, cov = weighted_avg_and_cov(
@@ -186,10 +186,10 @@ if __name__ == "__main__":
             )
 
             corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
-            stats[fitname[recon_bin]].append(
+            stats[fitname[redshift_bin]].append(
                 [mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared, mean[2], mean[3]]
             )
-            output[fitname[recon_bin]].append(
+            output[fitname[redshift_bin]].append(
                 f"{realisation:s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {mean[3]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
             )
 
