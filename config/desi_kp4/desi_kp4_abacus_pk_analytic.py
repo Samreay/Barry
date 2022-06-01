@@ -194,7 +194,7 @@ if __name__ == "__main__":
             )
 
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
-        for z in range(6):
+        for z in range(1):
             c[z].configure(bins=20)
             c[z].plotter.plot(
                 filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[z] + "_contour.png"],
