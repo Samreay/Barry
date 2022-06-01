@@ -92,8 +92,6 @@ if __name__ == "__main__":
                     n_poly=5,
                 )
 
-                model.sanity_check(dataset)
-
                 # Create a unique name for the fit and add it to the list
                 name = dataset.name + " mock mean"
                 fitter.add_model_and_dataset(model, dataset, name=name)
