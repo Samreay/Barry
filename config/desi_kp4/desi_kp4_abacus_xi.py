@@ -87,7 +87,6 @@ if __name__ == "__main__":
                     recon=dataset.recon,
                     isotropic=dataset.isotropic,
                     marg="full",
-                    fix_params=["om", "beta"],
                     poly_poles=dataset.fit_poles,
                     correction=Correction.HARTLAP,
                 )
@@ -132,8 +131,9 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number and redshift bin
-            recon_bin = 0 if "Prerecon" in extra["name"] else 1
-            redshift_bin = [recon_bin + 2 * i for i, zmin in enumerate(zmins) if zmin in extra["name"].split("_")[1]][0]
+            # recon_bin = 0 if "Prerecon" in extra["name"] else 1
+            # redshift_bin = [recon_bin + 2 * i for i, zmin in enumerate(zmins) if zmin in extra["name"].split("_")[1]][0]
+            redshift_bin = [i for i, zmin in enumerate(zmins) if zmin in extra["name"].split("_")[1]][0]
             realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
 
             # Store the chain in a dictionary with parameter names
