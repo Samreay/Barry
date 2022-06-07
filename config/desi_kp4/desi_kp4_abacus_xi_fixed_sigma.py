@@ -56,6 +56,8 @@ if __name__ == "__main__":
 
     mocktypes = ["abacus_cutsky"]
     nzbins = [3]
+    sigma_nl_perp = [6.0, 5.0, 4.0]
+    sigma_nl_par = [10.0, 9.0, 8.0]
 
     # Loop over the mocktypes
     allnames = []
@@ -86,10 +88,16 @@ if __name__ == "__main__":
                 model = CorrBeutler2017(
                     recon=dataset.recon,
                     isotropic=dataset.isotropic,
+                    fix_params=["om", "beta", "sigma_nl_perp", "sigma_nl_perp", "sigma_fog"],
                     marg="full",
                     poly_poles=dataset.fit_poles,
                     correction=Correction.HARTLAP,
                 )
+                model.set_default("sigma_nl_par", sigma_nl_par[i])
+                model.set_default("sigma_nl_perp", sigma_nl_perp[i])
+                model.set_default("sigma_s", 3.0)
+
+                model.sanity_check(dataset)
 
                 # Create a unique name for the fit and add it to the list
                 name = dataset.name + " mock mean"
