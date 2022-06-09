@@ -207,7 +207,8 @@ class CorrelationFunctionFit(Model):
             xi2d = xi0 + 0.5 * (3.0 * muprime**2 - 1) * xi2 + 0.125 * (35.0 * muprime**4 - 30.0 * muprime**2 + 3.0) * xi4
 
             # Now compute the dilated xi multipoles
-            xi[0], xi[1], xi[2] = self.integrate_mu(xi2d, muprime)
+            # xi[0], xi[1], xi[2] = self.integrate_mu(xi2d, muprime)
+            xi[0], xi[1], xi[2] = self.integrate_mu(xi2d, mu)
 
         return sprime, xi
 
