@@ -89,7 +89,7 @@ if __name__ == "__main__":
                     recon=dataset.recon,
                     isotropic=dataset.isotropic,
                     fix_params=["om", "beta", "sigma_nl_perp", "sigma_nl_perp", "sigma_fog"],
-                    marg="full",
+                    marg="partial",
                     poly_poles=dataset.fit_poles,
                     correction=Correction.HARTLAP,
                 )
