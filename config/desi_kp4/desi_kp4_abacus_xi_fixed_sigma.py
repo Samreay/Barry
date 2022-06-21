@@ -74,8 +74,8 @@ if __name__ == "__main__":
                 dataset = CorrelationFunction_DESI_KP4(
                     recon=None,
                     fit_poles=[0, 2],
-                    min_dist=50.0,
-                    max_dist=170.0,
+                    min_dist=0.0,
+                    max_dist=200.0,
                     mocktype=mocktype,
                     redshift_bin=z + 1,
                     realisation=None,
@@ -89,9 +89,9 @@ if __name__ == "__main__":
                     recon=dataset.recon,
                     isotropic=dataset.isotropic,
                     fix_params=["om", "beta", "sigma_nl_perp", "sigma_nl_perp", "sigma_fog"],
-                    marg="partial",
+                    marg=None,
                     poly_poles=dataset.fit_poles,
-                    correction=Correction.HARTLAP,
+                    correction=Correction.NONE,
                 )
                 model.set_default("sigma_nl_par", sigma_nl_par[i])
                 model.set_default("sigma_nl_perp", sigma_nl_perp[i])

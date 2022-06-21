@@ -2,6 +2,7 @@ import logging
 
 from abc import ABC
 
+import sys
 import numpy as np
 from scipy.special import spherical_jn
 from scipy.integrate import trapz
@@ -61,9 +62,9 @@ class PowerToCorrelationGauss(PowerToCorrelation):
             if self.ell == 0:
                 bessel = np.sin(z) / s
             elif self.ell == 2:
-                bessel = (1.0 - 3.0 / z ** 2) * np.sin(z) / s + 3.0 * np.cos(z) / (z * s)
+                bessel = (1.0 - 3.0 / z**2) * np.sin(z) / s + 3.0 * np.cos(z) / (z * s)
             elif self.ell == 4:
-                bessel = (105.0 / z ** 4 - 45.0 / z ** 2 + 1.0) * np.sin(z) / s - (105.0 / z ** 2 - 10.0) * np.cos(z) / (z * s)
+                bessel = (105.0 / z**4 - 45.0 / z**2 + 1.0) * np.sin(z) / s - (105.0 / z**2 - 10.0) * np.cos(z) / (z * s)
             else:
                 bessel = spherical_jn(self.ell, z)
             integrand = kkpks * bessel
@@ -92,13 +93,14 @@ class PowerToCorrelationFT(PowerToCorrelation):
 
     def __call__(self, ks, pk, ss):
         pkspline = splrep(ks, pk)
-        f = lambda k: splev(k, pkspline) / (k ** self.ell)
+        f = lambda k: splev(k, pkspline) / (k**self.ell)
         xi = (2.0 * np.pi * ss) ** self.ell * (1j) ** self.ell * self.ft.transform(f, ss, inverse=True, ret_err=False)
         return xi
 
 
 if __name__ == "__main__":
 
+    sys.path.append("../..")
     import timeit
     import matplotlib.pyplot as plt
     from barry.cosmology.camb_generator import getCambGenerator, Omega_m_z
@@ -142,15 +144,15 @@ if __name__ == "__main__":
         pk2xi_gauss = PowerToCorrelationGauss(ks, interpolateDetail=2, a=0.25, ell=0)
         pk2xi_ft = PowerToCorrelationFT(ell=0)
 
-        pk = (1.0 + 2.0 / 3.0 * growth + 1.0 / 5.0 * growth ** 2) * pklin
+        pk = (1.0 + 2.0 / 3.0 * growth + 1.0 / 5.0 * growth**2) * pklin
         xi1 = pk2xi_gauss.__call__(ks, pk, ss)
         xi2 = pk2xi_ft.__call__(ks, pk, ss)
         xi_good = pk2xi_good.__call__(ks, pk, ss)
 
         fig, ax = plt.subplots(nrows=2, sharex=True)
-        ax[0].plot(ss, ss ** 2 * xi_good, ".", c="k")
-        ax[0].plot(ss, ss ** 2 * xi1, ".", c="b", label="Gauss")
-        ax[0].plot(ss, ss ** 2 * xi2, ".", c="r", label="FT")
+        ax[0].plot(ss, ss**2 * xi_good, ".", c="k")
+        ax[0].plot(ss, ss**2 * xi1, ".", c="b", label="Gauss")
+        ax[0].plot(ss, ss**2 * xi2, ".", c="r", label="FT")
         ax[0].legend()
         ax[1].plot(ss, 100.0 * (xi_good - xi1), ".", c="b")
         ax[1].plot(ss, 100.0 * (xi_good - xi2), ".", c="r")
@@ -165,15 +167,15 @@ if __name__ == "__main__":
         pk2xi_gauss = PowerToCorrelationGauss(ks, interpolateDetail=2, a=0.25, ell=2)
         pk2xi_ft = PowerToCorrelationFT(ell=2)
 
-        pk = (4.0 / 3.0 * growth + 4.0 / 7.0 * growth ** 2) * pklin
+        pk = (4.0 / 3.0 * growth + 4.0 / 7.0 * growth**2) * pklin
         xi1 = pk2xi_gauss.__call__(ks, pk, ss)
         xi2 = pk2xi_ft.__call__(ks, pk, ss)
         xi_good = pk2xi_good.__call__(ks, pk, ss)
 
         fig, ax = plt.subplots(nrows=2, sharex=True)
-        ax[0].plot(ss, ss ** 2 * xi_good, ".", c="k")
-        ax[0].plot(ss, ss ** 2 * xi1, ".", c="b", label="Gauss")
-        ax[0].plot(ss, ss ** 2 * xi2, ".", c="r", label="FT")
+        ax[0].plot(ss, ss**2 * xi_good, ".", c="k")
+        ax[0].plot(ss, ss**2 * xi1, ".", c="b", label="Gauss")
+        ax[0].plot(ss, ss**2 * xi2, ".", c="r", label="FT")
         ax[0].legend()
         ax[1].plot(ss, 100.0 * (xi_good - xi1), ".", c="b")
         ax[1].plot(ss, 100.0 * (xi_good - xi2), ".", c="r")
@@ -188,15 +190,15 @@ if __name__ == "__main__":
         pk2xi_gauss = PowerToCorrelationGauss(ks, interpolateDetail=2, a=0.25, ell=4)
         pk2xi_ft = PowerToCorrelationFT(ell=4)
 
-        pk = (8.0 / 35.0 * growth ** 2) * pklin
+        pk = (8.0 / 35.0 * growth**2) * pklin
         xi1 = pk2xi_gauss.__call__(ks, pk, ss)
         xi2 = pk2xi_ft.__call__(ks, pk, ss)
         xi_good = pk2xi_good.__call__(ks, pk, ss)
 
         fig, ax = plt.subplots(nrows=2, sharex=True)
-        ax[0].plot(ss, ss ** 2 * xi_good, ".", c="k")
-        ax[0].plot(ss, ss ** 2 * xi1, ".", c="b", label="Gauss")
-        ax[0].plot(ss, ss ** 2 * xi2, ".", c="r", label="FT")
+        ax[0].plot(ss, ss**2 * xi_good, ".", c="k")
+        ax[0].plot(ss, ss**2 * xi1, ".", c="b", label="Gauss")
+        ax[0].plot(ss, ss**2 * xi2, ".", c="r", label="FT")
         ax[0].legend()
         ax[1].plot(ss, 100.0 * (xi_good - xi1), ".", c="b")
         ax[1].plot(ss, 100.0 * (xi_good - xi2), ".", c="r")

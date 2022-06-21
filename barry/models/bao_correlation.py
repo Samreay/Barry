@@ -73,9 +73,9 @@ class CorrelationFunctionFit(Model):
             A list of datas to use
         """
         super().set_data(data)
-        self.pk2xi_0 = PowerToCorrelationGauss(self.camb.ks, ell=0)
-        self.pk2xi_2 = PowerToCorrelationGauss(self.camb.ks, ell=2)
-        self.pk2xi_4 = PowerToCorrelationGauss(self.camb.ks, ell=4)
+        self.pk2xi_0 = PowerToCorrelationGauss(self.camb.ks, ell=0, interpolateDetail=20, a=1.0)
+        self.pk2xi_2 = PowerToCorrelationGauss(self.camb.ks, ell=2, interpolateDetail=20, a=1.0)
+        self.pk2xi_4 = PowerToCorrelationGauss(self.camb.ks, ell=4, interpolateDetail=20, a=1.0)
         self.set_bias(data[0])
         self.parent.set_data(data, parent=True)
 
@@ -196,7 +196,8 @@ class CorrelationFunctionFit(Model):
         else:
             # Construct the dilated 2D correlation function by splining the undilated multipoles. We could have computed these
             # directly at sprime, but sprime depends on both s and mu, so splining is quicker
-            epsilon = np.round(p["epsilon"], decimals=5)
+            # epsilon = np.round(p["epsilon"], decimals=5)
+            epsilon = p["epsilon"]
             sprime = np.outer(dist * p["alpha"], self.get_sprimefac(epsilon))
             muprime = self.get_muprime(epsilon)
 
@@ -207,7 +208,6 @@ class CorrelationFunctionFit(Model):
             xi2d = xi0 + 0.5 * (3.0 * muprime**2 - 1) * xi2 + 0.125 * (35.0 * muprime**4 - 30.0 * muprime**2 + 3.0) * xi4
 
             # Now compute the dilated xi multipoles
-            # xi[0], xi[1], xi[2] = self.integrate_mu(xi2d, muprime)
             xi[0], xi[1], xi[2] = self.integrate_mu(xi2d, self.mu)
 
         return sprime, xi
