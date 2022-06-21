@@ -74,8 +74,8 @@ if __name__ == "__main__":
                 dataset = CorrelationFunction_DESI_KP4(
                     recon=None,
                     fit_poles=[0, 2],
-                    min_dist=0.0,
-                    max_dist=200.0,
+                    min_dist=50.0,
+                    max_dist=150.0,
                     mocktype=mocktype,
                     redshift_bin=z + 1,
                     realisation=None,
