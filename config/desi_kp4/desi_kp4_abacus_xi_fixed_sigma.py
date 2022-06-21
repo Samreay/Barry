@@ -2,7 +2,7 @@ import sys
 
 sys.path.append("..")
 sys.path.append("../..")
-from barry.samplers import DynestySampler
+from barry.samplers import DynestySampler, EnsembleSampler
 from barry.config import setup
 from barry.models import CorrBeutler2017
 from barry.datasets.dataset_correlation_function import CorrelationFunction_DESI_KP4
@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
-    sampler = DynestySampler(temp_dir=dir_name, nlive=250)
+    sampler = EnsembleSampler(temp_dir=dir_name, num_steps=5000)
 
     mocktypes = ["abacus_cutsky"]
     nzbins = [3]
