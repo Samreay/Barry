@@ -73,7 +73,7 @@ if __name__ == "__main__":
                     recon=None,
                     fit_poles=[0, 2],
                     min_dist=50.0,
-                    max_dist=170.0,
+                    max_dist=150.0,
                     mocktype=mocktype,
                     redshift_bin=z + 1,
                     realisation=None,

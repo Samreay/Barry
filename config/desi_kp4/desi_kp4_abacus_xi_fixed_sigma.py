@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
-    sampler = DynestySampler(temp_dir=dir_name, nlive=250)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=50)
     # sampler = EnsembleSampler(temp_dir=dir_name, num_steps=3000)
 
     mocktypes = ["abacus_cutsky"]
@@ -90,7 +90,7 @@ if __name__ == "__main__":
                     recon=dataset.recon,
                     isotropic=dataset.isotropic,
                     fix_params=["om", "beta", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
-                    marg="partial",
+                    marg="full",
                     poly_poles=dataset.fit_poles,
                     correction=Correction.NONE,
                 )
@@ -151,8 +151,6 @@ if __name__ == "__main__":
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
 
-            print(df)
-
             # Get the MAP point and set the model up at this point
             model.set_data(data)
             r_s = model.camb.get_data()["r_s"]
@@ -161,7 +159,6 @@ if __name__ == "__main__":
             params_dict = model.get_param_dict(chain[max_post])
             for name, val in params_dict.items():
                 model.set_default(name, val)
-            print(params_dict)
 
             # Get some useful properties of the fit, and plot the MAP if it's the mock mean
             figname = (
