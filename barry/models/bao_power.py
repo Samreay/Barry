@@ -510,7 +510,6 @@ class PowerSpectrumFit(Model):
         """
 
         if self.isotropic:
-            # TODO: For isotropic, incorporate the integral constraint into the window function matrix when the data is pickled
             # to make the window function correction more similar between this and anisotropic.
             if window:
                 p0 = np.sum(data["w_scale"] * pk_generated)
@@ -532,28 +531,27 @@ class PowerSpectrumFit(Model):
                     # Convolve the model and apply wide-angle effects to compute odd multipoles
                     pk_normalised = data["w_m_transform"] @ pk_generated
                 else:
-                    # Only convolve then model, but don't compute odd multipoles
+                    # Only convolve the model, but don't compute odd multipoles
                     pk_normalised = data["w_transform"] @ pk_generated
             else:
                 if wide_angle:
                     # Compute odd multipoles, but no window function convolution
-                    pk_normalised = data["m_transform"] @ pk_generated
-                else:
-                    # Just interpolate the models to the values of ks_output without convolution or wide angle effects
-                    pk_normalised = []
-                    nk = len(data["poles"]) * len(data["ks_input"])
-                    for i in range(data["ndata"]):
-                        for l in range(len(data["poles"][[data["poles"] % 2 == 0]])):
-                            pk_normalised.append(
-                                splev(
-                                    data["ks_output"],
-                                    splrep(
-                                        data["ks_input"],
-                                        pk_generated[i * nk + l * len(data["ks_input"]) : i * nk + (l + 1) * len(data["ks_input"])],
-                                    ),
-                                )
+                    pk_generated = data["m_transform"] @ pk_generated
+                # Interpolate to the correct k
+                pk_normalised = []
+                nk = len(data["poles"]) * len(data["ks_input"])
+                for i in range(data["ndata"]):
+                    for l in range(len(data["poles"][data["poles"]])):
+                        pk_normalised.append(
+                            splev(
+                                data["ks_output"],
+                                splrep(
+                                    data["ks_input"],
+                                    pk_generated[i * nk + l * len(data["ks_input"]) : i * nk + (l + 1) * len(data["ks_input"])],
+                                ),
                             )
-                    pk_normalised = np.array(pk_normalised).flatten()
+                        )
+                pk_normalised = np.array(pk_normalised).flatten()
 
         return pk_normalised
 
@@ -641,7 +639,7 @@ class PowerSpectrumFit(Model):
 
         return p
 
-    def get_model(self, params, d, smooth=False, data_name=None):
+    def get_model(self, params, d, smooth=False, data_name=None, window=True):
         """Gets the model prediction using the data passed in and parameter location specified
 
         Parameters
@@ -688,7 +686,7 @@ class PowerSpectrumFit(Model):
             )
 
         if self.isotropic:
-            pk_model, mask = self.adjust_model_window_effects(pk_generated, d), d["m_w_mask"]
+            pk_model, mask = self.adjust_model_window_effects(pk_generated, d, window=window), d["m_w_mask"]
             if self.postprocess is not None:
                 pk_model = self.postprocess(ks=d["ks_output"], pk=pk_model, mask=mask)
             pk_model_odd = np.zeros(d["ndata"] * len(d["ks_output"]))
@@ -698,8 +696,8 @@ class PowerSpectrumFit(Model):
             pk_model_odd[3 * d["ndata"] * len(ks) : 4 * d["ndata"] * len(ks)] += np.concatenate([all_pks[i][3] for i in range(d["ndata"])])
             pk_model_odd[5 * d["ndata"] * len(ks) : 6 * d["ndata"] * len(ks)] += np.concatenate([all_pks[i][5] for i in range(d["ndata"])])
             if d["icov_m_w"][0] is None:
-                pk_model, mask = self.adjust_model_window_effects(pk_generated, d), d["m_w_mask"]
-                pk_model_odd = self.adjust_model_window_effects(pk_model_odd, d, wide_angle=False)
+                pk_model, mask = self.adjust_model_window_effects(pk_generated, d, window=window), d["m_w_mask"]
+                pk_model_odd = self.adjust_model_window_effects(pk_model_odd, d, window=window, wide_angle=False)
             else:
                 pk_model, mask = pk_generated, np.ones(len(pk_generated), dtype=bool)
 
@@ -745,7 +743,7 @@ class PowerSpectrumFit(Model):
                     poly_generated = np.concatenate([poly[n, l, :] for l in d["poles"][d["poles"] % 2 == 0]])
 
                 if self.isotropic:
-                    poly_model_long = self.adjust_model_window_effects(poly_generated, d)
+                    poly_model_long = self.adjust_model_window_effects(poly_generated, d, window=window)
                     if self.postprocess is not None:
                         poly_model_long = self.postprocess(ks=d["ks_output"], pk=poly_model_long, mask=mask)
                     poly_model[n] = poly_model_long
@@ -756,14 +754,14 @@ class PowerSpectrumFit(Model):
                     poly_generated_odd[3 * nk : 4 * nk] += poly[n, 3]
                     poly_generated_odd[5 * nk : 6 * nk] += poly[n, 5]
                     if d["icov_m_w"][0] is None:
-                        poly_model[n] = self.adjust_model_window_effects(poly_generated, d)
-                        poly_model_odd[n] = self.adjust_model_window_effects(poly_generated_odd, d, wide_angle=False)
+                        poly_model[n] = self.adjust_model_window_effects(poly_generated, d, window=window)
+                        poly_model_odd[n] = self.adjust_model_window_effects(poly_generated_odd, d, window=window, wide_angle=False)
                     else:
                         poly_model[n], poly_model_odd[n] = poly_generated, poly_generated_odd
 
         return pk_model, pk_model_odd, poly_model, poly_model_odd, mask
 
-    def plot(self, params, smooth_params=None, figname=None, title=None, display=True):
+    def plot(self, params, window=True, smooth_params=None, figname=None, title=None, display=True):
         import matplotlib.pyplot as plt
 
         # Ensures we plot the window convolved model
@@ -772,7 +770,7 @@ class PowerSpectrumFit(Model):
 
         ks = self.data[0]["ks"]
         err = np.sqrt(np.diag(self.data[0]["cov"]))
-        mod, mod_odd, polymod, polymod_odd, _ = self.get_model(params, self.data[0], data_name=self.data[0]["name"])
+        mod, mod_odd, polymod, polymod_odd, _ = self.get_model(params, self.data[0], data_name=self.data[0]["name"], window=window)
         if smooth_params is not None:
             smooth, smooth_odd, polysmooth, polysmooth_odd, _ = self.get_model(
                 smooth_params, self.data[0], smooth=True, data_name=self.data[0]["name"]

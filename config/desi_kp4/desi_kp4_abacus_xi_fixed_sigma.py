@@ -52,7 +52,8 @@ if __name__ == "__main__":
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
-    sampler = EnsembleSampler(temp_dir=dir_name, num_steps=5000)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=250)
+    # sampler = EnsembleSampler(temp_dir=dir_name, num_steps=3000)
 
     mocktypes = ["abacus_cutsky"]
     nzbins = [3]
@@ -88,8 +89,8 @@ if __name__ == "__main__":
                 model = CorrBeutler2017(
                     recon=dataset.recon,
                     isotropic=dataset.isotropic,
-                    fix_params=["om", "beta", "sigma_nl_perp", "sigma_nl_perp", "sigma_fog"],
-                    marg=None,
+                    fix_params=["om", "beta", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
+                    marg="partial",
                     poly_poles=dataset.fit_poles,
                     correction=Correction.NONE,
                 )
@@ -150,6 +151,8 @@ if __name__ == "__main__":
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
 
+            print(df)
+
             # Get the MAP point and set the model up at this point
             model.set_data(data)
             r_s = model.camb.get_data()["r_s"]
@@ -158,6 +161,7 @@ if __name__ == "__main__":
             params_dict = model.get_param_dict(chain[max_post])
             for name, val in params_dict.items():
                 model.set_default(name, val)
+            print(params_dict)
 
             # Get some useful properties of the fit, and plot the MAP if it's the mock mean
             figname = (
@@ -201,7 +205,7 @@ if __name__ == "__main__":
             c[z].plotter.plot(
                 filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[z] + "_contour.png"],
                 truth=truth,
-                parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+                # parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
                 legend=False,
             )
 

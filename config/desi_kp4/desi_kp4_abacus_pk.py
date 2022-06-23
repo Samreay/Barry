@@ -159,7 +159,13 @@ if __name__ == "__main__":
                 if realisation == "mean" or realisation == "10" or realisation == "23"
                 else None
             )
+            figname_nowin = (
+                "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit_nowin.png"
+                if realisation == "mean" or realisation == "10" or realisation == "23"
+                else None
+            )
             new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname)
+            _, _, _, mods_nowin, smooths_nowin = model.plot(params_dict, window=False, display=False, figname=figname_nowin)
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
@@ -168,6 +174,13 @@ if __name__ == "__main__":
                 stats[fitname[redshift_bin]] = []
                 output[fitname[redshift_bin]] = []
                 c[redshift_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+                # Save the bestfit model with and without the window function
+                np.savetxt(
+                    dir_name + "/Barry_fit_" + fitname[redshift_bin] + "_model.txt",
+                    np.c_[model.data[0]["ks"], mods[0][0], mods[2][0], mods[4][0], mods_nowin[0][0], mods_nowin[2][0], mods_nowin[4][0]],
+                    header="k       pk0      pk2      pk4      pk0_nowin      pk2_nowin      pk4_nowin",
+                )
+                print(params_dict, bband)
             else:
                 c[redshift_bin].add_marker(params, **extra)
 
