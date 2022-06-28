@@ -192,7 +192,7 @@ if __name__ == "__main__":
                     covds
                     + "Reconstruction/Stage2_3Gpc/Covariances/pk_3Gpc_covariance_"
                     + c
-                    + "cov_matrix_pk-EZmocks-3Gpc_rsd_centerbin_"
+                    + "/cov_matrix_pk-EZmocks-3Gpc_rsd_centerbin_"
                     + d
                     + "_post.txt"
                 )  # This is incorrect, but used here as a place holder as the correct file has the wrong binning
@@ -200,7 +200,7 @@ if __name__ == "__main__":
                     covds
                     + "Reconstruction/Stage2_3Gpc/Covariances/pk_3Gpc_covariance_"
                     + c
-                    + "cov_matrix_pk-EZmocks-3Gpc_rsd_centerbin_"
+                    + "/cov_matrix_pk-EZmocks-3Gpc_rsd_centerbin_"
                     + d
                     + "_post.txt"
                 )
@@ -214,13 +214,13 @@ if __name__ == "__main__":
                     covds
                     + "Reconstruction/Stage2_3Gpc/Covariances/xi_3Gpc_covariance_"
                     + c
-                    + "cov_matrix_xi-EZmocks-3Gpc_rsd_centerbin_post_mariana.txt"
+                    + "/cov_matrix_xi-EZmocks-3Gpc_rsd_centerbin_post_mariana.txt"
                 )  # This is incorrect, but used here as a place holder as the correct file has the wrong binning
                 post_covfile = (
                     covds
                     + "Reconstruction/Stage2_3Gpc/Covariances/xi_3Gpc_covariance_"
                     + c
-                    + "cov_matrix_xi-EZmocks-3Gpc_rsd_centerbin_post_mariana.txt"
+                    + "/cov_matrix_xi-EZmocks-3Gpc_rsd_centerbin_post_mariana.txt"
                 )
                 collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "fix", "elg")
 
