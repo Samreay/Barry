@@ -188,7 +188,14 @@ if __name__ == "__main__":
             for i, smooth in enumerate([5, 10, 15, 20]):
                 pre_file = [ds + b + "/dk0.005kmin0.005/" + pre_files[i] + ".txt"]
                 post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + ".txt"]
-                pre_covfile = covds + "EZmocks/pk_EZmocks_3Gpc/covariance/cov_matrix_pk-EZmocks-3Gpc_rsd_centerbin.txt"
+                pre_covfile = (
+                    covds
+                    + "Reconstruction/Stage2_3Gpc/Covariances/pk_3Gpc_covariance_"
+                    + c
+                    + "cov_matrix_pk-EZmocks-3Gpc_rsd_centerbin_"
+                    + d
+                    + "_post.txt"
+                )  # This is incorrect, but used here as a place holder as the correct file has the wrong binning
                 post_covfile = (
                     covds
                     + "Reconstruction/Stage2_3Gpc/Covariances/pk_3Gpc_covariance_"
@@ -197,14 +204,18 @@ if __name__ == "__main__":
                     + d
                     + "_post.txt"
                 )
-                collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix", "elg")
+                collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "fix", "elg")
 
                 pre_file = [
                     "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
                 ]
                 post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
-                pre_covfile = covds + "EZmocks/xi_EZmocks_3Gpc/covariance_v2/cov_matrix_xi-EZmocks-3Gpc_rsd_centerbin.txt"
-
+                pre_covfile = (
+                    covds
+                    + "Reconstruction/Stage2_3Gpc/Covariances/xi_3Gpc_covariance_"
+                    + c
+                    + "cov_matrix_xi-EZmocks-3Gpc_rsd_centerbin_post_mariana.txt"
+                )  # This is incorrect, but used here as a place holder as the correct file has the wrong binning
                 post_covfile = (
                     covds
                     + "Reconstruction/Stage2_3Gpc/Covariances/xi_3Gpc_covariance_"
@@ -235,7 +246,9 @@ if __name__ == "__main__":
             for i, smooth in enumerate([5, 10, 15, 20]):
                 pre_file = [ds + b + "/dk0.005kmin0.005/" + pre_files[i] + ".txt"]
                 post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + ".txt"]
-                pre_covfile = covds + "EZmocks/pk_EZmocks_nonfix/covariance_3Gpc/cov_matrix_pk-EZmocks-3Gpc-nonfix_rsd_centerbin"
+                pre_covfile = (
+                    covds + "Reconstruction/Stage2_3Gpc/Covariances/NonFix/cov_matrix_pk-EZmocks-3Gpc-" + c + "-nonfix_rsd_post.txt"
+                )  # This is incorrect, but used here as a place holder as the correct file has the wrong binning
                 post_covfile = (
                     covds + "Reconstruction/Stage2_3Gpc/Covariances/NonFix/cov_matrix_pk-EZmocks-3Gpc-" + c + "-nonfix_rsd_post.txt"
                 )
@@ -245,7 +258,9 @@ if __name__ == "__main__":
                     "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
                 ]
                 post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
-                pre_covfile = covds + "EZmocks/xi_EZmocks_nonfix/covariance_3Gpc/cov_matrix_xi-EZmocks-3Gpc-nonfix_rsd_centerbin.txt"
+                pre_covfile = (
+                    covds + "Reconstruction/Stage2_3Gpc/Covariances/NonFix/cov_matrix_xi-EZmocks-3Gpc-" + c + "-nonfix_rsd_post.txt"
+                )  # This is incorrect, but used here as a place holder as the correct file has the wrong binning
                 post_covfile = (
                     covds + "Reconstruction/Stage2_3Gpc/Covariances/NonFix/cov_matrix_xi-EZmocks-3Gpc-" + c + "-nonfix_rsd_post.txt"
                 )
