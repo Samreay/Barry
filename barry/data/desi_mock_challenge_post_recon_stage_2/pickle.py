@@ -103,10 +103,10 @@ def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
         "pre-recon mocks": None,
         "post-recon mocks": None,
         "cosmology": {
-            "om": (0.1188 + 0.02230 + 0.00064) / 0.6774 ** 2,
+            "om": (0.1188 + 0.02230 + 0.00064) / 0.6774**2,
             "h0": 0.6774,
             "z": 0.9873,
-            "ob": 0.02230 / 0.6774 ** 2,
+            "ob": 0.02230 / 0.6774**2,
             "ns": 0.9667,
             "mnu": 0.00064 * 93.14,
             "reconsmoothscale": smooth,
@@ -133,12 +133,12 @@ def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
 
     nss = len(next(iter(pre_res.items()))[1]["s"].to_numpy())
     pre_cov = format_xi_cov(nss, pre_covfile)
-    pre_cov = pre_cov if fix.lower() == "analytic" else pre_cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
+    pre_cov = pre_cov if fix.lower() == "analytic" else pre_cov  # Rescaled covariance by volume from 1Gpc to 3Gpc
     print(np.shape(pre_cov), nss)
 
     nss = len(next(iter(pre_res.items()))[1]["s"].to_numpy())
     post_cov = format_xi_cov(nss, post_covfile)
-    post_cov = post_cov if fix.lower() == "analytic" else post_cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
+    post_cov = post_cov if fix.lower() == "analytic" else post_cov  # Rescaled covariance by volume from 1Gpc to 3Gpc
     print(np.shape(post_cov), nss)
 
     split = {
@@ -149,10 +149,10 @@ def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
         "pre-recon mocks": None,
         "post-recon mocks": None,
         "cosmology": {
-            "om": (0.1188 + 0.02230 + 0.00064) / 0.6774 ** 2,
+            "om": (0.1188 + 0.02230 + 0.00064) / 0.6774**2,
             "h0": 0.6774,
             "z": 0.9873,
-            "ob": 0.02230 / 0.6774 ** 2,
+            "ob": 0.02230 / 0.6774**2,
             "ns": 0.9667,
             "mnu": 0.00064 * 93.14,
             "reconsmoothscale": smooth,
@@ -167,42 +167,35 @@ def collect_xi_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
 if __name__ == "__main__":
 
     # ===========================
-    # Non-Fix Covariance matrices
+    # Fixed Amplitude Covariance matrices
     if True:
         ds = f"/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/Reconstruction/Stage2_3Gpc/Multipoles/"
-        covds = f"/global/project/projectdirs/desi/users/jmen_a/EZmocks/EZmocks_1Gpc_recons_nonfix/"
+        covds = f"/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/"
 
         pre_files = [
             "UNIELG-b0s05rsd0g1536premultipoles",
             "UNIELG-b0s10rsd0g1536premultipoles",
             "UNIELG-b0s15rsd0g1536premultipoles",
+            "UNIELG-b0s20rsd0g1536premultipoles",
         ]
         post_files = [
             "UNIELG-b0s05rsd0g1536postmultipoles",
             "UNIELG-b0s10rsd0g1536postmultipoles",
             "UNIELG-b0s15rsd0g1536postmultipoles",
+            "UNIELG-b0s20rsd0g1536postmultipoles",
         ]
-        for j, (a, b, c) in enumerate(zip(["iso", "ani"], ["Yuyu_RecIso", "Yuyu_RecAni"], ["RecIsoNonfix", "RecAniNonfix"])):
-            for i, smooth in enumerate([5, 10, 15]):
+        for j, (a, b, c, d) in enumerate(zip(["iso", "ani"], ["Yuyu_RecIso", "Yuyu_RecAni"], ["RecIso", "RecAniso"], ["RecIso", ""])):
+            for i, smooth in enumerate([5, 10, 15, 20]):
                 pre_file = [ds + b + "/dk0.005kmin0.005/" + pre_files[i] + ".txt"]
                 post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + ".txt"]
-                pre_covfile = (
-                    covds
-                    + c
-                    + str("_Sm%d" % smooth)
-                    + "/covariance/cov_matrix_pk-EZmocks-1Gpc-"
-                    + c[:6]
-                    + str("Sm%d" % smooth)
-                    + "-nonfix_rsd_pre.txt"
-                )
+                pre_covfile = covds + "EZmocks/pk_EZmocks_3Gpc/covariance/cov_matrix_pk-EZmocks-3Gpc_rsd_centerbin.txt"
                 post_covfile = (
                     covds
+                    + "Reconstruction/Stage2_3Gpc/Covariances/pk_3Gpc_covariance_"
                     + c
-                    + str("_Sm%d" % smooth)
-                    + "/covariance/cov_matrix_pk-EZmocks-1Gpc-"
-                    + c[:6]
-                    + str("Sm%d" % smooth)
-                    + "-nonfix_rsd_post.txt"
+                    + "cov_matrix_pk-EZmocks-3Gpc_rsd_centerbin_"
+                    + d
+                    + "_post.txt"
                 )
                 collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix", "elg")
 
@@ -210,27 +203,55 @@ if __name__ == "__main__":
                     "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
                 ]
                 post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
-                pre_covfile = (
-                    covds
-                    + c
-                    + str("_Sm%d" % smooth)
-                    + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
-                    + c[:6]
-                    + str("Sm%d" % smooth)
-                    + "-nonfix_rsd_pre.txt"
-                )
+                pre_covfile = covds + "EZmocks/xi_EZmocks_3Gpc/covariance_v2/cov_matrix_xi-EZmocks-3Gpc_rsd_centerbin.txt"
+
                 post_covfile = (
                     covds
+                    + "Reconstruction/Stage2_3Gpc/Covariances/xi_3Gpc_covariance_"
                     + c
-                    + str("_Sm%d" % smooth)
-                    + "/covariance/cov_matrix_xi-EZmocks-1Gpc-"
-                    + c[:6]
-                    + str("Sm%d" % smooth)
-                    + "-nonfix_rsd_post.txt"
+                    + "cov_matrix_xi-EZmocks-3Gpc_rsd_centerbin_post_mariana.txt"
+                )
+                collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "fix", "elg")
+
+    # ===========================
+    # Non-fixed Amplitude Covariance matrices
+    if True:
+        ds = f"/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/Reconstruction/Stage2_3Gpc/Multipoles/"
+        covds = f"/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/"
+
+        pre_files = [
+            "UNIELG-b0s05rsd0g1536premultipoles",
+            "UNIELG-b0s10rsd0g1536premultipoles",
+            "UNIELG-b0s15rsd0g1536premultipoles",
+            "UNIELG-b0s20rsd0g1536premultipoles",
+        ]
+        post_files = [
+            "UNIELG-b0s05rsd0g1536postmultipoles",
+            "UNIELG-b0s10rsd0g1536postmultipoles",
+            "UNIELG-b0s15rsd0g1536postmultipoles",
+            "UNIELG-b0s20rsd0g1536postmultipoles",
+        ]
+        for j, (a, b, c) in enumerate(zip(["iso", "ani"], ["Yuyu_RecIso", "Yuyu_RecAni"], ["RecIso", "RecAni"])):
+            for i, smooth in enumerate([5, 10, 15, 20]):
+                pre_file = [ds + b + "/dk0.005kmin0.005/" + pre_files[i] + ".txt"]
+                post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + ".txt"]
+                pre_covfile = covds + "EZmocks/pk_EZmocks_nonfix/covariance_3Gpc/cov_matrix_pk-EZmocks-3Gpc-nonfix_rsd_centerbin"
+                post_covfile = (
+                    covds + "Reconstruction/Stage2_3Gpc/Covariances/NonFix/cov_matrix_pk-EZmocks-3Gpc-" + c + "-nonfix_rsd_post.txt"
+                )
+                collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix", "elg")
+
+                pre_file = [
+                    "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
+                ]
+                post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
+                pre_covfile = covds + "EZmocks/xi_EZmocks_nonfix/covariance_3Gpc/cov_matrix_xi-EZmocks-3Gpc-nonfix_rsd_centerbin.txt"
+                post_covfile = (
+                    covds + "Reconstruction/Stage2_3Gpc/Covariances/NonFix/cov_matrix_xi-EZmocks-3Gpc-" + c + "-nonfix_rsd_post.txt"
                 )
                 collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix", "elg")
 
-    # ===========================
+    """# ===========================
     # Analytic Covariance matrices
     if True:
         ds = f"/global/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/Reconstruction/Results_stage2/"
@@ -265,7 +286,7 @@ if __name__ == "__main__":
                             "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
                         ]
                         post_file = [ds + name + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
-                        """pre_covfile = (
+                        pre_covfile = (
                             covds
                             + c
                             + str("_Sm%d" % smooth)
