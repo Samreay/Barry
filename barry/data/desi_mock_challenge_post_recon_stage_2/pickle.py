@@ -184,7 +184,7 @@ if __name__ == "__main__":
             "UNIELG-b0s15rsd0g1536postmultipoles",
             "UNIELG-b0s20rsd0g1536postmultipoles",
         ]
-        for j, (a, b, c, d) in enumerate(zip(["iso", "ani"], ["Yuyu_RecIso", "Yuyu_RecAni"], ["RecIso", "RecAniso"], ["RecIso", ""])):
+        for j, (a, b, c, d) in enumerate(zip(["iso", "ani"], ["Yuyu_RecIso", "Yuyu_RecAni"], ["RecIso", "RecAniso"], ["_RecIso", ""])):
             for i, smooth in enumerate([5, 10, 15, 20]):
                 pre_file = [ds + b + "/dk0.005kmin0.005/" + pre_files[i] + ".txt"]
                 post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + ".txt"]
@@ -200,7 +200,7 @@ if __name__ == "__main__":
                     covds
                     + "Reconstruction/Stage2_3Gpc/Covariances/pk_3Gpc_covariance_"
                     + c
-                    + "/cov_matrix_pk-EZmocks-3Gpc_rsd_centerbin_"
+                    + "/cov_matrix_pk-EZmocks-3Gpc_rsd_centerbin"
                     + d
                     + "_post.txt"
                 )
