@@ -192,7 +192,7 @@ if __name__ == "__main__":
                     covds
                     + "Reconstruction/Stage2_3Gpc/Covariances/pk_3Gpc_covariance_"
                     + c
-                    + "/cov_matrix_pk-EZmocks-3Gpc_rsd_centerbin_"
+                    + "/cov_matrix_pk-EZmocks-3Gpc_rsd_centerbin"
                     + d
                     + "_post.txt"
                 )  # This is incorrect, but used here as a place holder as the correct file has the wrong binning
