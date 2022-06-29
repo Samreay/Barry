@@ -60,9 +60,9 @@ if __name__ == "__main__":
                             correction=Correction.NONE,
                         )
 
-                        model.set_data(data.get_data())
-                        p = model.get_defaults()
-                        model.plot(model.get_param_dict(p))
+                        # model.set_data(data.get_data())
+                        # p = model.get_defaults()
+                        # model.plot(model.get_param_dict(p))
 
                         smoothnames = [" 5", " 10", " 15", "20"]
                         hexname = " Hexa " if 4 in fit_poles else " No-Hexa "
