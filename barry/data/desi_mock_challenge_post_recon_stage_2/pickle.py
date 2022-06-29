@@ -87,12 +87,12 @@ def collect_pk_data(pre_files, post_files, pre_covfile, post_covfile, a, smooth,
     ks = next(iter(pre_res.items()))[1]["k"].to_numpy()
     print(ks)
     pre_cov = format_pk_cov(len(ks), pre_covfile)
-    pre_cov = pre_cov if fix.lower() == "analytic" else pre_cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
+    pre_cov = pre_cov if fix.lower() == "analytic" else pre_cov  # Rescaled covariance by volume from 1Gpc to 3Gpc
     print(np.shape(pre_cov), np.shape(ks))
 
     ks = next(iter(pre_res.items()))[1]["k"].to_numpy()
     post_cov = format_pk_cov(len(ks), post_covfile)
-    post_cov = post_cov if fix.lower() == "analytic" else post_cov / 27.0  # Rescaled covariance by volume from 1Gpc to 3Gpc
+    post_cov = post_cov if fix.lower() == "analytic" else post_cov  # Rescaled covariance by volume from 1Gpc to 3Gpc
     print(np.shape(post_cov), np.shape(ks))
 
     split = {

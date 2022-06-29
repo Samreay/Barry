@@ -111,7 +111,7 @@ class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
             raise NotImplementedError("covtype not recognised, must be fix, nonfix or analytic")
 
         smoothscales = ["5", "10", "15", "20"]
-        if smoothtype not in [1, 2, 3]:
+        if smoothtype not in [1, 2, 3, 4]:
             raise NotImplementedError(
                 "smoothscale not recognised, must be 1, 2, 3 or 4, corresponding to 5, 10, 15 or 20 (Mpc/h) respectively"
             )

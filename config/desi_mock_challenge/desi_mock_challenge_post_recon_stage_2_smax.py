@@ -24,46 +24,52 @@ if __name__ == "__main__":
     sampler = DynestySampler(temp_dir=dir_name, nlive=1000)
 
     names = [
-        "PostRecon Yuyu NonFix ",
-        "PostRecon Yuyu NonFix ",
+        ["PostRecon Yuyu Iso Fix ", "PostRecon Yuyu Iso NonFix "],
+        ["PostRecon Yuyu Ani Fix ", "PostRecon Yuyu Ani NonFix "],
     ]
     cmap = plt.cm.get_cmap("viridis")
 
-    smoothtypes = [1, 2, 3]  # [5, 10, 15] Mpc/h
+    smoothtypes = [1, 2, 3, 4]  # [5, 10, 15] Mpc/h
     smins = [35, 45, 55]
 
     allnames = []
     counter = 0
     for i, recon in enumerate(["iso", "ani"]):
-        for smoothtype in smoothtypes:
-            for fit_poles in [[0, 2], [0, 2, 4]]:
-                for smin in smins:
-                    data = CorrelationFunction_DESIMockChallenge_Post(
-                        isotropic=False,
-                        recon=recon,
-                        realisation="data",
-                        fit_poles=fit_poles,
-                        min_dist=smin,
-                        max_dist=157.5,
-                        num_mocks=998,
-                        smoothtype=smoothtype,
-                        covtype="nonfix",
-                        tracer="elg",
-                    )
-                    model = CorrBeutler2017(
-                        recon=data.recon,
-                        isotropic=data.isotropic,
-                        marg="full",
-                        fix_params=["om", "beta"],
-                        poly_poles=fit_poles,
-                        correction=Correction.NONE,
-                    )
-                    smoothnames = [" 5", " 10", " 15"]
-                    hexname = " Hexa " if 4 in fit_poles else " No-Hexa "
-                    name = names[i] + recon + smoothnames[smoothtype - 1] + hexname + str(r"$s_{min}=%3.1lf$" % smin)
-                    allnames.append(name)
-                    fitter.add_model_and_dataset(model, data, name=name)
-                    counter += 1
+        for j, covtype in enumerate(["fix", "nonfix"]):
+            for smoothtype in smoothtypes:
+                for fit_poles in [[0, 2], [0, 2, 4]]:
+                    for smin in smins:
+                        data = CorrelationFunction_DESIMockChallenge_Post(
+                            isotropic=False,
+                            recon=recon,
+                            realisation="data",
+                            fit_poles=fit_poles,
+                            min_dist=smin,
+                            max_dist=157.5,
+                            num_mocks=998,
+                            smoothtype=smoothtype,
+                            covtype=covtype,
+                            tracer="elg",
+                        )
+                        model = CorrBeutler2017(
+                            recon=data.recon,
+                            isotropic=data.isotropic,
+                            marg="full",
+                            fix_params=["om", "beta"],
+                            poly_poles=fit_poles,
+                            correction=Correction.NONE,
+                        )
+
+                        model.set_data(data.get_data())
+                        p = model.get_defaults()
+                        model.plot(model.get_param_dict(p))
+
+                        smoothnames = [" 5", " 10", " 15", "20"]
+                        hexname = " Hexa " if 4 in fit_poles else " No-Hexa "
+                        name = names[i][j] + recon + smoothnames[smoothtype - 1] + hexname + str(r"$s_{min}=%3.1lf$" % smin)
+                        allnames.append(name)
+                        fitter.add_model_and_dataset(model, data, name=name)
+                        counter += 1
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
