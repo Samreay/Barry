@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
-    sampler = EnsembleSampler(temp_dir=dir_name, num_steps=5000)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=250)
 
     mocktypes = ["abacus_cutsky"]
     nzbins = [3]
