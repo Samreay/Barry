@@ -89,13 +89,13 @@ if __name__ == "__main__":
                 model = CorrBeutler2017(
                     recon=dataset.recon,
                     isotropic=dataset.isotropic,
-                    fix_params=["om", "beta", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
+                    fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
                     marg="full",
                     poly_poles=dataset.fit_poles,
                     correction=Correction.NONE,
                 )
-                model.set_default("sigma_nl_par", sigma_nl_par[i])
-                model.set_default("sigma_nl_perp", sigma_nl_perp[i])
+                model.set_default("sigma_nl_par", sigma_nl_par[z])
+                model.set_default("sigma_nl_perp", sigma_nl_perp[z])
                 model.set_default("sigma_s", 3.0)
 
                 # Create a unique name for the fit and add it to the list

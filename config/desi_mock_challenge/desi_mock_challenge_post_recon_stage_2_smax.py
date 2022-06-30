@@ -64,7 +64,7 @@ if __name__ == "__main__":
                         # p = model.get_defaults()
                         # model.plot(model.get_param_dict(p))
 
-                        smoothnames = [" 5", " 10", " 15", "20"]
+                        smoothnames = [" 5", " 10", " 15", " 20"]
                         hexname = " Hexa " if 4 in fit_poles else " No-Hexa "
                         name = names[i][j] + recon + smoothnames[smoothtype - 1] + hexname + str(r"$s_{min}=%3.1lf$" % smin)
                         allnames.append(name)
@@ -84,9 +84,8 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         output = {}
-        print(allnames)
         for name in allnames:
-            fitname = " ".join(name.split()[:6])
+            fitname = " ".join(name.split()[:7])
             output[fitname] = []
 
         c = ChainConsumer()
@@ -95,7 +94,8 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             smin = extra["name"].split(" ")[-1][9:-1]
-            fitname = " ".join(extra["name"].split()[:6])
+            fitname = " ".join(extra["name"].split()[:7])
+            print(fitname, smin)
 
             color = plt.colors.rgb2hex(cmap(float(counter) / (len(smins) - 1)))
 

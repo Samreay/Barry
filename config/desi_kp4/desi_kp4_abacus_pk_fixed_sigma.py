@@ -56,6 +56,8 @@ if __name__ == "__main__":
 
     mocktypes = ["abacus_cutsky"]
     nzbins = [3]
+    sigma_nl_perp = [6.0, 5.0, 4.0]
+    sigma_nl_par = [10.0, 9.0, 8.0]
 
     # Loop over the mocktypes
     allnames = []
@@ -86,11 +88,17 @@ if __name__ == "__main__":
                 model = PowerBeutler2017(
                     recon=dataset.recon,
                     isotropic=dataset.isotropic,
+                    fix_params=["om", "beta", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
                     marg="full",
                     poly_poles=dataset.fit_poles,
                     correction=Correction.HARTLAP,
                     n_poly=5,
                 )
+                model.set_default("sigma_nl_par", sigma_nl_par[z])
+                model.set_default("sigma_nl_perp", sigma_nl_perp[z])
+                model.set_default("sigma_s", 3.0)
+
+                model.sanity_check(dataset)
 
                 # Create a unique name for the fit and add it to the list
                 name = dataset.name + " mock mean"
@@ -99,8 +107,8 @@ if __name__ == "__main__":
 
                 # Now add the individual realisations to the list
                 for j in range(len(dataset.mock_data)):
-                    dataset.set_realisation(j)
-                    name = dataset.name + f" realisation {j}"
+                    dataset.set_realisation(i)
+                    name = dataset.name + f" realisation {i}"
                     fitter.add_model_and_dataset(model, dataset, name=name)
                     allnames.append(name)
 
@@ -190,8 +198,6 @@ if __name__ == "__main__":
                     [
                         "$\\alpha_\\parallel$",
                         "$\\alpha_\\perp$",
-                        "$\\Sigma_{nl,||}$",
-                        "$\\Sigma_{nl,\\perp}$",
                     ]
                 ],
                 weight,

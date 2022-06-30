@@ -98,9 +98,9 @@ if __name__ == "__main__":
                 allnames.append(name)
 
                 # Now add the individual realisations to the list
-                for i in range(len(dataset.mock_data)):
-                    dataset.set_realisation(i)
-                    name = dataset.name + f" realisation {i}"
+                for j in range(len(dataset.mock_data)):
+                    dataset.set_realisation(j)
+                    name = dataset.name + f" realisation {j}"
                     fitter.add_model_and_dataset(model, dataset, name=name)
                     allnames.append(name)
 
