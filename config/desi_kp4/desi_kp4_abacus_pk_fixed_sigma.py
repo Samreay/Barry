@@ -98,8 +98,6 @@ if __name__ == "__main__":
                 model.set_default("sigma_nl_perp", sigma_nl_perp[z])
                 model.set_default("sigma_s", 3.0)
 
-                model.sanity_check(dataset)
-
                 # Create a unique name for the fit and add it to the list
                 name = dataset.name + " mock mean"
                 fitter.add_model_and_dataset(model, dataset, name=name)
@@ -107,8 +105,8 @@ if __name__ == "__main__":
 
                 # Now add the individual realisations to the list
                 for j in range(len(dataset.mock_data)):
-                    dataset.set_realisation(i)
-                    name = dataset.name + f" realisation {i}"
+                    dataset.set_realisation(j)
+                    name = dataset.name + f" realisation {j}"
                     fitter.add_model_and_dataset(model, dataset, name=name)
                     allnames.append(name)
 
