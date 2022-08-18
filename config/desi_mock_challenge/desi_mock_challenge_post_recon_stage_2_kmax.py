@@ -20,52 +20,53 @@ if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
     fitter = Fitter(dir_name, remove_output=True)
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=250)
 
     names = [
-        "PostRecon Yuyu NonFix ",
-        "PostRecon Yuyu NonFix ",
+        ["PostRecon Yuyu Iso Fix ", "PostRecon Yuyu Iso NonFix "],
+        ["PostRecon Yuyu Ani Fix ", "PostRecon Yuyu Ani NonFix "],
     ]
     cmap = plt.cm.get_cmap("viridis")
 
-    smoothtypes = [1, 2, 3]  # [5, 10, 15] Mpc/h
+    smoothtypes = [1, 2, 3, 4]  # [5, 10, 15, 20] Mpc/h
     kmaxs = [0.15, 0.20, 0.25, 0.30]
 
     allnames = []
     counter = 0
     for i, recon in enumerate(["iso", "ani"]):
-        for smoothtype in smoothtypes:
-            for fit_poles in [[0, 2], [0, 2, 4]]:
-                for n_poly in [3, 5]:
-                    for kmax in kmaxs:
-                        data = PowerSpectrum_DESIMockChallenge_Post(
-                            isotropic=False,
-                            recon=recon,
-                            realisation="data",
-                            fit_poles=fit_poles,
-                            min_k=0.0075,
-                            max_k=kmax,
-                            num_mocks=998,
-                            smoothtype=smoothtype,
-                            covtype="nonfix",
-                            tracer="elg",
-                        )
-                        model = PowerBeutler2017(
-                            recon=data.recon,
-                            isotropic=data.isotropic,
-                            marg="full",
-                            fix_params=["om", "beta"],
-                            poly_poles=fit_poles,
-                            correction=Correction.NONE,
-                            n_poly=n_poly,
-                        )
-                        smoothnames = [" 5", " 10", " 15"]
-                        hexname = " Hexa " if 4 in fit_poles else " No-Hexa "
-                        polyname = "3-Poly " if n_poly == 3 else "5-Poly "
-                        name = names[i] + recon + smoothnames[smoothtype - 1] + hexname + polyname + str(r"$k_{max}=%3.2lf$" % kmax)
-                        fitter.add_model_and_dataset(model, data, name=name)
-                        allnames.append(name)
-                        counter += 1
+        for j, covtype in enumerate(["fix", "nonfix"]):
+            for smoothtype in smoothtypes:
+                for fit_poles in [[0, 2], [0, 2, 4]]:
+                    for n_poly in [3, 5]:
+                        for kmax in kmaxs:
+                            data = PowerSpectrum_DESIMockChallenge_Post(
+                                isotropic=False,
+                                recon=recon,
+                                realisation="data",
+                                fit_poles=fit_poles,
+                                min_k=0.0075,
+                                max_k=kmax,
+                                num_mocks=998,
+                                smoothtype=smoothtype,
+                                covtype="nonfix",
+                                tracer="elg",
+                            )
+                            model = PowerBeutler2017(
+                                recon=data.recon,
+                                isotropic=data.isotropic,
+                                marg="full",
+                                fix_params=["om", "beta"],
+                                poly_poles=fit_poles,
+                                correction=Correction.NONE,
+                                n_poly=n_poly,
+                            )
+                            smoothnames = [" 5", " 10", " 15", "20"]
+                            hexname = " Hexa " if 4 in fit_poles else " No-Hexa "
+                            polyname = "3-Poly " if n_poly == 3 else "5-Poly "
+                            name = names[i][j] + recon + smoothnames[smoothtype - 1] + hexname + polyname + str(r"$k_{max}=%3.2lf$" % kmax)
+                            fitter.add_model_and_dataset(model, data, name=name)
+                            allnames.append(name)
+                            counter += 1
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)

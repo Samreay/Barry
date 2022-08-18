@@ -42,7 +42,7 @@ class PowerSpectrum(Dataset, ABC):
         name = name or self.data_obj["name"] + " Recon" if recon else self.data_obj["name"] + " Prerecon"
         super().__init__(name, isotropic=isotropic, recon=recon, realisation=realisation)
 
-        self.ndata = self.data_obj["n_data"]
+        self.ndata = self.data_obj["n_data"] if "n_data" in self.data_obj else 1
         self.cosmology = self.data_obj["cosmology"]
         dataname = "post-recon data" if recon else "pre-recon data"
         self.true_data = self.data_obj[dataname] if dataname in self.data_obj else None

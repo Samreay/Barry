@@ -89,7 +89,7 @@ if __name__ == "__main__":
                 model = CorrBeutler2017(
                     recon=dataset.recon,
                     isotropic=dataset.isotropic,
-                    fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
+                    fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s", "beta"],
                     marg="full",
                     poly_poles=dataset.fit_poles,
                     correction=Correction.NONE,

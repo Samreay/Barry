@@ -21,15 +21,20 @@ def getpk(loc):
 
 
 def getwin(ks):
-    res = {"w_ks_input": ks.copy(), "w_k0_scale": np.zeros(ks.size), "w_transform": np.eye(5 * ks.size), "w_ks_output": ks.copy()}
+    res = {
+        "w_ks_input": ks.copy(),
+        "w_k0_scale": np.zeros(ks.size),
+        "w_transform": np.eye(5 * ks.size, 6 * ks.size),
+        "w_ks_output": ks.copy(),
+    }
     return {1: res}  # Step size is one
 
 
 def getcomp(ks):
-    matrix = np.zeros((5 * ks.size, 3 * ks.size))
+    matrix = np.zeros((6 * ks.size, 3 * ks.size))
     matrix[: ks.size, : ks.size] = np.diag(np.ones(ks.size))
     matrix[2 * ks.size : 3 * ks.size, ks.size : 2 * ks.size] = np.diag(np.ones(ks.size))
-    matrix[4 * ks.size :, 2 * ks.size :] = np.diag(np.ones(ks.size))
+    matrix[4 * ks.size : 5 * ks.size, 2 * ks.size :] = np.diag(np.ones(ks.size))
     return matrix
 
 
