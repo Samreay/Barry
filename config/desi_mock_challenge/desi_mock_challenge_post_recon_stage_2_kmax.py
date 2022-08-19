@@ -20,7 +20,7 @@ if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
     fitter = Fitter(dir_name, remove_output=True)
 
-    sampler = DynestySampler(temp_dir=dir_name, nlive=250)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
 
     names = [
         ["PostRecon Yuyu Iso Fix ", "PostRecon Yuyu Iso NonFix "],
@@ -60,7 +60,7 @@ if __name__ == "__main__":
                                 correction=Correction.NONE,
                                 n_poly=n_poly,
                             )
-                            smoothnames = [" 5", " 10", " 15", "20"]
+                            smoothnames = [" 5", " 10", " 15", " 20"]
                             hexname = " Hexa " if 4 in fit_poles else " No-Hexa "
                             polyname = "3-Poly " if n_poly == 3 else "5-Poly "
                             name = names[i][j] + recon + smoothnames[smoothtype - 1] + hexname + polyname + str(r"$k_{max}=%3.2lf$" % kmax)
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         output = {}
         print(allnames)
         for name in allnames:
-            fitname = " ".join(name.split()[:7])
+            fitname = " ".join(name.split()[:8])
             output[fitname] = []
 
         c = ChainConsumer()
@@ -92,7 +92,7 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             kmax = extra["name"].split(" ")[-1][9:-1]
-            fitname = " ".join(extra["name"].split()[:7])
+            fitname = " ".join(extra["name"].split()[:8])
 
             color = plt.colors.rgb2hex(cmap(float(counter) / (len(kmaxs) - 1)))
 
@@ -107,7 +107,7 @@ if __name__ == "__main__":
             df["$\\alpha_\\perp$"] = alpha_perp
 
             extra.pop("realisation", None)
-            c.add_chain(df, weights=weight, color=color, posterior=posterior, **extra)
+            c.add_chain(df, weights=weight, color=color, posterior=posterior, plot_contour=True, **extra)
 
             max_post = posterior.argmax()
             chi2 = -2 * posterior[max_post]
