@@ -389,7 +389,7 @@ class PowerSpectrumFit(Model):
                 poly[0, :, :] = pk
                 for i, pole in enumerate(self.poly_poles):
                     if self.recon:
-                        poly[3 * i + 1 : 3 * (i + 1) + 1, pole] = [kpoly**2, np.ones(len(kpoly)), 1.0 / kpoly]
+                        poly[3 * i + 1 : 3 * (i + 1) + 1, pole] = [kpoly, np.ones(len(kpoly)), 1.0 / kpoly]
                     else:
                         poly[3 * i + 1 : 3 * (i + 1) + 1, pole] = [kpoly, np.ones(len(kpoly)), 1.0 / kpoly]
 
@@ -397,7 +397,7 @@ class PowerSpectrumFit(Model):
                 poly = np.zeros((1, 6, len(kpoly)))
                 for pole in self.poly_poles:
                     if self.recon:
-                        shape[pole] = p[f"a{{{pole}}}_1"] * k**2 + p[f"a{{{pole}}}_2"] + p[f"a{{{pole}}}_3"] / k
+                        shape[pole] = p[f"a{{{pole}}}_1"] * k + p[f"a{{{pole}}}_2"] + p[f"a{{{pole}}}_3"] / k
                     else:
                         shape[pole] = p[f"a{{{pole}}}_1"] * k + p[f"a{{{pole}}}_2"] + p[f"a{{{pole}}}_3"] / k
 
