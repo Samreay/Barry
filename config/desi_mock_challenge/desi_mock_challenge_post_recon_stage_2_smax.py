@@ -29,7 +29,7 @@ if __name__ == "__main__":
     ]
     cmap = plt.cm.get_cmap("viridis")
 
-    smoothtypes = [1, 2, 3, 4]  # [5, 10, 15] Mpc/h
+    smoothtypes = [1, 2, 3, 4]  # [5, 10, 15, 20] Mpc/h
     smins = [35, 45, 55]
 
     allnames = []
