@@ -211,10 +211,28 @@ if __name__ == "__main__":
                 )
                 collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "fix", "elg")
 
-                pre_file = [
+                """pre_file = [
                     "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
                 ]
                 post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
+                pre_covfile = (
+                    covds
+                    + "Reconstruction/Stage2_3Gpc/Covariances/xi_3Gpc_covariance_"
+                    + c
+                    + "/cov_matrix_xi-EZmocks-3Gpc_rsd_centerbin_post_mariana.txt"
+                )  # This is incorrect, but used here as a place holder as the correct file has the wrong binning
+                post_covfile = (
+                    covds
+                    + "Reconstruction/Stage2_3Gpc/Covariances/xi_3Gpc_covariance_"
+                    + c
+                    + "/cov_matrix_xi-EZmocks-3Gpc_rsd_centerbin_post_mariana.txt"
+                )
+                collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "fix", "elg")"""
+
+                pre_file = [
+                    "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
+                ]
+                post_file = [ds + b + "_paircounts/" + post_files[i][:-14] + ".mp"]
                 pre_covfile = (
                     covds
                     + "Reconstruction/Stage2_3Gpc/Covariances/xi_3Gpc_covariance_"
@@ -259,10 +277,22 @@ if __name__ == "__main__":
                 )
                 collect_pk_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix", "elg")
 
-                pre_file = [
+                """pre_file = [
                     "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
                 ]
                 post_file = [ds + b + "/dk0.005kmin0.005/" + post_files[i] + "_xi_gs_han4.txt"]
+                pre_covfile = (
+                    covds + "Reconstruction/Stage2_3Gpc/Covariances/NonFix/cov_matrix_xi-EZmocks-3Gpc-" + c + "-nonfix_rsd_post.txt"
+                )  # This is incorrect, but used here as a place holder as the correct file has the wrong binning
+                post_covfile = (
+                    covds + "Reconstruction/Stage2_3Gpc/Covariances/NonFix/cov_matrix_xi-EZmocks-3Gpc-" + c + "-nonfix_rsd_post.txt"
+                )
+                collect_xi_data(pre_file, post_file, pre_covfile, post_covfile, a, smooth, "nonfix", "elg")"""
+
+                pre_file = [
+                    "/project/projectdirs/desi/users/UNIT-BAO-RSD-challenge/UNIT/xi_3Gpc_v2/2PCF_UNIT_DESI_Shadab_HOD_snap97_ELG_v1_xil.dat"
+                ]
+                post_file = [ds + b + "_paircounts/" + post_files[i][:-14] + ".mp"]
                 pre_covfile = (
                     covds + "Reconstruction/Stage2_3Gpc/Covariances/NonFix/cov_matrix_xi-EZmocks-3Gpc-" + c + "-nonfix_rsd_post.txt"
                 )  # This is incorrect, but used here as a place holder as the correct file has the wrong binning
