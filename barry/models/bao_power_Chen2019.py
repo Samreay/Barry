@@ -69,39 +69,39 @@ class PowerChen2019(PowerSpectrumFit):
         s = camb.smoothing_kernel
 
         return {
-            "sigma_nl": integrate.simps(pk_lin * (1.0 - j0), ks) / (6.0 * np.pi ** 2),
-            "sigma_dd_nl": integrate.simps(pk_lin * (1.0 - s) ** 2 * (1.0 - j0), ks) / (6.0 * np.pi ** 2),
-            "sigma_sd_nl": integrate.simps(pk_lin * (0.5 * (s ** 2 + (1.0 - s) ** 2) + j0 * s * (1.0 - s)), ks) / (6.0 * np.pi ** 2),
-            "sigma_ss_nl": integrate.simps(pk_lin * s ** 2 * (1.0 - j0), ks) / (6.0 * np.pi ** 2),
-            "sigma_sd_dd": integrate.simps(pk_lin * (1.0 - s) ** 2, ks) / (12.0 * np.pi ** 2),
-            "sigma_sd_sd": integrate.simps(pk_lin * j0 * s * (1.0 - s), ks) / (6.0 * np.pi ** 2),
-            "sigma_sd_ss": integrate.simps(pk_lin * s ** 2, ks) / (12.0 * np.pi ** 2),
+            "sigma_nl": integrate.simps(pk_lin * (1.0 - j0), ks) / (6.0 * np.pi**2),
+            "sigma_dd_nl": integrate.simps(pk_lin * (1.0 - s) ** 2 * (1.0 - j0), ks) / (6.0 * np.pi**2),
+            "sigma_sd_nl": integrate.simps(pk_lin * (0.5 * (s**2 + (1.0 - s) ** 2) + j0 * s * (1.0 - s)), ks) / (6.0 * np.pi**2),
+            "sigma_ss_nl": integrate.simps(pk_lin * s**2 * (1.0 - j0), ks) / (6.0 * np.pi**2),
+            "sigma_sd_dd": integrate.simps(pk_lin * (1.0 - s) ** 2, ks) / (12.0 * np.pi**2),
+            "sigma_sd_sd": integrate.simps(pk_lin * j0 * s * (1.0 - s), ks) / (6.0 * np.pi**2),
+            "sigma_sd_ss": integrate.simps(pk_lin * s**2, ks) / (12.0 * np.pi**2),
         }
 
     @lru_cache(maxsize=4)
     def get_damping(self, growth, om):
-        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_nl", om))
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu**2, self.camb.ks**2) * self.get_pregen("sigma_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_dd(self, growth, om):
-        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_dd_nl", om))
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu**2, self.camb.ks**2) * self.get_pregen("sigma_dd_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_sd(self, growth, om):
-        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_sd_nl", om))
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu**2, self.camb.ks**2) * self.get_pregen("sigma_sd_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_sd_iso(self, growth, om):
         inner = (
-            (1.0 + (2.0 + growth) * growth * self.mu ** 2) * self.get_pregen("sigma_sd_dd", om)
-            + (1.0 + growth * self.mu ** 2) * self.get_pregen("sigma_sd_sd", om)
+            (1.0 + (2.0 + growth) * growth * self.mu**2) * self.get_pregen("sigma_sd_dd", om)
+            + (1.0 + growth * self.mu**2) * self.get_pregen("sigma_sd_sd", om)
             + self.get_pregen("sigma_sd_ss", om)
         )
-        return np.exp(-np.outer(inner, self.camb.ks ** 2))
+        return np.exp(-np.outer(inner, self.camb.ks**2))
 
     @lru_cache(maxsize=4)
     def get_damping_ss(self, growth, om):
-        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu ** 2, self.camb.ks ** 2) * self.get_pregen("sigma_ss_nl", om))
+        return np.exp(-np.outer(1.0 + (2.0 + growth) * growth * self.mu**2, self.camb.ks**2) * self.get_pregen("sigma_ss_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_par(self, growth, om, data_name=None):
@@ -109,7 +109,7 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_nl", om))
+        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks**2, self.mu**2) * self.get_pregen("sigma_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_perp(self, om, data_name=None):
@@ -117,7 +117,7 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_nl", om))
+        return np.exp(-np.outer(ks**2, 1.0 - self.mu**2) * self.get_pregen("sigma_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_dd_par(self, growth, om, data_name=None):
@@ -125,7 +125,7 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_dd_nl", om))
+        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks**2, self.mu**2) * self.get_pregen("sigma_dd_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_dd_perp(self, om, data_name=None):
@@ -133,7 +133,7 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_dd_nl", om))
+        return np.exp(-np.outer(ks**2, 1.0 - self.mu**2) * self.get_pregen("sigma_dd_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_sd_par(self, growth, om, data_name=None):
@@ -141,7 +141,7 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_sd_nl", om))
+        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks**2, self.mu**2) * self.get_pregen("sigma_sd_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_sd_perp(self, om, data_name=None):
@@ -149,7 +149,7 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_sd_nl", om))
+        return np.exp(-np.outer(ks**2, 1.0 - self.mu**2) * self.get_pregen("sigma_sd_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_sd_dd_par(self, growth, om, data_name=None):
@@ -157,7 +157,7 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_sd_dd", om))
+        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks**2, self.mu**2) * self.get_pregen("sigma_sd_dd", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_sd_dd_perp(self, om, data_name=None):
@@ -165,7 +165,7 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_sd_dd", om))
+        return np.exp(-np.outer(ks**2, 1.0 - self.mu**2) * self.get_pregen("sigma_sd_dd", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_sd_sd_par(self, growth, om, data_name=None):
@@ -173,7 +173,7 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer((1.0 + growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_sd_sd", om))
+        return np.exp(-np.outer((1.0 + growth) * ks**2, self.mu**2) * self.get_pregen("sigma_sd_sd", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_sd_sd_perp(self, om, data_name=None):
@@ -181,7 +181,7 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_sd_sd", om))
+        return np.exp(-np.outer(ks**2, 1.0 - self.mu**2) * self.get_pregen("sigma_sd_sd", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_sd_ss_par(self, om, data_name=None):
@@ -189,7 +189,7 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer(ks ** 2, self.mu ** 2) * self.get_pregen("sigma_sd_ss", om))
+        return np.exp(-np.outer(ks**2, self.mu**2) * self.get_pregen("sigma_sd_ss", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_sd_ss_perp(self, om, data_name=None):
@@ -197,7 +197,7 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_sd_ss", om))
+        return np.exp(-np.outer(ks**2, 1.0 - self.mu**2) * self.get_pregen("sigma_sd_ss", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_ss_par(self, growth, om, data_name=None):
@@ -205,7 +205,7 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks ** 2, self.mu ** 2) * self.get_pregen("sigma_ss_nl", om))
+        return np.exp(-np.outer((1.0 + (2.0 + growth) * growth) * ks**2, self.mu**2) * self.get_pregen("sigma_ss_nl", om))
 
     @lru_cache(maxsize=4)
     def get_damping_aniso_ss_perp(self, om, data_name=None):
@@ -213,7 +213,7 @@ class PowerChen2019(PowerSpectrumFit):
             ks = self.camb.ks
         else:
             ks = self.data_dict[data_name]["ks_input"]
-        return np.exp(-np.outer(ks ** 2, 1.0 - self.mu ** 2) * self.get_pregen("sigma_ss_nl", om))
+        return np.exp(-np.outer(ks**2, 1.0 - self.mu**2) * self.get_pregen("sigma_ss_nl", om))
 
     def declare_parameters(self):
         super().declare_parameters()
@@ -277,7 +277,7 @@ class PowerChen2019(PowerSpectrumFit):
             kprime = k if for_corr else k / p["alpha"]
 
             # Compute the smooth model
-            fog = 1.0 / (1.0 + np.outer(self.mu ** 2, ks ** 2 * p["sigma_s"] ** 2 / 2.0)) ** 2
+            fog = 1.0 / (1.0 + np.outer(self.mu**2, ks**2 * p["sigma_s"] ** 2 / 2.0)) ** 2
             pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
 
             if smooth:
@@ -294,18 +294,18 @@ class PowerChen2019(PowerSpectrumFit):
                     damping_ss = self.get_damping_ss(growth, om)
 
                     kaiser_prefac = (
-                        1.0 + np.outer(p["beta"] * self.mu ** 2, 1.0 - self.camb.smoothing_kernel) - self.camb.smoothing_kernel / p["b"]
+                        1.0 + np.outer(p["beta"] * self.mu**2, 1.0 - self.camb.smoothing_kernel) - self.camb.smoothing_kernel / p["b"]
                     )
-                    ss_prefac = np.outer(1.0 + growth * self.mu ** 2, self.camb.smoothing_kernel) / p["b"]
+                    ss_prefac = np.outer(1.0 + growth * self.mu**2, self.camb.smoothing_kernel) / p["b"]
                     sd_prefac = self.camb.smoothing_kernel / p["b"] if self.recon_type == "iso" else ss_prefac
 
                     propagator = (
-                        kaiser_prefac ** 2 * damping_dd + 2.0 * sd_prefac * kaiser_prefac * damping_sd + ss_prefac ** 2 * damping_ss
+                        kaiser_prefac**2 * damping_dd + 2.0 * sd_prefac * kaiser_prefac * damping_sd + ss_prefac**2 * damping_ss
                     )
                 else:
                     damping = self.get_damping(growth, om)
-                    kaiser_prefac = 1.0 + np.tile(p["beta"] * self.mu ** 2, (len(ks), 1)).T
-                    propagator = kaiser_prefac ** 2 * damping
+                    kaiser_prefac = 1.0 + np.tile(p["beta"] * self.mu**2, (len(ks), 1)).T
+                    propagator = kaiser_prefac**2 * damping
 
             if smooth:
                 prefac = np.ones(len(kprime))
@@ -332,16 +332,16 @@ class PowerChen2019(PowerSpectrumFit):
             epsilon = np.round(p["epsilon"], decimals=5)
             kprime = np.tile(k, (self.nmu, 1)).T if for_corr else np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
             muprime = self.get_muprime(epsilon)
-            fog = 1.0 / (1.0 + muprime ** 2 * kprime ** 2 * p["sigma_s"] ** 2 / 2.0) ** 2
+            fog = 1.0 / (1.0 + muprime**2 * kprime**2 * p["sigma_s"] ** 2 / 2.0) ** 2
 
             # Lets round some things for the sake of numerical speed
             om = np.round(p["om"], decimals=5)
             growth = np.round(p["b"] * p["beta"], decimals=5)
 
             sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel)) if self.recon else 0.0
-            kaiser_prefac = 1.0 + growth * muprime ** 2 * (1.0 - sprime) - sprime / p["b"]
+            kaiser_prefac = 1.0 + growth * muprime**2 * (1.0 - sprime) - sprime / p["b"]
 
-            pk_smooth = p["b"] ** 2 * kaiser_prefac ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+            pk_smooth = p["b"] ** 2 * kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
 
             if smooth:
                 pk2d = pk_smooth
@@ -374,9 +374,9 @@ class PowerChen2019(PowerSpectrumFit):
                     )
 
                     # Compute propagator
-                    ss_prefac = (1.0 + growth * muprime ** 2) * sprime / kaiser_prefac
+                    ss_prefac = (1.0 + growth * muprime**2) * sprime / kaiser_prefac
                     sd_prefac = sprime / kaiser_prefac if self.recon_type == "iso" else ss_prefac
-                    propagator = damping_dd + 2.0 * sd_prefac * damping_sd + ss_prefac ** 2 * damping_ss
+                    propagator = damping_dd + 2.0 * sd_prefac * damping_sd + ss_prefac**2 * damping_ss
                 else:
                     damping = (
                         self.get_damping_aniso_par(growth, om, data_name=data_name) ** power_par
@@ -415,43 +415,54 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12, PowerSpectrum_DESI_KP4
     from barry.config import setup_logging
     from barry.models.model import Correction
 
     setup_logging()
 
-    print("Checking isotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
-    model = PowerChen2019(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP)
-    model.sanity_check(dataset)
+    # print("Checking isotropic mock mean")
+    # dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
+    # model = PowerChen2019(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP)
+    # model.sanity_check(dataset)
 
-    print("Checking isotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
-    model = PowerChen2019(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP, n_poly=3)
-    model.sanity_check(dataset)
+    # print("Checking isotropic mock mean")
+    # dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
+    # model = PowerChen2019(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP, n_poly=3)
+    # model.sanity_check(dataset)
 
     print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
-    model = PowerChen2019(
-        recon=dataset.recon,
-        isotropic=dataset.isotropic,
-        marg="full",
-        fix_params=["om"],
-        poly_poles=[0, 2, 4],
-        correction=Correction.HARTLAP,
+    # dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
+    dataset = PowerSpectrum_DESI_KP4(
+        recon=None,
+        fit_poles=[0, 2],
+        min_k=0.02,
+        max_k=0.30,
+        mocktype="abacus_cubicbox",
+        redshift_bin=1,
+        realisation=None,
+        num_mocks=1000,
     )
-    model.sanity_check(dataset)
-
-    print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
     model = PowerChen2019(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
         fix_params=["om"],
-        poly_poles=[0, 2, 4],
+        poly_poles=[0, 2],
         correction=Correction.HARTLAP,
         n_poly=3,
     )
     model.sanity_check(dataset)
+
+    # print("Checking anisotropic mock mean")
+    # dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
+    # model = PowerChen2019(
+    #    recon=dataset.recon,
+    #    isotropic=dataset.isotropic,
+    #    marg="full",
+    #    fix_params=["om"],
+    #    poly_poles=[0, 2, 4],
+    #    correction=Correction.HARTLAP,
+    #    n_poly=3,
+    # )
+    # model.sanity_check(dataset)
