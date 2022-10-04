@@ -8,6 +8,7 @@ from barry.models import PowerBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESI_KP4
 from barry.fitter import Fitter
 import numpy as np
+import scipy as sp
 import pandas as pd
 from barry.models.model import Correction
 from barry.utils import weighted_avg_and_cov
@@ -97,6 +98,16 @@ if __name__ == "__main__":
                 name = dataset.name + " mock mean"
                 fitter.add_model_and_dataset(model, dataset, name=name)
                 allnames.append(name)
+
+                # Plot the power spectrum template against Stephen's
+                # chen = np.loadtxt("/Users/uqchowl1/Desktop/desi_pk.txt")
+                # model.set_data(dataset.get_data())
+                # res = model.camb.get_data()
+                # pkspline = sp.interpolate.splrep(res["ks"], res["pk_lin"])
+                # plt.plot(chen[:, 0], chen[:, 1] / sp.interpolate.splev(chen[:, 0], pkspline))
+                # plt.xlim(0.0, 0.4)
+                # plt.ylim(0.99, 1.01)
+                # plt.show()
 
                 # Now add the individual realisations to the list
                 for j in range(len(dataset.mock_data)):

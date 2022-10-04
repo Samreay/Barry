@@ -133,7 +133,7 @@ class Model(ABC):
                     mnu=c["mnu"],
                     recon_smoothing_scale=c["reconsmoothscale"],
                 )
-                self.camb.omch2s = [(self.get_default("om") - c["ob"]) * c["h0"] ** 2]
+                self.camb.omch2s = [(self.get_default("om") - c["ob"]) * c["h0"] ** 2 - c["mnu"] / 93.14]
 
             else:
                 self.camb = getCambGenerator(

@@ -83,7 +83,7 @@ class CambGenerator(object):
         self.k_num = 2000
         self.ks = np.logspace(np.log(self.k_min), np.log(self.k_max), self.k_num, base=np.e)
         self.recon_smoothing_scale = recon_smoothing_scale
-        self.smoothing_kernel = np.exp(-self.ks ** 2 * self.recon_smoothing_scale ** 2 / 2.0)
+        self.smoothing_kernel = np.exp(-self.ks**2 * self.recon_smoothing_scale**2 / 2.0)
 
         self.omch2s = np.linspace(0.05, 0.3, self.om_resolution)
         self.omega_b = ob
@@ -111,7 +111,7 @@ class CambGenerator(object):
 
     @lru_cache(maxsize=512)
     def get_data(self, om=0.31, h0=None):
-        """ Returns the sound horizon, the linear power spectrum, and the halofit power spectrum at self.redshift"""
+        """Returns the sound horizon, the linear power spectrum, and the halofit power spectrum at self.redshift"""
         if h0 is None:
             h0 = self.h0
         if self.data is None:
@@ -141,14 +141,14 @@ class CambGenerator(object):
 
         pars = camb.CAMBparams()
         pars.set_dark_energy(w=-1.0, dark_energy_model="fluid")
-        pars.InitPower.set_params(As=2.130e-9, ns=self.ns)
-        pars.set_matter_power(redshifts=[self.redshift, 0.0001], kmax=self.k_max)
+        pars.InitPower.set_params(As=2.083e-9, ns=self.ns)
+        pars.set_matter_power(redshifts=[self.redshift, 0.0], kmax=self.k_max)
         self.logger.info("Configured CAMB power and dark energy")
 
         data = np.zeros((self.om_resolution, self.h0_resolution, 1 + 3 * self.k_num))
         for i, omch2 in enumerate(self.omch2s):
             for j, h0 in enumerate(self.h0s):
-                self.logger.debug("Generating %d:%d  %0.4f  %0.4f" % (i, j, omch2, h0))
+                self.logger.info("Generating %d:%d  %0.4f  %0.4f" % (i, j, omch2, h0))
                 pars.set_cosmology(
                     H0=h0 * 100,
                     omch2=omch2,
@@ -180,7 +180,7 @@ class CambGenerator(object):
         return self._interpolate(omch2, h0, data=data)
 
     def _interpolate(self, omch2, h0, data=None):
-        """ Performs bilinear interpolation on the entire pk array """
+        """Performs bilinear interpolation on the entire pk array"""
         omch2_index = 1.0 * (self.om_resolution - 1) * (omch2 - self.omch2s[0]) / (self.omch2s[-1] - self.omch2s[0])
 
         # If omch2 == self.omch2s[-1] we can get an index out of bounds later due to rounding errors, so we
