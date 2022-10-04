@@ -172,9 +172,6 @@ class CorrelationFunction_DESI_KP4(CorrelationFunction):
             if not isinstance(realisation, int):
                 raise NotImplementedError("No data yet in DESI KP4, set realisation = None or an integer mock")
 
-        if recon is not None:
-            raise NotImplementedError("Only pre-reconstruction currently included in DESI KP4, set recon = None")
-
         self.nredshift_bins = len(reds[tracer.lower()])
         self.nsmoothtypes = 1
         self.ndata = 1

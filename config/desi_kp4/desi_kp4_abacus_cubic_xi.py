@@ -65,7 +65,7 @@ if __name__ == "__main__":
         for z in range(redshift_bins):
 
             # Loop over pre- and post-recon measurements
-            for recon in [None]:
+            for recon in [None, "sym"]:
 
                 # Create the data. We'll fit mono-, quad- and hexadecapole between k=0.02 and 0.3.
                 # First load up mock mean and add it to the fitting list. Use only the diagonal parts
