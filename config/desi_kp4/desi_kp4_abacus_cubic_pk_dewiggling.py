@@ -85,7 +85,7 @@ if __name__ == "__main__":
                 # of the covariance matrix
                 dataset = PowerSpectrum_DESI_KP4(
                     recon="sym",
-                    fit_poles=[0, 2],
+                    fit_poles=[0, 2, 4],
                     min_k=0.02,
                     max_k=0.30,
                     mocktype=mocktype,
