@@ -56,6 +56,9 @@ if __name__ == "__main__":
 
     mocktypes = ["abacus_cubicbox"]
     nzbins = [1]
+    sigma_nl_perp = [4.0, 4.0, 2.5]
+    sigma_nl_par = [8.0, 8.0, 4.0]
+    sigma_s = [3.0, 0.0, 3.0]
 
     # Loop over the mocktypes
     allnames = []
@@ -65,7 +68,7 @@ if __name__ == "__main__":
         for z in range(redshift_bins):
 
             # Loop over pre- and post-recon measurements
-            for recon in [None, "sym"]:
+            for r, recon in enumerate([None, None, "sym"]):
 
                 # Create the data. We'll fit mono-, quad- and hexadecapole between k=0.02 and 0.3.
                 # First load up mock mean and add it to the fitting list. Use only the diagonal parts
@@ -88,10 +91,13 @@ if __name__ == "__main__":
                     recon=dataset.recon,
                     isotropic=dataset.isotropic,
                     marg="full",
-                    fix_params=["om", "beta"],
+                    fix_params=["om", "beta", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
                     poly_poles=dataset.fit_poles,
                     correction=Correction.HARTLAP,
                 )
+                model.set_default("sigma_nl_par", sigma_nl_par[r])
+                model.set_default("sigma_nl_perp", sigma_nl_perp[r])
+                model.set_default("sigma_s", sigma_s[r])
 
                 # Create a unique name for the fit and add it to the list
                 name = dataset.name + " mock mean"
@@ -101,7 +107,7 @@ if __name__ == "__main__":
                 # Now add the individual realisations to the list
                 for j in range(len(dataset.mock_data)):
                     dataset.set_realisation(j)
-                    name = dataset.name + f" realisation {j}"
+                    name = dataset.name + f" fixed type {r}" + f" realisation {j}"
                     fitter.add_model_and_dataset(model, dataset, name=name)
                     allnames.append(name)
 
@@ -130,7 +136,7 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number and redshift bin
-            recon_bin = 0 if "Prerecon" in extra["name"] else 1
+            recon_bin = int(extra["name"].split()[-3])
             realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
 
             # Store the chain in a dictionary with parameter names
@@ -161,7 +167,7 @@ if __name__ == "__main__":
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
             if realisation == "mean":
-                fitname.append(data[0]["name"].replace(" ", "_"))
+                fitname.append(data[0]["name"].replace(" ", "_") + f" sfixed_type_{recon_bin}")
                 stats[fitname[recon_bin]] = []
                 output[fitname[recon_bin]] = []
                 c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
@@ -174,8 +180,6 @@ if __name__ == "__main__":
                     [
                         "$\\alpha_\\parallel$",
                         "$\\alpha_\\perp$",
-                        "$\\Sigma_{nl,||}$",
-                        "$\\Sigma_{nl,\\perp}$",
                     ]
                 ],
                 weight,
@@ -183,11 +187,9 @@ if __name__ == "__main__":
             )
 
             corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
-            stats[fitname[recon_bin]].append(
-                [mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared, mean[2], mean[3]]
-            )
+            stats[fitname[recon_bin]].append([mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared])
             output[fitname[recon_bin]].append(
-                f"{realisation:s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {mean[3]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
+                f"{realisation:s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
             )
 
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
@@ -208,7 +210,7 @@ if __name__ == "__main__":
             # Save all the numbers to a file
             with open(dir_name + "/Barry_fit_" + fitname[recon_bin] + ".txt", "w") as f:
                 f.write(
-                    "# Realisation, alpha_par, alpha_perp, Sigma_nl_par, Sigma_nl_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
+                    "# Realisation, alpha_par, alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
                 )
                 for l in output[fitname[recon_bin]]:
                     f.write(l + "\n")
@@ -216,8 +218,8 @@ if __name__ == "__main__":
                 # And now the average of all the individual realisations
                 f.write("# ---------------------------------------------------\n")
                 f.write(
-                    "# <alpha_par>, <alpha_perp>, <Sigma_nl_par>, <Sigma_nl_perp>, <sigma_alpha_par>, <sigma_alpha_perp>, <corr_alpha_par_perp>, std_alpha_par, std_alpha_perp, corr_alpha_par_perp, <bf_chi2>\n"
+                    "# <alpha_par>, <alpha_perp>, <sigma_alpha_par>, <sigma_alpha_perp>, <corr_alpha_par_perp>, std_alpha_par, std_alpha_perp, corr_alpha_par_perp, <bf_chi2>\n"
                 )
                 f.write(
-                    f"{means[0]:6.4f}, {means[1]:6.4f}, {means[6]:6.4f}, {means[7]:6.4f}, {means[2]:6.4f}, {means[3]:6.4f}, {means[4]:6.4f}, {np.sqrt(covs[0, 0]):6.4f}, {np.sqrt(covs[1, 1]):6.4f}, {corr:6.4f}, {means[5]:7.3f}\n"
+                    f"{means[0]:6.4f}, {means[1]:6.4f}, {means[2]:6.4f}, {means[3]:6.4f}, {means[4]:6.4f}, {np.sqrt(covs[0, 0]):6.4f}, {np.sqrt(covs[1, 1]):6.4f}, {corr:6.4f}, {means[5]:7.3f}\n"
                 )

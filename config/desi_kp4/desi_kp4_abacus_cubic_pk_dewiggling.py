@@ -106,9 +106,6 @@ if __name__ == "__main__":
                     n_poly=5,
                     smooth_type=smooth_type,
                 )
-                model.set_default("sigma_nl_perp", 2.5)
-                model.set_default("sigma_nl_par", 4.0)
-                model.set_default("sigma_s", 3.0)
 
                 # Create a unique name for the fit and add it to the list
                 name = dataset.name + f" smooth_type {s}" + " mock mean"
@@ -139,7 +136,7 @@ if __name__ == "__main__":
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
         fitname = []
-        c = [ChainConsumer(), ChainConsumer()]
+        c = [ChainConsumer() for i in range(len(smooth_types))]
 
         # Loop over all the chains
         stats = {}
@@ -147,7 +144,7 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number and redshift bin
-            smooth_bin = str(extra["name"].split()[-3])
+            smooth_bin = int(extra["name"].split()[-3])
             realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
 
             # Store the chain in a dictionary with parameter names
@@ -178,7 +175,7 @@ if __name__ == "__main__":
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
             if realisation == "mean":
-                fitname.append(data[0]["name"].replace(" ", "_"))
+                fitname.append(data[0]["name"].replace(" ", "_") + f" smooth_type_{smooth_bin}")
                 stats[fitname[smooth_bin]] = []
                 output[fitname[smooth_bin]] = []
                 c[smooth_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
@@ -229,7 +226,7 @@ if __name__ == "__main__":
                 # And now the average of all the individual realisations
                 f.write("# ---------------------------------------------------\n")
                 f.write(
-                    "# <alpha_par>, <alpha_perp>, <Sigma_nl_par>, <sigma_alpha_perp>, <corr_alpha_par_perp>, std_alpha_par, std_alpha_perp, corr_alpha_par_perp, <bf_chi2>\n"
+                    "# <alpha_par>, <alpha_perp>, <sigma_alpha_par>, <sigma_alpha_perp>, <corr_alpha_par_perp>, std_alpha_par, std_alpha_perp, corr_alpha_par_perp, <bf_chi2>\n"
                 )
                 f.write(
                     f"{means[0]:6.4f}, {means[1]:6.4f}, {means[2]:6.4f}, {means[3]:6.4f}, {means[4]:6.4f}, {np.sqrt(covs[0, 0]):6.4f}, {np.sqrt(covs[1, 1]):6.4f}, {corr:6.4f}, {means[5]:7.3f}\n"

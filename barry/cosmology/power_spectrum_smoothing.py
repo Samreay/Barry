@@ -226,3 +226,14 @@ if __name__ == "__main__":
             ax2.plot(ks, pk_lin / pk_smoothed, "-")
         ax1.legend()
         plt.show()
+
+        fig, (ax1) = plt.subplots(1, 1)
+        for i, smooth_type in enumerate(smooth_types):
+            print(i, smooth_type)
+            pk_smoothed = smooth_func(ks, pk_lin, **smooth_type)
+            ax1.plot(ks, pk_lin / pk_smoothed, "-", label=labels[i])
+        ax1.set_xlim(0.0, 0.4)
+        ax1.set_xlabel(r"$k\,(h\,\mathrm{Mpc}^{-1})$", fontsize=14)
+        ax1.set_ylabel(r"$P(k)/P_{\mathrm{smooth}}(k)$", fontsize=14)
+        ax1.legend()
+        plt.show()
