@@ -6,7 +6,7 @@ from scipy import integrate
 from scipy.interpolate import splrep, splev
 from scipy.special import jn
 
-from barry.cosmology.power_spectrum_smoothing import smooth
+from barry.cosmology.power_spectrum_smoothing import smooth_func
 from barry.models.bao_power import PowerSpectrumFit
 from barry.cosmology.camb_generator import Omega_m_z
 

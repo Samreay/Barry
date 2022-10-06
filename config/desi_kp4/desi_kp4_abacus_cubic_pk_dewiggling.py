@@ -58,6 +58,18 @@ if __name__ == "__main__":
     mocktypes = ["abacus_cubicbox"]
     nzbins = [1]
 
+    # All the smoothing types we want to try
+    smooth_types = [
+        {"method": "eh1998"},
+        {"method": "hinton2017", "degree": 10, "sigma": 1, "weight": 0.5},
+        {"method": "hinton2017", "degree": 13, "sigma": 1, "weight": 0.5},
+        {"method": "hinton2017", "degree": 15, "sigma": 1, "weight": 0.5},
+        {"method": "hinton2017", "degree": 13, "sigma": 0, "weight": 0.5},
+        {"method": "hinton2017", "degree": 13, "sigma": 2, "weight": 0.5},
+        {"method": "hinton2017", "degree": 13, "sigma": 1, "weight": 0.0},
+        {"method": "hinton2017", "degree": 13, "sigma": 1, "weight": 1.0},
+    ]
+
     # Loop over the mocktypes
     allnames = []
     for i, (mocktype, redshift_bins) in enumerate(zip(mocktypes, nzbins)):
@@ -65,14 +77,14 @@ if __name__ == "__main__":
         # Loop over the available redshift bins for each mock type
         for z in range(redshift_bins):
 
-            # Loop over pre- and post-recon measurements
-            for recon in [None, "sym"]:
+            # Loop over the various smoothing types
+            for s, smooth_type in enumerate(smooth_types):
 
                 # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
                 # First load up mock mean and add it to the fitting list. Use only the diagonal parts
                 # of the covariance matrix
                 dataset = PowerSpectrum_DESI_KP4(
-                    recon=recon,
+                    recon="sym",
                     fit_poles=[0, 2],
                     min_k=0.02,
                     max_k=0.30,
@@ -92,27 +104,21 @@ if __name__ == "__main__":
                     poly_poles=dataset.fit_poles,
                     correction=Correction.HARTLAP,
                     n_poly=5,
+                    smooth_type=smooth_type,
                 )
+                model.set_default("sigma_nl_perp", 2.5)
+                model.set_default("sigma_nl_par", 4.0)
+                model.set_default("sigma_s", 3.0)
 
                 # Create a unique name for the fit and add it to the list
-                name = dataset.name + " mock mean"
+                name = dataset.name + f" smooth_type {s}" + " mock mean"
                 fitter.add_model_and_dataset(model, dataset, name=name)
                 allnames.append(name)
-
-                # Plot the power spectrum template against Stephen's
-                # chen = np.loadtxt("/Users/uqchowl1/Desktop/desi_pk.txt")
-                # model.set_data(dataset.get_data())
-                # res = model.camb.get_data()
-                # pkspline = sp.interpolate.splrep(res["ks"], res["pk_lin"])
-                # plt.plot(chen[:, 0], chen[:, 1] / sp.interpolate.splev(chen[:, 0], pkspline))
-                # plt.xlim(0.0, 0.4)
-                # plt.ylim(0.99, 1.01)
-                # plt.show()
 
                 # Now add the individual realisations to the list
                 for j in range(len(dataset.mock_data)):
                     dataset.set_realisation(j)
-                    name = dataset.name + f" realisation {j}"
+                    name = dataset.name + f" smooth_type {s}" + f" realisation {j}"
                     fitter.add_model_and_dataset(model, dataset, name=name)
                     allnames.append(name)
 
@@ -141,7 +147,7 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number and redshift bin
-            recon_bin = 0 if "Prerecon" in extra["name"] else 1
+            smooth_bin = str(extra["name"].split()[-3])
             realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
 
             # Store the chain in a dictionary with parameter names
@@ -173,11 +179,11 @@ if __name__ == "__main__":
             extra.pop("realisation", None)
             if realisation == "mean":
                 fitname.append(data[0]["name"].replace(" ", "_"))
-                stats[fitname[recon_bin]] = []
-                output[fitname[recon_bin]] = []
-                c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+                stats[fitname[smooth_bin]] = []
+                output[fitname[smooth_bin]] = []
+                c[smooth_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
             else:
-                c[recon_bin].add_marker(params, **extra)
+                c[smooth_bin].add_marker(params, **extra)
 
             # Compute some summary statistics and add them to a dictionary
             mean, cov = weighted_avg_and_cov(
@@ -185,8 +191,6 @@ if __name__ == "__main__":
                     [
                         "$\\alpha_\\parallel$",
                         "$\\alpha_\\perp$",
-                        "$\\Sigma_{nl,||}$",
-                        "$\\Sigma_{nl,\\perp}$",
                     ]
                 ],
                 weight,
@@ -194,18 +198,16 @@ if __name__ == "__main__":
             )
 
             corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
-            stats[fitname[recon_bin]].append(
-                [mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared, mean[2], mean[3]]
-            )
-            output[fitname[recon_bin]].append(
-                f"{realisation:s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {mean[3]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
+            stats[fitname[smooth_bin]].append([mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared])
+            output[fitname[smooth_bin]].append(
+                f"{realisation:s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
             )
 
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
-        for recon_bin in range(len(c)):
-            c[recon_bin].configure(bins=20)
-            c[recon_bin].plotter.plot(
-                filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour.png"],
+        for smooth_bin in range(len(c)):
+            c[smooth_bin].configure(bins=20)
+            c[smooth_bin].plotter.plot(
+                filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[smooth_bin] + "_contour.png"],
                 truth=truth,
                 parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
                 legend=False,
@@ -213,22 +215,22 @@ if __name__ == "__main__":
 
             # Plot histograms of the errors and r_off
             nstats, means, covs, corr = plot_errors(
-                stats[fitname[recon_bin]], "/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_errors.png"
+                stats[fitname[smooth_bin]], "/".join(pfn.split("/")[:-1]) + "/" + fitname[smooth_bin] + "_errors.png"
             )
 
             # Save all the numbers to a file
-            with open(dir_name + "/Barry_fit_" + fitname[recon_bin] + ".txt", "w") as f:
+            with open(dir_name + "/Barry_fit_" + fitname[smooth_bin] + ".txt", "w") as f:
                 f.write(
-                    "# Realisation, alpha_par, alpha_perp, Sigma_nl_par, Sigma_nl_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
+                    "# Realisation, alpha_par, alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
                 )
-                for l in output[fitname[recon_bin]]:
+                for l in output[fitname[smooth_bin]]:
                     f.write(l + "\n")
 
                 # And now the average of all the individual realisations
                 f.write("# ---------------------------------------------------\n")
                 f.write(
-                    "# <alpha_par>, <alpha_perp>, <Sigma_nl_par>, <Sigma_nl_perp>, <sigma_alpha_par>, <sigma_alpha_perp>, <corr_alpha_par_perp>, std_alpha_par, std_alpha_perp, corr_alpha_par_perp, <bf_chi2>\n"
+                    "# <alpha_par>, <alpha_perp>, <Sigma_nl_par>, <sigma_alpha_perp>, <corr_alpha_par_perp>, std_alpha_par, std_alpha_perp, corr_alpha_par_perp, <bf_chi2>\n"
                 )
                 f.write(
-                    f"{means[0]:6.4f}, {means[1]:6.4f}, {means[6]:6.4f}, {means[7]:6.4f}, {means[2]:6.4f}, {means[3]:6.4f}, {means[4]:6.4f}, {np.sqrt(covs[0, 0]):6.4f}, {np.sqrt(covs[1, 1]):6.4f}, {corr:6.4f}, {means[5]:7.3f}\n"
+                    f"{means[0]:6.4f}, {means[1]:6.4f}, {means[2]:6.4f}, {means[3]:6.4f}, {means[4]:6.4f}, {np.sqrt(covs[0, 0]):6.4f}, {np.sqrt(covs[1, 1]):6.4f}, {corr:6.4f}, {means[5]:7.3f}\n"
                 )

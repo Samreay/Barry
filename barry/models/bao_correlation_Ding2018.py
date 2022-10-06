@@ -20,7 +20,7 @@ class CorrDing2018(CorrelationFunctionFit):
         self,
         name="Corr Ding 2018",
         fix_params=("om", "beta"),
-        smooth_type="hinton2017",
+        smooth_type=None,
         recon=None,
         smooth=False,
         correction=None,

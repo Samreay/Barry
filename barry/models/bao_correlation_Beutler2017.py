@@ -16,7 +16,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
         self,
         name="Corr Beutler 2017",
         fix_params=("om",),
-        smooth_type="hinton2017",
+        smooth_type=None,
         recon=None,
         smooth=False,
         correction=None,

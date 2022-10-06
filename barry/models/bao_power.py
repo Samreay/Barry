@@ -4,7 +4,7 @@ from scipy.integrate import simps
 from scipy.interpolate import splev, splrep
 from scipy.linalg import block_diag
 
-from barry.cosmology.power_spectrum_smoothing import smooth, validate_smooth_method
+from barry.cosmology.power_spectrum_smoothing import smooth_func, validate_smooth_method
 from barry.models.model import Model, Omega_m_z, Correction
 import numpy as np
 
@@ -17,7 +17,7 @@ class PowerSpectrumFit(Model):
     def __init__(
         self,
         name="Pk Basic",
-        smooth_type="hinton2017",
+        smooth_type=None,
         fix_params=("om"),
         postprocess=None,
         smooth=False,
@@ -49,8 +49,10 @@ class PowerSpectrumFit(Model):
             Defaults to `Correction.SELLENTIN
         """
         super().__init__(name, postprocess=postprocess, correction=correction, isotropic=isotropic, marg=marg, n_data=n_data)
-        self.smooth_type = smooth_type.lower()
-        if not validate_smooth_method(smooth_type):
+        if smooth_type is None:
+            smooth_type = {"method": "hinton2017"}
+        self.smooth_type = smooth_type
+        if not validate_smooth_method(self.smooth_type):
             exit(0)
 
         self.n_data_bias = 1 if data_share_bias else self.n_data
@@ -195,8 +197,15 @@ class PowerSpectrumFit(Model):
         """
         # Get base linear power spectrum from camb
         res = self.camb.get_data(om=om, h0=self.camb.h0)
-        pk_smooth_lin = smooth(
-            self.camb.ks, res["pk_lin"], method=self.smooth_type, om=om, h0=self.camb.h0
+        pk_smooth_lin = smooth_func(
+            self.camb.ks,
+            res["pk_lin"],
+            om=om,
+            h0=self.camb.h0,
+            ob=self.camb.omega_b,
+            ns=self.camb.ns,
+            rs=res["r_s"],
+            **self.smooth_type,
         )  # Get the smoothed power spectrum
         pk_ratio = res["pk_lin"] / pk_smooth_lin - 1.0  # Get the ratio
         return pk_smooth_lin, pk_ratio

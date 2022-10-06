@@ -2,7 +2,7 @@ from functools import lru_cache
 import numpy as np
 
 from barry.cosmology.pk2xi import PowerToCorrelationGauss
-from barry.cosmology.power_spectrum_smoothing import validate_smooth_method, smooth
+from barry.cosmology.power_spectrum_smoothing import validate_smooth_method, smooth_func
 from barry.models.model import Model, Omega_m_z, Correction
 from barry.models.bao_power import PowerSpectrumFit
 from scipy.interpolate import splev, splrep
@@ -17,7 +17,7 @@ class CorrelationFunctionFit(Model):
     def __init__(
         self,
         name="Corr Basic",
-        smooth_type="hinton2017",
+        smooth_type=None,
         fix_params=("om"),
         smooth=False,
         correction=None,
@@ -45,8 +45,9 @@ class CorrelationFunctionFit(Model):
             fix_params=fix_params, smooth_type=smooth_type, correction=correction, isotropic=isotropic, marg=marg
         )
         self.poly_poles = poly_poles
-        self.smooth_type = smooth_type.lower()
-        if not validate_smooth_method(smooth_type):
+        if smooth_type is None:
+            self.smooth_type = {"method": "hinton2017"}
+        if not validate_smooth_method(self.smooth_type):
             exit(0)
 
         self.declare_parameters()

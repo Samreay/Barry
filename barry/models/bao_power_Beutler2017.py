@@ -14,7 +14,7 @@ class PowerBeutler2017(PowerSpectrumFit):
         self,
         name="Pk Beutler 2017",
         fix_params=("om",),
-        smooth_type="hinton2017",
+        smooth_type=None,
         recon=None,
         postprocess=None,
         smooth=False,

@@ -15,7 +15,7 @@ class CorrSeo2016(CorrelationFunctionFit):
         self,
         name="Corr Seo 2016",
         fix_params=("om", "beta"),
-        smooth_type="hinton2017",
+        smooth_type=None,
         recon=None,
         smooth=False,
         correction=None,

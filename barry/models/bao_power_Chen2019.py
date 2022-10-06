@@ -18,7 +18,7 @@ class PowerChen2019(PowerSpectrumFit):
         self,
         name="Pk Chen 2019",
         fix_params=("om", "beta"),
-        smooth_type="hinton2017",
+        smooth_type=None,
         recon=None,
         postprocess=None,
         smooth=False,
