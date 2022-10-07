@@ -100,14 +100,14 @@ if __name__ == "__main__":
                 model.set_default("sigma_s", sigma_s[r])
 
                 # Create a unique name for the fit and add it to the list
-                name = dataset.name + " mock mean"
+                name = dataset.name + f" fixed_type {r}" + " mock mean"
                 fitter.add_model_and_dataset(model, dataset, name=name)
                 allnames.append(name)
 
                 # Now add the individual realisations to the list
                 for j in range(len(dataset.mock_data)):
                     dataset.set_realisation(j)
-                    name = dataset.name + f" fixed type {r}" + f" realisation {j}"
+                    name = dataset.name + f" fixed_type {r}" + f" realisation {j}"
                     fitter.add_model_and_dataset(model, dataset, name=name)
                     allnames.append(name)
 
@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
         fitname = []
-        c = [ChainConsumer(), ChainConsumer()]
+        c = [ChainConsumer() for i in range(len(sigma_nl_par))]
 
         # Loop over all the chains
         stats = {}
@@ -138,6 +138,7 @@ if __name__ == "__main__":
             # Get the realisation number and redshift bin
             recon_bin = int(extra["name"].split()[-3])
             realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
+            print(extra["name"].split(), realisation)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -167,7 +168,7 @@ if __name__ == "__main__":
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
             if realisation == "mean":
-                fitname.append(data[0]["name"].replace(" ", "_") + f" sfixed_type_{recon_bin}")
+                fitname.append(data[0]["name"].replace(" ", "_") + f" fixed_type_{recon_bin}")
                 stats[fitname[recon_bin]] = []
                 output[fitname[recon_bin]] = []
                 c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
