@@ -77,7 +77,7 @@ if __name__ == "__main__":
                     recon=recon,
                     fit_poles=[0, 2],
                     min_dist=50.0,
-                    max_dist=170.0,
+                    max_dist=150.0,
                     mocktype=mocktype,
                     redshift_bin=z + 1,
                     realisation=None,
@@ -138,7 +138,6 @@ if __name__ == "__main__":
             # Get the realisation number and redshift bin
             recon_bin = int(extra["name"].split()[-3])
             realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
-            print(extra["name"].split(), realisation)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
