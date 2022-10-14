@@ -70,7 +70,7 @@ if __name__ == "__main__":
                 # Create the data. We'll fit mono-, quad- and hexadecapole between k=0.02 and 0.3.
                 # First load up mock mean and add it to the fitting list.
                 dataset = CorrelationFunction_DESI_KP4(
-                    recon=None,
+                    recon=recon,
                     fit_poles=[0, 2],
                     min_dist=50.0,
                     max_dist=150.0,

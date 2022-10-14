@@ -217,7 +217,7 @@ class PowerChen2019(PowerSpectrumFit):
 
     def declare_parameters(self):
         super().declare_parameters()
-        self.add_param("beta", r"$\beta$", 0.01, 1.0, 0.5)  # Growth rate of structure
+        self.add_param("beta", r"$\beta$", 0.01, 1.0, None)  # Growth rate of structure
         self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
         for i in range(self.n_data_poly):
             for pole in self.poly_poles:

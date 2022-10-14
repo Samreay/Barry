@@ -60,7 +60,7 @@ class CorrSeo2016(CorrelationFunctionFit):
         # Define parameters
         super().declare_parameters()
         self.add_param("b", r"$b$", 0.1, 10.0, 1.0)  # Galaxy bias
-        self.add_param("beta", r"$\beta$", 0.01, 4.0, 0.5)  # RSD parameter f/b
+        self.add_param("beta", r"$\beta$", 0.01, 4.0, None)  # RSD parameter f/b
         self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
         for pole in self.poly_poles:
             self.add_param(f"a{{{pole}}}_1", f"$a_{{{pole},1}}$", -100.0, 100.0, 0)  # Monopole Polynomial marginalisation 1

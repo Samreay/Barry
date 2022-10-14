@@ -64,7 +64,7 @@ class CorrDing2018(CorrelationFunctionFit):
     def declare_parameters(self):
         super().declare_parameters()
         self.add_param("b", r"$b$", 0.1, 10.0, 1.0)  # Galaxy bias
-        self.add_param("beta", r"$\beta$", 0.01, 4.0, 0.5)  # RSD parameter f/b
+        self.add_param("beta", r"$\beta$", 0.01, 4.0, None)  # RSD parameter f/b
         self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
         self.add_param("b_delta", r"$b_{\delta}$", -5.0, 5.0, 0.0)  # Non-linear galaxy bias
         for pole in self.poly_poles:

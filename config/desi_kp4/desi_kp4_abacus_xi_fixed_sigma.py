@@ -57,8 +57,9 @@ if __name__ == "__main__":
 
     mocktypes = ["abacus_cutsky"]
     nzbins = [3]
-    sigma_nl_perp = [6.0, 5.0, 4.0]
-    sigma_nl_par = [10.0, 9.0, 8.0]
+    sigma_nl_perp = [[6.0, 2.5, 4.0], [5.0, 2.5, 4.0], [4.0, 2.5, 4.0]]
+    sigma_nl_par = [[10.0, 4.0, 8.0], [9.0, 4.0, 8.0], [8.0, 4.0, 8.0]]
+    sigma_s = [[3.0, 3.0, 3.0], [3.0, 3.0, 3.0], [3.0, 3.0, 3.0]]
 
     # Loop over the mocktypes
     allnames = []
@@ -68,7 +69,7 @@ if __name__ == "__main__":
         for z in range(redshift_bins):
 
             # Loop over pre- and post-recon measurements
-            for recon in [None]:
+            for r, recon in enumerate([None, "sym", "sym"]):
 
                 # Create the data. We'll fit mono-, quad- and hexadecapole between k=0.02 and 0.3.
                 # First load up mock mean and add it to the fitting list.
@@ -94,19 +95,20 @@ if __name__ == "__main__":
                     poly_poles=dataset.fit_poles,
                     correction=Correction.NONE,
                 )
-                model.set_default("sigma_nl_par", sigma_nl_par[z])
-                model.set_default("sigma_nl_perp", sigma_nl_perp[z])
-                model.set_default("sigma_s", 3.0)
+                model.set_default("beta", 0.4)
+                model.set_default("sigma_nl_par", sigma_nl_par[z][r])
+                model.set_default("sigma_nl_perp", sigma_nl_perp[z][r])
+                model.set_default("sigma_s", sigma_s[z][r])
 
                 # Create a unique name for the fit and add it to the list
-                name = dataset.name + " mock mean"
+                name = dataset.name + f" fixed_type {r}" + " mock mean"
                 fitter.add_model_and_dataset(model, dataset, name=name)
                 allnames.append(name)
 
                 # Now add the individual realisations to the list
                 for j in range(len(dataset.mock_data)):
                     dataset.set_realisation(j)
-                    name = dataset.name + f" realisation {j}"
+                    name = dataset.name + f" fixed_type {r}" + f" realisation {j}"
                     fitter.add_model_and_dataset(model, dataset, name=name)
                     allnames.append(name)
 
@@ -138,7 +140,7 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number and redshift bin
-            # recon_bin = 0 if "Prerecon" in extra["name"] else 1
+            recon_bin = 0 if "Prerecon" in extra["name"] else 1
             # redshift_bin = [recon_bin + 2 * i for i, zmin in enumerate(zmins) if zmin in extra["name"].split("_")[1]][0]
             redshift_bin = [i for i, zmin in enumerate(zmins) if zmin in extra["name"].split("_")[1]][0]
             realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"

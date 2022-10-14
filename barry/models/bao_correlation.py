@@ -104,9 +104,13 @@ class CorrelationFunctionFit(Model):
             self.set_default(f"b{{{0}}}", b**2, min=min_b**2, max=max_b**2)
             self.logger.info(f"Setting default bias to b0={b:0.5f} with {width:0.5f} fractional width")
         if self.param_dict.get("beta") is not None:
-            beta, beta_min, beta_max = f / b, (1.0 - width) * f / b, (1.0 + width) * f / b
-            self.set_default("beta", beta, beta_min, beta_max)
-            self.logger.info(f"Setting default RSD parameter to beta={beta:0.5f} with {width:0.5f} fractional width")
+            if self.get_default("beta") is None:
+                beta, beta_min, beta_max = f / b, (1.0 - width) * f / b, (1.0 + width) * f / b
+                self.set_default("beta", beta, beta_min, beta_max)
+                self.logger.info(f"Setting default RSD parameter to beta={beta:0.5f} with {width:0.5f} fractional width")
+            else:
+                beta = self.get_default("beta")
+                self.logger.info(f"Using default RSD parameter of beta={beta:0.5f}")
 
     def declare_parameters(self):
         """Defines model parameters, their bounds and default value."""

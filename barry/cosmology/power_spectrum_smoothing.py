@@ -10,7 +10,6 @@ def get_smooth_methods_dict():
 
 
 def validate_smooth_method(kwargs):
-    print("smooth_type:", kwargs)
     if "method" in kwargs:
         method = kwargs["method"].lower()
         if method in get_smooth_methods_dict().keys():

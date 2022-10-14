@@ -166,7 +166,7 @@ class PowerSeo2016(PowerSpectrumFit):
 
     def declare_parameters(self):
         super().declare_parameters()
-        self.add_param("beta", r"$\beta$", 0.01, 4.0, 0.5)  # RSD parameter f/b
+        self.add_param("beta", r"$\beta$", 0.01, 4.0, None)  # RSD parameter f/b
         self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
         for i in range(self.n_data_poly):
             for pole in self.poly_poles:

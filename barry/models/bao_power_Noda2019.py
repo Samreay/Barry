@@ -265,7 +265,7 @@ class PowerNoda2019(PowerSpectrumFit):
 
     def declare_parameters(self):
         super().declare_parameters()
-        self.add_param("beta", r"$\beta$", 0.01, 4.0, 0.5)  # RSD parameter f/b
+        self.add_param("beta", r"$\beta$", 0.01, 4.0, None)  # RSD parameter f/b
         self.add_param("gamma", r"$\gamma_{rec}$", 1.0, 8.0, 1.0)  # Describes the sharpening of the BAO post-reconstruction
         self.add_param("A", r"$A$", -10, 30.0, 10)  # Fingers-of-god damping
 

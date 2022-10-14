@@ -65,7 +65,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
         if self.isotropic:
             self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.0, 20.0, 10.0)  # BAO damping
         else:
-            self.add_param("beta", r"$\beta$", 0.01, 4.0, 0.5)  # RSD parameter f/b
+            self.add_param("beta", r"$\beta$", 0.01, 4.0, None)  # RSD parameter f/b
             self.add_param("sigma_nl_par", r"$\Sigma_{nl,||}$", 0.0, 20.0, 8.0)  # BAO damping parallel to LOS
             self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.0, 20.0, 4.0)  # BAO damping perpendicular to LOS
         for pole in self.poly_poles:
