@@ -95,6 +95,7 @@ if __name__ == "__main__":
                     poly_poles=dataset.fit_poles,
                     correction=Correction.HARTLAP,
                 )
+                model.set_default("beta", 0.4)
                 model.set_default("sigma_nl_par", sigma_nl_par[r])
                 model.set_default("sigma_nl_perp", sigma_nl_perp[r])
                 model.set_default("sigma_s", sigma_s[r])

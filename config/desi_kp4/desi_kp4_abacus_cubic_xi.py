@@ -92,6 +92,7 @@ if __name__ == "__main__":
                     poly_poles=dataset.fit_poles,
                     correction=Correction.HARTLAP,
                 )
+                model.set_default("beta", 0.4)
 
                 # Create a unique name for the fit and add it to the list
                 name = dataset.name + " mock mean"
