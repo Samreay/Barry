@@ -132,7 +132,7 @@ if __name__ == "__main__":
         fitname = []
         zmins = ["0.4", "0.6", "0.8"]
 
-        c = [ChainConsumer(), ChainConsumer(), ChainConsumer()]
+        c = [ChainConsumer() for j in sigma_s for i in j]
 
         # Loop over all the chains
         stats = {}
@@ -141,11 +141,12 @@ if __name__ == "__main__":
 
             # Get the realisation number and redshift bin
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
-            # redshift_bin = [recon_bin + 2 * i for i, zmin in enumerate(zmins) if zmin in extra["name"].split("_")[1]][0]
-            redshift_bin = [i for i, zmin in enumerate(zmins) if zmin in extra["name"].split("_")[1]][0]
+            fix_bin = int(extra["name"].split()[-3])
+            redshift_bin = [recon_bin + 2 * (i * 3 + fix_bin) for i, zmin in enumerate(zmins) if zmin in extra["name"].split("_")[1]][0]
             realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
 
             # Store the chain in a dictionary with parameter names
+            print(chain, model.get_labels())
             df = pd.DataFrame(chain, columns=model.get_labels())
 
             # Compute alpha_par and alpha_perp for each point in the chain
@@ -199,7 +200,7 @@ if __name__ == "__main__":
             )
 
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
-        for z in range(3):
+        for z in range(len(c)):
             c[z].configure(bins=20)
             c[z].plotter.plot(
                 filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[z] + "_contour.png"],
