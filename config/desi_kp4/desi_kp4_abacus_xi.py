@@ -72,7 +72,7 @@ if __name__ == "__main__":
                 dataset = CorrelationFunction_DESI_KP4(
                     recon=recon,
                     fit_poles=[0, 2],
-                    min_dist=52.0,
+                    min_dist=50.0,
                     max_dist=150.0,
                     mocktype=mocktype,
                     redshift_bin=z + 1,
@@ -138,7 +138,6 @@ if __name__ == "__main__":
             realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
 
             # Store the chain in a dictionary with parameter names
-            print(chain, model.get_labels())
             df = pd.DataFrame(chain, columns=model.get_labels())
 
             # Compute alpha_par and alpha_perp for each point in the chain

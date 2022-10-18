@@ -100,6 +100,10 @@ if __name__ == "__main__":
                 model.set_default("sigma_nl_perp", sigma_nl_perp[r])
                 model.set_default("sigma_s", sigma_s[r])
 
+                # Load in a pre-existing BAO template
+                pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+                model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
+
                 # Create a unique name for the fit and add it to the list
                 name = dataset.name + f" fixed_type {r}" + " mock mean"
                 fitter.add_model_and_dataset(model, dataset, name=name)
@@ -164,6 +168,9 @@ if __name__ == "__main__":
                 else None
             )
             new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname)
+            print(
+                recon_bin, realisation, params_dict, model.get_alphas(params_dict["alpha"], params_dict["epsilon"]), bband, new_chi_squared
+            )
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)

@@ -163,7 +163,7 @@ class CorrelationFunctionFit(Model):
     def integrate_mu(self, xi2d, mu=None, isotropic=False):
         if mu is None:
             mu = self.mu
-        xi0 = simps(xi2d, mu, axis=1)
+        xi0 = simps(xi2d, self.mu, axis=1)
         if isotropic:
             xi2 = None
             xi4 = None
