@@ -16,37 +16,7 @@ from barry.utils import weighted_avg_and_cov
 import matplotlib.pyplot as plt
 from chainconsumer import ChainConsumer
 
-# Config file to fit the abacus cutsky mock means and individual realisations using Dynesty.
-
-# Convenience function to plot histograms of the errors and cross-correlation coefficients
-def plot_errors(stats, figname):
-
-    nstats = len(stats)
-    means = np.mean(stats, axis=0)
-    covs = np.cov(stats, rowvar=False)
-    corr = covs[0, 1] / np.sqrt(covs[0, 0] * covs[1, 1])
-
-    labels = [r"$\sigma_{\alpha,||}$", r"$\sigma_{\alpha,\perp}$", r"$\rho(\alpha_{||},\alpha_{\perp})$"]
-    colors = ["r", "b", "g"]
-    fig, axes = plt.subplots(figsize=(7, 2), nrows=1, ncols=3, sharey=True, squeeze=False)
-    plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.3)
-    for ax, vals, avgs, stds, l, c in zip(
-        axes.T, np.array(stats).T[2:5], means[2:5], [np.sqrt(covs[0, 0]), np.sqrt(covs[1, 1]), corr], labels, colors
-    ):
-
-        ax[0].hist(vals, 10, color=c, histtype="stepfilled", alpha=0.2, density=False, zorder=0)
-        ax[0].hist(vals, 10, color=c, histtype="step", alpha=1.0, lw=1.3, density=False, zorder=1)
-        ax[0].axvline(avgs, color="k", ls="--", zorder=2)
-        ax[0].axvline(stds, color="k", ls=":", zorder=2)
-        ax[0].set_xlabel(l)
-
-    axes[0, 0].set_ylabel(r"$N_{\mathrm{mocks}}$")
-
-    fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
-
-    return nstats, means, covs, corr
-
-
+# Config file to fit the abacus cutsky mock means for sigmas
 if __name__ == "__main__":
 
     # Get the relative file paths and names
@@ -54,7 +24,7 @@ if __name__ == "__main__":
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
-    sampler = DynestySampler(temp_dir=dir_name, nlive=250)
+    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
 
     mocktypes = ["abacus_cubicbox"]
     nzbins = [1]
@@ -155,15 +125,9 @@ if __name__ == "__main__":
 
             # Get the realisation number and redshift bin
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
-            realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
-
-            # Compute alpha_par and alpha_perp for each point in the chain
-            alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
-            df["$\\alpha_\\parallel$"] = alpha_par
-            df["$\\alpha_\\perp$"] = alpha_perp
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
@@ -175,73 +139,20 @@ if __name__ == "__main__":
                 model.set_default(name, val)
 
             # Get some useful properties of the fit, and plot the MAP model against the data if it's the mock mean
-            figname = (
-                "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
-                if realisation == "mean" or realisation == "10"
-                else None
-            )
+            figname = "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
             new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname)
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
-            if realisation == "mean":
+            if "Pk" in extra["name"]:
                 fitname.append(data[0]["name"].replace(" ", "_"))
-                stats[fitname[recon_bin]] = []
-                output[fitname[recon_bin]] = []
-                c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
-            else:
-                c[recon_bin].add_marker(params, **extra)
+            c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
 
-            # Compute some summary statistics and add them to a dictionary
-            mean, cov = weighted_avg_and_cov(
-                df[
-                    [
-                        "$\\alpha_\\parallel$",
-                        "$\\alpha_\\perp$",
-                        "$\\Sigma_{nl,||}$",
-                        "$\\Sigma_{nl,\\perp}$",
-                    ]
-                ],
-                weight,
-                axis=0,
-            )
-
-            corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
-            stats[fitname[recon_bin]].append(
-                [mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared, mean[2], mean[3]]
-            )
-            output[fitname[recon_bin]].append(
-                f"{realisation:s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {mean[3]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
-            )
-
-        truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
         for recon_bin in range(len(c)):
             c[recon_bin].configure(bins=20)
             c[recon_bin].plotter.plot(
                 filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour.png"],
-                truth=truth,
-                parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
-                legend=False,
+                parameters=["$\\Sigma_s$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$"],
+                legend=True,
             )
-
-            # Plot histograms of the errors and r_off
-            nstats, means, covs, corr = plot_errors(
-                stats[fitname[recon_bin]], "/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_errors.png"
-            )
-
-            # Save all the numbers to a file
-            with open(dir_name + "/Barry_fit_" + fitname[recon_bin] + ".txt", "w") as f:
-                f.write(
-                    "# Realisation, alpha_par, alpha_perp, Sigma_nl_par, Sigma_nl_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
-                )
-                for l in output[fitname[recon_bin]]:
-                    f.write(l + "\n")
-
-                # And now the average of all the individual realisations
-                f.write("# ---------------------------------------------------\n")
-                f.write(
-                    "# <alpha_par>, <alpha_perp>, <Sigma_nl_par>, <Sigma_nl_perp>, <sigma_alpha_par>, <sigma_alpha_perp>, <corr_alpha_par_perp>, std_alpha_par, std_alpha_perp, corr_alpha_par_perp, <bf_chi2>\n"
-                )
-                f.write(
-                    f"{means[0]:6.4f}, {means[1]:6.4f}, {means[6]:6.4f}, {means[7]:6.4f}, {means[2]:6.4f}, {means[3]:6.4f}, {means[4]:6.4f}, {np.sqrt(covs[0, 0]):6.4f}, {np.sqrt(covs[1, 1]):6.4f}, {corr:6.4f}, {means[5]:7.3f}\n"
-                )
+            print(fitname[recon_bin], c[recon_bin].analysis.get_summary())
