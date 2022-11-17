@@ -338,7 +338,7 @@ class PowerChen2019(PowerSpectrumFit):
             om = np.round(p["om"], decimals=5)
             growth = np.round(p["b"] * p["beta"], decimals=5)
 
-            sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel)) if self.recon else 0.0
+            sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel)) if self.recon_type.lower() == "iso" else 0.0
             kaiser_prefac = 1.0 + growth * muprime**2 * (1.0 - sprime) - sprime / p["b"]
 
             pk_smooth = p["b"] ** 2 * kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
@@ -434,7 +434,7 @@ if __name__ == "__main__":
     print("Checking anisotropic mock mean")
     # dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
     dataset = PowerSpectrum_DESI_KP4(
-        recon=None,
+        recon="sym",
         fit_poles=[0, 2],
         min_k=0.02,
         max_k=0.30,
@@ -450,7 +450,7 @@ if __name__ == "__main__":
         fix_params=["om"],
         poly_poles=[0, 2],
         correction=Correction.HARTLAP,
-        n_poly=3,
+        n_poly=5,
     )
     model.sanity_check(dataset)
 

@@ -59,6 +59,14 @@ class CorrBeutler2017(CorrelationFunctionFit):
                 self.set_default(f"a{{{pole}}}_2", 0.0)
                 self.set_default(f"a{{{pole}}}_3", 0.0)
 
+        # We might not need to evaluate the hankel transform everytime, so check.
+        if self.isotropic:
+            if all(elem in self.fix_params for elem in ["sigma_s", "sigma_nl"]):
+                self.fixed_xi = True
+        else:
+            if all(elem in self.fix_params for elem in ["sigma_s", "sigma_nl_perp", "sigma_nl_par", "beta"]):
+                self.fixed_xi = True
+
     def declare_parameters(self):
         super().declare_parameters()
         self.add_param("sigma_s", r"$\Sigma_s$", 0.0, 20.0, 10.0)  # Fingers-of-god damping
@@ -106,7 +114,11 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_correlation_function import CorrelationFunction_ROSS_DR12, CorrelationFunction_DESIMockChallenge_Post
+    from barry.datasets.dataset_correlation_function import (
+        CorrelationFunction_ROSS_DR12,
+        CorrelationFunction_DESIMockChallenge_Post,
+        CorrelationFunction_DESI_KP4,
+    )
     from barry.config import setup_logging
     from barry.models.model import Correction
 
@@ -130,15 +142,29 @@ if __name__ == "__main__":
     model.sanity_check(dataset)"""
 
     print("Checking anisotropic data")
-    dataset = CorrelationFunction_DESIMockChallenge_Post(
-        isotropic=False, recon="iso", fit_poles=[0, 2, 4], min_dist=35, max_dist=157.5, num_mocks=998
+    # dataset = CorrelationFunction_DESIMockChallenge_Post(
+    #    isotropic=False, recon="iso", fit_poles=[0, 2, 4], min_dist=35, max_dist=157.5, num_mocks=998
+    # )
+    dataset = CorrelationFunction_DESI_KP4(
+        recon="sym",
+        fit_poles=[0, 2],
+        min_dist=52.0,
+        max_dist=150.0,
+        mocktype="abacus_cubicbox",
+        redshift_bin=0,
+        realisation=0,
+        num_mocks=1000,
     )
+    data = dataset.get_data()
+
     model = CorrBeutler2017(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
-        fix_params=["om", "beta"],
-        poly_poles=[0, 2, 4],
-        correction=Correction.NONE,
+        fix_params=["om", "beta", "alpha", "epsilon", "sigma_s"],
+        poly_poles=dataset.fit_poles,
+        correction=Correction.HARTLAP,
     )
+    model.set_default("beta", 0.4)
+
     model.sanity_check(dataset)

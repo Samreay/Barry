@@ -1,7 +1,7 @@
 from functools import lru_cache
 import numpy as np
 
-from barry.cosmology.pk2xi import PowerToCorrelationGauss
+from barry.cosmology.pk2xi import PowerToCorrelationFFTLog
 from barry.cosmology.power_spectrum_smoothing import validate_smooth_method, smooth_func
 from barry.models.model import Model, Omega_m_z, Correction
 from barry.models.bao_power import PowerSpectrumFit
@@ -62,6 +62,10 @@ class CorrelationFunctionFit(Model):
         self.pk2xi_2 = None
         self.pk2xi_4 = None
 
+        self.fixed_xi = False
+        self.store_xi = [None, None, None]
+        self.store_xi_smooth = [None, None, None]
+
     def set_data(self, data):
         """Sets the models data, including fetching the right cosmology and PT generator.
 
@@ -74,9 +78,12 @@ class CorrelationFunctionFit(Model):
             A list of datas to use
         """
         super().set_data(data)
-        self.pk2xi_0 = PowerToCorrelationGauss(self.camb.ks, ell=0, interpolateDetail=20, a=1.0)
-        self.pk2xi_2 = PowerToCorrelationGauss(self.camb.ks, ell=2, interpolateDetail=20, a=1.0)
-        self.pk2xi_4 = PowerToCorrelationGauss(self.camb.ks, ell=4, interpolateDetail=20, a=1.0)
+        # self.pk2xi_0 = PowerToCorrelationGauss(self.camb.ks, ell=0, interpolateDetail=20, a=1.0)
+        # self.pk2xi_2 = PowerToCorrelationGauss(self.camb.ks, ell=2, interpolateDetail=20, a=1.0)
+        # self.pk2xi_4 = PowerToCorrelationGauss(self.camb.ks, ell=4, interpolateDetail=20, a=1.0)
+        self.pk2xi_0 = PowerToCorrelationFFTLog(ell=0)
+        self.pk2xi_2 = PowerToCorrelationFFTLog(ell=2)
+        self.pk2xi_4 = PowerToCorrelationFFTLog(ell=4)
         self.set_bias(data[0])
         self.parent.set_data(data, parent=True)
 
@@ -191,12 +198,37 @@ class CorrelationFunctionFit(Model):
         xi : np.ndarray
             the model monopole, quadrupole and hexadecapole components interpolated to sprime.
         """
-        ks, pks, _ = self.parent.compute_power_spectrum(self.parent.camb.ks, p, smooth=smooth, for_corr=True)
+
+        if self.fixed_xi:
+            if smooth:
+                if self.store_xi_smooth[0] is None:
+                    ks, pks, _ = self.parent.compute_power_spectrum(self.parent.camb.ks, p, smooth=smooth, for_corr=True)
+            else:
+                if self.store_xi[0] is None:
+                    ks, pks, _ = self.parent.compute_power_spectrum(self.parent.camb.ks, p, smooth=smooth, for_corr=True)
+        else:
+            ks, pks, _ = self.parent.compute_power_spectrum(self.parent.camb.ks, p, smooth=smooth, for_corr=True)
+
         xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
 
         if self.isotropic:
             sprime = p["alpha"] * dist
-            xi0 = self.pk2xi_0.__call__(ks, pks[0], sprime)
+            if self.fixed_xi:
+                if smooth:
+                    if self.store_xi_smooth[0] is None:
+                        pk2xi0 = splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist))
+                        self.store_xi_smooth[0] = pk2xi0
+                    else:
+                        pk2xi0 = self.store_xi_smooth[0]
+                else:
+                    if self.store_xi[0] is None:
+                        pk2xi0 = splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist))
+                        self.store_xi[0] = pk2xi0
+                    else:
+                        pk2xi0 = self.store_xi[0]
+            else:
+                pk2xi0 = splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist))
+            xi0 = splev(sprime, pk2xi0)
             xi[0] = xi0
         else:
             # Construct the dilated 2D correlation function by splining the undilated multipoles. We could have computed these
@@ -206,9 +238,31 @@ class CorrelationFunctionFit(Model):
             sprime = np.outer(dist * p["alpha"], self.get_sprimefac(epsilon))
             muprime = self.get_muprime(epsilon)
 
-            xi0 = splev(sprime, splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist)))
-            xi2 = splev(sprime, splrep(dist, self.pk2xi_2.__call__(ks, pks[2], dist)))
-            xi4 = splev(sprime, splrep(dist, self.pk2xi_4.__call__(ks, pks[4], dist)))
+            if self.fixed_xi:
+                if smooth:
+                    if self.store_xi_smooth[0] is None:
+                        pk2xi0 = splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist))
+                        pk2xi2 = splrep(dist, self.pk2xi_2.__call__(ks, pks[2], dist))
+                        pk2xi4 = splrep(dist, self.pk2xi_4.__call__(ks, pks[4], dist))
+                        self.store_xi_smooth = [pk2xi0, pk2xi2, pk2xi4]
+                    else:
+                        pk2xi0, pk2xi2, pk2xi4 = self.store_xi_smooth
+                else:
+                    if self.store_xi[0] is None:
+                        pk2xi0 = splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist))
+                        pk2xi2 = splrep(dist, self.pk2xi_2.__call__(ks, pks[2], dist))
+                        pk2xi4 = splrep(dist, self.pk2xi_4.__call__(ks, pks[4], dist))
+                        self.store_xi = [pk2xi0, pk2xi2, pk2xi4]
+                    else:
+                        pk2xi0, pk2xi2, pk2xi4 = self.store_xi
+            else:
+                pk2xi0 = splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist))
+                pk2xi2 = splrep(dist, self.pk2xi_2.__call__(ks, pks[2], dist))
+                pk2xi4 = splrep(dist, self.pk2xi_4.__call__(ks, pks[4], dist))
+
+            xi0 = splev(sprime, pk2xi0)
+            xi2 = splev(sprime, pk2xi2)
+            xi4 = splev(sprime, pk2xi4)
 
             xi2d = xi0 + 0.5 * (3.0 * muprime**2 - 1) * xi2 + 0.125 * (35.0 * muprime**4 - 30.0 * muprime**2 + 3.0) * xi4
 
