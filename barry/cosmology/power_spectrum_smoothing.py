@@ -2,10 +2,13 @@ import logging
 import math
 import numpy as np
 from scipy import integrate, interpolate, optimize
+from scipy.fftpack import dst, idst
+from scipy.ndimage import gaussian_filter
+from scipy.signal import argrelmin, argrelmax
 
 
 def get_smooth_methods_dict():
-    fns = {"hinton2017": smooth_hinton2017, "eh1998": smooth_eh1998}
+    fns = {"hinton2017": smooth_hinton2017, "wallisch2018": smooth_wallisch2018, "eh1998": smooth_eh1998}
     return fns
 
 
@@ -23,6 +26,62 @@ def validate_smooth_method(kwargs):
 
 def smooth_func(ks, pk, method="hinton2017", **kwargs):
     return get_smooth_methods_dict()[method.lower()](ks, pk, **kwargs)
+
+
+def smooth_wallisch2018(ks, pk, ii_l=None, ii_r=None, extrap_min=1e-3, extrap_max=10, N=16):
+    """Implement the wiggle/no-wiggle split procedure from Benjamin Wallisch's thesis (arXiv:1810.02800)"""
+
+    # put onto a linear grid
+    kgrid = np.linspace(extrap_min, extrap_max, 2**N)
+    lnps = interpolate.InterpolatedUnivariateSpline(ks, np.log(ks * pk), ext=1)(kgrid)
+
+    # sine transform
+    dst_ps = dst(lnps)
+    dst_odd = dst_ps[1::2]
+    dst_even = dst_ps[0::2]
+
+    # find the BAO regions
+    if ii_l is None or ii_r is None:
+        d2_even = np.gradient(np.gradient(dst_even))
+        ii_l = argrelmin(gaussian_filter(d2_even, 4))[0][0]
+        ii_r = argrelmax(gaussian_filter(d2_even, 4))[0][1]
+
+        iis = np.arange(len(dst_odd))
+        iis_div = np.copy(iis)
+        iis_div[0] = 1.0
+        cutiis_even = (iis > (ii_l - 3)) * (iis < (ii_r + 10))
+
+        d2_odd = np.gradient(np.gradient(dst_odd))
+        ii_l = argrelmin(gaussian_filter(d2_odd, 4))[0][0]
+        ii_r = argrelmax(gaussian_filter(d2_odd, 4))[0][1]
+
+        iis = np.arange(len(dst_odd))
+        iis_div = np.copy(iis)
+        iis_div[0] = 1.0
+        cutiis_odd = (iis > (ii_l - 3)) * (iis < (ii_r + 20))
+
+    else:
+        iis = np.arange(len(dst_odd))
+        iis_div = np.copy(iis)
+        iis_div[0] = 1.0
+        cutiis_odd = (iis > ii_l) * (iis < ii_r)
+        cutiis_even = (iis > ii_l) * (iis < ii_r)
+
+    # ... and interpolate over them
+    interp_odd = interpolate.interp1d(iis[~cutiis_odd], (iis**2 * dst_odd)[~cutiis_odd], kind="cubic")(iis) / iis_div**2
+    interp_odd[0] = dst_odd[0]
+
+    interp_even = interpolate.interp1d(iis[~cutiis_even], (iis**2 * dst_even)[~cutiis_even], kind="cubic")(iis) / iis_div**2
+    interp_even[0] = dst_even[0]
+
+    # Transform back
+    interp = np.zeros_like(dst_ps)
+    interp[0::2] = interp_even
+    interp[1::2] = interp_odd
+
+    lnps_nw = idst(interp) / 2**17
+
+    return interpolate.InterpolatedUnivariateSpline(kgrid, np.exp(lnps_nw) / kgrid, ext=1)(ks)
 
 
 def smooth_hinton2017(ks, pk, degree=13, sigma=1, weight=0.5, **kwargs):
@@ -201,6 +260,7 @@ if __name__ == "__main__":
             {"method": "hinton2017", "degree": 13, "sigma": 2, "weight": 0.5},
             {"method": "hinton2017", "degree": 13, "sigma": 1, "weight": 0.0},
             {"method": "hinton2017", "degree": 13, "sigma": 1, "weight": 1.0},
+            {"method": "wallisch2018"},
         ]
         labels = [
             r"$\mathrm{EH1998}$",
@@ -211,6 +271,7 @@ if __name__ == "__main__":
             r"$\mathrm{Hinton2017} - (n, \sigma, \alpha) = (13, 2, 0.5)$",
             r"$\mathrm{Hinton2017} - (n, \sigma, \alpha) = (13, 1, 0.0)$",
             r"$\mathrm{Hinton2017} - (n, \sigma, \alpha) = (13, 1, 1.0)$",
+            r"$\mathrm{Wallisch2018}$",
         ]
 
         fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)

@@ -70,6 +70,22 @@ if __name__ == "__main__":
                 fitter.add_model_and_dataset(model, dataset, name=name)
                 allnames.append(name)
 
+                model = PowerBeutler2017(
+                    recon=dataset.recon,
+                    isotropic=dataset.isotropic,
+                    fix_params=["om", "alpha", "epsilon", "sigma_s"],
+                    marg="full",
+                    poly_poles=dataset.fit_poles,
+                    correction=Correction.HARTLAP,
+                    n_poly=5,
+                )
+                model.set_default("sigma_s", 0.0)
+
+                # Create a unique name for the fit and add it to the list
+                name = dataset.name + " mock mean sigma_s=0"
+                fitter.add_model_and_dataset(model, dataset, name=name)
+                allnames.append(name)
+
                 dataset = CorrelationFunction_DESI_KP4(
                     recon=recon,
                     fit_poles=[0, 2],
@@ -96,6 +112,25 @@ if __name__ == "__main__":
 
                 # Create a unique name for the fit and add it to the list
                 name = dataset.name + " mock mean"
+                fitter.add_model_and_dataset(model, dataset, name=name)
+                allnames.append(name)
+
+                # Set up the model we'll use. Fix Omega_m and beta. 5 polynomials (default)
+                # for each of the fitted multipoles. Use full analytic marginalisation for speed
+                # Apply the Hartlap correction to the covariance matrix.
+                model = CorrBeutler2017(
+                    recon=dataset.recon,
+                    isotropic=dataset.isotropic,
+                    marg="full",
+                    fix_params=["om", "beta", "alpha", "epsilon", "sigma_s"],
+                    poly_poles=dataset.fit_poles,
+                    correction=Correction.HARTLAP,
+                )
+                model.set_default("beta", 0.4)
+                model.set_default("sigma_s", 0.0)
+
+                # Create a unique name for the fit and add it to the list
+                name = dataset.name + " mock mean sigma_s=0"
                 fitter.add_model_and_dataset(model, dataset, name=name)
                 allnames.append(name)
 
