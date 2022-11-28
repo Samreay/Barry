@@ -50,6 +50,7 @@ if __name__ == "__main__":
                     redshift_bin=z + 1,
                     realisation=None,
                     num_mocks=1000,
+                    reduce_cov_factor=25,
                 )
 
                 # Set up the model we'll use. 5 polynomials (default)
@@ -95,6 +96,7 @@ if __name__ == "__main__":
                     redshift_bin=z + 1,
                     realisation=None,
                     num_mocks=1000,
+                    reduce_cov_factor=25,
                 )
 
                 # Set up the model we'll use. Fix Omega_m and beta. 5 polynomials (default)
@@ -158,6 +160,9 @@ if __name__ == "__main__":
         output = {}
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
+            if "sigma_s" not in extra["name"]:
+                continue
+
             # Get the realisation number and redshift bin
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
 
@@ -180,14 +185,23 @@ if __name__ == "__main__":
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
             if "Pk" in extra["name"]:
+                extra["name"] = "Pk"
                 fitname.append(data[0]["name"].replace(" ", "_"))
+            else:
+                extra["name"] = "Xi"
             c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+            mean, cov = weighted_avg_and_cov(
+                df[["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$"]],
+                weight,
+                axis=0,
+            )
+            print(recon_bin, mean, np.sqrt(np.diag(cov)), new_chi_squared)
 
         for recon_bin in range(len(c)):
             c[recon_bin].configure(bins=20)
             c[recon_bin].plotter.plot(
                 filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour.png"],
-                parameters=["$\\Sigma_s$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$"],
+                parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$"],
                 legend=True,
             )
-            print(fitname[recon_bin], c[recon_bin].analysis.get_summary())
+            # print(fitname[recon_bin], c[recon_bin].analysis.get_summary())
