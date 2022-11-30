@@ -63,7 +63,6 @@ if __name__ == "__main__":
                     n_poly=5,
                 )
                 model.set_default("sigma_s", 0.0)
-                model.sanity_check(dataset)
 
                 name = dataset.name + " mock mean sigma_s=0"
                 fitter.add_model_and_dataset(model, dataset, name=name)
@@ -91,7 +90,6 @@ if __name__ == "__main__":
                 )
                 model.set_default("beta", 0.4)
                 model.set_default("sigma_s", 0.0)
-                model.sanity_check(dataset)
 
                 # Create a unique name for the fit and add it to the list
                 name = dataset.name + " mock mean sigma_s=0"
