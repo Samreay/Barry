@@ -26,8 +26,8 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name, remove_output=False)
     sampler = DynestySampler(temp_dir=dir_name, nlive=500)
 
-    mocktypes = ["abacus_cubicbox"]
-    nzbins = [1]
+    mocktypes = ["abacus_cubicbox", "abacus_cutsky"]
+    nzbins = [1, 3]
 
     # Loop over the mocktypes
     allnames = []
@@ -53,24 +53,6 @@ if __name__ == "__main__":
                     reduce_cov_factor=25,
                 )
 
-                # Set up the model we'll use. 5 polynomials (default)
-                # for each of the fitted multipoles. Use full analytic marginalisation for speed
-                # Apply the Hartlap correction to the covariance matrix.
-                model = PowerBeutler2017(
-                    recon=dataset.recon,
-                    isotropic=dataset.isotropic,
-                    fix_params=["om", "alpha", "epsilon"],
-                    marg="full",
-                    poly_poles=dataset.fit_poles,
-                    correction=Correction.HARTLAP,
-                    n_poly=5,
-                )
-
-                # Create a unique name for the fit and add it to the list
-                name = dataset.name + " mock mean"
-                fitter.add_model_and_dataset(model, dataset, name=name)
-                allnames.append(name)
-
                 model = PowerBeutler2017(
                     recon=dataset.recon,
                     isotropic=dataset.isotropic,
@@ -81,8 +63,8 @@ if __name__ == "__main__":
                     n_poly=5,
                 )
                 model.set_default("sigma_s", 0.0)
+                model.sanity_check(dataset)
 
-                # Create a unique name for the fit and add it to the list
                 name = dataset.name + " mock mean sigma_s=0"
                 fitter.add_model_and_dataset(model, dataset, name=name)
                 allnames.append(name)
@@ -99,27 +81,6 @@ if __name__ == "__main__":
                     reduce_cov_factor=25,
                 )
 
-                # Set up the model we'll use. Fix Omega_m and beta. 5 polynomials (default)
-                # for each of the fitted multipoles. Use full analytic marginalisation for speed
-                # Apply the Hartlap correction to the covariance matrix.
-                model = CorrBeutler2017(
-                    recon=dataset.recon,
-                    isotropic=dataset.isotropic,
-                    marg="full",
-                    fix_params=["om", "beta", "alpha", "epsilon"],
-                    poly_poles=dataset.fit_poles,
-                    correction=Correction.HARTLAP,
-                )
-                model.set_default("beta", 0.4)
-
-                # Create a unique name for the fit and add it to the list
-                name = dataset.name + " mock mean"
-                fitter.add_model_and_dataset(model, dataset, name=name)
-                allnames.append(name)
-
-                # Set up the model we'll use. Fix Omega_m and beta. 5 polynomials (default)
-                # for each of the fitted multipoles. Use full analytic marginalisation for speed
-                # Apply the Hartlap correction to the covariance matrix.
                 model = CorrBeutler2017(
                     recon=dataset.recon,
                     isotropic=dataset.isotropic,
@@ -130,6 +91,7 @@ if __name__ == "__main__":
                 )
                 model.set_default("beta", 0.4)
                 model.set_default("sigma_s", 0.0)
+                model.sanity_check(dataset)
 
                 # Create a unique name for the fit and add it to the list
                 name = dataset.name + " mock mean sigma_s=0"
