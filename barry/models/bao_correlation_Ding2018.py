@@ -27,6 +27,7 @@ class CorrDing2018(CorrelationFunctionFit):
         isotropic=True,
         poly_poles=(0, 2),
         marg=None,
+        includeb2=True,
     ):
 
         self.recon_smoothing_scale = None
@@ -45,6 +46,7 @@ class CorrDing2018(CorrelationFunctionFit):
             isotropic=isotropic,
             poly_poles=poly_poles,
             marg=marg,
+            includeb2=includeb2,
         )
         self.parent = PowerDing2018(
             fix_params=fix_params,

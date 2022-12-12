@@ -91,6 +91,17 @@ if __name__ == "__main__":
                 model.set_default("beta", 0.4)
                 model.set_default("sigma_s", 0.0)
 
+                model2 = CorrBeutler2017(
+                    recon=dataset.recon,
+                    isotropic=dataset.isotropic,
+                    marg="full",
+                    fix_params=["om", "alpha", "b2", "epsilon", "sigma_s"],
+                    poly_poles=dataset.fit_poles,
+                    correction=Correction.HARTLAP,
+                )
+                model.set_default("beta", 0.4)
+                model.set_default("sigma_s", 0.0)
+
                 # Create a unique name for the fit and add it to the list
                 name = dataset.name + " mock mean sigma_s=0"
                 fitter.add_model_and_dataset(model, dataset, name=name)
@@ -113,7 +124,18 @@ if __name__ == "__main__":
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
         fitname = []
-        c = [ChainConsumer(), ChainConsumer()]
+        c = [
+            ChainConsumer(),
+            ChainConsumer(),
+            ChainConsumer(),
+            ChainConsumer(),
+            ChainConsumer(),
+            ChainConsumer(),
+            ChainConsumer(),
+            ChainConsumer(),
+        ]
+
+        zmins = ["0.4", "0.6", "0.8"]
 
         # Loop over all the chains
         stats = {}
@@ -124,7 +146,12 @@ if __name__ == "__main__":
                 continue
 
             # Get the realisation number and redshift bin
+            print(extra["name"].split("_")[0])
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
+            if "z" in extra["name"].split("_")[1]:
+                redshift_bin = [recon_bin + 2 * (i + 1) for i, zmin in enumerate(zmins) if zmin in extra["name"].split("_")[1]][0]
+            else:
+                redshift_bin = recon_bin
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -149,18 +176,18 @@ if __name__ == "__main__":
                 fitname.append(data[0]["name"].replace(" ", "_"))
             else:
                 extra["name"] = "Xi"
-            c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+            c[redshift_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
             mean, cov = weighted_avg_and_cov(
                 df[["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$"]],
                 weight,
                 axis=0,
             )
-            print(recon_bin, mean, np.sqrt(np.diag(cov)), new_chi_squared)
+            print(redshift_bin, mean, np.sqrt(np.diag(cov)), new_chi_squared, dof)
 
-        for recon_bin in range(len(c)):
-            c[recon_bin].configure(bins=20)
-            c[recon_bin].plotter.plot(
-                filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour.png"],
+        for redshift_bin in range(len(c)):
+            c[redshift_bin].configure(bins=20)
+            c[redshift_bin].plotter.plot(
+                filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[redshift_bin] + "_contour.png"],
                 parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$"],
                 legend=True,
             )

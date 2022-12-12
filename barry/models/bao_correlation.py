@@ -24,6 +24,7 @@ class CorrelationFunctionFit(Model):
         isotropic=True,
         poly_poles=(0, 2),
         marg=None,
+        includeb2=True,
     ):
 
         """Generic correlation function model
@@ -52,6 +53,8 @@ class CorrelationFunctionFit(Model):
 
         self.declare_parameters()
         self.set_fix_params(fix_params)
+
+        self.includeb2 = includeb2
 
         # Set up data structures for model fitting
         self.smooth = smooth
@@ -330,24 +333,34 @@ class CorrelationFunctionFit(Model):
             poly = np.zeros((1, len(dist)))
         else:
             xi[0] = p["b{0}"] * xi0
-            xi[1] = 2.5 * (p["b{2}"] * xi2 - xi[0])
-            if 4 in self.poly_poles:
-                xi[2] = 1.125 * (p["b{4}"] * xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
+            if self.includeb2:
+                xi[1] = 2.5 * (p["b{2}"] * xi2 - xi[0])
+                if 4 in self.poly_poles:
+                    xi[2] = 1.125 * (p["b{4}"] * xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
+                else:
+                    xi[2] = 1.125 * (xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
             else:
-                xi[2] = 1.125 * (xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
+                xi[1] = 2.5 * p["b{0}"] * (xi2 - xi0)
+                xi[2] = 1.125 * p["b{0}"] * (xi4 - 10.0 * xi2 + 3.0 * xi0)
 
             # Polynomial shape
             if self.marg:
-                xi_marg = [xi0, 2.5 * xi2, 1.125 * xi4]
-                poly = np.zeros((len(self.poly_poles), 3, len(dist)))
-                for npole, pole in enumerate(self.poly_poles):
-                    poly[npole, npole] = [xi_marg[npole]]
-                poly[0, 1] = -2.5 * xi0
-                poly[0, 2] = 1.125 * 3.0 * xi0
-                if 2 in self.poly_poles:
-                    poly[4, 2] = -1.125 * 10.0 * xi2
+                if self.includeb2:
+                    xi_marg = [xi0, 2.5 * xi2, 1.125 * xi4]
+                    poly = np.zeros((len(self.poly_poles), 3, len(dist)))
+                    for npole, pole in enumerate(self.poly_poles):
+                        poly[npole, npole] = [xi_marg[npole]]
+                    poly[0, 1] = -2.5 * xi0
+                    poly[0, 2] = 1.125 * 3.0 * xi0
+                    if 2 in self.poly_poles:
+                        poly[1, 2] = -1.125 * 10.0 * xi2
 
-                xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
+                    xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
+                else:
+                    poly = np.zeros((1, 3, len(dist)))
+                    poly[0] = [xi0, 2.5 * (xi2 - xi0), 1.125 * (xi4 - 10.0 * xi2 + 3.0 * xi0)]
+
+                    xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
             else:
                 poly = np.zeros((1, 3, len(dist)))
 
@@ -389,24 +402,36 @@ class CorrelationFunctionFit(Model):
 
         else:
             xi[0] = p["b{0}"] * xi0
-            xi[1] = 2.5 * (p["b{2}"] * xi2 - xi[0])
-            if 4 in self.poly_poles:
-                xi[2] = 1.125 * (p["b{4}"] * xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
+            if self.includeb2:
+                xi[1] = 2.5 * (p["b{2}"] * xi2 - xi[0])
+                if 4 in self.poly_poles:
+                    xi[2] = 1.125 * (p["b{4}"] * xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
+                else:
+                    xi[2] = 1.125 * (xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
             else:
-                xi[2] = 1.125 * (xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
+                xi[1] = 2.5 * p["b{0}"] * (xi2 - xi0)
+                xi[2] = 1.125 * p["b{0}"] * (xi4 - 10.0 * xi2 + 3.0 * xi0)
 
             # Polynomial shape
             if self.marg:
-                xi_marg = [xi0, 2.5 * xi2, 1.125 * xi4]
-                poly = np.zeros((4 * len(self.poly_poles), 3, len(dist)))
-                for npole, pole in enumerate(self.poly_poles):
-                    poly[4 * npole : 4 * (npole + 1), npole] = [xi_marg[npole], 1.0 / (dist**2), 1.0 / dist, np.ones(len(dist))]
-                poly[0, 1] = -2.5 * xi0
-                poly[0, 2] = 1.125 * 3.0 * xi0
-                if 2 in self.poly_poles:
-                    poly[4, 2] = -1.125 * 10.0 * xi2
+                if self.includeb2:
+                    xi_marg = [xi0, 2.5 * xi2, 1.125 * xi4]
+                    poly = np.zeros((4 * len(self.poly_poles), 3, len(dist)))
+                    for npole, pole in enumerate(self.poly_poles):
+                        poly[4 * npole : 4 * (npole + 1), npole] = [xi_marg[npole], 1.0 / (dist**2), 1.0 / dist, np.ones(len(dist))]
+                    poly[0, 1] = -2.5 * xi0
+                    poly[0, 2] = 1.125 * 3.0 * xi0
+                    if 2 in self.poly_poles:
+                        poly[4, 2] = -1.125 * 10.0 * xi2
 
-                xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
+                    xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
+                else:
+                    poly = np.zeros((3 * len(self.poly_poles) + 1, 3, len(dist)))
+                    poly[0] = [xi0, 2.5 * (xi2 - xi0), 1.125 * (xi4 - 10.0 * xi2 + 3.0 * xi0)]
+                    for npole, pole in enumerate(self.poly_poles):
+                        poly[3 * npole + 1 : 3 * (npole + 1) + 1, npole] = [1.0 / (dist**2), 1.0 / dist, np.ones(len(dist))]
+
+                    xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
             else:
                 poly = np.zeros((1, 3, len(dist)))
                 for pole in self.poly_poles:
@@ -660,6 +685,6 @@ class CorrelationFunctionFit(Model):
 
 if __name__ == "__main__":
     print("Calling a Generic model class as main does not do anything. Try running one of the Concrete classes: ")
-    print("bao_correlation_Beutler2017.py")
+    print("bao_correlation_Ross2017.py")
     print("bao_correlation_Ding2018.py")
     print("bao_correlation_Seo2016.py")

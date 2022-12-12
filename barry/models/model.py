@@ -657,6 +657,6 @@ if __name__ == "__main__":
     print("bao_power_Ding2018.py")
     print("bao_power_Noda2019.py")
     print("bao_power_Seo2016.py")
-    print("bao_correlation_Beutler2017.py")
+    print("bao_correlation_Ross2017.py")
     print("bao_correlation_Ding2018.py")
     print("bao_correlation_Seo2016.py")
