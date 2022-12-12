@@ -313,11 +313,11 @@ class PowerNoda2019(PowerSpectrumFit):
             kprime = k / p["alpha"]
 
             fog = np.exp(-p["A"] * ks**2)
-            pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
+            pk_smooth = p["b{0}"] ** 2 * pk_smooth_lin * fog
 
             # Lets round some things for the sake of numerical speed (to hit the cache more often
             om = np.round(p["om"], decimals=5)
-            growth = np.round(p["beta"] * p["b"], decimals=5)
+            growth = np.round(p["beta"] * p["b{0}"], decimals=5)
             gamma = np.round(p["gamma"], decimals=5)
 
             if self.recon:
@@ -327,7 +327,7 @@ class PowerNoda2019(PowerSpectrumFit):
 
             # Compute the non-linear correction to the smooth power spectrum
             p_dd, p_dt, p_tt = self.get_nonlinear(growth, om)
-            pk_nonlinear = p_dd + p_dt / p["b"] + p_tt / p["b"] ** 2
+            pk_nonlinear = p_dd + p_dt / p["b{0}"] + p_tt / p["b{0}"] ** 2
 
             # Integrate over mu
             if smooth:
@@ -345,11 +345,11 @@ class PowerNoda2019(PowerSpectrumFit):
             kprime = np.outer(k / p["alpha"], self.get_kprimefac(epsilon))
             muprime = self.get_muprime(epsilon)
             fog = np.exp(-p["A"] * muprime**2 * kprime**2)
-            pk_smooth = p["b"] ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+            pk_smooth = p["b{0}"] ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
 
             # Lets round some things for the sake of numerical speed
             om = np.round(p["om"], decimals=5)
-            growth = np.round(p["beta"] * p["b"], decimals=5)
+            growth = np.round(p["beta"] * p["b{0}"], decimals=5)
             gamma = np.round(p["gamma"], decimals=5)
 
             if self.recon:
@@ -362,8 +362,8 @@ class PowerNoda2019(PowerSpectrumFit):
             p_dd_spline, p_dt_spline, p_tt_spline = self.get_nonlinear_aniso(growth, om)
             pk_nonlinear = (
                 splev(kprime, p_dd_spline)
-                + muprime**2 * splev(kprime, p_dt_spline) / p["b"]
-                + muprime**4 * splev(kprime, p_tt_spline) / p["b"] ** 2
+                + muprime**2 * splev(kprime, p_dt_spline) / p["b{0}"]
+                + muprime**4 * splev(kprime, p_tt_spline) / p["b{0}"] ** 2
             )
 
             if smooth:

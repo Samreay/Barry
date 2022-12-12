@@ -72,7 +72,7 @@ class PowerBeutler2017(PowerSpectrumFit):
                     self.add_param(f"a{{{pole}}}_4_{{{i+1}}}", f"$a_{{{pole},4,{i+1}}}$", -200.0, 200.0, 0)
                     self.add_param(f"a{{{pole}}}_5_{{{i+1}}}", f"$a_{{{pole},5,{i+1}}}$", -3.0, 3.0, 0)
 
-    def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None):
+    def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None, nopoly=False):
         """Computes the power spectrum model using the Beutler et. al., 2017 method
 
         Parameters
@@ -112,7 +112,7 @@ class PowerBeutler2017(PowerSpectrumFit):
         # need one interpolation for the whole isotropic monopole, rather than separately for the smooth and wiggle components)
 
         if not for_corr:
-            if "b" not in p:
+            if "b{0}" not in p:
                 p = self.deal_with_ndata(p, 0)
 
         if self.isotropic:
@@ -123,7 +123,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             else:
                 pk_smooth = splev(k, splrep(ks, pk_smooth_lin)) / (1.0 + k**2 * p["sigma_s"] ** 2 / 2.0) ** 2
             if not for_corr:
-                pk_smooth *= p["b"]
+                pk_smooth *= p["b{0}"]
 
             if smooth:
                 propagator = np.ones(len(kprime))
@@ -160,7 +160,7 @@ class PowerBeutler2017(PowerSpectrumFit):
                 pk_smooth = kaiser_prefac**2 * splev(ktile, splrep(ks, pk_smooth_lin)) * fog
 
             if not for_corr:
-                pk_smooth *= p["b"]
+                pk_smooth *= p["b{0}"]
 
             # Compute the propagator
             if smooth:
@@ -174,7 +174,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             # Polynomial shape
             pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4, np.zeros(len(k))]
 
-            if for_corr:
+            if for_corr or nopoly:
                 poly = None
                 kprime = k
             else:
@@ -199,34 +199,55 @@ if __name__ == "__main__":
     from barry.datasets.dataset_power_spectrum import (
         PowerSpectrum_SDSS_DR12,
         PowerSpectrum_eBOSS_LRGpCMASS,
+        PowerSpectrum_DESI_KP4,
     )
     from barry.config import setup_logging
     from barry.models.model import Correction
 
     setup_logging()
 
-    print("Checking isotropic mock mean")
-    dataset = PowerSpectrum_eBOSS_LRGpCMASS(realisation=None, isotropic=True, recon=None, galactic_cap="both")
-    model = PowerBeutler2017(
-        recon=dataset.recon,
-        marg="full",
-        isotropic=dataset.isotropic,
-        correction=Correction.HARTLAP,
-        n_data=dataset.ndata,
-        n_poly=3,
+    dataset = PowerSpectrum_DESI_KP4(
+        recon="sym",
+        fit_poles=[0, 2],
+        min_k=0.02,
+        max_k=0.30,
+        mocktype="abacus_cubicbox",
+        redshift_bin=0,
+        realisation=None,
+        num_mocks=1000,
     )
-    model.sanity_check(dataset)
+    data = dataset.get_data()
 
-    print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_eBOSS_LRGpCMASS(realisation=None, isotropic=False, fit_poles=[0, 2, 4], recon="iso", galactic_cap="both")
     model = PowerBeutler2017(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
-        marg="full",
-        fix_params=["om"],
-        poly_poles=[0, 2, 4],
+        marg=None,
+        fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
+        poly_poles=dataset.fit_poles,
         correction=Correction.HARTLAP,
-        n_data=dataset.ndata,
-        n_poly=3,
+        n_poly=5,
     )
-    model.sanity_check(dataset)
+    model.set_default("sigma_nl_perp", 4.0)
+    model.set_default("sigma_nl_par", 8.0)
+    model.set_default("sigma_s", 0.0)
+
+    model.set_data(data)
+    ks = model.camb.ks
+    # Load in a pre-existing BAO template
+    pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+    model.kvals, model.pksmooth, model.pkratio = pktemplate.T
+
+    # This function returns the values of k'(k,mu), pk (technically only the unmarginalised terms)
+    # and model components for analytically marginalised parameters
+    p = model.get_param_dict(model.get_defaults())
+    p["alpha"] = 1.1
+    p["epsilon"] = 0.05
+    p["sigma_nl_perp"] = 0.0
+    p["sigma_nl_par"] = 0.0
+    p["beta"] = 0.5
+    p["b{0}_{1}"] = 4.0
+    print(model.get_alphas(p["alpha"], p["epsilon"]), p)
+    sprime, pk, marged = model.compute_power_spectrum(data[0]["ks"], p)
+
+    print(data[0]["ks"], pk)
+    np.savetxt("../../barry/data/desi_kp4/test_pk.dat", np.c_[data[0]["ks"], pk[0], pk[2], pk[4]])

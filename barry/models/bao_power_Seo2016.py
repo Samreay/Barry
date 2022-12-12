@@ -213,7 +213,7 @@ class PowerSeo2016(PowerSpectrumFit):
             pk_smooth_lin, pk_ratio = self.pksmooth, self.pkratio
 
         if not for_corr:
-            if "b" not in p:
+            if "b{0}" not in p:
                 p = self.deal_with_ndata(p, 0)
 
         # We split for isotropic and anisotropic here. They are coded up quite differently to try and make things fast
@@ -225,14 +225,14 @@ class PowerSeo2016(PowerSpectrumFit):
 
             # Compute the smooth model
             fog = 1.0 / (1.0 + np.outer(self.mu**2, ks**2 * p["sigma_s"] ** 2 / 2.0)) ** 2
-            pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
+            pk_smooth = p["b{0}"] ** 2 * pk_smooth_lin * fog
 
             if smooth:
                 propagator = np.zeros(len(ks))
             else:
                 # Lets round some things for the sake of numerical speed
                 om = np.round(p["om"], decimals=5)
-                growth = np.round(p["beta"] * p["b"], decimals=5)
+                growth = np.round(p["beta"] * p["b{0}"], decimals=5)
 
                 # Compute the BAO damping
                 if self.recon:
@@ -240,19 +240,19 @@ class PowerSeo2016(PowerSpectrumFit):
                     damping_ss = self.get_damping_ss(om)
 
                     # Compute propagator
-                    smooth_prefac = np.tile(self.camb.smoothing_kernel / p["b"], (self.nmu, 1))
+                    smooth_prefac = np.tile(self.camb.smoothing_kernel / p["b{0}"], (self.nmu, 1))
                     kaiser_prefac = 1.0 + np.outer(p["beta"] * self.mu**2, 1.0 - self.camb.smoothing_kernel)
                     propagator = (kaiser_prefac * damping_dd + smooth_prefac * (damping_ss - damping_dd)) ** 2
                 else:
                     damping = self.get_damping(growth, om)
 
                     prefac_k = 1.0 + np.tile(
-                        3.0 / 7.0 * (self.get_pregen("R1", om) * (1.0 - 4.0 / (9.0 * p["b"])) + self.get_pregen("R2", om)), (self.nmu, 1)
+                        3.0 / 7.0 * (self.get_pregen("R1", om) * (1.0 - 4.0 / (9.0 * p["b{0}"])) + self.get_pregen("R2", om)), (self.nmu, 1)
                     )
                     prefac_mu = np.outer(
                         self.mu**2,
                         p["beta"]
-                        + 3.0 / 7.0 * growth * self.get_pregen("R1", om) * (2.0 - 1.0 / (3.0 * p["b"]))
+                        + 3.0 / 7.0 * growth * self.get_pregen("R1", om) * (2.0 - 1.0 / (3.0 * p["b{0}"]))
                         + 6.0 / 7.0 * growth * self.get_pregen("R2", om),
                     )
                     propagator = ((prefac_k + prefac_mu) * damping) ** 2
@@ -286,12 +286,12 @@ class PowerSeo2016(PowerSpectrumFit):
 
             # Lets round some things for the sake of numerical speed
             om = np.round(p["om"], decimals=5)
-            growth = np.round(p["beta"] * p["b"], decimals=5)
+            growth = np.round(p["beta"] * p["b{0}"], decimals=5)
 
             sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel)) if self.recon else 0.0
-            kaiser_prefac = 1.0 + growth / p["b"] * muprime**2 * (1.0 - sprime)
+            kaiser_prefac = 1.0 + growth / p["b{0}"] * muprime**2 * (1.0 - sprime)
 
-            pk_smooth = p["b"] ** 2 * kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+            pk_smooth = p["b{0}"] ** 2 * kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
 
             if smooth:
                 pk2d = pk_smooth
@@ -310,7 +310,7 @@ class PowerSeo2016(PowerSpectrumFit):
                     )
 
                     # Compute propagator
-                    smooth_prefac = sprime / p["b"]
+                    smooth_prefac = sprime / p["b{0}"]
                     propagator = (damping_dd + smooth_prefac / kaiser_prefac * (damping_ss - damping_dd)) ** 2
                 else:
                     damping = (
@@ -321,9 +321,9 @@ class PowerSeo2016(PowerSpectrumFit):
                     R1_kprime = splev(kprime, splrep(ks, self.get_pregen("R1", om)))
                     R2_kprime = splev(kprime, splrep(ks, self.get_pregen("R2", om)))
 
-                    prefac_k = 3.0 / 7.0 * (R1_kprime * (1.0 - 4.0 / (9.0 * p["b"])) + R2_kprime)
+                    prefac_k = 3.0 / 7.0 * (R1_kprime * (1.0 - 4.0 / (9.0 * p["b{0}"])) + R2_kprime)
                     prefac_mu = muprime**2 * (
-                        3.0 / 7.0 * growth * R1_kprime * (2.0 - 1.0 / (3.0 * p["b"])) + 6.0 / 7.0 * growth * R2_kprime
+                        3.0 / 7.0 * growth * R1_kprime * (2.0 - 1.0 / (3.0 * p["b{0}"])) + 6.0 / 7.0 * growth * R2_kprime
                     )
                     propagator = ((1.0 + prefac_k / kaiser_prefac + prefac_mu / kaiser_prefac) * damping) ** 2
 

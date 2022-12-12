@@ -97,7 +97,7 @@ class PowerSpectrumFit(Model):
             fix_params = list(fix_params)
             if do_bias:
                 for i in range(self.n_data_bias):
-                    fix_params.extend([f"b_{{{i+1}}}"])
+                    fix_params.extend([f"b{{{0}}}_{{{i+1}}}"])
             for i in range(self.n_data_poly):
                 for pole in poly_poles:
                     if n_poly >= 3:
@@ -109,7 +109,7 @@ class PowerSpectrumFit(Model):
         if self.marg:
             if do_bias:
                 for i in range(self.n_data_bias):
-                    self.set_default(f"b_{{{i+1}}}", 1.0)
+                    self.set_default(f"b{{{0}}}_{{{i+1}}}", 1.0)
             for i in range(self.n_data_poly):
                 for pole in self.poly_poles:
                     if n_poly >= 3:
@@ -162,8 +162,8 @@ class PowerSpectrumFit(Model):
             b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f**2)
             if not self.marg:
                 min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
-                self.set_default(f"b_{{{i+1}}}", b**2, min=min_b**2, max=max_b**2)
-                self.logger.info(f"Setting default bias to b_{{{i+1}}}={b:0.5f} with {width:0.5f} fractional width")
+                self.set_default(f"b{{{0}}}_{{{i+1}}}", b**2, min=min_b**2, max=max_b**2)
+                self.logger.info(f"Setting default bias to b{{{0}}}_{{{i+1}}}={b:0.5f} with {width:0.5f} fractional width")
         if self.param_dict.get("beta") is not None:
             if self.get_default("beta") is None:
                 beta, beta_min, beta_max = f / b, (1.0 - width) * f / b, (1.0 + width) * f / b
@@ -176,7 +176,7 @@ class PowerSpectrumFit(Model):
     def declare_parameters(self):
         """Defines model parameters, their bounds and default value."""
         for i in range(self.n_data_bias):
-            self.add_param(f"b_{{{i+1}}}", f"$b_{{{i+1}}}$", 0.1, 10.0, 1.0)  # Galaxy bias
+            self.add_param(f"b{{{0}}}_{{{i+1}}}", f"$b{{{0}}}_{{{i+1}}}$", 0.1, 10.0, 1.0)  # Galaxy bias
         self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.31)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch for monopole
         if not self.isotropic:
@@ -305,7 +305,7 @@ class PowerSpectrumFit(Model):
             kprime = k if for_corr else k / p["alpha"]
             pk_smooth = splev(kprime, splrep(ks, pk_smooth_lin))
             if not for_corr:
-                pk_smooth *= p["b"]
+                pk_smooth *= p["b{0}"]
 
             if smooth:
                 pk[0] = pk_smooth if for_corr else pk_smooth
@@ -331,7 +331,7 @@ class PowerSpectrumFit(Model):
                 kaiser_prefac = 1.0 + p["beta"] * muprime**2
             pk_smooth = kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin))
             if not for_corr:
-                pk_smooth *= p["b"]
+                pk_smooth *= p["b{0}"]
 
             # Compute the propagator
             if smooth:
@@ -640,7 +640,7 @@ class PowerSpectrumFit(Model):
     def deal_with_ndata(self, params, i):
 
         p = params.copy()
-        p["b"] = params[f"b_{{{1}}}"] if self.n_data_bias == 1 else params[f"b_{{{i + 1}}}"]
+        p["b{0}"] = params[f"b{{{0}}}_{{{1}}}"] if self.n_data_bias == 1 else params[f"b{{{0}}}_{{{i + 1}}}"]
         for pole in self.poly_poles:
             if self.n_poly >= 3:
                 p[f"a{{{pole}}}_1"] = p[f"a{{{pole}}}_1_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_1_{{{i + 1}}}"]

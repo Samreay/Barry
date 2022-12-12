@@ -209,7 +209,7 @@ class PowerDing2018(PowerSpectrumFit):
             pk_smooth_lin, pk_ratio = self.pksmooth, self.pkratio
 
         if not for_corr:
-            if "b" not in p:
+            if "b{0}" not in p:
                 p = self.deal_with_ndata(p, 0)
 
         if self.isotropic:
@@ -220,14 +220,14 @@ class PowerDing2018(PowerSpectrumFit):
 
             # Compute the smooth model
             fog = 1.0 / (1.0 + np.outer(self.mu**2, ks**2 * p["sigma_s"] ** 2 / 2.0)) ** 2
-            pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
+            pk_smooth = p["b{0}"] ** 2 * pk_smooth_lin * fog
 
             if smooth:
                 propagator = np.zeros(len(ks))
             else:
                 # Lets round some things for the sake of numerical speed
                 om = np.round(p["om"], decimals=5)
-                growth = np.round(p["b"] * p["beta"], decimals=5)
+                growth = np.round(p["b{0}"] * p["beta"], decimals=5)
 
                 # Compute the BAO damping
                 if self.recon:
@@ -235,8 +235,8 @@ class PowerDing2018(PowerSpectrumFit):
                     damping_sd = self.get_damping_sd(growth, om)
                     damping_ss = self.get_damping_ss(om)
 
-                    smooth_prefac = np.tile(self.camb.smoothing_kernel / p["b"], (self.nmu, 1))
-                    bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks**2, (self.nmu, 1))
+                    smooth_prefac = np.tile(self.camb.smoothing_kernel / p["b{0}"], (self.nmu, 1))
+                    bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b{0}"] * ks**2, (self.nmu, 1))
                     kaiser_prefac = (
                         1.0 - smooth_prefac + np.outer(p["beta"] * self.mu**2, 1.0 - self.camb.smoothing_kernel) + bdelta_prefac
                     )
@@ -247,7 +247,7 @@ class PowerDing2018(PowerSpectrumFit):
                     )
                 else:
                     damping = self.get_damping(growth, om)
-                    bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b"] * ks**2, (self.nmu, 1))
+                    bdelta_prefac = np.tile(0.5 * p["b_delta"] / p["b{0}"] * ks**2, (self.nmu, 1))
                     kaiser_prefac = 1.0 + np.tile(p["beta"] * self.mu**2, (len(ks), 1)).T + bdelta_prefac
                     propagator = (kaiser_prefac**2 - bdelta_prefac**2) * damping
 
@@ -279,12 +279,12 @@ class PowerDing2018(PowerSpectrumFit):
 
             # Lets round some things for the sake of numerical speed
             om = np.round(p["om"], decimals=5)
-            growth = np.round(p["b"] * p["beta"], decimals=5)
+            growth = np.round(p["b{0}"] * p["beta"], decimals=5)
 
             sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel)) if self.recon else 0.0
             kaiser_prefac = 1.0 + p["beta"] * muprime**2 * (1.0 - sprime)
 
-            pk_smooth = p["b"] ** 2 * kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+            pk_smooth = p["b{0}"] ** 2 * kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
 
             if smooth:
                 pk2d = pk_smooth
@@ -292,7 +292,7 @@ class PowerDing2018(PowerSpectrumFit):
                 # Compute the BAO damping
                 power_par = 1.0 / (p["alpha"] ** 2 * (1.0 + epsilon) ** 4)
                 power_perp = (1.0 + epsilon) ** 2 / p["alpha"] ** 2
-                bdelta_prefac = 0.5 * p["b_delta"] / (p["b"] * kaiser_prefac) * kprime**2
+                bdelta_prefac = 0.5 * p["b_delta"] / (p["b{0}"] * kaiser_prefac) * kprime**2
                 if self.recon:
                     damping_dd = (
                         self.get_damping_aniso_dd_par(growth, om, data_name=data_name) ** power_par
@@ -308,7 +308,7 @@ class PowerDing2018(PowerSpectrumFit):
                     )
 
                     # Compute propagator
-                    smooth_prefac = sprime / (p["b"] * kaiser_prefac)
+                    smooth_prefac = sprime / (p["b{0}"] * kaiser_prefac)
                     propagator = (
                         ((1.0 + bdelta_prefac - smooth_prefac) ** 2 - bdelta_prefac**2) * damping_dd
                         + 2.0 * (1.0 + bdelta_prefac - smooth_prefac) * smooth_prefac * damping_sd

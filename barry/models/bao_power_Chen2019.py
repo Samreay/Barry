@@ -267,7 +267,7 @@ class PowerChen2019(PowerSpectrumFit):
             pk_smooth_lin, pk_ratio = self.pksmooth, self.pkratio
 
         if not for_corr:
-            if "b" not in p:
+            if "b{0}" not in p:
                 p = self.deal_with_ndata(p, 0)
 
         if self.isotropic:
@@ -278,14 +278,14 @@ class PowerChen2019(PowerSpectrumFit):
 
             # Compute the smooth model
             fog = 1.0 / (1.0 + np.outer(self.mu**2, ks**2 * p["sigma_s"] ** 2 / 2.0)) ** 2
-            pk_smooth = p["b"] ** 2 * pk_smooth_lin * fog
+            pk_smooth = p["b{0}"] ** 2 * pk_smooth_lin * fog
 
             if smooth:
                 propagator = np.zeros(len(ks))
             else:
                 # Lets round some things for the sake of numerical speed
                 om = np.round(p["om"], decimals=5)
-                growth = np.round(p["b"] * p["beta"], decimals=5)
+                growth = np.round(p["b{0}"] * p["beta"], decimals=5)
 
                 # Compute the BAO damping
                 if self.recon:
@@ -294,10 +294,10 @@ class PowerChen2019(PowerSpectrumFit):
                     damping_ss = self.get_damping_ss(growth, om)
 
                     kaiser_prefac = (
-                        1.0 + np.outer(p["beta"] * self.mu**2, 1.0 - self.camb.smoothing_kernel) - self.camb.smoothing_kernel / p["b"]
+                        1.0 + np.outer(p["beta"] * self.mu**2, 1.0 - self.camb.smoothing_kernel) - self.camb.smoothing_kernel / p["b{0}"]
                     )
-                    ss_prefac = np.outer(1.0 + growth * self.mu**2, self.camb.smoothing_kernel) / p["b"]
-                    sd_prefac = self.camb.smoothing_kernel / p["b"] if self.recon_type == "iso" else ss_prefac
+                    ss_prefac = np.outer(1.0 + growth * self.mu**2, self.camb.smoothing_kernel) / p["b{0}"]
+                    sd_prefac = self.camb.smoothing_kernel / p["b{0}"] if self.recon_type == "iso" else ss_prefac
 
                     propagator = (
                         kaiser_prefac**2 * damping_dd + 2.0 * sd_prefac * kaiser_prefac * damping_sd + ss_prefac**2 * damping_ss
@@ -336,12 +336,12 @@ class PowerChen2019(PowerSpectrumFit):
 
             # Lets round some things for the sake of numerical speed
             om = np.round(p["om"], decimals=5)
-            growth = np.round(p["b"] * p["beta"], decimals=5)
+            growth = np.round(p["b{0}"] * p["beta"], decimals=5)
 
             sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel)) if self.recon_type.lower() == "iso" else 0.0
-            kaiser_prefac = 1.0 + growth * muprime**2 * (1.0 - sprime) - sprime / p["b"]
+            kaiser_prefac = 1.0 + growth * muprime**2 * (1.0 - sprime) - sprime / p["b{0}"]
 
-            pk_smooth = p["b"] ** 2 * kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+            pk_smooth = p["b{0}"] ** 2 * kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
 
             if smooth:
                 pk2d = pk_smooth
