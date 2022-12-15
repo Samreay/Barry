@@ -442,6 +442,7 @@ class Model(ABC):
             The dilation scale perpendicular to the line-of-sight
 
         """
+        print(alpha, epsilon)
         return alpha * (1.0 + epsilon) ** 2, alpha / (1.0 + epsilon)
 
     def get_raw_start(self):

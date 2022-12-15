@@ -167,7 +167,7 @@ class PowerSeo2016(PowerSpectrumFit):
     def declare_parameters(self):
         super().declare_parameters()
         self.add_param("beta", r"$\beta$", 0.01, 4.0, None)  # RSD parameter f/b
-        self.add_param("sigma_s", r"$\Sigma_s$", 0.01, 10.0, 5.0)  # Fingers-of-god damping
+        self.add_param("sigma_s", r"$\Sigma_s$", 0.0, 10.0, 5.0)  # Fingers-of-god damping
         for i in range(self.n_data_poly):
             for pole in self.poly_poles:
                 if self.n_poly >= 3:
@@ -178,7 +178,7 @@ class PowerSeo2016(PowerSpectrumFit):
                     self.add_param(f"a{{{pole}}}_4_{{{i+1}}}", f"$a_{{{pole},4,{i+1}}}$", -200.0, 200.0, 0)
                     self.add_param(f"a{{{pole}}}_5_{{{i+1}}}", f"$a_{{{pole},5,{i+1}}}$", -3.0, 3.0, 0)
 
-    def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None):
+    def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None, nopoly=False):
         """Computes the power spectrum model using the Seo et. al., 2016 method
 
         Parameters
@@ -262,7 +262,7 @@ class PowerSeo2016(PowerSpectrumFit):
             else:
                 prefac = splev(kprime, splrep(ks, integrate.simps((1.0 + pk_ratio * propagator), self.mu, axis=0)))
 
-            if for_corr:
+            if for_corr or nopoly:
                 poly = None
                 pk1d = integrate.simps(pk_smooth * (1.0 + pk_ratio * propagator), self.mu, axis=0)
             else:
@@ -334,7 +334,7 @@ class PowerSeo2016(PowerSpectrumFit):
             # Polynomial shape
             pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4, np.zeros(len(k))]
 
-            if for_corr:
+            if for_corr or nopoly:
                 poly = None
                 kprime = k
             else:
@@ -356,36 +356,33 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12
+    from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESI_KP4
     from barry.config import setup_logging
     from barry.models.model import Correction
 
     setup_logging()
 
-    print("Checking isotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
-    model = PowerSeo2016(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP)
-    model.sanity_check(dataset)
+    dataset = PowerSpectrum_DESI_KP4(
+        recon=None,
+        fit_poles=[0, 2],
+        min_k=0.02,
+        max_k=0.30,
+        mocktype="abacus_cubicbox",
+        redshift_bin=0,
+        realisation=None,
+        num_mocks=1000,
+        reduce_cov_factor=25,
+    )
+    data = dataset.get_data()
 
-    print("Checking isotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
-    model = PowerSeo2016(recon=dataset.recon, marg="full", isotropic=dataset.isotropic, correction=Correction.HARTLAP, n_poly=3)
-    model.sanity_check(dataset)
-
-    print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
     model = PowerSeo2016(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
-        poly_poles=[0, 2, 4],
+        fix_params=["om", "sigma_s"],
+        poly_poles=dataset.fit_poles,
         correction=Correction.HARTLAP,
+        n_poly=5,
     )
-    model.sanity_check(dataset)
-
-    print("Checking anisotropic mock mean")
-    dataset = PowerSpectrum_SDSS_DR12(isotropic=False, recon="iso", fit_poles=[0, 2, 4])
-    model = PowerSeo2016(
-        recon=dataset.recon, isotropic=dataset.isotropic, marg="full", poly_poles=[0, 2, 4], correction=Correction.HARTLAP, n_poly=3
-    )
+    model.set_default("sigma_s", 0.0)
     model.sanity_check(dataset)

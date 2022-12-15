@@ -78,8 +78,8 @@ class CambGenerator(object):
         self.filename_unique = f"{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}_{int(mnu * 10000)}"
         self.filename = self.data_dir + f"/camb_{self.filename_unique}.npy"
 
-        self.k_min = 1e-4
-        self.k_max = 5
+        self.k_min = 1e-5
+        self.k_max = 100
         self.k_num = 2000
         self.ks = np.logspace(np.log(self.k_min), np.log(self.k_max), self.k_num, base=np.e)
         self.recon_smoothing_scale = recon_smoothing_scale

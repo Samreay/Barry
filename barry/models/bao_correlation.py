@@ -1,7 +1,7 @@
 from functools import lru_cache
 import numpy as np
 
-from barry.cosmology.pk2xi import PowerToCorrelationFFTLog
+from barry.cosmology.pk2xi import PowerToCorrelationFFTLog, PowerToCorrelationGauss, PowerToCorrelationSphericalBessel
 from barry.cosmology.power_spectrum_smoothing import validate_smooth_method, smooth_func
 from barry.models.model import Model, Omega_m_z, Correction
 from barry.models.bao_power import PowerSpectrumFit
@@ -81,12 +81,16 @@ class CorrelationFunctionFit(Model):
             A list of datas to use
         """
         super().set_data(data)
-        # self.pk2xi_0 = PowerToCorrelationGauss(self.camb.ks, ell=0, interpolateDetail=20, a=1.0)
-        # self.pk2xi_2 = PowerToCorrelationGauss(self.camb.ks, ell=2, interpolateDetail=20, a=1.0)
-        # self.pk2xi_4 = PowerToCorrelationGauss(self.camb.ks, ell=4, interpolateDetail=20, a=1.0)
-        self.pk2xi_0 = PowerToCorrelationFFTLog(ell=0)
-        self.pk2xi_2 = PowerToCorrelationFFTLog(ell=2)
-        self.pk2xi_4 = PowerToCorrelationFFTLog(ell=4)
+        # self.pk2xi_0 = PowerToCorrelationGauss(self.camb.ks, ell=0, interpolateDetail=20)
+        # self.pk2xi_2 = PowerToCorrelationGauss(self.camb.ks, ell=2, interpolateDetail=20)
+        # self.pk2xi_4 = PowerToCorrelationGauss(self.camb.ks, ell=4, interpolateDetail=20)
+        # self.pk2xi_0 = PowerToCorrelationFFTLog(ell=0, r0=50.0)
+        # self.pk2xi_2 = PowerToCorrelationFFTLog(ell=2, r0=50.0)
+        # self.pk2xi_4 = PowerToCorrelationFFTLog(ell=4, r0=50.0)
+        cambpk = self.camb.get_data(om=data[0]["cosmology"]["om"], h0=data[0]["cosmology"]["h0"])
+        self.pk2xi_0 = PowerToCorrelationSphericalBessel(qs=cambpk["ks"], ell=0)
+        self.pk2xi_2 = PowerToCorrelationSphericalBessel(qs=cambpk["ks"], ell=2)
+        self.pk2xi_4 = PowerToCorrelationSphericalBessel(qs=cambpk["ks"], ell=4)
         self.set_bias(data[0])
         self.parent.set_data(data, parent=True)
 
@@ -111,7 +115,11 @@ class CorrelationFunctionFit(Model):
         b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f**2)
         if not self.marg:
             min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
-            self.set_default(f"b{{{0}}}", b**2, min=min_b**2, max=max_b**2)
+            # if self.param_dict.get("b") is not None:
+            #    self.set_default(f"b", b**2, min=min_b**2, max=max_b**2)
+            #    self.logger.info(f"Setting default bias to b={b:0.5f} with {width:0.5f} fractional width")
+            # else:
+            self.set_default(f"b{{{0}}}_{{{1}}}", b**2, min=min_b**2, max=max_b**2)
             self.logger.info(f"Setting default bias to b0={b:0.5f} with {width:0.5f} fractional width")
         if self.param_dict.get("beta") is not None:
             if self.get_default("beta") is None:
@@ -128,8 +136,6 @@ class CorrelationFunctionFit(Model):
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch for monopole
         if not self.isotropic:
             self.add_param("epsilon", r"$\epsilon$", -0.2, 0.2, 0.0)  # Stretch for multipoles
-        for pole in self.poly_poles:
-            self.add_param(f"b{{{pole}}}", f"$b{{{pole}}}$", 0.01, 10.0, 1.0)  # Linear galaxy bias for each multipole
 
     @lru_cache(maxsize=32)
     def get_sprimefac(self, epsilon):
@@ -167,7 +173,7 @@ class CorrelationFunctionFit(Model):
 
         """
         musq = self.mu**2
-        muprime = self.mu / np.sqrt(musq + (1.0 + epsilon) ** 6 * (1.0 - musq))
+        muprime = self.mu / np.sqrt(musq + (1.0 - musq) / (1.0 + epsilon) ** 6)
         return muprime
 
     def integrate_mu(self, xi2d, mu=None, isotropic=False):
@@ -214,23 +220,24 @@ class CorrelationFunctionFit(Model):
 
         xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
 
+        finedist = np.linspace(1.0, 200.0, 400)
         if self.isotropic:
             sprime = p["alpha"] * dist
             if self.fixed_xi:
                 if smooth:
                     if self.store_xi_smooth[0] is None:
-                        pk2xi0 = splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist))
+                        pk2xi0 = splrep(finedist, self.pk2xi_0.__call__(ks, pks[0], finedist))
                         self.store_xi_smooth[0] = pk2xi0
                     else:
                         pk2xi0 = self.store_xi_smooth[0]
                 else:
                     if self.store_xi[0] is None:
-                        pk2xi0 = splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist))
+                        pk2xi0 = splrep(finedist, self.pk2xi_0.__call__(ks, pks[0], finedist))
                         self.store_xi[0] = pk2xi0
                     else:
                         pk2xi0 = self.store_xi[0]
             else:
-                pk2xi0 = splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist))
+                pk2xi0 = splrep(finedist, self.pk2xi_0.__call__(ks, pks[0], finedist))
             xi0 = splev(sprime, pk2xi0)
             xi[0] = xi0
         else:
@@ -244,24 +251,24 @@ class CorrelationFunctionFit(Model):
             if self.fixed_xi:
                 if smooth:
                     if self.store_xi_smooth[0] is None:
-                        pk2xi0 = splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist))
-                        pk2xi2 = splrep(dist, self.pk2xi_2.__call__(ks, pks[2], dist))
-                        pk2xi4 = splrep(dist, self.pk2xi_4.__call__(ks, pks[4], dist))
+                        pk2xi0 = splrep(finedist, self.pk2xi_0.__call__(ks, pks[0], finedist))
+                        pk2xi2 = splrep(finedist, self.pk2xi_2.__call__(ks, pks[2], finedist))
+                        pk2xi4 = splrep(finedist, self.pk2xi_4.__call__(ks, pks[4], finedist))
                         self.store_xi_smooth = [pk2xi0, pk2xi2, pk2xi4]
                     else:
                         pk2xi0, pk2xi2, pk2xi4 = self.store_xi_smooth
                 else:
                     if self.store_xi[0] is None:
-                        pk2xi0 = splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist))
-                        pk2xi2 = splrep(dist, self.pk2xi_2.__call__(ks, pks[2], dist))
-                        pk2xi4 = splrep(dist, self.pk2xi_4.__call__(ks, pks[4], dist))
+                        pk2xi0 = splrep(finedist, self.pk2xi_0.__call__(ks, pks[0], finedist))
+                        pk2xi2 = splrep(finedist, self.pk2xi_2.__call__(ks, pks[2], finedist))
+                        pk2xi4 = splrep(finedist, self.pk2xi_4.__call__(ks, pks[4], finedist))
                         self.store_xi = [pk2xi0, pk2xi2, pk2xi4]
                     else:
                         pk2xi0, pk2xi2, pk2xi4 = self.store_xi
             else:
-                pk2xi0 = splrep(dist, self.pk2xi_0.__call__(ks, pks[0], dist))
-                pk2xi2 = splrep(dist, self.pk2xi_2.__call__(ks, pks[2], dist))
-                pk2xi4 = splrep(dist, self.pk2xi_4.__call__(ks, pks[4], dist))
+                pk2xi0 = splrep(finedist, self.pk2xi_0.__call__(ks, pks[0], finedist))
+                pk2xi2 = splrep(finedist, self.pk2xi_2.__call__(ks, pks[2], finedist))
+                pk2xi4 = splrep(finedist, self.pk2xi_4.__call__(ks, pks[4], finedist))
 
             xi0 = splev(sprime, pk2xi0)
             xi2 = splev(sprime, pk2xi2)
@@ -302,70 +309,6 @@ class CorrelationFunctionFit(Model):
 
         return sprime, xi, poly
 
-    def add_zero_poly(self, dist, p, xi_comp):
-        """Converts the xi components to a full model but without any polynomial terms
-
-        Parameters
-        ----------
-        dist : np.ndarray
-            Array of distances in the correlation function to compute
-        p : dict
-            dictionary of parameter name to float value pairs
-        xi_comp : np.ndarray
-            the model monopole, quadrupole and hexadecapole interpolated to sprime.
-
-        Returns
-        -------
-        sprime : np.ndarray
-            distances of the computed xi
-        xi : np.ndarray
-            the convert model monopole, quadrupole and hexadecapole interpolated to sprime.
-        poly: np.ndarray
-            the additive terms in the model, necessary for analytical marginalisation
-
-        """
-
-        xi0, xi2, xi4 = xi_comp
-        xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
-
-        if self.isotropic:
-            xi[0] = p["b{0}"] * xi0
-            poly = np.zeros((1, len(dist)))
-        else:
-            xi[0] = p["b{0}"] * xi0
-            if self.includeb2:
-                xi[1] = 2.5 * (p["b{2}"] * xi2 - xi[0])
-                if 4 in self.poly_poles:
-                    xi[2] = 1.125 * (p["b{4}"] * xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
-                else:
-                    xi[2] = 1.125 * (xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
-            else:
-                xi[1] = 2.5 * p["b{0}"] * (xi2 - xi0)
-                xi[2] = 1.125 * p["b{0}"] * (xi4 - 10.0 * xi2 + 3.0 * xi0)
-
-            # Polynomial shape
-            if self.marg:
-                if self.includeb2:
-                    xi_marg = [xi0, 2.5 * xi2, 1.125 * xi4]
-                    poly = np.zeros((len(self.poly_poles), 3, len(dist)))
-                    for npole, pole in enumerate(self.poly_poles):
-                        poly[npole, npole] = [xi_marg[npole]]
-                    poly[0, 1] = -2.5 * xi0
-                    poly[0, 2] = 1.125 * 3.0 * xi0
-                    if 2 in self.poly_poles:
-                        poly[1, 2] = -1.125 * 10.0 * xi2
-
-                    xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
-                else:
-                    poly = np.zeros((1, 3, len(dist)))
-                    poly[0] = [xi0, 2.5 * (xi2 - xi0), 1.125 * (xi4 - 10.0 * xi2 + 3.0 * xi0)]
-
-                    xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
-            else:
-                poly = np.zeros((1, 3, len(dist)))
-
-        return xi, poly
-
     def add_three_poly(self, dist, p, xi_comp):
         """Converts the xi components to a full model but with 3 polynomial terms for each multipole
 
@@ -393,49 +336,62 @@ class CorrelationFunctionFit(Model):
         xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
 
         if self.isotropic:
-            xi[0] = p["b{0}"] * xi0
+            xi[0] = xi0
             poly = np.zeros((1, len(dist)))
             if self.marg:
-                poly = [xi[0], 1.0 / (dist**2), 1.0 / dist, np.ones(len(dist))]
+                poly = [1.0 / (dist**2), 1.0 / dist, np.ones(len(dist))]
             else:
-                xi[0] += p["a{0}_1"] / (dist**2) + p["a{0}_2"] / dist + p["a{0}_3"]
+                xi[0] += p["a{0}_1_{1}"] / (dist**2) + p["a{0}_2_{1}"] / dist + p["a{0}_3_{1}"]
 
         else:
-            xi[0] = p["b{0}"] * xi0
-            if self.includeb2:
-                xi[1] = 2.5 * (p["b{2}"] * xi2 - xi[0])
-                if 4 in self.poly_poles:
-                    xi[2] = 1.125 * (p["b{4}"] * xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
-                else:
-                    xi[2] = 1.125 * (xi4 - 10.0 * p["b{2}"] * xi2 + 3.0 * p["b{0}"] * xi0)
-            else:
-                xi[1] = 2.5 * p["b{0}"] * (xi2 - xi0)
-                xi[2] = 1.125 * p["b{0}"] * (xi4 - 10.0 * xi2 + 3.0 * xi0)
+            xi = [xi0, xi2, xi4]
 
             # Polynomial shape
             if self.marg:
-                if self.includeb2:
-                    xi_marg = [xi0, 2.5 * xi2, 1.125 * xi4]
-                    poly = np.zeros((4 * len(self.poly_poles), 3, len(dist)))
-                    for npole, pole in enumerate(self.poly_poles):
-                        poly[4 * npole : 4 * (npole + 1), npole] = [xi_marg[npole], 1.0 / (dist**2), 1.0 / dist, np.ones(len(dist))]
-                    poly[0, 1] = -2.5 * xi0
-                    poly[0, 2] = 1.125 * 3.0 * xi0
-                    if 2 in self.poly_poles:
-                        poly[4, 2] = -1.125 * 10.0 * xi2
-
-                    xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
-                else:
-                    poly = np.zeros((3 * len(self.poly_poles) + 1, 3, len(dist)))
-                    poly[0] = [xi0, 2.5 * (xi2 - xi0), 1.125 * (xi4 - 10.0 * xi2 + 3.0 * xi0)]
-                    for npole, pole in enumerate(self.poly_poles):
-                        poly[3 * npole + 1 : 3 * (npole + 1) + 1, npole] = [1.0 / (dist**2), 1.0 / dist, np.ones(len(dist))]
-
-                    xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
+                poly = np.zeros((3 * len(self.poly_poles), 3, len(dist)))
+                for npole, pole in enumerate(self.poly_poles):
+                    poly[3 * npole : 3 * (npole + 1), npole] = [1.0 / (dist**2), 1.0 / dist, np.ones(len(dist))]
             else:
                 poly = np.zeros((1, 3, len(dist)))
                 for pole in self.poly_poles:
-                    xi[int(pole / 2)] += p[f"a{{{pole}}}_1"] / dist**2 + p[f"a{{{pole}}}_2"] / dist + p[f"a{{{pole}}}_3"]
+                    xi[int(pole / 2)] += (
+                        p[f"a{{{pole}}}_1_{{{1}}}"] / dist**2 + p[f"a{{{pole}}}_2_{{{1}}}"] / dist + p[f"a{{{pole}}}_3_{{{1}}}"]
+                    )
+
+        return xi, poly
+
+    def add_zero_poly(self, dist, p, xi_comp):
+        """Converts the xi components to a full model but with 3 polynomial terms for each multipole
+
+        Parameters
+        ----------
+        dist : np.ndarray
+            Array of distances in the correlation function to compute
+        p : dict
+            dictionary of parameter name to float value pairs
+        xi_comp : np.ndarray
+            the model monopole, quadrupole and hexadecapole interpolated to sprime.
+
+        Returns
+        -------
+        sprime : np.ndarray
+            distances of the computed xi
+        xi : np.ndarray
+            the convert model monopole, quadrupole and hexadecapole interpolated to sprime.
+        poly: np.ndarray
+            the additive terms in the model, necessary for analytical marginalisation
+
+        """
+
+        xi0, xi2, xi4 = xi_comp
+        xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
+
+        if self.isotropic:
+            xi[0] = xi0
+            poly = np.zeros((1, len(dist)))
+        else:
+            xi = [xi0, xi2, xi4]
+            poly = np.zeros((3 * len(self.poly_poles), 3, len(dist)))
 
         return xi, poly
 

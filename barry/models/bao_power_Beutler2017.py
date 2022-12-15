@@ -133,7 +133,7 @@ class PowerBeutler2017(PowerSpectrumFit):
                 propagator = 1.0 + splev(kprime, splrep(ks, pk_ratio)) * C
             prefac = np.ones(len(kprime)) if smooth else propagator
 
-            if for_corr:
+            if for_corr or nopoly:
                 poly = None
                 pk[0] = pk_smooth * propagator
             else:
@@ -197,8 +197,6 @@ if __name__ == "__main__":
 
     sys.path.append("../..")
     from barry.datasets.dataset_power_spectrum import (
-        PowerSpectrum_SDSS_DR12,
-        PowerSpectrum_eBOSS_LRGpCMASS,
         PowerSpectrum_DESI_KP4,
     )
     from barry.config import setup_logging
@@ -215,39 +213,20 @@ if __name__ == "__main__":
         redshift_bin=0,
         realisation=None,
         num_mocks=1000,
+        reduce_cov_factor=25,
     )
     data = dataset.get_data()
 
     model = PowerBeutler2017(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
-        marg=None,
+        marg="full",
         fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
         poly_poles=dataset.fit_poles,
         correction=Correction.HARTLAP,
         n_poly=5,
     )
-    model.set_default("sigma_nl_perp", 4.0)
-    model.set_default("sigma_nl_par", 8.0)
+    model.set_default("sigma_nl_perp", 2.0)
+    model.set_default("sigma_nl_par", 4.0)
     model.set_default("sigma_s", 0.0)
-
-    model.set_data(data)
-    ks = model.camb.ks
-    # Load in a pre-existing BAO template
-    pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-    model.kvals, model.pksmooth, model.pkratio = pktemplate.T
-
-    # This function returns the values of k'(k,mu), pk (technically only the unmarginalised terms)
-    # and model components for analytically marginalised parameters
-    p = model.get_param_dict(model.get_defaults())
-    p["alpha"] = 1.1
-    p["epsilon"] = 0.05
-    p["sigma_nl_perp"] = 0.0
-    p["sigma_nl_par"] = 0.0
-    p["beta"] = 0.5
-    p["b{0}_{1}"] = 4.0
-    print(model.get_alphas(p["alpha"], p["epsilon"]), p)
-    sprime, pk, marged = model.compute_power_spectrum(data[0]["ks"], p)
-
-    print(data[0]["ks"], pk)
-    np.savetxt("../../barry/data/desi_kp4/test_pk.dat", np.c_[data[0]["ks"], pk[0], pk[2], pk[4]])
+    model.sanity_check(dataset)
