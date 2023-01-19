@@ -100,10 +100,9 @@ class PowerSpectrumFit(Model):
                     fix_params.extend([f"b{{{0}}}_{{{i+1}}}"])
             for i in range(self.n_data_poly):
                 for pole in poly_poles:
-                    if n_poly >= 3:
-                        fix_params.extend([f"a{{{pole}}}_1_{{{i + 1}}}", f"a{{{pole}}}_2_{{{i + 1}}}", f"a{{{pole}}}_3_{{{i + 1}}}"])
-                    if n_poly == 5:
-                        fix_params.extend([f"a{{{pole}}}_4_{{{i + 1}}}", f"a{{{pole}}}_5_{{{i + 1}}}"])
+                    for ip in range(n_poly):
+                        fix_params.extend([f"a{{{pole}}}_{{{ip+1}}}_{{{i+1}}}"])
+
         self.set_fix_params(fix_params)
 
         if self.marg:
@@ -112,13 +111,8 @@ class PowerSpectrumFit(Model):
                     self.set_default(f"b{{{0}}}_{{{i+1}}}", 1.0)
             for i in range(self.n_data_poly):
                 for pole in self.poly_poles:
-                    if n_poly >= 3:
-                        self.set_default(f"a{{{pole}}}_1_{{{i + 1}}}", 0.0)
-                        self.set_default(f"a{{{pole}}}_2_{{{i + 1}}}", 0.0)
-                        self.set_default(f"a{{{pole}}}_3_{{{i + 1}}}", 0.0)
-                    if n_poly == 5:
-                        self.set_default(f"a{{{pole}}}_4_{{{i + 1}}}", 0.0)
-                        self.set_default(f"a{{{pole}}}_5_{{{i + 1}}}", 0.0)
+                    for ip in range(n_poly):
+                        self.set_default(f"a{{{pole}}}_{{{ip+1}}}_{{{i+1}}}", 0.0)
 
     def set_data(self, data, parent=False):
         """Sets the models data, including fetching the right cosmology and PT generator.
@@ -358,7 +352,7 @@ class PowerSpectrumFit(Model):
 
         return kprime, pk, poly
 
-    def add_three_poly(self, k, kpoly, p, prefac, pk):
+    def add_poly(self, k, kpoly, p, prefac, pk):
         """Returns the polynomial components for 3 terms per multipole
 
         Parameters
@@ -384,118 +378,29 @@ class PowerSpectrumFit(Model):
         """
 
         if self.isotropic:
-            if self.recon:
-                shape = p["a{0}_1"] * k**2 + p["a{0}_2"] + p["a{0}_3"] / k
-            else:
-                shape = p["a{0}_1"] * k + p["a{0}_2"] + p["a{0}_3"] / k
+            shape = np.zeros(len(k))
+            for ip in range(self.n_poly):
+                shape += p[f"a{0}_{{{ip+1}}}"] * k ** (ip - 1)
 
             poly = np.zeros((1, len(kpoly)))
             if self.marg:
-                poly = prefac * [pk, kpoly, np.ones(len(kpoly)), 1.0 / kpoly]
-                if self.recon:
-                    poly[1] *= kpoly
+                poly = [prefac * pk]
+                for ip in range(self.n_poly):
+                    poly.extend(kpoly ** (ip - 1))
             poly = poly[:, None, :]
         else:
             shape = np.zeros((6, len(k)))
             if self.marg:
-                poly = np.zeros((3 * len(self.poly_poles) + 1, 6, len(kpoly)))
+                poly = np.zeros((self.n_poly * len(self.poly_poles) + 1, 6, len(kpoly)))
                 poly[0, :, :] = pk
                 for i, pole in enumerate(self.poly_poles):
-                    if self.recon:
-                        poly[3 * i + 1 : 3 * (i + 1) + 1, pole] = [kpoly**2, np.ones(len(kpoly)), 1.0 / kpoly]
-                    else:
-                        poly[3 * i + 1 : 3 * (i + 1) + 1, pole] = [kpoly**2, np.ones(len(kpoly)), 1.0 / kpoly]
+                    poly[self.n_poly * i + 1 : self.n_poly * (i + 1) + 1, pole] = [kpoly ** (ip - 1) for ip in range(self.n_poly)]
 
             else:
                 poly = np.zeros((1, 6, len(kpoly)))
                 for pole in self.poly_poles:
-                    if self.recon:
-                        shape[pole] = p[f"a{{{pole}}}_1"] * k**2 + p[f"a{{{pole}}}_2"] + p[f"a{{{pole}}}_3"] / k
-                    else:
-                        shape[pole] = p[f"a{{{pole}}}_1"] * k**2 + p[f"a{{{pole}}}_2"] + p[f"a{{{pole}}}_3"] / k
-
-        return shape, poly
-
-    def add_five_poly(self, k, kpoly, p, prefac, pk):
-        """Returns the polynomial components for 5 terms per multipole
-
-        Parameters
-        ----------
-        k : np.ndarray
-            Array of k values for the shape terms
-        kpoly : np.ndarray
-            Array of k values for the marginalised polynomial array
-        p : dict
-            dictionary of parameter name to float value pairs
-        prefac : np.ndarray
-            Prefactors to be added to the front of the analytically marginalised polynomial
-        pk_comp: np.ndarray
-            the power spectrum components without polynomials
-
-        Returns
-        -------
-        shape : np.ndarray
-            The polynomial terms to be added directly to each multipole
-        poly: np.ndarray
-            The additive terms in the model not added to the multipoles, necessary for analytical marginalisation
-
-        """
-
-        if self.isotropic:
-            if self.recon:
-                shape = p["a{0}_1"] * k**2 + p["a{0}_2"] + p["a{0}_3"] / k + p["a{0}_4"] / (k * k) + p["a{0}_5"] / (k**3)
-            else:
-                shape = p["a{0}_1"] * k + p["a{0}_2"] + p["a{0}_3"] / k + p["a{0}_4"] / (k * k) + p["a{0}_5"] / (k**3)
-
-            poly = np.zeros((1, len(kpoly)))
-            if self.marg:
-                poly = prefac * [pk, kpoly, np.ones(len(kpoly)), 1.0 / kpoly, 1.0 / (kpoly * kpoly), 1.0 / (kpoly**3)]
-                if self.recon:
-                    poly[1] *= kpoly
-            poly = poly[:, None, :]
-
-        else:
-            shape = np.zeros((6, len(k)))
-            if self.marg:
-                poly = np.zeros((5 * len(self.poly_poles) + 1, 6, len(kpoly)))
-                poly[0, :, :] = pk
-                for i, pole in enumerate(self.poly_poles):
-                    if self.recon:
-                        poly[5 * i + 1 : 5 * (i + 1) + 1, pole] = [
-                            kpoly**2,
-                            np.ones(len(kpoly)),
-                            1.0 / kpoly,
-                            1.0 / (kpoly * kpoly),
-                            1.0 / (kpoly**3),
-                        ]
-                    else:
-                        poly[5 * i + 1 : 5 * (i + 1) + 1, pole] = [
-                            kpoly**2,
-                            np.ones(len(kpoly)),
-                            1.0 / kpoly,
-                            1.0 / (kpoly * kpoly),
-                            1.0 / (kpoly**3),
-                        ]
-
-            else:
-                poly = np.zeros((1, 6, len(kpoly)))
-                for pole in self.poly_poles:
-                    if self.recon:
-                        shape[pole] = (
-                            p[f"a{{{pole}}}_1"] * kpoly**2
-                            + p[f"a{{{pole}}}_2"]
-                            + p[f"a{{{pole}}}_3"] / kpoly
-                            + p[f"a{{{pole}}}_4"] / (kpoly * kpoly)
-                            + p[f"a{{{pole}}}_5"] / (kpoly**3)
-                        )
-                    else:
-                        shape[pole] = (
-                            p[f"a{{{pole}}}_1"] * kpoly**2
-                            + p[f"a{{{pole}}}_2"]
-                            + p[f"a{{{pole}}}_3"] / kpoly
-                            + p[f"a{{{pole}}}_4"] / (kpoly * kpoly)
-                            + p[f"a{{{pole}}}_5"] / (kpoly**3)
-                        )
+                    for ip in range(self.n_poly):
+                        shape[pole] += p[f"a{{{pole}}}_{{{ip+1}}}"] * k ** (ip - 1)
 
         return shape, poly
 
@@ -640,15 +545,12 @@ class PowerSpectrumFit(Model):
     def deal_with_ndata(self, params, i):
 
         p = params.copy()
-        p["b{0}"] = params[f"b{{{0}}}_{{{1}}}"] if self.n_data_bias == 1 else params[f"b{{{0}}}_{{{i + 1}}}"]
+        p["b{0}"] = params[f"b{{{0}}}_{{{1}}}"] if self.n_data_bias == 1 else params[f"b{{{0}}}_{{{i+1}}}"]
         for pole in self.poly_poles:
-            if self.n_poly >= 3:
-                p[f"a{{{pole}}}_1"] = p[f"a{{{pole}}}_1_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_1_{{{i + 1}}}"]
-                p[f"a{{{pole}}}_2"] = p[f"a{{{pole}}}_2_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_2_{{{i + 1}}}"]
-                p[f"a{{{pole}}}_3"] = p[f"a{{{pole}}}_3_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_3_{{{i + 1}}}"]
-            if self.n_poly == 5:
-                p[f"a{{{pole}}}_4"] = p[f"a{{{pole}}}_4_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_4_{{{i + 1}}}"]
-                p[f"a{{{pole}}}_5"] = p[f"a{{{pole}}}_5_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_5_{{{i + 1}}}"]
+            for ip in range(self.n_poly):
+                p[f"a{{{pole}}}_{{{ip+1}}}"] = (
+                    p[f"a{{{pole}}}_{{{ip+1}}}_{{{1}}}"] if self.n_data_poly == 1 else params[f"a{{{pole}}}_{{{ip+1}}}_{{{i+1}}}"]
+                )
 
         return p
 

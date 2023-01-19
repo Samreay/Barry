@@ -32,9 +32,6 @@ class PowerDing2018(PowerSpectrumFit):
         data_share_poly=False,
     ):
 
-        if n_poly not in [0, 3, 5]:
-            raise NotImplementedError("Models require n_poly to be 0, 3 or 5 polynomial terms per multipole")
-
         self.marg_bias = False
 
         super().__init__(
@@ -163,13 +160,8 @@ class PowerDing2018(PowerSpectrumFit):
         self.add_param("b_delta", r"$b_{\delta}$", -5.0, 5.0, 0.0)  # Non-linear galaxy bias
         for i in range(self.n_data_poly):
             for pole in self.poly_poles:
-                if self.n_poly >= 3:
-                    self.add_param(f"a{{{pole}}}_1_{{{i+1}}}", f"$a_{{{pole},1,{i+1}}}$", -20000.0, 20000.0, 0)
-                    self.add_param(f"a{{{pole}}}_2_{{{i+1}}}", f"$a_{{{pole},2,{i+1}}}$", -20000.0, 20000.0, 0)
-                    self.add_param(f"a{{{pole}}}_3_{{{i+1}}}", f"$a_{{{pole},3,{i+1}}}$", -5000.0, 5000.0, 0)
-                if self.n_poly == 5:
-                    self.add_param(f"a{{{pole}}}_4_{{{i+1}}}", f"$a_{{{pole},4,{i+1}}}$", -200.0, 200.0, 0)
-                    self.add_param(f"a{{{pole}}}_5_{{{i+1}}}", f"$a_{{{pole},5,{i+1}}}$", -3.0, 3.0, 0)
+                for ip in range(self.n_poly):
+                    self.add_param(f"a{{{pole}}}_{{{ip+1}}}_{{{i+1}}}", f"$a_{{{pole}}},{{{ip+1}}},{{{i+1}}}$", -20000.0, 20000.0, 0)
 
     def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None, nopoly=False):
         """Computes the power spectrum model using the Ding et. al., 2018 EFT0 propagator
@@ -222,6 +214,9 @@ class PowerDing2018(PowerSpectrumFit):
             fog = 1.0 / (1.0 + np.outer(self.mu**2, ks**2 * p["sigma_s"] ** 2 / 2.0)) ** 2
             pk_smooth = p["b{0}"] ** 2 * pk_smooth_lin * fog
 
+            # Volume factor
+            pk_smooth /= p["alpha"] ** 3
+
             if smooth:
                 propagator = np.zeros(len(ks))
             else:
@@ -260,11 +255,7 @@ class PowerDing2018(PowerSpectrumFit):
                 poly = None
                 pk1d = integrate.simps(pk_smooth * (1.0 + pk_ratio * propagator), self.mu, axis=0)
             else:
-                shape, poly = (
-                    self.add_three_poly(ks, k, p, prefac, np.zeros(len(k)))
-                    if self.n_poly == 3
-                    else self.add_five_poly(ks, k, p, prefac, np.zeros(len(k)))
-                )
+                shape, poly = self.add_poly(ks, k, p, prefac, np.zeros(len(k)))
                 if self.marg:
                     poly = poly[1:]  # Remove the bias marginalisation.
                 pk1d = integrate.simps((pk_smooth + shape) * (1.0 + pk_ratio * propagator), self.mu, axis=0)
@@ -285,6 +276,9 @@ class PowerDing2018(PowerSpectrumFit):
             kaiser_prefac = 1.0 + p["beta"] * muprime**2 * (1.0 - sprime)
 
             pk_smooth = p["b{0}"] ** 2 * kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+
+            # Volume factor
+            pk_smooth /= p["alpha"] ** 3
 
             if smooth:
                 pk2d = pk_smooth
@@ -334,11 +328,7 @@ class PowerDing2018(PowerSpectrumFit):
                 poly = None
                 kprime = k
             else:
-                shape, poly = (
-                    self.add_three_poly(k, k, p, np.ones(len(k)), pk)
-                    if self.n_poly == 3
-                    else self.add_five_poly(k, k, p, np.ones(len(k)), pk)
-                )
+                shape, poly = self.add_poly(k, k, p, np.ones(len(k)), pk)
                 if self.marg:
                     poly = poly[1:]  # Remove the bias marginalisation.
                 else:

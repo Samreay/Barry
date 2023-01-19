@@ -315,6 +315,9 @@ class PowerNoda2019(PowerSpectrumFit):
             fog = np.exp(-p["A"] * ks**2)
             pk_smooth = p["b{0}"] ** 2 * pk_smooth_lin * fog
 
+            # Volume factor
+            pk_smooth /= p["alpha"] ** 3
+
             # Lets round some things for the sake of numerical speed (to hit the cache more often
             om = np.round(p["om"], decimals=5)
             growth = np.round(p["beta"] * p["b{0}"], decimals=5)
@@ -346,6 +349,9 @@ class PowerNoda2019(PowerSpectrumFit):
             muprime = self.get_muprime(epsilon)
             fog = np.exp(-p["A"] * muprime**2 * kprime**2)
             pk_smooth = p["b{0}"] ** 2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+
+            # Volume factor
+            pk_smooth /= p["alpha"] ** 3
 
             # Lets round some things for the sake of numerical speed
             om = np.round(p["om"], decimals=5)

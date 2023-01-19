@@ -5,6 +5,7 @@ import inspect
 from abc import ABC
 
 import numpy as np
+from scipy.interpolate import splrep, splev
 
 from barry.datasets.dataset import Dataset
 from barry.utils import break_matrix_and_get_blocks
@@ -75,6 +76,9 @@ class CorrelationFunction(Dataset, ABC):
         self.cov, self.icov, self.data = None, None, None
         self.set_realisation(realisation)
         self.set_cov(fake_diag=fake_diag)
+
+        # Produce the binning matrix correction and store it.
+        self.set_binmat()
 
     def set_realisation(self, realisation):
         if realisation is None:
@@ -153,12 +157,41 @@ class CorrelationFunction(Dataset, ABC):
         self.cov = np.cov(x0.T)
         self.logger.info(f"Computed cov {self.cov.shape}")
 
+    def set_binmat(self):
+
+        ds = self.ss[1] - self.ss[0]
+        self.ss_input = np.linspace(1.0, 250.0, 249)
+
+        self.binmat = np.zeros((len(self.ss), len(self.ss_input)))
+        for ii in range(len(self.ss_input)):
+
+            # Define basis vector
+            xivec = np.zeros_like(self.ss_input)
+            xivec[ii] = 1
+
+            # Define the spline:
+            xivec_spline = splrep(self.ss_input, xivec)
+
+            # Now compute binned basis vector:
+            tmp = np.zeros_like(self.ss)
+            for i, ss in enumerate(self.ss):
+                kl = ss - ds / 2
+                kr = ss + ds / 2
+                sin = np.linspace(kl, kr, 100)
+                tmp[i] = np.trapz(sin**2 * splev(sin, xivec_spline, ext=3), x=sin) * 3 / (kr**3 - kl**3)
+
+            self.binmat[:, ii] = tmp
+
+        return
+
     def get_data(self):
         d = {
             "dist": self.ss,
             "cov": self.cov,
             "icov": self.icov,
             "name": self.name,
+            "dist_input": self.ss_input,
+            "binmat": self.binmat.T,
             "cosmology": self.cosmology,
             "num_mocks": self.num_mocks,
             "isotropic": self.isotropic,

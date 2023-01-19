@@ -29,9 +29,6 @@ class PowerBeutler2017(PowerSpectrumFit):
         data_share_poly=False,
     ):
 
-        if n_poly not in [0, 3, 5]:
-            raise NotImplementedError("Models require n_poly to be 0, 3 or 5 polynomial terms per multipole")
-
         self.dilate_smooth = dilate_smooth
 
         super().__init__(
@@ -64,13 +61,8 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.0, 20.0, 4.0)  # BAO damping perpendicular to LOS
         for i in range(self.n_data_poly):
             for pole in self.poly_poles:
-                if self.n_poly >= 3:
-                    self.add_param(f"a{{{pole}}}_1_{{{i+1}}}", f"$a_{{{pole},1,{i+1}}}$", -20000.0, 20000.0, 0)
-                    self.add_param(f"a{{{pole}}}_2_{{{i+1}}}", f"$a_{{{pole},2,{i+1}}}$", -20000.0, 20000.0, 0)
-                    self.add_param(f"a{{{pole}}}_3_{{{i+1}}}", f"$a_{{{pole},3,{i+1}}}$", -5000.0, 5000.0, 0)
-                if self.n_poly == 5:
-                    self.add_param(f"a{{{pole}}}_4_{{{i+1}}}", f"$a_{{{pole},4,{i+1}}}$", -200.0, 200.0, 0)
-                    self.add_param(f"a{{{pole}}}_5_{{{i+1}}}", f"$a_{{{pole},5,{i+1}}}$", -3.0, 3.0, 0)
+                for ip in range(self.n_poly):
+                    self.add_param(f"a{{{pole}}}_{{{ip+1}}}_{{{i+1}}}", f"$a_{{{pole},{ip+1},{i+1}}}$", -20000.0, 20000.0, 0)
 
     def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None, nopoly=False):
         """Computes the power spectrum model using the Beutler et. al., 2017 method
@@ -125,6 +117,9 @@ class PowerBeutler2017(PowerSpectrumFit):
             if not for_corr:
                 pk_smooth *= p["b{0}"]
 
+            # Volume factor
+            pk_smooth /= p["alpha"] ** 3
+
             if smooth:
                 propagator = np.ones(len(kprime))
             else:
@@ -137,9 +132,7 @@ class PowerBeutler2017(PowerSpectrumFit):
                 poly = None
                 pk[0] = pk_smooth * propagator
             else:
-                shape, poly = (
-                    self.add_three_poly(k, k, p, prefac, pk_smooth) if self.n_poly == 3 else self.add_five_poly(k, k, p, prefac, pk_smooth)
-                )
+                shape, poly = self.add_poly(k, k, p, prefac, pk_smooth)
                 pk[0] = (pk_smooth + shape) * propagator
 
         else:
@@ -162,6 +155,9 @@ class PowerBeutler2017(PowerSpectrumFit):
             if not for_corr:
                 pk_smooth *= p["b{0}"]
 
+            # Volume factor
+            pk_smooth /= p["alpha"] ** 3
+
             # Compute the propagator
             if smooth:
                 pk2d = pk_smooth
@@ -178,11 +174,7 @@ class PowerBeutler2017(PowerSpectrumFit):
                 poly = None
                 kprime = k
             else:
-                shape, poly = (
-                    self.add_three_poly(k, k, p, np.ones(len(k)), pk)
-                    if self.n_poly == 3
-                    else self.add_five_poly(k, k, p, np.ones(len(k)), pk)
-                )
+                shape, poly = self.add_poly(k, k, p, np.ones(len(k)), pk)
                 if self.marg:
                     pk = [np.zeros(len(k))] * 6
                 else:
@@ -207,13 +199,13 @@ if __name__ == "__main__":
     dataset = PowerSpectrum_DESI_KP4(
         recon="sym",
         fit_poles=[0, 2],
-        min_k=0.02,
+        min_k=0.00,
         max_k=0.30,
         mocktype="abacus_cubicbox",
         redshift_bin=0,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=25,
+        reduce_cov_factor=1,
     )
     data = dataset.get_data()
 
@@ -223,10 +215,10 @@ if __name__ == "__main__":
         marg="full",
         fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
         poly_poles=dataset.fit_poles,
-        correction=Correction.HARTLAP,
-        n_poly=5,
+        correction=Correction.NONE,
+        n_poly=6,
     )
-    model.set_default("sigma_nl_perp", 2.0)
+    model.set_default("sigma_nl_perp", 2.5)
     model.set_default("sigma_nl_par", 4.0)
     model.set_default("sigma_s", 0.0)
     model.sanity_check(dataset)

@@ -442,8 +442,27 @@ class Model(ABC):
             The dilation scale perpendicular to the line-of-sight
 
         """
-        print(alpha, epsilon)
         return alpha * (1.0 + epsilon) ** 2, alpha / (1.0 + epsilon)
+
+    def get_reverse_alphas(self, alpha_par, alpha_perp):
+        """Computes values of alpha and epsilon from the input values of alpha_par and alpha_perp
+
+        Parameters
+        ----------
+        alpha_par : float
+            The dilation scale parallel to the line-of-sight
+        alpha_perp : float
+            The dilation scale perpendicular to the line-of-sight
+
+        Returns
+        -------
+        alpha : float
+            The isotropic dilation scale
+        epsilon: float
+            The anisotropic warping
+
+        """
+        return alpha_perp ** (2.0 / 3.0) * alpha_par ** (1.0 / 3.0), (alpha_par / alpha_perp) ** (1.0 / 3.0) - 1.0
 
     def get_raw_start(self):
         """Gets a uniformly distributed starting point between parameter min and max constraints"""

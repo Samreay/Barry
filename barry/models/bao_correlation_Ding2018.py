@@ -31,13 +31,6 @@ class CorrDing2018(CorrelationFunctionFit):
         n_poly=3,
     ):
 
-        self.recon_smoothing_scale = None
-        if isotropic:
-            poly_poles = [0]
-        if marg is not None:
-            fix_params = list(fix_params)
-            for pole in poly_poles:
-                fix_params.extend([f"a{{{pole}}}_1_{{{1}}}", f"a{{{pole}}}_2_{{{1}}}", f"a{{{pole}}}_3_{{{1}}}"])
         super().__init__(
             name=name,
             fix_params=fix_params,
@@ -47,7 +40,8 @@ class CorrDing2018(CorrelationFunctionFit):
             isotropic=isotropic,
             poly_poles=poly_poles,
             marg=marg,
-            includeb2=includeb2,
+            includeb2=False,
+            n_poly=n_poly,
         )
         self.parent = PowerDing2018(
             fix_params=fix_params,
@@ -59,11 +53,8 @@ class CorrDing2018(CorrelationFunctionFit):
             marg=marg,
             n_poly=n_poly,
         )
-        if self.marg:
-            for pole in self.poly_poles:
-                self.set_default(f"a{{{pole}}}_1_{{{1}}}", 0.0)
-                self.set_default(f"a{{{pole}}}_2_{{{1}}}", 0.0)
-                self.set_default(f"a{{{pole}}}_3_{{{1}}}", 0.0)
+
+        self.set_marg(fix_params, poly_poles, n_poly, do_bias=False)
 
     def declare_parameters(self):
         super().declare_parameters()
@@ -72,9 +63,8 @@ class CorrDing2018(CorrelationFunctionFit):
         self.add_param("sigma_s", r"$\Sigma_s$", 0.0, 10.0, 5.0)  # Fingers-of-god damping
         self.add_param("b_delta", r"$b_{\delta}$", -5.0, 5.0, 0.0)  # Non-linear galaxy bias
         for pole in self.poly_poles:
-            self.add_param(f"a{{{pole}}}_1_{{{1}}}", f"$a_{{{pole},1,1}}$", -100.0, 100.0, 0)  # Monopole Polynomial marginalisation 1
-            self.add_param(f"a{{{pole}}}_2_{{{1}}}", f"$a_{{{pole},2,1}}$", -2.0, 2.0, 0)  # Monopole Polynomial marginalisation 2
-            self.add_param(f"a{{{pole}}}_3_{{{1}}}", f"$a_{{{pole},3,1}}$", -0.2, 0.2, 0)  # Monopole Polynomial marginalisation 3
+            for ip in range(self.n_poly):
+                self.add_param(f"a{{{pole}}}_{{{ip+1}}}_{{{1}}}", f"$a_{{{pole},{ip+1},1}}$", -100.0, 100.0, 0)
 
     def compute_correlation_function(self, dist, p, smooth=False):
         """Computes the correlation function model using the Ding et. al., 2018 EFT0 model power spectrum
@@ -100,13 +90,13 @@ class CorrDing2018(CorrelationFunctionFit):
 
         """
         ks, pks, _ = self.parent.compute_power_spectrum(self.parent.camb.ks, p, smooth=smooth, nopoly=True)
-        xi_comp = [self.pk2xi_0.__call__(ks, pks[0], dist), np.zeros(len(dist)), np.zeros(len(dist))]
+        xi_comp = np.array([self.pk2xi_0.__call__(ks, pks[0], dist), np.zeros(len(dist)), np.zeros(len(dist))])
 
         if not self.isotropic:
             xi_comp[1] = self.pk2xi_2.__call__(ks, pks[2], dist)
             xi_comp[2] = self.pk2xi_4.__call__(ks, pks[4], dist)
 
-        xi, poly = self.add_three_poly(dist, p, xi_comp)
+        xi, poly = self.add_poly(dist, p, xi_comp)
 
         return dist, xi, poly
 

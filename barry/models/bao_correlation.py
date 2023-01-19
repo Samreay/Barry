@@ -25,6 +25,7 @@ class CorrelationFunctionFit(Model):
         poly_poles=(0, 2),
         marg=None,
         includeb2=True,
+        n_poly=3,
     ):
 
         """Generic correlation function model
@@ -33,6 +34,7 @@ class CorrelationFunctionFit(Model):
         ----------
         name : str, optional
             Name of the model
+            Name of the mode
         smooth_type : str, optional
             The sort of smoothing to use. Either 'hinton2017' or 'eh1998'
         fix_params : list[str], optional
@@ -43,17 +45,24 @@ class CorrelationFunctionFit(Model):
         """
         super().__init__(name, correction=correction, isotropic=isotropic, marg=marg)
         self.parent = PowerSpectrumFit(
-            fix_params=fix_params, smooth_type=smooth_type, correction=correction, isotropic=isotropic, marg=marg
+            fix_params=fix_params, smooth_type=smooth_type, correction=correction, isotropic=isotropic, marg=marg, n_poly=n_poly
         )
-        self.poly_poles = poly_poles
         if smooth_type is None:
             self.smooth_type = {"method": "hinton2017"}
         if not validate_smooth_method(self.smooth_type):
             exit(0)
 
-        self.declare_parameters()
-        self.set_fix_params(fix_params)
+        self.n_data_bias = 1
+        self.n_data_poly = 1
 
+        if n_poly > 0 and self.isotropic:
+            poly_poles = [0]
+
+        self.n_poly = n_poly
+        self.poly_poles = poly_poles
+        self.data_share_poly = True
+
+        self.declare_parameters()
         self.includeb2 = includeb2
 
         # Set up data structures for model fitting
@@ -68,6 +77,29 @@ class CorrelationFunctionFit(Model):
         self.fixed_xi = False
         self.store_xi = [None, None, None]
         self.store_xi_smooth = [None, None, None]
+
+    def set_marg(self, fix_params, poly_poles, n_poly, do_bias=False):
+
+        if self.marg:
+            fix_params = list(fix_params)
+            if do_bias:
+                for i in range(self.n_data_bias):
+                    fix_params.extend([f"b{{{0}}}_{{{i+1}}}"])
+            for i in range(self.n_data_poly):
+                for pole in poly_poles:
+                    for ip in range(n_poly):
+                        fix_params.extend([f"a{{{pole}}}_{{{ip+1}}}_{{{i+1}}}"])
+
+        self.set_fix_params(fix_params)
+
+        if self.marg:
+            if do_bias:
+                for i in range(self.n_data_bias):
+                    self.set_default(f"b{{{0}}}_{{{i+1}}}", 1.0)
+            for i in range(self.n_data_poly):
+                for pole in self.poly_poles:
+                    for ip in range(n_poly):
+                        self.set_default(f"a{{{pole}}}_{{{ip+1}}}_{{{i+1}}}", 0.0)
 
     def set_data(self, data):
         """Sets the models data, including fetching the right cosmology and PT generator.
@@ -220,7 +252,7 @@ class CorrelationFunctionFit(Model):
 
         xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
 
-        finedist = np.linspace(1.0, 200.0, 400)
+        finedist = np.linspace(0.0, 300.0, 601)
         if self.isotropic:
             sprime = p["alpha"] * dist
             if self.fixed_xi:
@@ -237,9 +269,8 @@ class CorrelationFunctionFit(Model):
                     else:
                         pk2xi0 = self.store_xi[0]
             else:
-                pk2xi0 = splrep(finedist, self.pk2xi_0.__call__(ks, pks[0], finedist))
-            xi0 = splev(sprime, pk2xi0)
-            xi[0] = xi0
+                pk2xi0 = self.pk2xi_0.__call__(ks, pks[0], sprime)
+            xi[0] = splev(sprime, pk2xi0)
         else:
             # Construct the dilated 2D correlation function by splining the undilated multipoles. We could have computed these
             # directly at sprime, but sprime depends on both s and mu, so splining is quicker
@@ -305,9 +336,60 @@ class CorrelationFunctionFit(Model):
 
         """
         sprime, xi_comp = self.compute_basic_correlation_function(dist, p, smooth=smooth)
-        xi, poly = self.add_zero_poly(dist, p, xi_comp)
+        xi, poly = self.add_poly(dist, p, xi_comp)
 
         return sprime, xi, poly
+
+    def add_poly(self, dist, p, xi_comp):
+        """Converts the xi components to a full model but with 3 polynomial terms for each multipole
+
+        Parameters
+        ----------
+        dist : np.ndarray
+            Array of distances in the correlation function to compute
+        p : dict
+            dictionary of parameter name to float value pairs
+        xi_comp : np.ndarray
+            the model monopole, quadrupole and hexadecapole interpolated to sprime.
+
+        Returns
+        -------
+        sprime : np.ndarray
+            distances of the computed xi
+        xi : np.ndarray
+            the convert model monopole, quadrupole and hexadecapole interpolated to sprime.
+        poly: np.ndarray
+            the additive terms in the model, necessary for analytical marginalisation
+
+        """
+
+        xi0, xi2, xi4 = xi_comp
+        xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
+
+        if self.isotropic:
+            xi[0] = xi0
+            poly = np.zeros((1, len(dist)))
+            if self.marg:
+                poly = [1.0 / dist ** (ip - 1) for ip in range(self.n_poly)]
+            else:
+                for ip in range(self.n_poly):
+                    xi[0] += p[f"a{0}_{{{ip+1}}}_{1}"] / (dist ** (ip - 1))
+
+        else:
+            xi = [xi0, xi2, xi4]
+
+            # Polynomial shape
+            if self.marg:
+                poly = np.zeros((self.n_poly * len(self.poly_poles), 3, len(dist)))
+                for npole, pole in enumerate(self.poly_poles):
+                    poly[self.n_poly * npole : self.n_poly * (npole + 1), npole] = [1.0 / dist ** (ip - 1) for ip in range(self.n_poly)]
+            else:
+                poly = np.zeros((1, 3, len(dist)))
+                for pole in self.poly_poles:
+                    for ip in range(self.n_poly):
+                        xi[int(pole / 2)] += p[f"a{{{pole}}}_{{{ip+1}}}_{1}"] / dist ** (ip - 1)
+
+        return xi, poly
 
     def add_three_poly(self, dist, p, xi_comp):
         """Converts the xi components to a full model but with 3 polynomial terms for each multipole
@@ -417,11 +499,14 @@ class CorrelationFunctionFit(Model):
             k values correspond to d['dist']
         """
 
-        dist, xis, poly = self.compute_correlation_function(d["dist"], p, smooth=smooth)
+        dist, xis, poly = self.compute_correlation_function(d["dist_input"], p, smooth=smooth)
 
-        xi_model = xis[0] if self.isotropic else np.concatenate([xis[0], xis[1]])
+        # Convolve the xi model with the binning matrix
+        xi_generated = [xi @ d["binmat"] for xi in xis]
+
+        xi_model = xi_generated[0] if self.isotropic else np.concatenate([xi_generated[0], xi_generated[1]])
         if 4 in d["poles"] and not self.isotropic:
-            xi_model = np.concatenate([xi_model, xis[2]])
+            xi_model = np.concatenate([xi_model, xi_generated[2]])
 
         poly_model = None
         if self.marg:
@@ -431,12 +516,13 @@ class CorrelationFunctionFit(Model):
             poly_model = np.empty((np.shape(poly)[0], len_poly))
             for n in range(np.shape(poly)[0]):
                 if self.isotropic:
-                    poly_model[n] = poly[n]
+                    poly_model[n] = poly[n] @ d["binmat"]
                 else:
+                    poly_generated = [pol @ d["binmat"] for pol in poly[n]]
                     if 4 in d["poles"]:
-                        poly_model[n] = poly[n].flatten()
+                        poly_model[n] = np.concatenate(poly_generated)
                     else:
-                        poly_model[n] = np.concatenate([poly[n, 0], poly[n, 1]])
+                        poly_model[n] = np.concatenate([poly_generated[0], poly_generated[1]])
 
         return xi_model, poly_model
 

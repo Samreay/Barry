@@ -5,7 +5,7 @@ from barry.samplers.sampler import Sampler
 
 
 class DynestySampler(Sampler):
-    def __init__(self, temp_dir=None, max_iter=None, dynamic=False, nlive=500):
+    def __init__(self, temp_dir=None, max_iter=None, dynamic=False, nlive=500, print_progress=False):
 
         self.logger = logging.getLogger("barry")
         self.max_iter = max_iter
@@ -15,6 +15,7 @@ class DynestySampler(Sampler):
         if temp_dir is not None and not os.path.exists(temp_dir):
             os.makedirs(temp_dir, exist_ok=True)
         self.dynamic = dynamic
+        self.print_progress = print_progress
 
     def get_filename(self, uid):
         if self.dynamic:
@@ -38,10 +39,12 @@ class DynestySampler(Sampler):
         self.logger.info("Using dynesty Sampler")
         if self.dynamic:
             sampler = dynesty.DynamicNestedSampler(log_likelihood, prior_transform, num_dim)
-            sampler.run_nested(maxiter=self.max_iter, print_progress=False, nlive_init=self.nlive, nlive_batch=100, maxbatch=10)
+            sampler.run_nested(
+                maxiter=self.max_iter, print_progress=self.print_progress, nlive_init=self.nlive, nlive_batch=100, maxbatch=10
+            )
         else:
             sampler = dynesty.NestedSampler(log_likelihood, prior_transform, num_dim, nlive=self.nlive)
-            sampler.run_nested(maxiter=self.max_iter, print_progress=False)
+            sampler.run_nested(maxiter=self.max_iter, print_progress=self.print_progress)
 
         self.logger.debug("Fit finished")
 
