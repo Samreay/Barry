@@ -55,11 +55,11 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name, remove_output=False)
     sampler = DynestySampler(temp_dir=dir_name, nlive=250)
 
-    mocktypes = ["abacus_cubicbox"]
-    nzbins = [1]
-    sigma_nl_perp = [4.0, 4.0, 2.5]
-    sigma_nl_par = [8.0, 8.0, 4.0]
-    sigma_s = [3.0, 0.0, 0.0]
+    mocktypes = ["abacus_cubicbox", "abacus_cubicbox_cv"]
+    nzbins = [1, 1]
+    sigma_nl_perp = [4.0, 4.0, 2.5, 2.5]
+    sigma_nl_par = [8.0, 8.0, 4.0, 4.0]
+    sigma_s = [3.0, 0.0, 3.0, 0.0]
 
     # Loop over the mocktypes
     allnames = []
@@ -85,22 +85,24 @@ if __name__ == "__main__":
                     reduce_cov_factor=25,
                 )
 
-                dataset_xi = CorrelationFunction_DESI_KP4(
-                    recon=recon,
-                    fit_poles=[0, 2],
-                    min_dist=52.0,
-                    max_dist=150.0,
-                    mocktype=mocktype,
-                    redshift_bin=z + 1,
-                    realisation=None,
-                    num_mocks=1000,
-                    reduce_cov_factor=25,
-                )
+                if "abacus_cubicbox_cv" not in mocktype:
+
+                    dataset_xi = CorrelationFunction_DESI_KP4(
+                        recon=recon,
+                        fit_poles=[0, 2],
+                        min_dist=52.0,
+                        max_dist=150.0,
+                        mocktype=mocktype,
+                        redshift_bin=z + 1,
+                        realisation=None,
+                        num_mocks=1000,
+                        reduce_cov_factor=25,
+                    )
 
                 # Loop over pre- and post-recon measurements
                 for sig in range(len(sigma_nl_perp)):
 
-                    for n_poly in range(1, 7):
+                    for n_poly in range(1, 8):
 
                         model = PowerBeutler2017(
                             recon=dataset_pk.recon,
@@ -119,32 +121,34 @@ if __name__ == "__main__":
                         pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
                         model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
-                        name = dataset_pk.name + f" mock mean fixed_type {sig} n_poly=" + n_poly
+                        name = dataset_pk.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
                         fitter.add_model_and_dataset(model, dataset_pk, name=name)
                         allnames.append(name)
 
-                        model = CorrBeutler2017(
-                            recon=dataset_xi.recon,
-                            isotropic=dataset_xi.isotropic,
-                            marg="full",
-                            fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
-                            poly_poles=dataset_xi.fit_poles,
-                            correction=Correction.NONE,
-                            n_poly=n_poly,
-                        )
-                        model.set_default("sigma_nl_par", sigma_nl_par[sig])
-                        model.set_default("sigma_nl_perp", sigma_nl_perp[sig])
-                        model.set_default("sigma_s", sigma_s[sig])
+                        if "abacus_cubicbox_cv" not in mocktype:
 
-                        # Load in a pre-existing BAO template
-                        pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-                        model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
+                            model = CorrBeutler2017(
+                                recon=dataset_xi.recon,
+                                isotropic=dataset_xi.isotropic,
+                                marg="full",
+                                fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
+                                poly_poles=dataset_xi.fit_poles,
+                                correction=Correction.NONE,
+                                n_poly=n_poly,
+                            )
+                            model.set_default("sigma_nl_par", sigma_nl_par[sig])
+                            model.set_default("sigma_nl_perp", sigma_nl_perp[sig])
+                            model.set_default("sigma_s", sigma_s[sig])
 
-                        name = dataset_xi.name + f" mock mean fixed_type {sig} n_poly=" + n_poly
-                        fitter.add_model_and_dataset(model, dataset_xi, name=name)
-                        allnames.append(name)
+                            # Load in a pre-existing BAO template
+                            pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+                            model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
-    # Submit all the jobs to NERSC. We have quite a few (26), so we'll
+                            name = dataset_xi.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
+                            fitter.add_model_and_dataset(model, dataset_xi, name=name)
+                            allnames.append(name)
+
+    # Submit all the jobs to NERSC. We have quite a few (168), so we'll
     # only assign 1 walker (processor) to each. Note that this will only run if the
     # directory is empty (i.e., it won't overwrite existing chains)
     fitter.set_sampler(sampler)

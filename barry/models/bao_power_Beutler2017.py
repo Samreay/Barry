@@ -218,8 +218,8 @@ if __name__ == "__main__":
         correction=Correction.NONE,
         n_poly=5,
     )
-    model.set_default("sigma_nl_perp", 4.0)
-    model.set_default("sigma_nl_par", 8.0)
+    model.set_default("sigma_nl_perp", 2.5)
+    model.set_default("sigma_nl_par", 4.0)
     model.set_default("sigma_s", 0.0)
     print(model.get_active_params())
 
