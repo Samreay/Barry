@@ -393,8 +393,9 @@ class PowerSpectrumFit(Model):
             if self.marg:
                 poly = np.zeros((self.n_poly * len(self.poly_poles) + 1, 6, len(kpoly)))
                 poly[0, :, :] = pk
+                polyvec = [kpoly ** (ip - 1) for ip in range(self.n_poly)]
                 for i, pole in enumerate(self.poly_poles):
-                    poly[self.n_poly * i + 1 : self.n_poly * (i + 1) + 1, pole] = [kpoly ** (ip - 1) for ip in range(self.n_poly)]
+                    poly[self.n_poly * i + 1 : self.n_poly * (i + 1) + 1, pole] = polyvec
 
             else:
                 poly = np.zeros((1, 6, len(kpoly)))

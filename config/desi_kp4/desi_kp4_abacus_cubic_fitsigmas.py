@@ -26,8 +26,8 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name, remove_output=False)
     sampler = DynestySampler(temp_dir=dir_name, nlive=500)
 
-    mocktypes = ["abacus_cubicbox", "abacus_cutsky"]
-    nzbins = [1, 3]
+    mocktypes = ["abacus_cubicbox", "abacus_cubicbox_cv"]
+    nzbins = [1, 1]
 
     # Loop over the mocktypes
     allnames = []
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
                 # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
                 # First load up mock mean and add it to the fitting list.
-                dataset = PowerSpectrum_DESI_KP4(
+                dataset_pk = PowerSpectrum_DESI_KP4(
                     recon=recon,
                     fit_poles=[0, 2],
                     min_k=0.02,
@@ -53,59 +53,60 @@ if __name__ == "__main__":
                     reduce_cov_factor=25,
                 )
 
-                model = PowerBeutler2017(
-                    recon=dataset.recon,
-                    isotropic=dataset.isotropic,
-                    fix_params=["om", "alpha", "epsilon", "sigma_s"],
-                    marg="full",
-                    poly_poles=dataset.fit_poles,
-                    correction=Correction.HARTLAP,
-                    n_poly=5,
-                )
-                model.set_default("sigma_s", 0.0)
+                if "abacus_cubicbox_cv" not in mocktype:
+                    dataset_xi = CorrelationFunction_DESI_KP4(
+                        recon=recon,
+                        fit_poles=[0, 2],
+                        min_dist=52.0,
+                        max_dist=150.0,
+                        mocktype=mocktype,
+                        redshift_bin=z + 1,
+                        realisation=None,
+                        num_mocks=1000,
+                        reduce_cov_factor=25,
+                    )
 
-                name = dataset.name + " mock mean sigma_s=0"
-                fitter.add_model_and_dataset(model, dataset, name=name)
-                allnames.append(name)
+                for n_poly in range(1, 8):
 
-                dataset = CorrelationFunction_DESI_KP4(
-                    recon=recon,
-                    fit_poles=[0, 2],
-                    min_dist=52.0,
-                    max_dist=150.0,
-                    mocktype=mocktype,
-                    redshift_bin=z + 1,
-                    realisation=None,
-                    num_mocks=1000,
-                    reduce_cov_factor=25,
-                )
+                    model = PowerBeutler2017(
+                        recon=dataset_pk.recon,
+                        isotropic=dataset_pk.isotropic,
+                        fix_params=["om", "alpha", "epsilon", "sigma_s"],
+                        marg="full",
+                        poly_poles=dataset_pk.fit_poles,
+                        correction=Correction.NONE,
+                        n_poly=n_poly,
+                    )
+                    model.set_default("sigma_s", 0.0)
 
-                model = CorrBeutler2017(
-                    recon=dataset.recon,
-                    isotropic=dataset.isotropic,
-                    marg="full",
-                    fix_params=["om", "beta", "alpha", "epsilon", "sigma_s"],
-                    poly_poles=dataset.fit_poles,
-                    correction=Correction.HARTLAP,
-                )
-                model.set_default("beta", 0.4)
-                model.set_default("sigma_s", 0.0)
+                    # Load in a pre-existing BAO template
+                    pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+                    model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
-                model2 = CorrBeutler2017(
-                    recon=dataset.recon,
-                    isotropic=dataset.isotropic,
-                    marg="full",
-                    fix_params=["om", "alpha", "b2", "epsilon", "sigma_s"],
-                    poly_poles=dataset.fit_poles,
-                    correction=Correction.HARTLAP,
-                )
-                model.set_default("beta", 0.4)
-                model.set_default("sigma_s", 0.0)
+                    name = dataset_pk.name + " mock mean sigma_s=0 n_poly=" + str(n_poly)
+                    fitter.add_model_and_dataset(model, dataset_pk, name=name)
+                    allnames.append(name)
 
-                # Create a unique name for the fit and add it to the list
-                name = dataset.name + " mock mean sigma_s=0"
-                fitter.add_model_and_dataset(model, dataset, name=name)
-                allnames.append(name)
+                    if "abacus_cubicbox_cv" not in mocktype:
+
+                        model = CorrBeutler2017(
+                            recon=dataset_xi.recon,
+                            isotropic=dataset_xi.isotropic,
+                            marg="full",
+                            fix_params=["om", "alpha", "epsilon", "sigma_s"],
+                            poly_poles=dataset_xi.fit_poles,
+                            correction=Correction.NONE,
+                            n_poly=n_poly,
+                        )
+                        model.set_default("sigma_s", 0.0)
+
+                        # Load in a pre-existing BAO template
+                        pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+                        model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
+
+                        name = dataset_xi.name + " mock mean sigma_s=0 n_poly=" + str(n_poly)
+                        fitter.add_model_and_dataset(model, dataset_xi, name=name)
+                        allnames.append(name)
 
     # Submit all the job. We have quite a few (52), so we'll
     # only assign 1 walker (processor) to each. Note that this will only run if the

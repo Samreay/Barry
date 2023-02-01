@@ -205,7 +205,7 @@ if __name__ == "__main__":
         redshift_bin=0,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=1,
+        reduce_cov_factor=25,
     )
     data = dataset.get_data()
 
@@ -216,9 +216,15 @@ if __name__ == "__main__":
         fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
         poly_poles=dataset.fit_poles,
         correction=Correction.NONE,
-        n_poly=6,
+        n_poly=5,
     )
-    model.set_default("sigma_nl_perp", 2.5)
-    model.set_default("sigma_nl_par", 4.0)
+    model.set_default("sigma_nl_perp", 4.0)
+    model.set_default("sigma_nl_par", 8.0)
     model.set_default("sigma_s", 0.0)
+    print(model.get_active_params())
+
+    # Load in a pre-existing BAO template
+    pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+    model.kvals, model.pksmooth, model.pkratio = pktemplate.T
+
     model.sanity_check(dataset)
