@@ -57,9 +57,11 @@ if __name__ == "__main__":
 
     mocktypes = ["abacus_cubicbox", "abacus_cubicbox_cv"]
     nzbins = [1, 1]
-    sigma_nl_perp = [4.0, 4.0, 2.5, 2.5]
-    sigma_nl_par = [8.0, 8.0, 4.0, 4.0]
-    sigma_s = [3.0, 0.0, 3.0, 0.0]
+    sigma_nl_perp = [5.0, 5.0, 1.8, 1.8]
+    sigma_nl_par = [9.6, 9.6, 5.4, 5.4]
+    sigma_s = [0.0, 3.0, 0.0, 3.0]
+
+    colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
     # Loop over the mocktypes
     allnames = []
@@ -122,7 +124,7 @@ if __name__ == "__main__":
                         model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
                         name = dataset_pk.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
-                        fitter.add_model_and_dataset(model, dataset_pk, name=name)
+                        fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[n_poly - 1])
                         allnames.append(name)
 
                         if "abacus_cubicbox_cv" not in mocktype:
@@ -145,7 +147,7 @@ if __name__ == "__main__":
                             model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
                             name = dataset_xi.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
-                            fitter.add_model_and_dataset(model, dataset_xi, name=name)
+                            fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[n_poly - 1])
                             allnames.append(name)
 
     # Submit all the jobs to NERSC. We have quite a few (168), so we'll
@@ -164,8 +166,9 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
-        fitname = []
-        c = [ChainConsumer() for i in range(len(sigma_nl_par))]
+        datanames = ["Xi", "Pk", "Pk_CV"]
+        c = [ChainConsumer() for i in range(2 * len(datanames) * len(sigma_nl_par))]
+        fitname = [None for i in range(len(c))]
 
         # Loop over all the chains
         stats = {}
@@ -173,8 +176,11 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number and redshift bin
-            recon_bin = int(extra["name"].split()[-3])
-            realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
+            recon_bin = 0 if "Prerecon" in extra["name"] else 1
+            data_bin = 0 if "Xi" in extra["name"] else 1 if "CV" not in extra["name"] else 2
+            sigma_bin = int(extra["name"].split("fixed_type ")[1].split(" ")[0])
+            redshift_bin = int(2.0 * len(sigma_nl_par) * data_bin + 2.0 * sigma_bin + recon_bin)
+            print(extra["name"], recon_bin, data_bin, sigma_bin, redshift_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -194,27 +200,17 @@ if __name__ == "__main__":
                 model.set_default(name, val)
 
             # Get some useful properties of the fit, and plot the MAP model against the data if it's the mock mean
-            figname = (
-                "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
-                if realisation == "mean" or realisation == "10"
-                else None
-            )
+            figname = "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
             new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname)
-            print(
-                recon_bin, realisation, params_dict, model.get_alphas(params_dict["alpha"], params_dict["epsilon"]), bband, new_chi_squared
-            )
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
-            if realisation == "mean":
-                fitname.append(data[0]["name"].replace(" ", "_") + f" fixed_type_{recon_bin}")
-                stats[fitname[recon_bin]] = []
-                output[fitname[recon_bin]] = []
-                c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
-            else:
-                c[recon_bin].add_marker(params, **extra)
-
-            # Compute some summary statistics and add them to a dictionary
+            if "n_poly=1" in extra["name"]:
+                fitname[redshift_bin] = data[0]["name"].replace(" ", "_") + f"_fixed_type_{sigma_bin}"
+                stats[fitname[redshift_bin]] = []
+                output[fitname[redshift_bin]] = []
+            extra["name"] = datanames[data_bin] + f" fixed_type {sigma_bin}"
+            c[redshift_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
             mean, cov = weighted_avg_and_cov(
                 df[
                     [
@@ -225,41 +221,43 @@ if __name__ == "__main__":
                 weight,
                 axis=0,
             )
+            print(redshift_bin, fitname[redshift_bin], mean, np.sqrt(np.diag(cov)), new_chi_squared, dof)
 
             corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
-            stats[fitname[recon_bin]].append([mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared])
-            output[fitname[recon_bin]].append(
-                f"{realisation:s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
+            stats[fitname[redshift_bin]].append([mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared])
+            output[fitname[redshift_bin]].append(
+                f"{model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
             )
 
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
-        for recon_bin in range(len(c)):
-            c[recon_bin].configure(bins=20)
-            c[recon_bin].plotter.plot(
-                filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour.png"],
+        for redshift_bin in range(len(c)):
+            c[redshift_bin].configure(bins=20)
+            c[redshift_bin].plotter.plot(
+                filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[redshift_bin] + "_contour.png"],
                 truth=truth,
                 parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
-                legend=False,
+                legend=True,
+                extents=((0.98, 1.02), (0.98, 1.02)),
             )
 
             # Plot histograms of the errors and r_off
-            nstats, means, covs, corr = plot_errors(
-                stats[fitname[recon_bin]], "/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_errors.png"
-            )
+            # nstats, means, covs, corr = plot_errors(
+            #    stats[fitname[recon_bin]], "/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_errors.png"
+            # )
 
             # Save all the numbers to a file
-            with open(dir_name + "/Barry_fit_" + fitname[recon_bin] + ".txt", "w") as f:
+            with open(dir_name + "/Barry_fit_" + fitname[redshift_bin] + ".txt", "w") as f:
                 f.write(
-                    "# Realisation, alpha_par, alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
+                    "# N_poly, alpha_par, alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
                 )
-                for l in output[fitname[recon_bin]]:
+                for l in output[fitname[redshift_bin]]:
                     f.write(l + "\n")
 
                 # And now the average of all the individual realisations
-                f.write("# ---------------------------------------------------\n")
-                f.write(
-                    "# <alpha_par>, <alpha_perp>, <sigma_alpha_par>, <sigma_alpha_perp>, <corr_alpha_par_perp>, std_alpha_par, std_alpha_perp, corr_alpha_par_perp, <bf_chi2>\n"
-                )
-                f.write(
-                    f"{means[0]:6.4f}, {means[1]:6.4f}, {means[2]:6.4f}, {means[3]:6.4f}, {means[4]:6.4f}, {np.sqrt(covs[0, 0]):6.4f}, {np.sqrt(covs[1, 1]):6.4f}, {corr:6.4f}, {means[5]:7.3f}\n"
-                )
+                # f.write("# ---------------------------------------------------\n")
+                # f.write(
+                #    "# <alpha_par>, <alpha_perp>, <sigma_alpha_par>, <sigma_alpha_perp>, <corr_alpha_par_perp>, std_alpha_par, std_alpha_perp, corr_alpha_par_perp, <bf_chi2>\n"
+                # )
+                # f.write(
+                #    f"{means[0]:6.4f}, {means[1]:6.4f}, {means[2]:6.4f}, {means[3]:6.4f}, {means[4]:6.4f}, {np.sqrt(covs[0, 0]):6.4f}, {np.sqrt(covs[1, 1]):6.4f}, {corr:6.4f}, {means[5]:7.3f}\n"
+                # )

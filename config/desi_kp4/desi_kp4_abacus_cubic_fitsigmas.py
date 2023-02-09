@@ -29,6 +29,8 @@ if __name__ == "__main__":
     mocktypes = ["abacus_cubicbox", "abacus_cubicbox_cv"]
     nzbins = [1, 1]
 
+    colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
+
     # Loop over the mocktypes
     allnames = []
     for i, (mocktype, redshift_bins) in enumerate(zip(mocktypes, nzbins)):
@@ -84,7 +86,7 @@ if __name__ == "__main__":
                     model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
                     name = dataset_pk.name + " mock mean sigma_s=0 n_poly=" + str(n_poly)
-                    fitter.add_model_and_dataset(model, dataset_pk, name=name)
+                    fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[n_poly - 1])
                     allnames.append(name)
 
                     if "abacus_cubicbox_cv" not in mocktype:
@@ -105,7 +107,7 @@ if __name__ == "__main__":
                         model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
                         name = dataset_xi.name + " mock mean sigma_s=0 n_poly=" + str(n_poly)
-                        fitter.add_model_and_dataset(model, dataset_xi, name=name)
+                        fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[n_poly - 1])
                         allnames.append(name)
 
     # Submit all the job. We have quite a few (42), so we'll
@@ -124,7 +126,6 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
-        fitname = []
         c = [
             ChainConsumer(),
             ChainConsumer(),
@@ -132,27 +133,22 @@ if __name__ == "__main__":
             ChainConsumer(),
             ChainConsumer(),
             ChainConsumer(),
-            ChainConsumer(),
-            ChainConsumer(),
         ]
+        fitname = [None for i in range(len(c))]
 
-        zmins = ["0.4", "0.6", "0.8"]
+        datanames = ["Xi", "Pk", "Pk_CV"]
 
         # Loop over all the chains
         stats = {}
         output = {}
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
-            if "sigma_s" not in extra["name"]:
-                continue
-
             # Get the realisation number and redshift bin
             print(extra["name"].split("_")[0])
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
-            if "z" in extra["name"].split("_")[1]:
-                redshift_bin = [recon_bin + 2 * (i + 1) for i, zmin in enumerate(zmins) if zmin in extra["name"].split("_")[1]][0]
-            else:
-                redshift_bin = recon_bin
+            data_bin = 0 if "Xi" in extra["name"] else 1 if "CV" not in extra["name"] else 2
+            redshift_bin = int(2.0 * data_bin + recon_bin)
+            print(extra["name"], recon_bin, data_bin, redshift_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -172,24 +168,39 @@ if __name__ == "__main__":
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
-            if "Pk" in extra["name"]:
-                extra["name"] = "Pk"
-                fitname.append(data[0]["name"].replace(" ", "_"))
-            else:
-                extra["name"] = "Xi"
+            if "n_poly=1" in extra["name"]:
+                fitname[redshift_bin] = data[0]["name"].replace(" ", "_")
+                stats[fitname[redshift_bin]] = []
+                output[fitname[redshift_bin]] = []
+            chainname = f'N={extra["name"].split("n_poly=")[1].split(" ")[0]}'
+            extra["name"] = f'N={extra["name"].split("n_poly=")[1].split(" ")[0]}'
             c[redshift_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
             mean, cov = weighted_avg_and_cov(
                 df[["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$"]],
                 weight,
                 axis=0,
             )
-            print(redshift_bin, mean, np.sqrt(np.diag(cov)), new_chi_squared, dof)
+            print(redshift_bin, fitname[redshift_bin], mean, np.sqrt(np.diag(cov)), new_chi_squared, dof)
+
+            corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
+            stats[fitname[redshift_bin]].append([mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared])
+            output[fitname[redshift_bin]].append(
+                f"{model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
+            )
 
         for redshift_bin in range(len(c)):
-            c[redshift_bin].configure(bins=20)
+            c[redshift_bin].configure(bins=20, sigmas=[0, 1])
             c[redshift_bin].plotter.plot(
                 filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[redshift_bin] + "_contour.png"],
                 parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$"],
                 legend=True,
             )
+            # Save all the numbers to a file
+            with open(dir_name + "/Barry_fit_" + fitname[redshift_bin] + ".txt", "w") as f:
+                f.write(
+                    "# N_poly, Sigma_nl_par, Sigma_nl_perp, sigma_Sigma_nl__par, sigma_Sigma_nl__perp, corr_Sigma_nl, rd_of_template, bf_chi2, dof\n"
+                )
+                for l in output[fitname[redshift_bin]]:
+                    f.write(l + "\n")
+
             # print(fitname[recon_bin], c[recon_bin].analysis.get_summary())
