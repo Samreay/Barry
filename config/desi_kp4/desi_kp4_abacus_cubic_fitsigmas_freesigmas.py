@@ -84,7 +84,7 @@ if __name__ == "__main__":
                     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
                     model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
-                    name = dataset_pk.name + " mock mean sigma_s=0 n_poly=" + str(n_poly)
+                    name = dataset_pk.name + " mock mean n_poly=" + str(n_poly)
                     fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[n_poly - 1])
                     allnames.append(name)
 
@@ -104,7 +104,7 @@ if __name__ == "__main__":
                         pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
                         model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
-                        name = dataset_xi.name + " mock mean sigma_s=0 n_poly=" + str(n_poly)
+                        name = dataset_xi.name + " mock mean n_poly=" + str(n_poly)
                         fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[n_poly - 1])
                         allnames.append(name)
 
