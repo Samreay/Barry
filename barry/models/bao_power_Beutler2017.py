@@ -150,7 +150,7 @@ class PowerBeutler2017(PowerSpectrumFit):
                 fog = 1.0 / (1.0 + muprime**2 * ktile**2 * p["sigma_s"] ** 2 / 2.0) ** 2
                 reconfac = splev(ktile, splrep(self.camb.ks, self.camb.smoothing_kernel)) if self.recon_type.lower() == "iso" else 0.0
                 kaiser_prefac = 1.0 + p["beta"] * muprime**2 * (1.0 - reconfac)
-                pk_smooth = kaiser_prefac**2 * splev(ktile, splrep(ks, pk_smooth_lin)) * fog
+                pk_smooth = kaiser_prefac**2 * splev(ktile, splrep(ks, pk_smooth_lin))
 
             if not for_corr:
                 pk_smooth *= p["b{0}"]
@@ -160,10 +160,10 @@ class PowerBeutler2017(PowerSpectrumFit):
 
             # Compute the propagator
             if smooth:
-                pk2d = pk_smooth
+                pk2d = pk_smooth * fog
             else:
                 C = np.exp(-0.5 * kprime**2 * (muprime**2 * p["sigma_nl_par"] ** 2 + (1.0 - muprime**2) * p["sigma_nl_perp"] ** 2))
-                pk2d = pk_smooth * (1.0 + splev(kprime, splrep(ks, pk_ratio)) * C)
+                pk2d = pk_smooth * (fog + splev(kprime, splrep(ks, pk_ratio)) * C)
 
             pk0, pk2, pk4 = self.integrate_mu(pk2d)
 

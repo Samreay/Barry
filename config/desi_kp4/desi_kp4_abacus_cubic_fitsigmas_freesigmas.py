@@ -174,29 +174,44 @@ if __name__ == "__main__":
             extra["name"] = f'N={extra["name"].split("n_poly=")[1].split(" ")[0]}'
             c[redshift_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
             mean, cov = weighted_avg_and_cov(
-                df[["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$"]],
+                df[["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"]],
                 weight,
                 axis=0,
             )
             print(redshift_bin, fitname[redshift_bin], mean, np.sqrt(np.diag(cov)), new_chi_squared, dof)
 
-            corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
-            stats[fitname[redshift_bin]].append([mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared])
+            corr0 = cov[0, 1] / np.sqrt(cov[0, 0] * cov[1, 1])
+            corr1 = cov[0, 2] / np.sqrt(cov[0, 0] * cov[2, 2])
+            corr2 = cov[1, 2] / np.sqrt(cov[1, 1] * cov[2, 2])
+            stats[fitname[redshift_bin]].append(
+                [
+                    mean[0],
+                    mean[1],
+                    mean[2],
+                    np.sqrt(cov[0, 0]),
+                    np.sqrt(cov[1, 1]),
+                    np.sqrt(cov[2, 2]),
+                    corr0,
+                    corr1,
+                    corr2,
+                    new_chi_squared,
+                ]
+            )
             output[fitname[redshift_bin]].append(
-                f"{model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
+                f"{model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {np.sqrt(cov[2, 2]):6.4f}, {corr0:7.3f}, {corr1:7.3f}, {corr2:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
             )
 
         for redshift_bin in range(len(c)):
             c[redshift_bin].configure(bins=20, sigmas=[0, 1])
             c[redshift_bin].plotter.plot(
                 filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[redshift_bin] + "_contour.png"],
-                parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$"],
+                parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
                 legend=True,
             )
             # Save all the numbers to a file
             with open(dir_name + "/Barry_fit_" + fitname[redshift_bin] + ".txt", "w") as f:
                 f.write(
-                    "# N_poly, Sigma_nl_par, Sigma_nl_perp, sigma_Sigma_nl__par, sigma_Sigma_nl__perp, corr_Sigma_nl, rd_of_template, bf_chi2, dof\n"
+                    "# N_poly, Sigma_nl_par, Sigma_nl_perp, Sigma_s, sigma_Sigma_nl__par, sigma_Sigma_nl_perp, sigma_Sigma_s, corr_Sigma_nl, corr_Sigma_nl_par_s, corr_Sigma_nl_perp_s, rd_of_template, bf_chi2, dof\n"
                 )
                 for l in output[fitname[redshift_bin]]:
                     f.write(l + "\n")
