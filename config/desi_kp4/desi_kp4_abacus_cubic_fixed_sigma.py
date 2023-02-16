@@ -84,7 +84,7 @@ if __name__ == "__main__":
                     redshift_bin=z + 1,
                     realisation=None,
                     num_mocks=1000,
-                    reduce_cov_factor=25,
+                    reduce_cov_factor=1,
                 )
 
                 if "abacus_cubicbox_cv" not in mocktype:
@@ -98,7 +98,7 @@ if __name__ == "__main__":
                         redshift_bin=z + 1,
                         realisation=None,
                         num_mocks=1000,
-                        reduce_cov_factor=25,
+                        reduce_cov_factor=1,
                     )
 
                 # Loop over pre- and post-recon measurements
@@ -237,7 +237,7 @@ if __name__ == "__main__":
                 truth=truth,
                 parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
                 legend=True,
-                extents=((0.98, 1.02), (0.98, 1.02)),
+                extents=[(0.98, 1.02), (0.98, 1.02)],
             )
 
             # Plot histograms of the errors and r_off
