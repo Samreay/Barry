@@ -189,12 +189,18 @@ if __name__ == "__main__":
             )
 
         for redshift_bin in range(len(c)):
+            if "Pre" in fitname[redshift_bin]:
+                truth = {"$\\Sigma_{nl,||}$": 9.71, "$\\Sigma_{nl,\\perp}$": 4.66}
+            else:
+                truth = {"$\\Sigma_{nl,||}$": 5.29, "$\\Sigma_{nl,\\perp}$": 1.57}
             c[redshift_bin].configure(bins=20, sigmas=[0, 1])
             c[redshift_bin].plotter.plot(
                 filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[redshift_bin] + "_contour.png"],
                 parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$"],
                 legend=True,
+                truth=truth,
             )
+
             # Save all the numbers to a file
             with open(dir_name + "/Barry_fit_" + fitname[redshift_bin] + ".txt", "w") as f:
                 f.write(

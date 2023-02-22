@@ -205,7 +205,7 @@ if __name__ == "__main__":
         redshift_bin=0,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=25,
+        reduce_cov_factor=1,
     )
     data = dataset.get_data()
 
@@ -213,13 +213,13 @@ if __name__ == "__main__":
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
-        fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
+        fix_params=["om", "sigma_s"],
         poly_poles=dataset.fit_poles,
         correction=Correction.NONE,
         n_poly=5,
     )
-    model.set_default("sigma_nl_perp", 2.5)
-    model.set_default("sigma_nl_par", 4.0)
+    model.set_default("sigma_nl_perp", 2.5, min=1.0, prior="gaussian")
+    model.set_default("sigma_nl_par", 4.0, min=1.0, prior="gaussian")
     model.set_default("sigma_s", 0.0)
     print(model.get_active_params())
 

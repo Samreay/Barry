@@ -156,12 +156,14 @@ class PowerSpectrumFit(Model):
             b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f**2)
             if not self.marg:
                 min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
-                self.set_default(f"b{{{0}}}_{{{i+1}}}", b**2, min=min_b**2, max=max_b**2)
+                # self.set_default(f"b{{{0}}}_{{{i+1}}}", b**2, min_b**2, max_b**2)
+                self.set_default(f"b{{{0}}}_{{{i+1}}}", b**2, sigma=2.0 * width * b**2, prior="gaussian")
                 self.logger.info(f"Setting default bias to b{{{0}}}_{{{i+1}}}={b:0.5f} with {width:0.5f} fractional width")
         if self.param_dict.get("beta") is not None:
             if self.get_default("beta") is None:
                 beta, beta_min, beta_max = f / b, (1.0 - width) * f / b, (1.0 + width) * f / b
-                self.set_default("beta", beta, beta_min, beta_max)
+                # self.set_default("beta", beta, beta_min, beta_max)
+                self.set_default("beta", beta, sigma=width * f / b, prior="gaussian")
                 self.logger.info(f"Setting default RSD parameter to beta={beta:0.5f} with {width:0.5f} fractional width")
             else:
                 beta = self.get_default("beta")

@@ -4,8 +4,9 @@ import logging
 import pickle
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from numpy.random import uniform
+from numpy.random import uniform, normal
 import numpy as np
+from scipy.stats import norm
 from scipy.special import loggamma
 from scipy.optimize import basinhopping, differential_evolution
 from enum import Enum, unique
@@ -22,7 +23,9 @@ class Param:
     label: str
     min: float
     max: float
+    sigma: float
     default: float
+    prior: str
     active: bool
 
 
@@ -165,8 +168,9 @@ class Model(ABC):
             "isotropic" if self.isotropic else "anisotropic",
         )
 
-    def add_param(self, name, label, min, max, default):
-        p = Param(name, label, min, max, default, name not in self.fix_params)
+    def add_param(self, name, label, min, max, default, sigma=0.0, prior="flat"):
+        assert prior.lower() in ["flat", "gaussian"], "ERROR: Prior must be flat or gaussian"
+        p = Param(name, label, min, max, sigma, default, prior, name not in self.fix_params)
         self.params.append(p)
         self.param_dict[name] = p
 
@@ -192,13 +196,18 @@ class Model(ABC):
         """Returns the default value of a given parameter name"""
         return self.param_dict[name].default
 
-    def set_default(self, name, default, min=None, max=None):
+    def set_default(self, name, default, min=None, max=None, sigma=None, prior="flat"):
         """Sets the default value for a parameter"""
         self.param_dict[name].default = default
         if min is not None:
             self.param_dict[name].min = min
         if max is not None:
             self.param_dict[name].max = max
+        if sigma is not None:
+            self.param_dict[name].sigma = sigma
+        if prior.lower() != "flat":
+            assert prior.lower() == "gaussian", "ERROR: Prior must be flat or gaussian"
+            self.param_dict[name].prior = prior
 
     def get_defaults(self):
         """Returns a list of default values for all active parameters"""
@@ -221,15 +230,18 @@ class Model(ABC):
         return [(x.min, x.max) for x in self.get_active_params()]
 
     def get_prior(self, params):
-        """The prior, implemented as a flat prior by default.
+        """The prior, checks for flat or gaussian for each parameter.
 
         Used by the Ensemble and MH samplers, but not by nested sampling methods.
 
         """
+        log_prior = 0.0
         for pname, val in params.items():
             if val < self.param_dict[pname].min or val > self.param_dict[pname].max:
                 return -np.inf
-        return 0
+            elif self.param_dict[pname].prior == "gaussian":
+                log_prior += -0.5 * ((val - self.param_dict[pname].default) / self.param_dict[pname].sigma) ** 2
+        return log_prior
 
     def get_chi2_likelihood(self, data, model, model_odd, icov, icov_m_w, num_mocks=None, num_data=None):
         """Computes the chi2 corrected likelihood.
@@ -465,9 +477,18 @@ class Model(ABC):
         return alpha_perp ** (2.0 / 3.0) * alpha_par ** (1.0 / 3.0), (alpha_par / alpha_perp) ** (1.0 / 3.0) - 1.0
 
     def get_raw_start(self):
-        """Gets a uniformly distributed starting point between parameter min and max constraints"""
-        start_random = np.array([uniform(x.min, x.max) for x in self.get_active_params()])
-        return start_random
+        """Gets starting points for each parameter given prior and min and max constraints"""
+        start_random = []
+        for x in self.get_active_params():
+            if x.prior == "flat":
+                start_random.append(uniform(x.min, x.max))
+            else:
+                while True:
+                    start = normal(x.default, x.sigma)
+                    if x.min < start < x.max:
+                        break
+                start_random.append(start)
+        return np.array(start_random)
 
     def _load_precomputed_data(self):
         if self._needs_precompute():
@@ -582,6 +603,10 @@ class Model(ABC):
         """Gets the posterior using an input scaled (unit hypercube) location in parameter space"""
         return self.get_posterior(self.unscale(scaled))
 
+    def get_likelihood(self, params, data):
+        """Returns the likelihood given a list of param values and some data. Designed to be overwritten by subclasses"""
+        return 0.0
+
     def get_posterior(self, params):
         """Returns the posterior given a list of param values."""
         ps = self.get_param_dict(params)
@@ -594,14 +619,24 @@ class Model(ABC):
         return posterior
 
     def scale(self, params):
-        """Scale parameter values to the unit hypercube. Assumes uniform priors. If you want other dists and nested sampling, overwrite this"""
-        scaled = np.array([(s - p.min) / (p.max - p.min) for s, p in zip(params, self.get_active_params())])
-        return scaled
+        """Scale parameter values to the unit hypercube. If you want other dists and nested sampling, overwrite this"""
+        scaled = []
+        for s, p in zip(params, self.get_active_params()):
+            if p.prior == "flat":
+                scaled.append((s - p.min) / (p.max - p.min))
+            else:
+                scaled.append(norm.cdf(s, p.default, p.sigma))
+        return np.array(scaled)
 
     def unscale(self, scaled):
-        """Unscale from the unit hypercube to parameter values. Assumes uniform. if you want other dists and nested sampling, overwrite this."""
-        params = [p.min + s * (p.max - p.min) for s, p in zip(scaled, self.get_active_params())]
-        return params
+        """Unscale from the unit hypercube to parameter values. If you want other dists and nested sampling, overwrite this."""
+        params = []
+        for s, p in zip(scaled, self.get_active_params()):
+            if p.prior == "flat":
+                params.append(p.min + s * (p.max - p.min))
+            else:
+                params.append(norm.ppf(s, p.default, p.sigma))
+        return np.array(params)
 
     def optimize(self, tol=1.0e-6):
         """Perform local optimisation to try and find the best fit of your model to the dataset loaded in.
@@ -649,6 +684,7 @@ class Model(ABC):
         p = self.get_defaults()
         p_dict = self.get_param_dict(p)
         posterior = self.get_posterior(p)
+        print(self.get_active_params())
         print(f"Posterior {posterior:0.3f} for defaults {dict(p_dict)}")
 
         assert not np.isnan(posterior), "Posterior should not be nan"
