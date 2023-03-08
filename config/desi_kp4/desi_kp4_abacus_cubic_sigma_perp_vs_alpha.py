@@ -18,32 +18,58 @@ from chainconsumer import ChainConsumer
 # Config file to fit the abacus cutsky mock means and individual realisations using Dynesty.
 
 # Convenience function to plot histograms of the errors and cross-correlation coefficients
-def plot_errors(stats, figname):
+def plot_alphas(stats, figname):
 
-    nstats = len(stats)
-    means = np.mean(stats, axis=0)
-    covs = np.cov(stats, rowvar=False)
-    corr = covs[0, 1] / np.sqrt(covs[0, 0] * covs[1, 1])
+    colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
-    labels = [r"$\sigma_{\alpha,||}$", r"$\sigma_{\alpha,\perp}$", r"$\rho(\alpha_{||},\alpha_{\perp})$"]
-    colors = ["r", "b", "g"]
-    fig, axes = plt.subplots(figsize=(7, 2), nrows=1, ncols=3, sharey=True, squeeze=False)
-    plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.3)
-    for ax, vals, avgs, stds, l, c in zip(
-        axes.T, np.array(stats).T[2:5], means[2:5], [np.sqrt(covs[0, 0]), np.sqrt(covs[1, 1]), corr], labels, colors
-    ):
+    fig, axes = plt.subplots(figsize=(7, 2), nrows=2, ncols=7, sharex=True, sharey="row", squeeze=False)
+    plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
+    for n_poly in range(1, 8):
+        index = np.where(stats[:, 1] == n_poly)[0]
+        print(stats[index, 0], stats[index, 2], stats[index, 3])
 
-        ax[0].hist(vals, 10, color=c, histtype="stepfilled", alpha=0.2, density=False, zorder=0)
-        ax[0].hist(vals, 10, color=c, histtype="step", alpha=1.0, lw=1.3, density=False, zorder=1)
-        ax[0].axvline(avgs, color="k", ls="--", zorder=2)
-        ax[0].axvline(stds, color="k", ls=":", zorder=2)
-        ax[0].set_xlabel(l)
-
-    axes[0, 0].set_ylabel(r"$N_{\mathrm{mocks}}$")
+        axes[0, n_poly - 1].plot(stats[index, 0], stats[index, 2] - 1.0, color=colors[n_poly - 1], zorder=1, alpha=0.75, lw=0.8)
+        axes[1, n_poly - 1].plot(stats[index, 0], stats[index, 3] - 1.0, color=colors[n_poly - 1], zorder=1, alpha=0.75, lw=0.8)
+        axes[0, n_poly - 1].fill_between(
+            stats[index, 0],
+            stats[index, 2] - stats[index, 4] - 1.0,
+            stats[index, 2] + stats[index, 4] - 1.0,
+            color=colors[n_poly - 1],
+            zorder=1,
+            alpha=0.5,
+            lw=0.8,
+        )
+        axes[1, n_poly - 1].fill_between(
+            stats[index, 0],
+            stats[index, 3] - stats[index, 5] - 1.0,
+            stats[index, 3] + stats[index, 5] - 1.0,
+            color=colors[n_poly - 1],
+            zorder=1,
+            alpha=0.5,
+            lw=0.8,
+        )
+        axes[0, n_poly - 1].set_ylim(-0.008, 0.008)
+        axes[1, n_poly - 1].set_ylim(-0.004, 0.004)
+        axes[1, n_poly - 1].set_xlabel(r"$\sigma_{nl,\perp}$")
+        if n_poly == 1:
+            axes[0, n_poly - 1].set_ylabel(r"$\alpha_{||}-1$")
+            axes[1, n_poly - 1].set_ylabel(r"$\alpha_{\perp}-1$")
+        axes[0, n_poly - 1].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
+        axes[0, n_poly - 1].axvline(1.8, color="k", ls=":", zorder=0, lw=0.8)
+        axes[1, n_poly - 1].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
+        axes[1, n_poly - 1].axvline(1.8, color="k", ls=":", zorder=0, lw=0.8)
+        axes[0, n_poly - 1].text(
+            0.05,
+            0.95,
+            f"$N_{{poly}} = {{{n_poly}}}$",
+            transform=axes[0, n_poly - 1].transAxes,
+            ha="left",
+            va="top",
+            fontsize=8,
+            color=colors[n_poly - 1],
+        )
 
     fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
-
-    return nstats, means, covs, corr
 
 
 if __name__ == "__main__":
@@ -81,7 +107,7 @@ if __name__ == "__main__":
                 redshift_bin=z + 1,
                 realisation=None,
                 num_mocks=1000,
-                reduce_cov_factor=25,
+                reduce_cov_factor=1,
             )
 
             if "abacus_cubicbox_cv" not in mocktype:
@@ -95,7 +121,7 @@ if __name__ == "__main__":
                     redshift_bin=z + 1,
                     realisation=None,
                     num_mocks=1000,
-                    reduce_cov_factor=25,
+                    reduce_cov_factor=1,
                 )
 
             # Loop over pre- and post-recon measurements
@@ -164,20 +190,16 @@ if __name__ == "__main__":
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
         datanames = ["Xi", "Pk", "Pk_CV"]
-        c = [ChainConsumer() for i in range(2 * len(datanames) * len(sigma_nl_par))]
-        fitname = [None for i in range(len(c))]
 
         # Loop over all the chains
-        stats = {}
-        output = {}
+        stats = [[] for _ in range(len(datanames))]
+        output = {k: [] for k in datanames}
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
-
             # Get the realisation number and redshift bin
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
             data_bin = 0 if "Xi" in extra["name"] else 1 if "CV" not in extra["name"] else 2
             sigma_bin = int(extra["name"].split("fixed_type ")[1].split(" ")[0])
-            redshift_bin = int(2.0 * len(sigma_nl_par) * data_bin + 2.0 * sigma_bin + recon_bin)
-            print(extra["name"], recon_bin, data_bin, sigma_bin, redshift_bin)
+            redshift_bin = int(2.0 * len(sigma_nl_perp) * data_bin + 2.0 * sigma_bin + recon_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -186,28 +208,6 @@ if __name__ == "__main__":
             alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
-
-            # Get the MAP point and set the model up at this point
-            model.set_data(data)
-            r_s = model.camb.get_data()["r_s"]
-            max_post = posterior.argmax()
-            params = df.loc[max_post]
-            params_dict = model.get_param_dict(chain[max_post])
-            for name, val in params_dict.items():
-                model.set_default(name, val)
-
-            # Get some useful properties of the fit, and plot the MAP model against the data if it's the mock mean
-            figname = "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
-            new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname)
-
-            # Add the chain or MAP to the Chainconsumer plots
-            extra.pop("realisation", None)
-            if "n_poly=1" in extra["name"]:
-                fitname[redshift_bin] = data[0]["name"].replace(" ", "_") + f"_fixed_type_{sigma_bin}"
-                stats[fitname[redshift_bin]] = []
-                output[fitname[redshift_bin]] = []
-            extra["name"] = datanames[data_bin] + f" fixed_type {sigma_bin}"
-            c[redshift_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
             mean, cov = weighted_avg_and_cov(
                 df[
                     [
@@ -218,43 +218,24 @@ if __name__ == "__main__":
                 weight,
                 axis=0,
             )
-            print(redshift_bin, fitname[redshift_bin], mean, np.sqrt(np.diag(cov)), new_chi_squared, dof)
 
-            corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
-            stats[fitname[redshift_bin]].append([mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared])
-            output[fitname[redshift_bin]].append(
-                f"{model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {corr:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
+            stats[data_bin].append([sigma_nl_perp[sigma_bin], model.n_poly, mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])])
+            output[datanames[data_bin]].append(
+                f"{sigma_nl_perp[sigma_bin]:6.4f}, {model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[ 1, 1]):6.4f}"
             )
+
+        print(stats)
 
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
-        for redshift_bin in range(len(c)):
-            c[redshift_bin].configure(bins=20)
-            c[redshift_bin].plotter.plot(
-                filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[redshift_bin] + "_contour.png"],
-                truth=truth,
-                parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
-                legend=True,
-                extents=[(0.98, 1.02), (0.98, 1.02)],
-            )
+        for data_bin in range(3):
 
             # Plot histograms of the errors and r_off
-            # nstats, means, covs, corr = plot_errors(
-            #    stats[fitname[recon_bin]], "/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_errors.png"
-            # )
+            plot_alphas(np.array(stats[data_bin]), "/".join(pfn.split("/")[:-1]) + "/" + datanames[data_bin] + "_alphas.png")
 
             # Save all the numbers to a file
-            with open(dir_name + "/Barry_fit_" + fitname[redshift_bin] + ".txt", "w") as f:
+            with open(dir_name + "/Barry_fit_" + datanames[data_bin] + ".txt", "w") as f:
                 f.write(
                     "# N_poly, alpha_par, alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
                 )
-                for l in output[fitname[redshift_bin]]:
+                for l in output[datanames[data_bin]]:
                     f.write(l + "\n")
-
-                # And now the average of all the individual realisations
-                # f.write("# ---------------------------------------------------\n")
-                # f.write(
-                #    "# <alpha_par>, <alpha_perp>, <sigma_alpha_par>, <sigma_alpha_perp>, <corr_alpha_par_perp>, std_alpha_par, std_alpha_perp, corr_alpha_par_perp, <bf_chi2>\n"
-                # )
-                # f.write(
-                #    f"{means[0]:6.4f}, {means[1]:6.4f}, {means[2]:6.4f}, {means[3]:6.4f}, {means[4]:6.4f}, {np.sqrt(covs[0, 0]):6.4f}, {np.sqrt(covs[1, 1]):6.4f}, {corr:6.4f}, {means[5]:7.3f}\n"
-                # )
