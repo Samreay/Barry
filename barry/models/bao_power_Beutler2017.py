@@ -213,15 +213,14 @@ if __name__ == "__main__":
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
-        fix_params=["om", "sigma_s"],
+        fix_params=["om"],
         poly_poles=dataset.fit_poles,
         correction=Correction.NONE,
         n_poly=5,
     )
-    model.set_default("sigma_nl_perp", 2.5, min=1.0, prior="gaussian")
-    model.set_default("sigma_nl_par", 4.0, min=1.0, prior="gaussian")
-    model.set_default("sigma_s", 0.0)
-    print(model.get_active_params())
+    model.set_default("sigma_nl_par", 5.4, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model.set_default("sigma_nl_perp", 1.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
     # Load in a pre-existing BAO template
     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")

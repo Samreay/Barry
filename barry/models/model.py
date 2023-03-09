@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from numpy.random import uniform, normal
 import numpy as np
-from scipy.stats import norm
+from scipy.stats import truncnorm
 from scipy.special import loggamma
 from scipy.optimize import basinhopping, differential_evolution
 from enum import Enum, unique
@@ -230,7 +230,7 @@ class Model(ABC):
         return [(x.min, x.max) for x in self.get_active_params()]
 
     def get_prior(self, params):
-        """The prior, checks for flat or gaussian for each parameter.
+        """The prior, checks for flat or truncated gaussian for each parameter.
 
         Used by the Ensemble and MH samplers, but not by nested sampling methods.
 
@@ -483,11 +483,7 @@ class Model(ABC):
             if x.prior == "flat":
                 start_random.append(uniform(x.min, x.max))
             else:
-                while True:
-                    start = normal(x.default, x.sigma)
-                    if x.min < start < x.max:
-                        break
-                start_random.append(start)
+                start_random.append(truncnorm.rvs(x.min, x.max, x.default, x.sigma))
         return np.array(start_random)
 
     def _load_precomputed_data(self):
@@ -625,7 +621,7 @@ class Model(ABC):
             if p.prior == "flat":
                 scaled.append((s - p.min) / (p.max - p.min))
             else:
-                scaled.append(norm.cdf(s, p.default, p.sigma))
+                scaled.append(truncnorm.cdf(s, p.min, p.max, loc=p.default, scale=p.sigma))
         return np.array(scaled)
 
     def unscale(self, scaled):
@@ -635,7 +631,7 @@ class Model(ABC):
             if p.prior == "flat":
                 params.append(p.min + s * (p.max - p.min))
             else:
-                params.append(norm.ppf(s, p.default, p.sigma))
+                params.append(truncnorm.ppf(s, p.min, p.max, loc=p.default, scale=p.sigma))
         return np.array(params)
 
     def optimize(self, tol=1.0e-6):

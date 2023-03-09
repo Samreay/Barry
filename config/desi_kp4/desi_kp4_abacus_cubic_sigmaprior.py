@@ -137,9 +137,9 @@ if __name__ == "__main__":
                             correction=Correction.NONE,
                             n_poly=n_poly,
                         )
-                        model.set_default("sigma_nl_par", 5.4, sigma=sigma_sigma[sig], prior="gaussian")
-                        model.set_default("sigma_nl_perp", 1.0, sigma=sigma_sigma[sig], prior="gaussian")
-                        model.set_default("sigma_s", 0.0, sigma=sigma_sigma[sig], prior="gaussian")
+                        model.set_default("sigma_nl_par", 5.4, min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
+                        model.set_default("sigma_nl_perp", 1.0, min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
+                        model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
 
                         # Load in a pre-existing BAO template
                         pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
@@ -160,9 +160,9 @@ if __name__ == "__main__":
                                 correction=Correction.NONE,
                                 n_poly=n_poly,
                             )
-                            model.set_default("sigma_nl_par", 5.4, sigma=sigma_sigma[sig], prior="gaussian")
-                            model.set_default("sigma_nl_perp", 1.0, sigma=sigma_sigma[sig], prior="gaussian")
-                            model.set_default("sigma_s", 0.0, sigma=sigma_sigma[sig], prior="gaussian")
+                            model.set_default("sigma_nl_par", 5.4, min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
+                            model.set_default("sigma_nl_perp", 1.0, min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
+                            model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
 
                             # Load in a pre-existing BAO template
                             pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
