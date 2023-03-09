@@ -48,8 +48,8 @@ def plot_alphas(stats, figname):
             alpha=0.5,
             lw=0.8,
         )
-        axes[0, n_poly - 1].set_ylim(-0.008, 0.008)
-        axes[1, n_poly - 1].set_ylim(-0.004, 0.004)
+        axes[0, n_poly - 1].set_ylim(-0.04, 0.04)
+        axes[1, n_poly - 1].set_ylim(-0.02, 0.02)
         axes[1, n_poly - 1].set_xlabel(r"$\Sigma_{nl,||}$")
         if n_poly == 1:
             axes[0, n_poly - 1].set_ylabel(r"$\alpha_{||}-1$")

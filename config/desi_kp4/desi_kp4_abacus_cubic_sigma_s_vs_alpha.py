@@ -48,9 +48,9 @@ def plot_alphas(stats, figname):
             alpha=0.5,
             lw=0.8,
         )
-        axes[0, n_poly - 1].set_ylim(-0.008, 0.008)
-        axes[1, n_poly - 1].set_ylim(-0.004, 0.004)
-        axes[1, n_poly - 1].set_xlabel(r"$\sigma_{s}$")
+        axes[0, n_poly - 1].set_ylim(-0.04 / 5, 0.04 / 5)
+        axes[1, n_poly - 1].set_ylim(-0.02 / 5, 0.02 / 5)
+        axes[1, n_poly - 1].set_xlabel(r"$\Sigma_{s}$")
         if n_poly == 1:
             axes[0, n_poly - 1].set_ylabel(r"$\alpha_{||}-1$")
             axes[1, n_poly - 1].set_ylabel(r"$\alpha_{\perp}-1$")
@@ -73,7 +73,7 @@ def plot_alphas(stats, figname):
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__)
+    pfn, dir_name, file = setup(__file__, "/reduced_cov/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)

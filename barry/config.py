@@ -17,12 +17,12 @@ def get_config():
     return config
 
 
-def setup(filename):
+def setup(filename, subdirectory=""):
     logging.basicConfig(level=logging.INFO, format="[%(levelname)7s |%(funcName)18s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
     plot_dir = os.path.dirname(os.path.abspath(filename)) + "/plots/%s/" % os.path.basename(filename)[:-3]
-    dir_name = plot_dir + "output/"
-    pfn = plot_dir + os.path.basename(filename)[:-3]
+    dir_name = plot_dir + subdirectory + "output/"
+    pfn = plot_dir + subdirectory + os.path.basename(filename)[:-3]
     file = os.path.abspath(filename)
     time.sleep(random.random())
     try:
