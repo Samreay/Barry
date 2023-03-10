@@ -700,7 +700,9 @@ class Model(ABC):
 
         if plot:
             print("Plotting model and data")
-            self.plot(p, figname=figname)
+            return p, self.plot(p, figname=figname)
+
+        return p
 
 
 if __name__ == "__main__":

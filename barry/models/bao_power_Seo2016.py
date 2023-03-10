@@ -217,7 +217,7 @@ class PowerSeo2016(PowerSpectrumFit):
 
             # Compute the smooth model
             fog = 1.0 / (1.0 + np.outer(self.mu**2, ks**2 * p["sigma_s"] ** 2 / 2.0)) ** 2
-            pk_smooth = p["b{0}"] ** 2 * pk_smooth_lin * fog
+            pk_smooth = p["b{0}"] ** 2 * pk_smooth_lin
 
             # Volume factor
             pk_smooth /= p["alpha"] ** 3
@@ -255,16 +255,16 @@ class PowerSeo2016(PowerSpectrumFit):
             if smooth:
                 prefac = np.ones(len(kprime))
             else:
-                prefac = splev(kprime, splrep(ks, integrate.simps((1.0 + pk_ratio * propagator), self.mu, axis=0)))
+                prefac = splev(kprime, splrep(ks, integrate.simps((fog + pk_ratio * propagator), self.mu, axis=0)))
 
             if for_corr or nopoly:
                 poly = None
-                pk1d = integrate.simps(pk_smooth * (1.0 + pk_ratio * propagator), self.mu, axis=0)
+                pk1d = integrate.simps(pk_smooth * (fog + pk_ratio * propagator), self.mu, axis=0)
             else:
                 shape, poly = self.add_poly(ks, k, p, prefac, np.zeros(len(k)))
                 if self.marg:
                     poly = poly[1:]  # Remove the bias marginalisation.
-                pk1d = integrate.simps((pk_smooth + shape) * (1.0 + pk_ratio * propagator), self.mu, axis=0)
+                pk1d = integrate.simps((pk_smooth + shape) * (fog + pk_ratio * propagator), self.mu, axis=0)
 
             pk[0] = splev(kprime, splrep(ks, pk1d))
 
@@ -281,7 +281,7 @@ class PowerSeo2016(PowerSpectrumFit):
             sprime = splev(kprime, splrep(ks, self.camb.smoothing_kernel)) if self.recon else 0.0
             kaiser_prefac = 1.0 + growth / p["b{0}"] * muprime**2 * (1.0 - sprime)
 
-            pk_smooth = p["b{0}"] ** 2 * kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+            pk_smooth = p["b{0}"] ** 2 * kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin))
 
             # Volume factor
             pk_smooth /= p["alpha"] ** 3
@@ -320,7 +320,7 @@ class PowerSeo2016(PowerSpectrumFit):
                     )
                     propagator = ((1.0 + prefac_k / kaiser_prefac + prefac_mu / kaiser_prefac) * damping) ** 2
 
-                pk2d = pk_smooth * (1.0 + splev(kprime, splrep(ks, pk_ratio)) * propagator)
+                pk2d = pk_smooth * (fog + splev(kprime, splrep(ks, pk_ratio)) * propagator)
 
             pk0, pk2, pk4 = self.integrate_mu(pk2d)
 

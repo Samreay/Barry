@@ -144,7 +144,7 @@ class PowerBeutler2017(PowerSpectrumFit):
                 fog = 1.0 / (1.0 + muprime**2 * kprime**2 * p["sigma_s"] ** 2 / 2.0) ** 2
                 reconfac = splev(kprime, splrep(self.camb.ks, self.camb.smoothing_kernel)) if self.recon_type.lower() == "iso" else 0.0
                 kaiser_prefac = 1.0 + p["beta"] * muprime**2 * (1.0 - reconfac)
-                pk_smooth = kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin)) * fog
+                pk_smooth = kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin))
             else:
                 ktile = np.tile(k, (self.nmu, 1)).T
                 fog = 1.0 / (1.0 + muprime**2 * ktile**2 * p["sigma_s"] ** 2 / 2.0) ** 2
