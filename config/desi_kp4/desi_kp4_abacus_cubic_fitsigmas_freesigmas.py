@@ -162,7 +162,7 @@ if __name__ == "__main__":
 
             # Get some useful properties of the fit, and plot the MAP model against the data if it's the mock mean
             figname = "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
-            new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname)
+            new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=None)
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
@@ -202,12 +202,25 @@ if __name__ == "__main__":
             )
 
         for redshift_bin in range(len(c)):
+            if "Pre" in fitname[redshift_bin]:
+                truth = {"$\\Sigma_{nl,||}$": 9.71, "$\\Sigma_{nl,\\perp}$": 4.66, "$\\Sigma_s$": None}
+            else:
+                truth = {"$\\Sigma_{nl,||}$": 5.29, "$\\Sigma_{nl,\\perp}$": 1.57, "$\\Sigma_s$": None}
             c[redshift_bin].configure(bins=20, sigmas=[0, 1])
-            c[redshift_bin].plotter.plot(
-                filename=["/".join(pfn.split("/")[:-1]) + "/" + fitname[redshift_bin] + "_contour.png"],
+            fig = c[redshift_bin].plotter.plot(
                 parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
                 legend=True,
+                truth=truth,
             )
+            xvals = np.linspace(0.0, 20.0, 100)
+            fig.get_axes()[3].plot(xvals, xvals / (1.0 + 0.8), color="k", linestyle=":", linewidth=1.3)
+            fig.savefig(
+                fname="/".join(pfn.split("/")[:-1]) + "/" + fitname[redshift_bin] + "_contour.png",
+                bbox_inches="tight",
+                dpi=300,
+                pad_inches=0.05,
+            )
+
             # Save all the numbers to a file
             with open(dir_name + "/Barry_fit_" + fitname[redshift_bin] + ".txt", "w") as f:
                 f.write(

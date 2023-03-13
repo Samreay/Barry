@@ -483,7 +483,7 @@ class Model(ABC):
             if x.prior == "flat":
                 start_random.append(uniform(x.min, x.max))
             else:
-                start_random.append(truncnorm.rvs(x.min, x.max, x.default, x.sigma))
+                start_random.append(truncnorm.rvs(x.min, x.max, loc=x.default, scale=x.sigma))
         return np.array(start_random)
 
     def _load_precomputed_data(self):
@@ -621,7 +621,8 @@ class Model(ABC):
             if p.prior == "flat":
                 scaled.append((s - p.min) / (p.max - p.min))
             else:
-                scaled.append(truncnorm.cdf(s, p.min, p.max, loc=p.default, scale=p.sigma))
+                scaled.append(truncnorm.cdf(s, (p.min - p.default) / p.sigma, (p.max - p.default) / p.sigma, loc=p.default, scale=p.sigma))
+        print(params, scaled)
         return np.array(scaled)
 
     def unscale(self, scaled):
@@ -631,7 +632,8 @@ class Model(ABC):
             if p.prior == "flat":
                 params.append(p.min + s * (p.max - p.min))
             else:
-                params.append(truncnorm.ppf(s, p.min, p.max, loc=p.default, scale=p.sigma))
+                params.append(truncnorm.ppf(s, (p.min - p.default) / p.sigma, (p.max - p.default) / p.sigma, loc=p.default, scale=p.sigma))
+        print(scaled, params)
         return np.array(params)
 
     def optimize(self, tol=1.0e-6):

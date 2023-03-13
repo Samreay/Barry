@@ -22,49 +22,85 @@ def plot_alphas(stats, figname):
 
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
-    fig, axes = plt.subplots(figsize=(7, 2), nrows=2, ncols=7, sharex=True, sharey="row", squeeze=False)
+    fig, axes = plt.subplots(figsize=(4, 5), nrows=5, ncols=4, sharex=True, sharey="row", squeeze=False)
     plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
-    for n_poly in range(1, 8):
+    for n_poly in range(3, 7):
         index = np.where(stats[:, 1] == n_poly)[0]
-        print(stats[index, 0], stats[index, 2], stats[index, 3])
+        print(stats[index])
 
-        axes[0, n_poly - 1].plot(stats[index, 0], stats[index, 2] - 1.0, color=colors[n_poly - 1], zorder=1, alpha=0.75, lw=0.8)
-        axes[1, n_poly - 1].plot(stats[index, 0], stats[index, 3] - 1.0, color=colors[n_poly - 1], zorder=1, alpha=0.75, lw=0.8)
-        axes[0, n_poly - 1].fill_between(
-            stats[index, 0],
-            stats[index, 2] - stats[index, 4] - 1.0,
-            stats[index, 2] + stats[index, 4] - 1.0,
-            color=colors[n_poly - 1],
-            zorder=1,
-            alpha=0.5,
-            lw=0.8,
-        )
-        axes[1, n_poly - 1].fill_between(
-            stats[index, 0],
-            stats[index, 3] - stats[index, 5] - 1.0,
-            stats[index, 3] + stats[index, 5] - 1.0,
-            color=colors[n_poly - 1],
-            zorder=1,
-            alpha=0.5,
-            lw=0.8,
-        )
-        axes[0, n_poly - 1].set_ylim(-0.04 / 5, 0.04 / 5)
-        axes[1, n_poly - 1].set_ylim(-0.02 / 5, 0.02 / 5)
-        axes[1, n_poly - 1].set_xlabel(r"$\Sigma_{s}$")
-        if n_poly == 1:
-            axes[0, n_poly - 1].set_ylabel(r"$\alpha_{||}-1$")
-            axes[1, n_poly - 1].set_ylabel(r"$\alpha_{\perp}-1$")
-        axes[0, n_poly - 1].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
-        axes[1, n_poly - 1].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
-        axes[0, n_poly - 1].text(
+        for param in range(5):
+            axes[param, n_poly - 3].plot(stats[index, 0], stats[index, param + 2], color=colors[n_poly - 3], zorder=1, alpha=0.75, lw=0.8)
+            axes[param, n_poly - 3].fill_between(
+                stats[index, 0],
+                stats[index, param + 2] - stats[index, param + 7],
+                stats[index, param + 2] + stats[index, param + 7],
+                color=colors[n_poly - 3],
+                zorder=1,
+                alpha=0.5,
+                lw=0.8,
+            )
+            axes[param, n_poly - 3].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
+
+        axes[0, n_poly - 3].set_ylim(-0.04, 0.04)
+        axes[1, n_poly - 3].set_ylim(-0.02, 0.02)
+        axes[2, n_poly - 3].set_ylim(-2.0, 2.0)
+        axes[3, n_poly - 3].set_ylim(-2.0, 2.0)
+        axes[4, n_poly - 3].set_ylim(-2.0, 2.0)
+        axes[4, n_poly - 3].set_xlabel(r"$\sigma_{\Sigma}$")
+        if n_poly == 3:
+            axes[0, n_poly - 3].set_ylabel(r"$\alpha_{||}-1$")
+            axes[1, n_poly - 3].set_ylabel(r"$\alpha_{\perp}-1$")
+            axes[2, n_poly - 3].set_ylabel(r"$\Sigma_{||}-5.4$")
+            axes[3, n_poly - 3].set_ylabel(r"$\Sigma_{\perp}-1.8$")
+            axes[4, n_poly - 3].set_ylabel(r"$\Sigma_{s}$")
+        axes[0, n_poly - 3].text(
             0.05,
             0.95,
             f"$N_{{poly}} = {{{n_poly}}}$",
-            transform=axes[0, n_poly - 1].transAxes,
+            transform=axes[0, n_poly - 3].transAxes,
             ha="left",
             va="top",
             fontsize=8,
-            color=colors[n_poly - 1],
+            color=colors[n_poly - 3],
+        )
+
+    fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
+
+
+def plot_errors(stats, figname):
+
+    colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
+
+    fig, axes = plt.subplots(figsize=(4, 5), nrows=5, ncols=4, sharex=True, sharey="row", squeeze=False)
+    plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
+    for n_poly in range(3, 7):
+        index = np.where(stats[:, 1] == n_poly)[0]
+        print(stats[index, 0], stats[index, 2], stats[index, 3])
+
+        for param in range(5):
+            axes[param, n_poly - 3].plot(stats[index, 0], stats[index, param + 7], color=colors[n_poly - 3], zorder=1, alpha=0.75, lw=0.8)
+            axes[param, n_poly - 3].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
+        axes[0, n_poly - 3].set_ylim(0.0, 0.01)
+        axes[1, n_poly - 3].set_ylim(0.0, 0.01)
+        axes[2, n_poly - 3].set_ylim(0.0, 3.0)
+        axes[3, n_poly - 3].set_ylim(0.0, 3.0)
+        axes[4, n_poly - 3].set_ylim(0.0, 3.0)
+        axes[4, n_poly - 3].set_xlabel(r"$\sigma_{\Sigma}$")
+        if n_poly == 3:
+            axes[0, n_poly - 3].set_ylabel(r"$\sigma_{\alpha_{||}}$")
+            axes[1, n_poly - 3].set_ylabel(r"$\sigma_{\alpha_{\perp}}$")
+            axes[2, n_poly - 3].set_ylabel(r"$\sigma_{\Sigma_{nl,||}}$")
+            axes[3, n_poly - 3].set_ylabel(r"$\sigma_{\Sigma_{nl,\perp}}$")
+            axes[4, n_poly - 3].set_ylabel(r"$\sigma_{\Sigma_{s}}$")
+        axes[0, n_poly - 3].text(
+            0.05,
+            0.95,
+            f"$N_{{poly}} = {{{n_poly}}}$",
+            transform=axes[0, n_poly - 3].transAxes,
+            ha="left",
+            va="top",
+            fontsize=8,
+            color=colors[n_poly - 3],
         )
 
     fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
@@ -146,7 +182,7 @@ if __name__ == "__main__":
                         model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
                         name = dataset_pk.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
-                        fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[n_poly - 1])
+                        fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[sig])
                         allnames.append(name)
 
                         if "abacus_cubicbox_cv" not in mocktype:
@@ -169,7 +205,7 @@ if __name__ == "__main__":
                             model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
                             name = dataset_xi.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
-                            fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[n_poly - 1])
+                            fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[sig])
                             allnames.append(name)
 
     # Submit all the jobs to NERSC. We have quite a few (72), so we'll
@@ -190,6 +226,12 @@ if __name__ == "__main__":
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
         datanames = ["Xi", "Pk", "Pk_CV"]
 
+        c = [
+            ChainConsumer(),
+            ChainConsumer(),
+            ChainConsumer(),
+        ]
+
         # Loop over all the chains
         stats = [[] for _ in range(len(datanames))]
         output = {k: [] for k in datanames}
@@ -209,28 +251,67 @@ if __name__ == "__main__":
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
             mean, cov = weighted_avg_and_cov(
-                df[
-                    [
-                        "$\\alpha_\\parallel$",
-                        "$\\alpha_\\perp$",
-                    ]
-                ],
+                df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"]],
                 weight,
                 axis=0,
             )
+            extra.pop("realisation", None)
+            if "n_poly=5" in extra["name"]:
+                extra["name"] = datanames[data_bin] + f" fixed_type {sigma_bin}"
+                c[data_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
 
-            stats[data_bin].append([sigma_sigma[sigma_bin], model.n_poly, mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])])
+            stats[data_bin].append(
+                [
+                    sigma_sigma[sigma_bin],
+                    model.n_poly,
+                    mean[0] - 1.0,
+                    mean[1] - 1.0,
+                    mean[2] - 5.4,
+                    mean[3] - 1.8,
+                    mean[4],
+                    np.sqrt(cov[0, 0]),
+                    np.sqrt(cov[1, 1]),
+                    np.sqrt(cov[2, 2]),
+                    np.sqrt(cov[3, 3]),
+                    np.sqrt(cov[4, 4]),
+                ]
+            )
             output[datanames[data_bin]].append(
-                f"{sigma_sigma[sigma_bin]:6.4f}, {model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
+                f"{sigma_sigma[sigma_bin]:6.4f}, {model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {mean[3]:6.4f}, {mean[4]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {np.sqrt(cov[2, 2]):6.4f}, {np.sqrt(cov[3, 3]):6.4f}, {np.sqrt(cov[4, 4]):6.4f}"
             )
 
         print(stats)
 
-        truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
         for data_bin in range(3):
+            if "Pre" in datanames[data_bin]:
+                truth = {
+                    "$\\alpha_\\perp$": 1.0,
+                    "$\\alpha_\\parallel$": 1.0,
+                    "$\\Sigma_{nl,||}$": 9.71,
+                    "$\\Sigma_{nl,\\perp}$": 4.66,
+                    "$\\Sigma_s$": None,
+                }
+            else:
+                truth = {
+                    "$\\alpha_\\perp$": 1.0,
+                    "$\\alpha_\\parallel$": 1.0,
+                    "$\\Sigma_{nl,||}$": 5.29,
+                    "$\\Sigma_{nl,\\perp}$": 1.57,
+                    "$\\Sigma_s$": None,
+                }
+
+            c[data_bin].configure(bins=20, sigmas=[0, 1])
+            c[data_bin].plotter.plot(
+                filename=["/".join(pfn.split("/")[:-1]) + "/" + datanames[data_bin] + "_contour.png"],
+                truth=truth,
+                parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
+                legend=True,
+                extents=[(0.98, 1.02), (0.98, 1.02)],
+            )
 
             # Plot histograms of the errors and r_off
             plot_alphas(np.array(stats[data_bin]), "/".join(pfn.split("/")[:-1]) + "/" + datanames[data_bin] + "_alphas.png")
+            plot_errors(np.array(stats[data_bin]), "/".join(pfn.split("/")[:-1]) + "/errs_" + datanames[data_bin] + "_alphas.png")
 
             # Save all the numbers to a file
             with open(dir_name + "/Barry_fit_" + datanames[data_bin] + ".txt", "w") as f:
