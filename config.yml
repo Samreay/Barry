@@ -11,10 +11,16 @@ hpcs:
     mpi_module: openmpi3_eth/3.0.0
     fort_compile_module: gnu/7.2.0
 
-  nersc:
+  cori:
     account: desi
-    job_script_name: nersc
+    job_script_name: cori
     num_fits_per_job: 32
     mpi_module: cray-mpich/7.7.19
     fort_compile_module: gcc
 
+  perlmutter:
+    account: desi
+    job_script_name: perlmutter
+    num_fits_per_job: 32
+    mpi_module: cray-mpich/7.7.19
+    fort_compile_module: gcc
