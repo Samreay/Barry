@@ -1,0 +1,44 @@
+#!/bin/bash -l
+#SBATCH -J {name}
+#SBATCH -q shared
+#SBATCH -C cpu
+#SBATCH --array=1-{num_tasks}%{num_concurrent}
+#SBATCH --ntasks={num_fits_per_job}
+#SBATCH --account={account}
+#SBATCH --cpus-per-task=1
+#SBATCH --nodes=1
+#SBATCH --mem=0
+#SBATCH -t 04:00:00
+#SBATCH -o {output_dir}/{name}.o%j
+
+source ~/.bashrc.ext
+IDIR={directory}
+
+module load parallel
+
+echo "Activated python"
+export executable=$(which python)
+echo $executable
+
+export PROG={executable}
+export PARAMS=`expr ${{SLURM_ARRAY_TASK_ID}} - 1`
+export END={num_fits_per_job}
+
+echo "$PROG $PARAMS $END"
+
+#func() {{ let ANUM=$PARAMS*$END+$1; echo $executable $PROG $ANUM > {output_dir}/{name}_$ANUM.log; }}
+#export -f func
+
+#cd $IDIR
+#srun parallel 'let ANUM=$PARAMS*$END+{{1}}; $executable $PROG $ANUM > {output_dir}/{name}_$ANUM.log' ::: $(seq $END)
+
+cd $IDIR
+sleep $((RANDOM % 5))
+
+for ((i=0;i<END;i++)); do
+    echo "Loop iteration $i"
+    ANUM=`expr $PARAMS \* $END + $i`
+    echo "Executing $executable $PROG $ANUM"
+    srun -u --exclusive --nodes 1 --ntasks 1 --mem-per-cpu=4GB --output "{output_dir}/{name}_$ANUM.log" $executable $PROG $ANUM  &
+done
+wait
