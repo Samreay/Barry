@@ -167,6 +167,11 @@ class Fitter(object):
     def is_local(self):
         return shutil.which(get_config()["hpc_determining_command"]) is None
 
+    def is_interactive():
+        import __main__ as main
+
+        return not hasattr(main, "__file__")
+
     def should_plot(self):
         # Plot if we're running on the laptop, or we've passed "plot" as the argument
         # to the python script on the HPC
@@ -183,6 +188,18 @@ class Fitter(object):
             # Only do the first model+dataset on a local computer as a test
             self.logger.info("Running locally on the 0th index.")
             self._run_fit(0, 0)
+        elif self.is_interactive():
+            if os.path.exists(self.temp_dir):
+                if self.remove_output:
+                    self.logger.info("Deleting %s" % self.temp_dir)
+                    shutil.rmtree(self.temp_dir)
+            hpc = get_hpc()
+            filename = write_jobscript_slurm(
+                file, name=os.path.basename(file), num_tasks=self.get_num_jobs(), num_concurrent=num_concurrent, delete=False, hpc=hpc
+            )
+            self.logger.info("Running batch job at %s" % filename)
+            config = get_config()
+            os.system(f"{config['hpc_submit_command']} {filename}")
         else:
             if len(sys.argv) == 1:
                 # if launching the job for the first time

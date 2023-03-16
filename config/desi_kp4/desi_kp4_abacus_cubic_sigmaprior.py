@@ -41,8 +41,8 @@ def plot_alphas(stats, figname):
             )
             axes[param, n_poly - 3].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
 
-        axes[0, n_poly - 3].set_ylim(-0.04, 0.04)
-        axes[1, n_poly - 3].set_ylim(-0.02, 0.02)
+        axes[0, n_poly - 3].set_ylim(-0.04 / 5, 0.04 / 5)
+        axes[1, n_poly - 3].set_ylim(-0.02 / 5, 0.02 / 5)
         axes[2, n_poly - 3].set_ylim(-2.0, 2.0)
         axes[3, n_poly - 3].set_ylim(-2.0, 2.0)
         axes[4, n_poly - 3].set_ylim(-2.0, 2.0)
@@ -80,8 +80,8 @@ def plot_errors(stats, figname):
         for param in range(5):
             axes[param, n_poly - 3].plot(stats[index, 0], stats[index, param + 7], color=colors[n_poly - 3], zorder=1, alpha=0.75, lw=0.8)
             axes[param, n_poly - 3].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
-        axes[0, n_poly - 3].set_ylim(0.0, 0.01)
-        axes[1, n_poly - 3].set_ylim(0.0, 0.01)
+        axes[0, n_poly - 3].set_ylim(0.0, 0.01 / 5)
+        axes[1, n_poly - 3].set_ylim(0.0, 0.01 / 5)
         axes[2, n_poly - 3].set_ylim(0.0, 3.0)
         axes[3, n_poly - 3].set_ylim(0.0, 3.0)
         axes[4, n_poly - 3].set_ylim(0.0, 3.0)
@@ -109,7 +109,7 @@ def plot_errors(stats, figname):
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__)
+    pfn, dir_name, file = setup(__file__, "/reduced_cov/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
@@ -142,7 +142,7 @@ if __name__ == "__main__":
                     redshift_bin=z + 1,
                     realisation=None,
                     num_mocks=1000,
-                    reduce_cov_factor=1,
+                    reduce_cov_factor=25,
                 )
 
                 if "abacus_cubicbox_cv" not in mocktype:
@@ -156,7 +156,7 @@ if __name__ == "__main__":
                         redshift_bin=z + 1,
                         realisation=None,
                         num_mocks=1000,
-                        reduce_cov_factor=1,
+                        reduce_cov_factor=25,
                     )
 
                 # Loop over pre- and post-recon measurements
