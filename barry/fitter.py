@@ -177,34 +177,17 @@ class Fitter(object):
         # to the python script on the HPC
         return self.is_local() or (len(sys.argv) == 2 and sys.argv[1] == "plot")
 
-    def fit(self, file, index=None):
+    def fit(self, file, index=0):
         num_concurrent = self.get_num_concurrent()
 
         num_jobs = self.get_num_jobs()
         num_models = len(self.model_datasets)
         self.logger.info(f"With {num_models} models+datasets and {self.num_walkers} walkers, " f"have {num_jobs} jobs")
 
-        if self.is_local():
-            # Only do the first model+dataset on a local computer as a test
-            self.logger.info("Running locally on the 0th index.")
-            self._run_fit(0, 0)
-        elif self.is_interactive():
-            if index is None:
-                if os.path.exists(self.temp_dir):
-                    if self.remove_output:
-                        self.logger.info("Deleting %s" % self.temp_dir)
-                        shutil.rmtree(self.temp_dir)
-                hpc = get_hpc()
-                filename = write_jobscript_slurm(
-                    file, name=os.path.basename(file), num_tasks=self.get_num_jobs(), num_concurrent=num_concurrent, delete=False, hpc=hpc
-                )
-                self.logger.info("Running batch job at %s" % filename)
-                config = get_config()
-                os.system(f"{config['hpc_submit_command']} {filename}")
-            else:
-                mi, wi = self._get_indexes_from_index(index)
-                self.logger.info("Running model_dataset %d, walker number %d" % (mi, wi))
-                self._run_fit(mi, wi)
+        if self.is_local() or self.is_interactive():
+            mi, wi = self._get_indexes_from_index(index)
+            self.logger.info("Running model_dataset %d, walker number %d" % (mi, wi))
+            self._run_fit(mi, wi)
         else:
             if len(sys.argv) == 1:
                 # if launching the job for the first time
