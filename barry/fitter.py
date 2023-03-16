@@ -167,7 +167,7 @@ class Fitter(object):
     def is_local(self):
         return shutil.which(get_config()["hpc_determining_command"]) is None
 
-    def is_interactive():
+    def is_interactive(self):
         import __main__ as main
 
         return not hasattr(main, "__file__")
