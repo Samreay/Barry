@@ -429,7 +429,6 @@ class Model(ABC):
                 + 2.0 * marg_model @ icov_m_w[3] @ marg_model_odd.T
                 + marg_model @ icov_m_w[4] @ marg_model.T
             )
-            # print(F2)
             F2inv = np.linalg.inv(F2)
 
         bband = F2inv @ F11
@@ -622,7 +621,6 @@ class Model(ABC):
                 scaled.append((s - p.min) / (p.max - p.min))
             else:
                 scaled.append(truncnorm.cdf(s, (p.min - p.default) / p.sigma, (p.max - p.default) / p.sigma, loc=p.default, scale=p.sigma))
-        print(params, scaled)
         return np.array(scaled)
 
     def unscale(self, scaled):
@@ -633,7 +631,6 @@ class Model(ABC):
                 params.append(p.min + s * (p.max - p.min))
             else:
                 params.append(truncnorm.ppf(s, (p.min - p.default) / p.sigma, (p.max - p.default) / p.sigma, loc=p.default, scale=p.sigma))
-        print(scaled, params)
         return np.array(params)
 
     def optimize(self, tol=1.0e-6):
