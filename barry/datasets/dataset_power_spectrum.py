@@ -329,6 +329,7 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
         num_mocks=1000,
         fit_poles=(0,),
         datafile="desi_kp4_abacus_cubicbox_pk_lrg.pkl",
+        data_location=None,
     ):
 
         if any(pole in [1, 3] for pole in fit_poles):
@@ -356,6 +357,7 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
             realisation=realisation,
             isotropic=False,
             fit_poles=fit_poles,
+            data_location=data_location,
         )
 
 

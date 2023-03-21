@@ -156,6 +156,7 @@ class CorrelationFunction_DESI_KP4(CorrelationFunction):
         num_mocks=1000,
         fit_poles=(0,),
         datafile="desi_kp4_abacus_cubicbox_xi_lrg.pkl",
+        data_location=None,
     ):
 
         if realisation is not None:
@@ -178,6 +179,7 @@ class CorrelationFunction_DESI_KP4(CorrelationFunction):
             realisation=realisation,
             isotropic=False,
             fit_poles=fit_poles,
+            data_location=data_location,
         )
 
 

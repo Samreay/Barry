@@ -25,10 +25,11 @@ class CorrelationFunction(Dataset, ABC):
         realisation=None,
         isotropic=True,
         fit_poles=(0,),
+        data_location=None,
     ):
 
         current_file = os.path.dirname(inspect.stack()[0][1])
-        self.data_location = os.path.normpath(current_file + f"/../data/{filename}")
+        self.data_location = os.path.normpath(current_file + f"/../data/{filename}") if data_location is None else data_location
         self.min_dist = min_dist
         self.max_dist = max_dist
 
