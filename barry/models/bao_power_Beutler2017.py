@@ -201,8 +201,6 @@ if __name__ == "__main__":
         fit_poles=[0, 2],
         min_k=0.00,
         max_k=0.30,
-        mocktype="abacus_cubicbox",
-        redshift_bin=0,
         realisation=None,
         num_mocks=1000,
         reduce_cov_factor=1,

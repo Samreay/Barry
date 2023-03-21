@@ -327,28 +327,9 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
         fake_diag=False,
         realisation=None,
         num_mocks=1000,
-        mocktype="abacus_cubicbox",
         fit_poles=(0,),
-        tracer="lrg",
-        redshift_bin=1,
+        datafile="desi_kp4_abacus_cubicbox_pk_lrg.pkl",
     ):
-
-        reds = {"lrg": [["0.4", "0.6", 0.5], ["0.6", "0.8", 0.7], ["0.8", "1.1", 0.95]]}
-
-        if mocktype.lower() not in [
-            "abacus_analytic",
-            "abacus_cubicbox",
-            "abacus_cubicbox_cv",
-            "abacus_cutsky",
-            "ezmock_cubicbox",
-            "ezmock_cutsky",
-        ]:
-            raise NotImplementedError(
-                "mocktype not recognised, must be abacus_analytic, abacus_cubicbox, abacus_cubicbox_cv, abacus_cutsky, ezmock_cubicbox or ezmock_cutsky"
-            )
-
-        if tracer.lower() not in reds.keys():
-            raise NotImplementedError(f"tracer not recognised, must be in {reds.keys()}")
 
         if any(pole in [1, 3] for pole in fit_poles):
             raise NotImplementedError("Only even multipoles included in DESI KP4, do not include 1 or 3 in fit_poles")
@@ -357,17 +338,9 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
             if not isinstance(realisation, int):
                 raise NotImplementedError("No data yet in DESI KP4, set realisation = None or an integer mock")
 
-        self.nredshift_bins = len(reds[tracer.lower()])
+        self.nredshift_bins = 1
         self.nsmoothtypes = 1
         self.ndata = 1
-
-        datafile = "desi_kp4_" + mocktype + "_pk_" + tracer
-        if "cubicbox" in mocktype.lower():
-            datafile += ".pkl"
-        else:
-            zmin = reds[tracer][redshift_bin - 1][0]
-            zmax = reds[tracer][redshift_bin - 1][1]
-            datafile += "_zmin" + zmin + "_zmax" + zmax + ".pkl"
 
         super().__init__(
             datafile,

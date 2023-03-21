@@ -154,35 +154,17 @@ class CorrelationFunction_DESI_KP4(CorrelationFunction):
         reduce_cov_factor=1,
         realisation=None,
         num_mocks=1000,
-        mocktype="abacus_cubicbox",
         fit_poles=(0,),
-        tracer="lrg",
-        redshift_bin=1,
+        datafile="desi_kp4_abacus_cubicbox_xi_lrg.pkl",
     ):
-
-        reds = {"lrg": [["0.4", "0.6", 0.5], ["0.6", "0.8", 0.7], ["0.8", "1.1", 0.95]]}
-
-        if mocktype.lower() not in ["abacus_cubicbox", "abacus_cutsky", "ezmock_cubicbox", "ezmock_cutsky"]:
-            raise NotImplementedError("mocktype not recognised, must be abacus_cubic, abacus_cutsky, ezmock_cubicbox or ezmock_cutsky")
-
-        if tracer.lower() not in reds.keys():
-            raise NotImplementedError(f"tracer not recognised, must be in {reds.keys()}")
 
         if realisation is not None:
             if not isinstance(realisation, int):
                 raise NotImplementedError("No data yet in DESI KP4, set realisation = None or an integer mock")
 
-        self.nredshift_bins = len(reds[tracer.lower()])
+        self.nredshift_bins = 1
         self.nsmoothtypes = 1
         self.ndata = 1
-
-        datafile = "desi_kp4_" + mocktype + "_xi_" + tracer
-        if "cubicbox" in mocktype.lower():
-            datafile += ".pkl"
-        else:
-            zmin = reds[tracer][redshift_bin - 1][0]
-            zmax = reds[tracer][redshift_bin - 1][1]
-            datafile += "_zmin" + zmin + "_zmax" + zmax + ".pkl"
 
         super().__init__(
             datafile,
