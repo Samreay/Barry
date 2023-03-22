@@ -27,7 +27,6 @@ class CorrDing2018(CorrelationFunctionFit):
         isotropic=True,
         poly_poles=(0, 2),
         marg=None,
-        includeb2=True,
         n_poly=3,
     ):
 

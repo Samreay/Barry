@@ -30,7 +30,9 @@ class PowerSpectrum(Dataset, ABC):
         data_location=None,
     ):
         current_file = os.path.dirname(inspect.stack()[0][1])
-        self.data_location = os.path.normpath(current_file + f"/../data/{filename}") if data_location is None else data_location
+        self.data_location = (
+            os.path.normpath(current_file + f"/../data/{filename}") if data_location is None else data_location + f"/{filename}"
+        )
         self.min_k = min_k
         self.max_k = max_k
         self.step_size = step_size

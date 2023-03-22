@@ -3,19 +3,23 @@ import sys
 
 sys.path.append("../..")
 
-from barry.models import PowerBeutler2017
+from barry.models import PowerChen2019
 from barry.models.bao_correlation import CorrelationFunctionFit
 from scipy.interpolate import splev, splrep
 import numpy as np
 
 
-class CorrBeutler2017(CorrelationFunctionFit):
-    """xi(s) model inspired from Beutler 2017 that treats alphas in the same way as P(k)."""
+class CorrChen2019(CorrelationFunctionFit):
+    """xi(s) model inspired from Chen 2019.
+
+    See https://ui.adsabs.harvard.edu/abs/2019JCAP...09..017C/abstract for details.
+
+    """
 
     def __init__(
         self,
-        name="Corr Beutler 2017",
-        fix_params=("om",),
+        name="Corr Chen 2019",
+        fix_params=("om", "beta"),
         smooth_type=None,
         recon=None,
         smooth=False,
@@ -23,11 +27,8 @@ class CorrBeutler2017(CorrelationFunctionFit):
         isotropic=True,
         poly_poles=(0, 2),
         marg=None,
-        dilate_smooth=True,
         n_poly=3,
     ):
-
-        self.dilate_smooth = dilate_smooth
 
         super().__init__(
             name=name,
@@ -41,7 +42,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
             includeb2=False,
             n_poly=n_poly,
         )
-        self.parent = PowerBeutler2017(
+        self.parent = PowerChen2019(
             fix_params=fix_params,
             smooth_type=smooth_type,
             recon=recon,
@@ -49,7 +50,6 @@ class CorrBeutler2017(CorrelationFunctionFit):
             correction=correction,
             isotropic=isotropic,
             marg=marg,
-            dilate_smooth=dilate_smooth,
             n_poly=n_poly,
         )
 
@@ -58,22 +58,17 @@ class CorrBeutler2017(CorrelationFunctionFit):
     def declare_parameters(self):
         super().declare_parameters()
         self.add_param("b{0}_{1}", r"$b{0}_{1}$", 0.1, 10.0, 1.0)  # Galaxy bias
-        self.add_param("sigma_s", r"$\Sigma_s$", 0.0, 20.0, 10.0)  # Fingers-of-god damping
-        if self.isotropic:
-            self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.0, 20.0, 10.0)  # BAO damping
-        else:
-            self.add_param("beta", r"$\beta$", 0.01, 4.0, None)  # RSD parameter f/b
-            self.add_param("sigma_nl_par", r"$\Sigma_{nl,||}$", 0.0, 20.0, 8.0)  # BAO damping parallel to LOS
-            self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.0, 20.0, 4.0)  # BAO damping perpendicular to LOS
+        self.add_param("beta", r"$\beta$", 0.01, 4.0, None)  # RSD parameter f/b
+        self.add_param("sigma_s", r"$\Sigma_s$", 0.0, 10.0, 5.0)  # Fingers-of-god damping
         for pole in self.poly_poles:
             for ip in range(self.n_poly):
                 self.add_param(f"a{{{pole}}}_{{{ip+1}}}_{{{1}}}", f"$a_{{{pole},{ip+1},1}}$", -100.0, 100.0, 0)
 
     def compute_correlation_function(self, dist, p, smooth=False):
-        """Computes the correlation function model using the Beutler et. al., 2017 power spectrum
-            and 3 bias parameters and polynomial terms per multipole
+        """Computes the correlation function model using the Chen et. al., 2019 ZA model power spectrum
+            and 3 polynomial terms per multipole
 
-        Parameters
+                Parameters
         ----------
         dist : np.ndarray
             Array of distances in the correlation function to compute
@@ -92,7 +87,6 @@ class CorrBeutler2017(CorrelationFunctionFit):
             the additive terms in the model, necessary for analytical marginalisation
 
         """
-
         ks, pks, _ = self.parent.compute_power_spectrum(self.parent.camb.ks, p, smooth=smooth, nopoly=True)
         xi_comp = np.array([self.pk2xi_0.__call__(ks, pks[0], dist), np.zeros(len(dist)), np.zeros(len(dist))])
 
@@ -109,11 +103,7 @@ if __name__ == "__main__":
     import sys
 
     sys.path.append("../..")
-    from barry.datasets.dataset_correlation_function import (
-        CorrelationFunction_ROSS_DR12,
-        CorrelationFunction_DESIMockChallenge_Post,
-        CorrelationFunction_DESI_KP4,
-    )
+    from barry.datasets.dataset_correlation_function import CorrelationFunction_DESI_KP4
     from barry.config import setup_logging
     from barry.models.model import Correction
 
@@ -124,28 +114,18 @@ if __name__ == "__main__":
         fit_poles=[0, 2],
         min_dist=52.0,
         max_dist=150.0,
-        realisation=None,
         num_mocks=1000,
         reduce_cov_factor=25,
     )
     data = dataset.get_data()
 
-    model = CorrBeutler2017(
+    model = CorrChen2019(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
-        fix_params=["om", "sigma_s", "sigma_nl_par", "sigma_nl_perp"],
+        fix_params=["om", "sigma_s"],
         poly_poles=dataset.fit_poles,
-        correction=Correction.NONE,
-        n_poly=3,
+        correction=Correction.HARTLAP,
     )
     model.set_default("sigma_s", 0.0)
-    model.set_default("sigma_nl_perp", 1.8)
-    model.set_default("sigma_nl_par", 5.4)
-    print(model.get_active_params())
-
-    # Load in a pre-existing BAO template
-    pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-    model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
-
     model.sanity_check(dataset)

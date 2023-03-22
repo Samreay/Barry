@@ -29,7 +29,9 @@ class CorrelationFunction(Dataset, ABC):
     ):
 
         current_file = os.path.dirname(inspect.stack()[0][1])
-        self.data_location = os.path.normpath(current_file + f"/../data/{filename}") if data_location is None else data_location
+        self.data_location = (
+            os.path.normpath(current_file + f"/../data/{filename}") if data_location is None else data_location + f"/{filename}"
+        )
         self.min_dist = min_dist
         self.max_dist = max_dist
 
