@@ -51,7 +51,7 @@ class Model(ABC):
 
     """
 
-    def __init__(self, name, postprocess=None, correction=None, isotropic=True, marg=None, n_data=1):
+    def __init__(self, name, postprocess=None, correction=None, isotropic=False, marg=None, n_data=1):
         """Create a new model.
 
         Parameters
@@ -96,6 +96,7 @@ class Model(ABC):
             f"Created model {name} of {self.__class__.__name__} with correction {correction} and postprocess {str(postprocess)}"
         )
 
+        self.recon = None
         self.marg = False
         self.marg_type = "None"
         if marg is not None:

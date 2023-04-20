@@ -21,7 +21,7 @@ class PowerSeo2016(PowerSpectrumFit):
         postprocess=None,
         smooth=False,
         correction=None,
-        isotropic=True,
+        isotropic=False,
         poly_poles=(0, 2),
         marg=None,
         n_poly=5,

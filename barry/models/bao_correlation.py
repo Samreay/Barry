@@ -21,7 +21,7 @@ class CorrelationFunctionFit(Model):
         fix_params=("om"),
         smooth=False,
         correction=None,
-        isotropic=True,
+        isotropic=False,
         poly_poles=(0, 2),
         marg=None,
         includeb2=True,
