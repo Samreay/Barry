@@ -117,8 +117,6 @@ if __name__ == "__main__":
             ChainConsumer(),
             ChainConsumer(),
             ChainConsumer(),
-            ChainConsumer(),
-            ChainConsumer(),
         ]
         fitname = [None for i in range(len(c))]
 
@@ -132,7 +130,7 @@ if __name__ == "__main__":
             # Get the realisation number and redshift bin
             print(extra["name"].split("_")[0])
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
-            data_bin = 0 if "Xi" in extra["name"] else 1 if "CV" not in extra["name"] else 2
+            data_bin = 0 if "Xi" in extra["name"] else 1
             redshift_bin = int(2.0 * data_bin + recon_bin)
             print(extra["name"], recon_bin, data_bin, redshift_bin)
 

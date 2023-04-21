@@ -33,6 +33,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
             name=name,
             fix_params=fix_params,
             smooth_type=smooth_type,
+            recon=recon,
             smooth=smooth,
             correction=correction,
             isotropic=isotropic,

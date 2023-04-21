@@ -96,7 +96,6 @@ class Model(ABC):
             f"Created model {name} of {self.__class__.__name__} with correction {correction} and postprocess {str(postprocess)}"
         )
 
-        self.recon = None
         self.marg = False
         self.marg_type = "None"
         if marg is not None:

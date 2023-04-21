@@ -18,6 +18,7 @@ class CorrelationFunctionFit(Model):
         self,
         name="Corr Basic",
         smooth_type=None,
+        recon=None,
         fix_params=("om"),
         smooth=False,
         correction=None,
@@ -45,7 +46,13 @@ class CorrelationFunctionFit(Model):
         """
         super().__init__(name, correction=correction, isotropic=isotropic, marg=marg)
         self.parent = PowerSpectrumFit(
-            fix_params=fix_params, smooth_type=smooth_type, correction=correction, isotropic=isotropic, marg=marg, n_poly=n_poly
+            fix_params=fix_params,
+            smooth_type=smooth_type,
+            recon=recon,
+            correction=correction,
+            isotropic=isotropic,
+            marg=marg,
+            n_poly=n_poly,
         )
         if smooth_type is None:
             self.smooth_type = {"method": "hinton2017"}
@@ -58,6 +65,7 @@ class CorrelationFunctionFit(Model):
         if n_poly > 0 and self.isotropic:
             poly_poles = [0]
 
+        self.recon = recon
         self.n_poly = n_poly
         self.poly_poles = poly_poles
         self.data_share_poly = True
