@@ -335,10 +335,6 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
         if any(pole in [1, 3] for pole in fit_poles):
             raise NotImplementedError("Only even multipoles included in DESI KP4, do not include 1 or 3 in fit_poles")
 
-        if realisation is not None:
-            if not isinstance(realisation, int):
-                raise NotImplementedError("No data yet in DESI KP4, set realisation = None or an integer mock")
-
         self.nredshift_bins = 1
         self.nsmoothtypes = 1
         self.ndata = 1

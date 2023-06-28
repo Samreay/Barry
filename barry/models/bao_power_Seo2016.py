@@ -53,14 +53,15 @@ class PowerSeo2016(PowerSpectrumFit):
 
         self.set_marg(fix_params, poly_poles, n_poly)
 
-    def precompute(self, camb, om, h0):
+    def precompute(self, om=None, h0=None, ks=None, pk_lin=None, pk_nonlin_0=None, pk_nonlin_z=None, r_drag=None, s=None):
 
-        c = camb.get_data(om, h0)
-        ks = c["ks"]
-        pk_lin = c["pk_lin"]
-        s = camb.smoothing_kernel
+        if ks is None or pk_lin is None:
+            ks = self.camb.ks
+            pk_lin = self.camb.get_data()["pk_lin"]
+        if s is None:
+            s = self.camb.smoothing_kernel
 
-        r1, r2 = self.get_Rs()
+        r1, r2 = self.get_Rs(ks)
 
         # R_1/P_lin, R_2/P_lin
         R1 = ks**2 * integrate.simps(pk_lin * r1, x=ks, axis=1) / (4.0 * np.pi**2)
@@ -75,8 +76,7 @@ class PowerSeo2016(PowerSpectrumFit):
         }
 
     @lru_cache(maxsize=2)
-    def get_Rs(self):
-        ks = self.camb.ks
+    def get_Rs(self, ks):
         r = np.outer(1.0 / ks, ks)
         R1 = -(1.0 + r**2) / (24.0 * r**2) * (3.0 - 14.0 * r**2 + 3.0 * r**4) + (r**2 - 1.0) ** 4 / (16.0 * r**3) * np.log(
             np.fabs((1.0 + r) / (1.0 - r))
@@ -97,9 +97,9 @@ class PowerSeo2016(PowerSpectrumFit):
         R2[index] = 4.0 / 15.0
         return R1, R2
 
-    @lru_cache(maxsize=4)
-    def get_pt_data(self, om):
-        return self.PT.get_data(om=om)
+    # @lru_cache(maxsize=4)
+    # def get_pt_data(self, om):
+    #    return self.PT.get_data(om=om)
 
     @lru_cache(maxsize=4)
     def get_damping(self, growth, om):
@@ -287,7 +287,7 @@ class PowerSeo2016(PowerSpectrumFit):
             pk_smooth /= p["alpha"] ** 3
 
             if smooth:
-                pk2d = pk_smooth
+                pk2d = pk_smooth * fog
             else:
                 # Compute the BAO damping
                 power_par = 1.0 / (p["alpha"] ** 2 * (1.0 + epsilon) ** 4)

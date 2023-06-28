@@ -127,6 +127,8 @@ class CambGenerator(object):
             omch2 = (om - self.omega_b) * h0 * h0
             data = self._interpolate(omch2, h0)
         return {
+            "om": om,
+            "h0": h0,
             "r_s": data[0],
             "ks": self.ks,
             "pk_lin": data[1 : 1 + self.k_num],
@@ -162,7 +164,7 @@ class CambGenerator(object):
                 pars.NonLinear = camb.model.NonLinear_none
                 results = camb.get_results(pars)
                 params = results.get_derived_params()
-                rdrag = params["rdrag"]
+                rdrag = params["rdrag"] * h0
                 kh, z, pk_lin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
                 pars.NonLinear = camb.model.NonLinear_pk
                 results.calc_power_spectra(pars)
