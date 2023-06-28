@@ -381,7 +381,7 @@ class CorrelationFunctionFit(Model):
                 poly = [1.0 / dist ** (ip - 1) for ip in range(self.n_poly)]
             else:
                 for ip in range(self.n_poly):
-                    xi[0] += p[f"a{0}_{{{ip+1}}}_{1}"] / (dist ** (ip - 1))
+                    xi[0] += p[f"a{0}_{{{ip+1}}}_{{{1}}}"] / (dist ** (ip - 1))
 
         else:
             xi = [xi0, xi2, xi4]
@@ -395,93 +395,7 @@ class CorrelationFunctionFit(Model):
                 poly = np.zeros((1, 3, len(dist)))
                 for pole in self.poly_poles:
                     for ip in range(self.n_poly):
-                        xi[int(pole / 2)] += p[f"a{{{pole}}}_{{{ip+1}}}_{1}"] / dist ** (ip - 1)
-
-        return xi, poly
-
-    def add_three_poly(self, dist, p, xi_comp):
-        """Converts the xi components to a full model but with 3 polynomial terms for each multipole
-
-        Parameters
-        ----------
-        dist : np.ndarray
-            Array of distances in the correlation function to compute
-        p : dict
-            dictionary of parameter name to float value pairs
-        xi_comp : np.ndarray
-            the model monopole, quadrupole and hexadecapole interpolated to sprime.
-
-        Returns
-        -------
-        sprime : np.ndarray
-            distances of the computed xi
-        xi : np.ndarray
-            the convert model monopole, quadrupole and hexadecapole interpolated to sprime.
-        poly: np.ndarray
-            the additive terms in the model, necessary for analytical marginalisation
-
-        """
-
-        xi0, xi2, xi4 = xi_comp
-        xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
-
-        if self.isotropic:
-            xi[0] = xi0
-            poly = np.zeros((1, len(dist)))
-            if self.marg:
-                poly = [1.0 / (dist**2), 1.0 / dist, np.ones(len(dist))]
-            else:
-                xi[0] += p["a{0}_1_{1}"] / (dist**2) + p["a{0}_2_{1}"] / dist + p["a{0}_3_{1}"]
-
-        else:
-            xi = [xi0, xi2, xi4]
-
-            # Polynomial shape
-            if self.marg:
-                poly = np.zeros((3 * len(self.poly_poles), 3, len(dist)))
-                for npole, pole in enumerate(self.poly_poles):
-                    poly[3 * npole : 3 * (npole + 1), npole] = [1.0 / (dist**2), 1.0 / dist, np.ones(len(dist))]
-            else:
-                poly = np.zeros((1, 3, len(dist)))
-                for pole in self.poly_poles:
-                    xi[int(pole / 2)] += (
-                        p[f"a{{{pole}}}_1_{{{1}}}"] / dist**2 + p[f"a{{{pole}}}_2_{{{1}}}"] / dist + p[f"a{{{pole}}}_3_{{{1}}}"]
-                    )
-
-        return xi, poly
-
-    def add_zero_poly(self, dist, p, xi_comp):
-        """Converts the xi components to a full model but with 3 polynomial terms for each multipole
-
-        Parameters
-        ----------
-        dist : np.ndarray
-            Array of distances in the correlation function to compute
-        p : dict
-            dictionary of parameter name to float value pairs
-        xi_comp : np.ndarray
-            the model monopole, quadrupole and hexadecapole interpolated to sprime.
-
-        Returns
-        -------
-        sprime : np.ndarray
-            distances of the computed xi
-        xi : np.ndarray
-            the convert model monopole, quadrupole and hexadecapole interpolated to sprime.
-        poly: np.ndarray
-            the additive terms in the model, necessary for analytical marginalisation
-
-        """
-
-        xi0, xi2, xi4 = xi_comp
-        xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
-
-        if self.isotropic:
-            xi[0] = xi0
-            poly = np.zeros((1, len(dist)))
-        else:
-            xi = [xi0, xi2, xi4]
-            poly = np.zeros((3 * len(self.poly_poles), 3, len(dist)))
+                        xi[int(pole / 2)] += p[f"a{{{pole}}}_{{{ip+1}}}_{{{1}}}"] / dist ** (ip - 1)
 
         return xi, poly
 
