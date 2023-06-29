@@ -516,12 +516,9 @@ class CorrelationFunctionFit(Model):
                 num_data=num_data,
             )
 
-    def plot(self, params, smooth_params=None, figname=None, title=None, display=True):
-        import matplotlib.pyplot as plt
+    def get_model_summary(self, params, smooth_params=None):
 
-        # Ensures we plot the window convolved model
         ss = self.data[0]["dist"]
-        err = np.sqrt(np.diag(self.data[0]["cov"]))
         mod, polymod = self.get_model(params, self.data[0])
         if smooth_params is not None:
             smooth, polysmooth = self.get_model(smooth_params, self.data[0], smooth=True)
@@ -579,13 +576,25 @@ class CorrelationFunctionFit(Model):
             dof = len(self.data[0]["xi"]) - len(self.get_active_params())
             new_chi_squared = 0.0
             bband = None
+            
+        mods = [row for row in mod.reshape((-1, len(ss)))]
+        smooths = [row for row in smooth.reshape((-1, len(ss)))]
+            
+        return new_chi_squared, dof, bband, mods, smooths
+        
+    def plot(self, params, smooth_params=None, figname=None, title=None, display=True):
+        import matplotlib.pyplot as plt
+
+        # Ensures we plot the window convolved model
+        ss = self.data[0]["dist"]
+        err = np.sqrt(np.diag(self.data[0]["cov"]))
+        
+        new_chi_squared, dof, bband, mods, smooths = self.get_model_summary(params, smooth_params)
 
         # Split up the different multipoles if we have them
         if len(err) > len(ss):
             assert len(err) % len(ss) == 0, f"Cannot split your data - have {len(err)} points and {len(ss)} bins"
         errs = [row for row in err.reshape((-1, len(ss)))]
-        mods = [row for row in mod.reshape((-1, len(ss)))]
-        smooths = [row for row in smooth.reshape((-1, len(ss)))]
         if self.isotropic:
             names = [f"xi0"]
         else:
@@ -635,6 +644,52 @@ class CorrelationFunctionFit(Model):
             else:
                 axes[0, 1].set_title("$\\xi(s) - data$")
             axes[0, 0].set_title("$s^{2} \\times \\xi(s)$")
+
+            if title is None:
+                title = self.data[0]["name"] + " + " + self.get_name()
+            fig.suptitle(title)
+            if figname is not None:
+                fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
+            if display:
+                plt.show()
+
+        return new_chi_squared, dof, bband, mods, smooths
+
+    
+    def simple_plot(self, params, smooth_params=None, figname=None, title=None, display=True, c='r'):
+        import matplotlib.pyplot as plt
+
+        ss = self.data[0]["dist"]
+        err = np.sqrt(np.diag(self.data[0]["cov"]))
+        
+        new_chi_squared, dof, bband, mods, smooths = self.get_model_summary(params, smooth_params)
+
+        # Split up the different multipoles if we have them
+        if len(err) > len(ss):
+            assert len(err) % len(ss) == 0, f"Cannot split your data - have {len(err)} points and {len(ss)} bins"
+        errs = [row for row in err.reshape((-1, len(ss)))]
+        if self.isotropic:
+            names = [f"xi0"]
+        else:
+            names = [f"xi{n}" for n in self.data[0]["fit_poles"]]
+        num_rows = len(names)
+        ms = ["o", "o", "s"]
+        mfcs = [c, "w", c] 
+        height = 2 + 1.4 * num_rows
+
+        if display is True or figname is not None:
+            self.logger.info("Create plot")
+
+            fig, axes = plt.subplots(figsize=(height, height), nrows=1, ncols=1, sharex=True, squeeze=False)
+            for err, mod, name, m, mfc in zip(errs, mods, names, ms, mfcs):
+
+                # Plot ye old data
+                axes[0,0].errorbar(ss, ss**2 * self.data[0][name], yerr=ss**2 * err, fmt=m, mfc=mfc, label="Data", c=c)
+
+                # Plot ye old model
+                axes[0,0].plot(ss, ss**2 * mod, c=c, label="Model")
+
+            axes[0,0].set_ylabel("$s^{2} \\times \\xi(s)$ ")
 
             if title is None:
                 title = self.data[0]["name"] + " + " + self.get_name()
