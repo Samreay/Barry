@@ -12,6 +12,7 @@ import logging
 @lru_cache(maxsize=32)
 def getCambGenerator(
     redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21, neff=3.045,
+    neff_resolution=1, vary_neff=False,
 ):
     return CambGenerator(
         redshift=redshift,
@@ -22,11 +23,13 @@ def getCambGenerator(
         ns=ns,
         mnu=mnu,
         recon_smoothing_scale=recon_smoothing_scale,
+        vary_neff=vary_neff, 
         neff=neff,
+        neff_resolution=1,
     )
 
 
-def Omega_m_z(omega_m, z):
+def Omega_m_z(omega_m, z):s
     """
     Computes the matter density at redshift based on the present day value.
 
@@ -60,8 +63,8 @@ class CambGenerator(object):
     Useful because computing them in a likelihood step is insanely slow.
     """
 
-    def __init__(
-        self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21, neff=3.044,
+    def __init__( 
+        self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21, vary_neff=False, neff=3.044, neff_resolution=1,
     ):
         """
         Precomputes CAMB for efficiency. Access ks via self.ks, and use get_data for an array
@@ -70,13 +73,17 @@ class CambGenerator(object):
         self.logger = logging.getLogger("barry")
         self.om_resolution = om_resolution
         self.h0_resolution = h0_resolution
+        self.vary_neff = vary_neff
+        self.neff_resolution=neff_resolution
         self.h0 = h0
         self.redshift = redshift
-        self.singleval = True if om_resolution == 1 and h0_resolution == 1 else False
+        self.singleval = True if om_resolution == 1 and h0_resolution == 1 and (neff_resolution == 1 or vary_neff) else False
 
         self.data_dir = os.path.normpath(os.path.dirname(inspect.stack()[0][1]) + "/../generated/")
         hh = int(h0 * 10000)
         self.filename_unique = f"{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}_{int(mnu * 10000)}"
+        if neff_vary: 
+            self.filename_unique = f"{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{self.neff_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}_{int(mnu * 10000)}"
         self.filename = self.data_dir + f"/camb_{self.filename_unique}.npy"
 
         self.k_min = 1e-5
@@ -90,11 +97,17 @@ class CambGenerator(object):
         self.omega_b = ob
         self.ns = ns
         self.mnu = mnu
-        self.nnu=neff
+        self.nnu = neff
+        
         if h0_resolution == 1:
             self.h0s = [h0]
         else:
             self.h0s = np.linspace(0.6, 0.8, self.h0_resolution)
+            
+        if neff_resolution == 1:
+            self.neffs = [neff]
+        else:
+            self.neffs = np.linspace(2.5, 4.5, self.neff_resolution)
 
         self.data = None
         self.logger.info(f"Creating CAMB data with {self.om_resolution} x {self.h0_resolution}")
@@ -112,10 +125,12 @@ class CambGenerator(object):
             self.logger.info("Loading existing CAMB data")
 
     @lru_cache(maxsize=512)
-    def get_data(self, om=0.31, h0=None):
+    def get_data(self, om=0.31, h0=None, neff=None): # gets the data at given cosmo, loads it if its already computed but calculates it if needed also. 
         """Returns the sound horizon, the linear power spectrum, and the halofit power spectrum at self.redshift"""
         if h0 is None:
             h0 = self.h0
+        if neff is None:
+            neff = self.nnu
         if self.data is None:
             # If we are not interested in varying om, we can run CAMB this once to avoid precomputing
             if self.singleval:
@@ -127,7 +142,7 @@ class CambGenerator(object):
             data = self.data
         else:
             omch2 = (om - self.omega_b) * h0 * h0
-            data = self._interpolate(omch2, h0)
+            data = self._interpolate(omch2, h0, neff)
         return {
             "r_s": data[0],
             "ks": self.ks,
@@ -136,8 +151,12 @@ class CambGenerator(object):
             "pk_nl_z": data[1 + 2 * self.k_num :],
         }
 
-    def _generate_data(self, savedata=True):
-        self.logger.info(f"Generating CAMB data with {self.om_resolution} x {self.h0_resolution}")
+    def _generate_data(self, savedata=True): # this function loops through the arrays on values for om, h0, neff etc. that we want to vary and saves the power spectra for each cosmology to an array - gets cosmo at z = 0 and 1 specified redshift 
+        if vary_neff:
+            self.logger.info(f"Generating CAMB data with {self.om_resolution} x {self.h0_resolution} x {self.neff_resolution}")
+        else:
+            self.logger.info(f"Generating CAMB data with {self.om_resolution} x {self.h0_resolution}")
+            
         os.makedirs(self.data_dir, exist_ok=True)
         import camb
 
@@ -148,42 +167,78 @@ class CambGenerator(object):
         self.logger.info("Configured CAMB power and dark energy")
 
         data = np.zeros((self.om_resolution, self.h0_resolution, 1 + 3 * self.k_num))
+        if self.vary_neff: 
+            data = np.zeros((self.om_resolution, self.h0_resolution, self.neff_resolution, 1 + 3 * self.k_num))
+            
         for i, omch2 in enumerate(self.omch2s):
             for j, h0 in enumerate(self.h0s):
-                self.logger.info("Generating %d:%d  %0.4f  %0.4f" % (i, j, omch2, h0))
-                pars.set_cosmology(
-                    H0=h0 * 100,
-                    omch2=omch2,
-                    mnu=self.mnu,
-                    ombh2=self.omega_b * h0 * h0,
-                    omk=0.0,
-                    tau=0.066,
-                    neutrino_hierarchy="degenerate",
-                    num_massive_neutrinos=3,
-                    nnu=self.nnu, 
-                )
-                pars.NonLinear = camb.model.NonLinear_none
-                results = camb.get_results(pars)
-                params = results.get_derived_params()
-                rdrag = params["rdrag"]
-                kh, z, pk_lin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
-                pars.NonLinear = camb.model.NonLinear_pk
-                results.calc_power_spectra(pars)
-                kh, z, pk_nonlin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
-                data[i, j, 0] = rdrag
-                data[i, j, 1 : 1 + self.k_num] = pk_lin[1, :]
-                data[i, j, 1 + self.k_num :] = pk_nonlin.flatten()
+                
+                if vary_neff: 
+                    for k, neff in enumerate(self.neffs):
+                        
+                        self.logger.info("Generating %d:%d:%d  %0.4f  %0.4f  %0.4f" % (i, j, k, omch2, h0, neff))
+                        pars.set_cosmology(
+                            H0=h0 * 100,
+                            omch2=omch2,
+                            mnu=self.mnu,
+                            ombh2=self.omega_b * h0 * h0,
+                            omk=0.0,
+                            tau=0.066,
+                            neutrino_hierarchy="degenerate",
+                            num_massive_neutrinos=3,
+                            nnu=neff, 
+                        )
+                        
+                        pars.NonLinear = camb.model.NonLinear_none
+                        results = camb.get_results(pars)
+                        params = results.get_derived_params()
+                        rdrag = params["rdrag"]
+                        kh, z, pk_lin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
+                        pars.NonLinear = camb.model.NonLinear_pk
+                        results.calc_power_spectra(pars)
+                        kh, z, pk_nonlin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
+                        data[i, j, k, 0] = rdrag
+                        data[i, j, k, 1 : 1 + self.k_num] = pk_lin[1, :]
+                        data[i, j, k, 1 + self.k_num :] = pk_nonlin.flatten()
+                        
+                else:
+                    
+                    self.logger.info("Generating %d:%d  %0.4f  %0.4f" % (i, j, omch2, h0))
+                    pars.set_cosmology(
+                        H0=h0 * 100,
+                        omch2=omch2,
+                        mnu=self.mnu,
+                        ombh2=self.omega_b * h0 * h0,
+                        omk=0.0,
+                        tau=0.066,
+                        neutrino_hierarchy="degenerate",
+                        num_massive_neutrinos=3,
+                    )
+
+                    pars.NonLinear = camb.model.NonLinear_none
+                    results = camb.get_results(pars)
+                    params = results.get_derived_params()
+                    rdrag = params["rdrag"]
+                    kh, z, pk_lin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
+                    pars.NonLinear = camb.model.NonLinear_pk
+                    results.calc_power_spectra(pars)
+                    kh, z, pk_nonlin = results.get_matter_power_spectrum(minkh=self.k_min, maxkh=self.k_max, npoints=self.k_num)
+                    data[i, j, 0] = rdrag
+                    data[i, j, 1 : 1 + self.k_num] = pk_lin[1, :]
+                    data[i, j, 1 + self.k_num :] = pk_nonlin.flatten()
+
+                    
         if savedata:
             self.logger.info(f"Saving to {self.filename}")
             np.save(self.filename, data)
         return data
 
-    def interpolate(self, om, h0, data=None):
+    def interpolate(self, om, h0, neff, data=None):
         omch2 = (om - self.omega_b) * h0 * h0
         return self._interpolate(omch2, h0, data=data)
 
-    def _interpolate(self, omch2, h0, data=None):
-        """Performs bilinear interpolation on the entire pk array"""
+    def _interpolate(self, omch2, h0, data=None): 
+        """Performs bilinear interpolation on the entire pk array - and now something more complificated for when Neff is varied.."""
         omch2_index = 1.0 * (self.om_resolution - 1) * (omch2 - self.omch2s[0]) / (self.omch2s[-1] - self.omch2s[0])
 
         # If omch2 == self.omch2s[-1] we can get an index out of bounds later due to rounding errors, so we
@@ -200,23 +255,92 @@ class CambGenerator(object):
             # manually set the edge cases
             if h0 == self.h0s[-1]:
                 h0_index = self.h0_resolution - 1 - 1.0e-6
+                
+        if not self.vary_neff: 
+            neff_index = 0
+        else: 
+            neff_index = 1.0 * (self.neff_resolution - 1) * (h0 - self.neffs[0]) / (self.neffs[-1] - self.neffs[0])
 
-        x = omch2_index - np.floor(omch2_index)
-        y = h0_index - np.floor(h0_index)
+            if meff == self.neffs[-1]: 
+                neff_index = self.neff_resolution - 1 - 1.0e-6
+            
+        # code to do interpolation before adding neff as an additional parameter requiring interpolation 
+        if not vary_neff:
+            x = omch2_index - np.floor(omch2_index) # diff from index just below omch2 value (say x - x1), 1 - x_x1 gives x2 - x etc. 
+            y = h0_index - np.floor(h0_index) # diff from index just below h0 value (say y - y1)
 
-        if data is None:
-            data = self.data
-        v1 = data[int(np.floor(omch2_index)), int(np.floor(h0_index))]  # 00
-        v2 = data[int(np.ceil(omch2_index)), int(np.floor(h0_index))]  # 01
+            if data is None:
+                data = self.data
+            v1 = data[int(np.floor(omch2_index)), int(np.floor(h0_index))]  # 00 - f(x,y,z) at x1, y1
+            v2 = data[int(np.ceil(omch2_index)), int(np.floor(h0_index))]  # 01 - f(x,y,z) at x2, y1 
 
-        if self.h0_resolution == 1:
-            final = v1 * (1 - x) * (1 - y) + v2 * x * (1 - y)
+            if self.h0_resolution == 1:
+                final = v1 * (1 - x) * (1 - y) + v2 * x * (1 - y)
+            else:
+                v3 = data[int(np.floor(omch2_index)), int(np.ceil(h0_index))]  # 10 - f(x,y,z) at x1, y2
+                v4 = data[int(np.ceil(omch2_index)), int(np.ceil(h0_index))]  # 11 - f(x,y,z) at x2, y2 
+                final = v1 * (1 - x) * (1 - y) + v2 * x * (1 - y) + v3 * y * (1 - x) + v4 * x * y 
+            return final
+
         else:
-            v3 = data[int(np.floor(omch2_index)), int(np.ceil(h0_index))]  # 10
-            v4 = data[int(np.ceil(omch2_index)), int(np.ceil(h0_index))]  # 11
-            final = v1 * (1 - x) * (1 - y) + v2 * x * (1 - y) + v3 * y * (1 - x) + v4 * x * y
-        return final
+            x_min_x1 = omch2_index - np.floor(omch2_index) # diff from index just below omch2 value (say x - x1), 1 - x_x1 gives x2 - x etc. 
+            y_min_y1 = h0_index - np.floor(h0_index) # diff from index just below h0 value (say y - y1)
+            z_min_z1 = neff_index - np.floor(neff_index) # diff from index just below neff value (say z - z1) 
 
+            x2_min_x = 1 - x_min_x1
+            y2_min_y = 1 - y_min_y1
+            z2_min_z = 1 - z_min_z1
+        
+            f_111 = data[int(np.floor(omch2_index)), int(np.floor(h0_index)), int(np.floor(neff_index))]
+            f_222 = data[int(np.ceil(omch2_index)), int(np.ceil(h0_index)), int(np.ceil(neff_index))]
+            
+            f_121 = data[int(np.floor(omch2_index)), int(np.ceil(h0_index)), int(np.floor(neff_index))]
+            f_112 = data[int(np.floor(omch2_index)), int(np.floor(h0_index)), int(np.ceil(neff_index))]
+            f_211 = data[int(np.ceil(omch2_index)), int(np.floor(h0_index)), int(np.floor(neff_index))]
+            
+            f_221 = data[int(np.ceil(omch2_index)), int(np.ceil(h0_index)), int(np.floor(neff_index))]
+            f_122 = data[int(np.floor(omch2_index)), int(np.ceil(h0_index)), int(np.ceil(neff_index))]
+            f_212 = data[int(np.ceil(omch2_index)), int(np.floor(h0_index)), int(np.ceil(neff_index))]
+            
+           
+            if self.h0_resolution == 1 and self.om_resolution == 1: # only neff varies 
+                
+                final = f_111 * z2_min_z + f_112 * z_min_z1 
+                return final 
+            
+            elif self.h0_resolution == 1 and self.om_resolution > 1: # neff and om varies only 
+                
+                f_11z = f_111 * z2_min_z + f_112 * z_min_z1  # accounts for varying Neff 
+                f_12z = f_121 * z2_min_z + f_122 * z_min_z1
+                
+                f_1yz = y2_min_y * f11z + y_min_y1 * f_12z # accounts for varying Om 
+                
+                final = f_1yz 
+                return final 
+            
+            elif self.h0_resolution > 1 and self.om_resolution == 1: # h0 and neff varies only 
+        
+                f_11z = f111 * z2_min_z + f112 * z_min_z1  # accounts for varying Neff 
+                f_12z = f121 * z2_min_z + f122 * z_min_z1
+                
+                f_x1z = x2_min_x * f_11z + x_min_x1 * f_12z # accounts for varying h0
+                
+                final = f_x1z 
+                return final 
+            
+            else: # vary all 3 parameters 
+                
+                f_11z = f111 * z2_min_z + f112 * z_min_z1  # accounts for varying Neff 
+                f_12z = f121 * z2_min_z + f122 * z_min_z1
+                
+                f_1yz = y2_min_y * f_11z + y_min_y1 * f_12z # accounts for varying Om
+                f_2yz = y2_min_y * f_21z + y_min_y1 * f_22z 
+                
+                f_xyz = x2_min_x * f_1yz + x_min_x1 * f_2yz # accounts for varying h0 
+                
+                final = f_xyz
+                return final 
+            
 
 def test_rand_h0const():
     g = CambGenerator()
