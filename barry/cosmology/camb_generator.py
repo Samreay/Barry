@@ -11,7 +11,7 @@ import logging
 
 @lru_cache(maxsize=32)
 def getCambGenerator(
-    redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21
+    redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21, neff=3.045,
 ):
     return CambGenerator(
         redshift=redshift,
@@ -22,6 +22,7 @@ def getCambGenerator(
         ns=ns,
         mnu=mnu,
         recon_smoothing_scale=recon_smoothing_scale,
+        neff=neff,
     )
 
 
@@ -60,7 +61,7 @@ class CambGenerator(object):
     """
 
     def __init__(
-        self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21
+        self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21, neff=3.044,
     ):
         """
         Precomputes CAMB for efficiency. Access ks via self.ks, and use get_data for an array
@@ -89,6 +90,7 @@ class CambGenerator(object):
         self.omega_b = ob
         self.ns = ns
         self.mnu = mnu
+        self.nnu=neff
         if h0_resolution == 1:
             self.h0s = [h0]
         else:
@@ -157,7 +159,8 @@ class CambGenerator(object):
                     omk=0.0,
                     tau=0.066,
                     neutrino_hierarchy="degenerate",
-                    num_massive_neutrinos=1,
+                    num_massive_neutrinos=3,
+                    nnu=self.nnu, 
                 )
                 pars.NonLinear = camb.model.NonLinear_none
                 results = camb.get_results(pars)
@@ -245,4 +248,5 @@ if __name__ == "__main__":
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()
+    #plt.savefig('test.png')
     plt.show()
