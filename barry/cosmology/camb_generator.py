@@ -12,8 +12,8 @@ import logging
 @lru_cache(maxsize=32)
 def getCambGenerator(
     redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21, neff=3.045,
-    neff_resolution=1, vary_neff=False,
-):
+    neff_resolution=1, vary_neff=False,):
+    
     return CambGenerator(
         redshift=redshift,
         om_resolution=om_resolution,
@@ -25,11 +25,11 @@ def getCambGenerator(
         recon_smoothing_scale=recon_smoothing_scale,
         vary_neff=vary_neff, 
         neff=neff,
-        neff_resolution=1,
+        neff_resolution=neff_resolution,
     )
 
 
-def Omega_m_z(omega_m, z):s
+def Omega_m_z(omega_m, z):
     """
     Computes the matter density at redshift based on the present day value.
 
@@ -77,15 +77,14 @@ class CambGenerator(object):
         self.neff_resolution=neff_resolution
         self.h0 = h0
         self.redshift = redshift
-        self.singleval = True if om_resolution == 1 and h0_resolution == 1 and (neff_resolution == 1 or vary_neff) else False
-
+        checkfor_singleval_neff = (not vary_neff or h0_resolution > 1)
+        self.singleval = True if om_resolution == 1 and h0_resolution == 1 and checkfor_singleval_neff else False
         self.data_dir = os.path.normpath(os.path.dirname(inspect.stack()[0][1]) + "/../generated/")
         hh = int(h0 * 10000)
         self.filename_unique = f"{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}_{int(mnu * 10000)}"
-        if neff_vary: 
+        if vary_neff: 
             self.filename_unique = f"{int(self.redshift * 1000)}_{self.om_resolution}_{self.h0_resolution}_{self.neff_resolution}_{hh}_{int(ob * 10000)}_{int(ns * 1000)}_{int(mnu * 10000)}"
         self.filename = self.data_dir + f"/camb_{self.filename_unique}.npy"
-
         self.k_min = 1e-5
         self.k_max = 100
         self.k_num = 2000
@@ -107,10 +106,13 @@ class CambGenerator(object):
         if neff_resolution == 1:
             self.neffs = [neff]
         else:
-            self.neffs = np.linspace(2.5, 4.5, self.neff_resolution)
+            self.neffs = np.linspace(1., 5., self.neff_resolution)
 
         self.data = None
-        self.logger.info(f"Creating CAMB data with {self.om_resolution} x {self.h0_resolution}")
+        if not vary_neff:
+            self.logger.info(f"Creating CAMB data with {self.om_resolution} x {self.h0_resolution}")
+        else:
+            self.logger.info(f"Creating CAMB data with {self.om_resolution} x {self.h0_resolution} x {self.neff_resolution}")
 
     def load_data(self, can_generate=False):
         if not os.path.exists(self.filename):
@@ -143,6 +145,7 @@ class CambGenerator(object):
         else:
             omch2 = (om - self.omega_b) * h0 * h0
             data = self._interpolate(omch2, h0, neff)
+            #print(neff)
         return {
             "r_s": data[0],
             "ks": self.ks,
@@ -152,7 +155,7 @@ class CambGenerator(object):
         }
 
     def _generate_data(self, savedata=True): # this function loops through the arrays on values for om, h0, neff etc. that we want to vary and saves the power spectra for each cosmology to an array - gets cosmo at z = 0 and 1 specified redshift 
-        if vary_neff:
+        if self.vary_neff:
             self.logger.info(f"Generating CAMB data with {self.om_resolution} x {self.h0_resolution} x {self.neff_resolution}")
         else:
             self.logger.info(f"Generating CAMB data with {self.om_resolution} x {self.h0_resolution}")
@@ -173,7 +176,7 @@ class CambGenerator(object):
         for i, omch2 in enumerate(self.omch2s):
             for j, h0 in enumerate(self.h0s):
                 
-                if vary_neff: 
+                if self.vary_neff: 
                     for k, neff in enumerate(self.neffs):
                         
                         self.logger.info("Generating %d:%d:%d  %0.4f  %0.4f  %0.4f" % (i, j, k, omch2, h0, neff))
@@ -235,10 +238,10 @@ class CambGenerator(object):
 
     def interpolate(self, om, h0, neff, data=None):
         omch2 = (om - self.omega_b) * h0 * h0
-        return self._interpolate(omch2, h0, data=data)
+        return self._interpolate(omch2, h0, neff, data=data)
 
-    def _interpolate(self, omch2, h0, data=None): 
-        """Performs bilinear interpolation on the entire pk array - and now something more complificated for when Neff is varied.."""
+    def _interpolate(self, omch2, h0, neff, data=None): 
+        """Performs bilinear interpolation on the entire pk array - and extension of this to more variables if Neff is varied."""
         omch2_index = 1.0 * (self.om_resolution - 1) * (omch2 - self.omch2s[0]) / (self.omch2s[-1] - self.omch2s[0])
 
         # If omch2 == self.omch2s[-1] we can get an index out of bounds later due to rounding errors, so we
@@ -259,18 +262,19 @@ class CambGenerator(object):
         if not self.vary_neff: 
             neff_index = 0
         else: 
-            neff_index = 1.0 * (self.neff_resolution - 1) * (h0 - self.neffs[0]) / (self.neffs[-1] - self.neffs[0])
+            neff_index = 1.0 * (self.neff_resolution - 1) * (neff - self.neffs[0]) / (self.neffs[-1] - self.neffs[0])
 
-            if meff == self.neffs[-1]: 
+            if neff == self.neffs[-1]: 
                 neff_index = self.neff_resolution - 1 - 1.0e-6
+                
+        if data is None:
+            data = self.data
             
-        # code to do interpolation before adding neff as an additional parameter requiring interpolation 
-        if not vary_neff:
+        # code to do interpolation... ...before adding neff as an additional parameter which requiring interpolation 
+        if not self.vary_neff:
             x = omch2_index - np.floor(omch2_index) # diff from index just below omch2 value (say x - x1), 1 - x_x1 gives x2 - x etc. 
             y = h0_index - np.floor(h0_index) # diff from index just below h0 value (say y - y1)
 
-            if data is None:
-                data = self.data
             v1 = data[int(np.floor(omch2_index)), int(np.floor(h0_index))]  # 00 - f(x,y,z) at x1, y1
             v2 = data[int(np.ceil(omch2_index)), int(np.floor(h0_index))]  # 01 - f(x,y,z) at x2, y1 
 
@@ -305,38 +309,41 @@ class CambGenerator(object):
            
             if self.h0_resolution == 1 and self.om_resolution == 1: # only neff varies 
                 
-                final = f_111 * z2_min_z + f_112 * z_min_z1 
+                final = f_111 * z2_min_z + f_112 * z_min_z1  # get weighted average of function given value of Neff desired 
                 return final 
             
             elif self.h0_resolution == 1 and self.om_resolution > 1: # neff and om varies only 
                 
-                f_11z = f_111 * z2_min_z + f_112 * z_min_z1  # accounts for varying Neff 
-                f_12z = f_121 * z2_min_z + f_122 * z_min_z1
+                f_11z = f_111 * z2_min_z + f_112 * z_min_z1  # get weighted average of function given value of Neff desired over all Om
+                f_21z = f_211 * z2_min_z + f_212 * z_min_z1
                 
-                f_1yz = y2_min_y * f11z + y_min_y1 * f_12z # accounts for varying Om 
-                
-                final = f_1yz 
-                return final 
-            
-            elif self.h0_resolution > 1 and self.om_resolution == 1: # h0 and neff varies only 
-        
-                f_11z = f111 * z2_min_z + f112 * z_min_z1  # accounts for varying Neff 
-                f_12z = f121 * z2_min_z + f122 * z_min_z1
-                
-                f_x1z = x2_min_x * f_11z + x_min_x1 * f_12z # accounts for varying h0
+                f_x1z = x2_min_x * f_11z + x_min_x1 * f_21z # get weighted average of function given value of Om desired
                 
                 final = f_x1z 
                 return final 
             
+            elif self.h0_resolution > 1 and self.om_resolution == 1: # h0 and neff varies only 
+        
+                f_11z = f_111 * z2_min_z + f_112 * z_min_z1  # get weighted average of function given value of Neff desired over all h0
+                f_12z = f_121 * z2_min_z + f_122 * z_min_z1
+                
+                f_1yz = y2_min_y * f_11z + y_min_y1 * f_12z # get weighted average of function given value of h0 desired
+                
+                final = f_1yz 
+                return final 
+            
             else: # vary all 3 parameters 
                 
-                f_11z = f111 * z2_min_z + f112 * z_min_z1  # accounts for varying Neff 
-                f_12z = f121 * z2_min_z + f122 * z_min_z1
+                f_11z = f_111 * z2_min_z + f_112 * z_min_z1 # get weighted average of function given value of Neff desired at om1, h01
+                f_12z = f_121 * z2_min_z + f_122 * z_min_z1 # get weighted average of function given value of Neff desired at om1, h02
                 
-                f_1yz = y2_min_y * f_11z + y_min_y1 * f_12z # accounts for varying Om
-                f_2yz = y2_min_y * f_21z + y_min_y1 * f_22z 
+                f_21z = f_211 * z2_min_z + f_212 * z_min_z1 # get weighted average of function given value of Neff desired at om2, h01
+                f_22z = f_221 * z2_min_z + f_222 * z_min_z1 # get weighted average of function given value of Neff desired at om2, h02
                 
-                f_xyz = x2_min_x * f_1yz + x_min_x1 * f_2yz # accounts for varying h0 
+                f_1yz = y2_min_y * f_11z + y_min_y1 * f_12z # get weighted average of function given value of h0 desired at om1
+                f_2yz = y2_min_y * f_21z + y_min_y1 * f_22z # get weighted average of function given value of h0 desired at om2
+                
+                f_xyz = x2_min_x * f_1yz + x_min_x1 * f_2yz # get weighted average of function given value of Om desired 
                 
                 final = f_xyz
                 return final 
@@ -360,17 +367,70 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
-    c = getCambGenerator()
+#     c = getCambGenerator(redshift=0.1, neff=3.045, h0_resolution=3, om_resolution=5)#, vary_neff=True, neff_resolution=3)
+    
+#     c._generate_data()
 
-    n = 10000
-    print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
+#     n = 10000
+#     print("Takes on average, %.1f microseconds" % (timeit.timeit(test_rand_h0const(), number=n) * 1e6 / n))
 
-    plt.plot(c.ks, c.get_data(0.2)["pk_lin"], color="b", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.2$")
-    plt.plot(c.ks, c.get_data(0.3)["pk_lin"], color="r", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.3$")
-    plt.plot(c.ks, c.get_data(0.2)["pk_nl_z"], color="b", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2$")
-    plt.plot(c.ks, c.get_data(0.3)["pk_nl_z"], color="r", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3$")
+#     plt.plot(c.ks, c.get_data(0.2, 0.75)["pk_lin"], color="b", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.2\,h_0=0.75$")
+#     plt.plot(c.ks, c.get_data(0.3, 0.75)["pk_lin"], color="r", linestyle="-", label=r"$\mathrm{Linear}\,\Omega_{m}=0.3\,h_0=0.75$")
+#     plt.plot(c.ks, c.get_data(0.2, 0.75)["pk_nl_z"], color="b", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2\,h_0=0.75$")
+#     plt.plot(c.ks, c.get_data(0.3, 0.75)["pk_nl_z"], color="r", linestyle="--", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3\,h_0=0.75$")
+    
+#     plt.plot(c.ks, c.get_data(0.2, 0.70)["pk_lin"], color="b", linestyle="-.", label=r"$\mathrm{Linear}\,\Omega_{m}=0.2\,h_0=0.7$")
+#     plt.plot(c.ks, c.get_data(0.3, 0.70)["pk_lin"], color="r", linestyle="-.", label=r"$\mathrm{Linear}\,\Omega_{m}=0.3\,h_0=0.7$")
+#     plt.plot(c.ks, c.get_data(0.2, 0.70)["pk_nl_z"], color="b", linestyle=":", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.2\,h_0=0.7$")
+#     plt.plot(c.ks, c.get_data(0.3, 0.70)["pk_nl_z"], color="r", linestyle=":", label=r"$\mathrm{Halofit}\,\Omega_{m}=0.3\,h_0=0.7$")
+
+#     plt.xscale("log")
+#     plt.yscale("log")
+#     plt.legend()
+#     plt.savefig('test.png')
+#     plt.show()
+    
+    
+    c2 = getCambGenerator(redshift=0.1, neff=3.044, h0_resolution=3, om_resolution=3, vary_neff=True, neff_resolution=10)
+    #c2._generate_data()
+    
+    relpower = 1#c2.get_data(neff=3.0)["pk_lin"]
+    plt.plot(c2.ks, c2.get_data(neff=2., h0=0.6, om=0.3)["pk_lin"]/relpower, color="b", linestyle="-", 
+             label=r"$\mathrm{Linear}\,h_0=0.6\,\Omega_m=0.3\,$Neff=2.")
+    plt.plot(c2.ks, c2.get_data(neff=3.5, h0=0.6, om=0.3)["pk_lin"]/relpower, color="g", linestyle=":", 
+             label=r"$\mathrm{Linear}\,h_0=0.6\,\Omega_m=0.3\,$Neff=3.5")
+    plt.plot(c2.ks, c2.get_data(neff=2., h0=0.7, om=0.3)["pk_lin"]/relpower, color="r", linestyle="-.", 
+             label=r"$\mathrm{Linear}\,h_0=0.7\,\Omega_m=0.3\,$Neff=2")
+    plt.plot(c2.ks, c2.get_data(neff=3.5, h0=0.7, om=0.3)["pk_lin"]/relpower, color="y", linestyle="--", 
+             label=r"$\mathrm{Linear}\,h_0=0.7\,\Omega_m=0.3\,$Neff=3.5")
+    
+    plt.plot(c2.ks, c2.get_data(neff=2., h0=0.6, om=0.2)["pk_lin"]/relpower, color="b", linestyle="-", 
+             label=r"$\mathrm{Linear}\,h_0=0.6\,\Omega_m=0.2\,$Neff=2.")
+    plt.plot(c2.ks, c2.get_data(neff=3.5, h0=0.6, om=0.2)["pk_lin"]/relpower, color="g", linestyle=":", 
+             label=r"$\mathrm{Linear}\,h_0=0.6\,\Omega_m=0.2\,$Neff=3.5")
+    plt.plot(c2.ks, c2.get_data(neff=2., h0=0.7, om=0.2)["pk_lin"]/relpower, color="r", linestyle="-.", 
+             label=r"$\mathrm{Linear}\,h_0=0.7\,\Omega_m=0.2\,$Neff=2")
+    plt.plot(c2.ks, c2.get_data(neff=3.5, h0=0.7, om=0.2)["pk_lin"]/relpower, color="y", linestyle="--", 
+             label=r"$\mathrm{Linear}\,h_0=0.7\,\Omega_m=0.2\,$Neff=3.5")
+    
+    #plt.plot(c2.ks, c2.get_data(neff=4.0)["pk_lin"]/relpower, color="k", linestyle="--", label=r"$\mathrm{Linear}\,$Neff=4")
+    
+#     plt.plot(c2.ks, c2.get_data(neff=2.5)["pk_nl_z"]/relpower, color="b", linestyle="--", label=r"$\mathrm{Halofit}\,$Neff=2.5")
+#     plt.plot(c2.ks, c2.get_data(neff=3.5)["pk_nl_z"]/relpower, color="r", linestyle="--", label=r"$\mathrm{Halofit}\,$Neff=3.5")
+    
     plt.xscale("log")
     plt.yscale("log")
     plt.legend()
-    #plt.savefig('test.png')
+    plt.savefig('test2.png')
     plt.show()
+    
+    
+#     c1 = getCambGenerator(neff=3.045, h0_resolution=3, om_resolution=1)
+#     c1._generate_data()
+
+#     plt.plot(c1.ks, c1.get_data()["pk_lin"], color="b", linestyle="-")
+#     plt.xscale("log")
+#     plt.yscale("log")
+#     plt.legend()
+#     plt.savefig('test1.png')
+#     plt.show()
