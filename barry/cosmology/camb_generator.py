@@ -96,7 +96,7 @@ class CambGenerator(object):
         self.omega_b = ob
         self.ns = ns
         self.mnu = mnu
-        self.nnu = neff
+        self.neff = neff
         
         if h0_resolution == 1:
             self.h0s = [h0]
@@ -132,7 +132,7 @@ class CambGenerator(object):
         if h0 is None:
             h0 = self.h0
         if neff is None:
-            neff = self.nnu
+            neff = self.neff
         if self.data is None:
             # If we are not interested in varying om, we can run CAMB this once to avoid precomputing
             if self.singleval:
