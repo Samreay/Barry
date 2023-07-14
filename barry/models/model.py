@@ -12,7 +12,7 @@ from scipy.optimize import basinhopping, differential_evolution
 from enum import Enum, unique
 from dataclasses import dataclass
 from functools import lru_cache
-
+import sys
 
 from barry.cosmology.camb_generator import Omega_m_z, getCambGenerator
 
@@ -126,6 +126,19 @@ class Model(ABC):
             mnu = c.get("mnu", 0.0)
             c["mnu"] = mnu
             self.set_default("om", c["om"])
+            
+            neff_resolution = 1 
+            vary_neff = False 
+            Neff = 3.044 
+            
+            if "Neff" in c:
+                Neff = c["Neff"]
+                
+            if not ("Neff" in self.fix_params):
+                vary_neff = True 
+                neff_resolution = 50
+                self.logger.info(f"Neff varying and resolution set to {neff_resolution}")
+               
             if "om" in self.fix_params:
                 self.camb = getCambGenerator(
                     om_resolution=1,
@@ -135,12 +148,16 @@ class Model(ABC):
                     ns=c["ns"],
                     mnu=c["mnu"],
                     recon_smoothing_scale=c["reconsmoothscale"],
+                    neff_resolution=neff_resolution,
+                    vary_neff=vary_neff,
+                    neff=Neff,
                 )
                 self.camb.omch2s = [(self.get_default("om") - c["ob"]) * c["h0"] ** 2 - c["mnu"] / 93.14]
 
             else:
                 self.camb = getCambGenerator(
-                    h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], mnu=c["mnu"], recon_smoothing_scale=c["reconsmoothscale"]
+                    h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], mnu=c["mnu"], recon_smoothing_scale=c["reconsmoothscale"],
+                    neff_resolution=neff_resolution, vary_neff=vary_neff, neff=Neff,
                 )
             self.pregen_path = os.path.abspath(os.path.join(self.data_location, self.get_unique_cosmo_name()))
             self.cosmology = c
@@ -696,6 +713,9 @@ class Model(ABC):
         print(f"Model optimisation with value {minv:0.3f} has parameters {dict(p)}")
         if not self.isotropic:
             print(f"\\alpha_{{||}}, \\alpha_{{\\perp}} = ", self.get_alphas(p["alpha"], p["epsilon"]))
+            
+        if "Neff" in p:
+            print("Neff = %.4f" % p["Neff"])
 
         if plot:
             print("Plotting model and data")

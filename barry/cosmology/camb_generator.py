@@ -11,7 +11,7 @@ import logging
 
 @lru_cache(maxsize=32)
 def getCambGenerator(
-    redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21, neff=3.045,
+    redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21, neff=3.044,
     neff_resolution=1, vary_neff=False,):
     
     return CambGenerator(
@@ -77,7 +77,7 @@ class CambGenerator(object):
         self.neff_resolution=neff_resolution
         self.h0 = h0
         self.redshift = redshift
-        checkfor_singleval_neff = (not vary_neff or h0_resolution > 1)
+        checkfor_singleval_neff = (not vary_neff or neff_resolution == 1)
         self.singleval = True if om_resolution == 1 and h0_resolution == 1 and checkfor_singleval_neff else False
         self.data_dir = os.path.normpath(os.path.dirname(inspect.stack()[0][1]) + "/../generated/")
         hh = int(h0 * 10000)
@@ -106,7 +106,7 @@ class CambGenerator(object):
         if neff_resolution == 1:
             self.neffs = [neff]
         else:
-            self.neffs = np.linspace(1., 5., self.neff_resolution)
+            self.neffs = np.linspace(0., 5., self.neff_resolution)
 
         self.data = None
         if not vary_neff:
@@ -116,6 +116,7 @@ class CambGenerator(object):
 
     def load_data(self, can_generate=False):
         if not os.path.exists(self.filename):
+            print(self.filename)
             if not can_generate:
                 msg = "Data does not exist and this isn't the time to generate it!"
                 self.logger.error(msg)
@@ -145,7 +146,6 @@ class CambGenerator(object):
         else:
             omch2 = (om - self.omega_b) * h0 * h0
             data = self._interpolate(omch2, h0, neff)
-            #print(neff)
         return {
             "r_s": data[0],
             "ks": self.ks,
@@ -367,7 +367,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="[%(levelname)7s |%(funcName)15s]   %(message)s")
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
-#     c = getCambGenerator(redshift=0.1, neff=3.045, h0_resolution=3, om_resolution=5)#, vary_neff=True, neff_resolution=3)
+#     c = getCambGenerator(redshift=0.1, neff=3.044, h0_resolution=3, om_resolution=5)#, vary_neff=True, neff_resolution=3)
     
 #     c._generate_data()
 
@@ -393,6 +393,8 @@ if __name__ == "__main__":
     
     c2 = getCambGenerator(redshift=0.1, neff=3.044, h0_resolution=3, om_resolution=3, vary_neff=True, neff_resolution=10)
     #c2._generate_data()
+    
+    #exit() 
     
     relpower = 1#c2.get_data(neff=3.0)["pk_lin"]
     plt.plot(c2.ks, c2.get_data(neff=2., h0=0.6, om=0.3)["pk_lin"]/relpower, color="b", linestyle="-", 

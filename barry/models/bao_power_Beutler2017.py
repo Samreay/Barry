@@ -1,3 +1,5 @@
+import sys
+sys.path.append("../../")
 import numpy as np
 from barry.models.bao_power import PowerSpectrumFit
 from scipy.interpolate import splev, splrep
@@ -27,6 +29,8 @@ class PowerBeutler2017(PowerSpectrumFit):
         n_data=1,
         data_share_bias=False,
         data_share_poly=False,
+        vary_neff=False,
+        vary_phase_shift_neff=False,
     ):
 
         self.dilate_smooth = dilate_smooth
@@ -46,7 +50,17 @@ class PowerBeutler2017(PowerSpectrumFit):
             n_data=n_data,
             data_share_bias=data_share_bias,
             data_share_poly=data_share_poly,
+            vary_neff=vary_neff,
+            vary_phase_shift_neff=vary_phase_shift_neff,
         )
+        
+        fix_params = [param for param in fix_params]
+        if not vary_neff:
+            fix_params.append("Neff")
+        if not vary_phase_shift_neff:
+            fix_params.append("phase_shift")
+            
+        fix_params = tuple(fix_params) 
 
         self.set_marg(fix_params, poly_poles, n_poly, do_bias=True)
 
@@ -64,7 +78,7 @@ class PowerBeutler2017(PowerSpectrumFit):
                 for ip in range(self.n_poly):
                     self.add_param(f"a{{{pole}}}_{{{ip+1}}}_{{{i+1}}}", f"$a_{{{pole},{ip+1},{i+1}}}$", -20000.0, 20000.0, 0)
 
-    def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None, nopoly=False):
+    def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None, nopoly=False, vary_neff=False):
         """Computes the power spectrum model using the Beutler et. al., 2017 method
 
         Parameters
@@ -93,7 +107,10 @@ class PowerBeutler2017(PowerSpectrumFit):
         # Get the basic power spectrum components
         if self.kvals is None or self.pksmooth is None or self.pkratio is None:
             ks = self.camb.ks
-            pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
+            if vary_neff:
+                pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"], p["Neff"])
+            else: 
+                pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
         else:
             ks = self.kvals
             pk_smooth_lin, pk_ratio = self.pksmooth, self.pkratio
@@ -187,7 +204,7 @@ class PowerBeutler2017(PowerSpectrumFit):
 if __name__ == "__main__":
     import sys
 
-    sys.path.append("../..")
+    sys.path.append("../../")
     from barry.datasets.dataset_power_spectrum import (
         PowerSpectrum_DESI_KP4,
     )
@@ -204,18 +221,29 @@ if __name__ == "__main__":
         realisation=None,
         num_mocks=1000,
         reduce_cov_factor=1,
+        datafile="desi_kp4_abacus_cubicbox_pk_elg.pkl",
+        data_location="/global/u1/a/abbew25/barryrepo/Barry/cosmodesi_KP4ELG_examplecode_make_picklefiles",
     )
     data = dataset.get_data()
 
     model = PowerBeutler2017(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
-        marg="full",
+        #marg="full",
         fix_params=["om"],
         poly_poles=dataset.fit_poles,
         correction=Correction.NONE,
         n_poly=5,
+        vary_neff=True,
     )
+    
+    # from barry.cosmology.camb_generator import Omega_m_z, getCambGenerator
+    # cc = getCambGenerator(redshift=1.1, neff=3.044, vary_neff=True, neff_resolution=50, 
+    # h0 = 0.6736, ns=0.9649, mnu=0.05999991930682943, ob=0.049301692328524445, om_resolution=1)
+    #cc._generate_data()
+    
+    #'om': 0.3151917236644108,
+    
     model.set_default("sigma_nl_par", 5.4, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model.set_default("sigma_nl_perp", 1.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
@@ -224,4 +252,5 @@ if __name__ == "__main__":
     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
     model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
-    model.sanity_check(dataset)
+    
+    model.sanity_check(dataset,figname='testsanitycheckplot.png')
