@@ -150,14 +150,14 @@ class Model(ABC):
                     recon_smoothing_scale=c["reconsmoothscale"],
                     neff_resolution=neff_resolution,
                     vary_neff=vary_neff,
-                    neff=Neff,
+                    Neff=Neff,
                 )
                 self.camb.omch2s = [(self.get_default("om") - c["ob"]) * c["h0"] ** 2 - c["mnu"] / 93.14]
 
             else:
                 self.camb = getCambGenerator(
                     h0=c["h0"], ob=c["ob"], redshift=c["z"], ns=c["ns"], mnu=c["mnu"], recon_smoothing_scale=c["reconsmoothscale"],
-                    neff_resolution=neff_resolution, vary_neff=vary_neff, neff=Neff,
+                    neff_resolution=neff_resolution, vary_neff=vary_neff, Neff=Neff,
                 )
             self.pregen_path = os.path.abspath(os.path.join(self.data_location, self.get_unique_cosmo_name()))
             self.cosmology = c
@@ -715,7 +715,12 @@ class Model(ABC):
             print(f"\\alpha_{{||}}, \\alpha_{{\\perp}} = ", self.get_alphas(p["alpha"], p["epsilon"]))
             
         if "Neff" in p:
-            print("Neff = %.4f" % p["Neff"])
+            if "Neff" not in fix_params:
+                print("Neff = %.4f" % p["Neff"])
+        
+        if "om" in p:
+            if "om" not in fix_params:
+                print("om = %.4f" % p["om"])
 
         if plot:
             print("Plotting model and data")

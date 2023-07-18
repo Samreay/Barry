@@ -7,11 +7,11 @@ import logging
 
 
 # TODO: Add options for mnu, h0 default, omega_b, etc
-
+# TODO: add in regulargridinterpolator function for interpolating cosmologies 
 
 @lru_cache(maxsize=32)
 def getCambGenerator(
-    redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21, neff=3.044,
+    redshift=0.51, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21, Neff=3.044,
     neff_resolution=1, vary_neff=False,):
     
     return CambGenerator(
@@ -24,7 +24,7 @@ def getCambGenerator(
         mnu=mnu,
         recon_smoothing_scale=recon_smoothing_scale,
         vary_neff=vary_neff, 
-        neff=neff,
+        Neff=Neff,
         neff_resolution=neff_resolution,
     )
 
@@ -64,7 +64,7 @@ class CambGenerator(object):
     """
 
     def __init__( 
-        self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21, vary_neff=False, neff=3.044, neff_resolution=1,
+        self, redshift=0.61, om_resolution=101, h0_resolution=1, h0=0.676, ob=0.04814, ns=0.97, mnu=0.0, recon_smoothing_scale=21.21, vary_neff=False, Neff=3.044, neff_resolution=1,
     ):
         """
         Precomputes CAMB for efficiency. Access ks via self.ks, and use get_data for an array
@@ -96,7 +96,7 @@ class CambGenerator(object):
         self.omega_b = ob
         self.ns = ns
         self.mnu = mnu
-        self.neff = neff
+        self.Neff = Neff
         
         if h0_resolution == 1:
             self.h0s = [h0]
@@ -104,7 +104,7 @@ class CambGenerator(object):
             self.h0s = np.linspace(0.6, 0.8, self.h0_resolution)
             
         if neff_resolution == 1:
-            self.neffs = [neff]
+            self.neffs = [Neff]
         else:
             self.neffs = np.linspace(0., 5., self.neff_resolution)
 
@@ -128,12 +128,12 @@ class CambGenerator(object):
             self.logger.info("Loading existing CAMB data")
 
     @lru_cache(maxsize=512)
-    def get_data(self, om=0.31, h0=None, neff=None): # gets the data at given cosmo, loads it if its already computed but calculates it if needed also. 
+    def get_data(self, om=0.31, h0=None, Neff=None): # gets the data at given cosmo, loads it if its already computed but calculates it if needed also. 
         """Returns the sound horizon, the linear power spectrum, and the halofit power spectrum at self.redshift"""
         if h0 is None:
             h0 = self.h0
-        if neff is None:
-            neff = self.neff
+        if Neff is None:
+            Neff = self.Neff
         if self.data is None:
             # If we are not interested in varying om, we can run CAMB this once to avoid precomputing
             if self.singleval:
@@ -145,7 +145,7 @@ class CambGenerator(object):
             data = self.data
         else:
             omch2 = (om - self.omega_b) * h0 * h0
-            data = self._interpolate(omch2, h0, neff)
+            data = self._interpolate(omch2, h0, Neff)
         return {
             "r_s": data[0],
             "ks": self.ks,
@@ -236,19 +236,26 @@ class CambGenerator(object):
             np.save(self.filename, data)
         return data
 
-    def interpolate(self, om, h0, neff, data=None):
+    def interpolate(self, om, h0, Neff, data=None):
         omch2 = (om - self.omega_b) * h0 * h0
-        return self._interpolate(omch2, h0, neff, data=data)
+        return self._interpolate(omch2, h0, Neff, data=data)
 
-    def _interpolate(self, omch2, h0, neff, data=None): 
+    def _interpolate(self, omch2, h0, Neff, data=None): 
         """Performs bilinear interpolation on the entire pk array - and extension of this to more variables if Neff is varied."""
-        omch2_index = 1.0 * (self.om_resolution - 1) * (omch2 - self.omch2s[0]) / (self.omch2s[-1] - self.omch2s[0])
+        
+        
+        if self.om_resolution == 1:
+            omch2_index = 0.0 
+        else: 
+            omch2_index = 1.0 * (self.om_resolution - 1) * (omch2 - self.omch2s[0]) / (self.omch2s[-1] - self.omch2s[0])
 
-        # If omch2 == self.omch2s[-1] we can get an index out of bounds later due to rounding errors, so we
-        # manually set the edge cases
-        if omch2 >= self.omch2s[-1]:
-            omch2_index = self.om_resolution - 1 - 1.0e-6
+            # If omch2 == self.omch2s[-1] we can get an index out of bounds later due to rounding errors, so we
+            # manually set the edge cases
+            if omch2 >= self.omch2s[-1]:
+                omch2_index = self.om_resolution - 1 - 1.0e-6
 
+                
+                
         if self.h0_resolution == 1:
             h0_index = 0
         else:
@@ -259,12 +266,14 @@ class CambGenerator(object):
             if h0 == self.h0s[-1]:
                 h0_index = self.h0_resolution - 1 - 1.0e-6
                 
+                
+                
         if not self.vary_neff: 
             neff_index = 0
         else: 
-            neff_index = 1.0 * (self.neff_resolution - 1) * (neff - self.neffs[0]) / (self.neffs[-1] - self.neffs[0])
+            neff_index = 1.0 * (self.neff_resolution - 1) * (Neff - self.neffs[0]) / (self.neffs[-1] - self.neffs[0])
 
-            if neff == self.neffs[-1]: 
+            if Neff == self.neffs[-1]: 
                 neff_index = self.neff_resolution - 1 - 1.0e-6
                 
         if data is None:
@@ -391,7 +400,7 @@ if __name__ == "__main__":
 #     plt.show()
     
     
-    c2 = getCambGenerator(redshift=0.1, neff=3.044, h0_resolution=3, om_resolution=3, vary_neff=True, neff_resolution=10)
+    c2 = getCambGenerator(redshift=0.1, Neff=3.044, h0_resolution=3, om_resolution=3, vary_neff=True, neff_resolution=10)
     #c2._generate_data()
     
     #exit() 

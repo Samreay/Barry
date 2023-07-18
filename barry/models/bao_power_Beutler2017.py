@@ -230,16 +230,16 @@ if __name__ == "__main__":
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         #marg="full",
-        fix_params=["om"],
+        fix_params=[],#["om"],
         poly_poles=dataset.fit_poles,
         correction=Correction.NONE,
         n_poly=5,
-        vary_neff=True,
+        #vary_neff=True,
     )
     
-    # from barry.cosmology.camb_generator import Omega_m_z, getCambGenerator
-    # cc = getCambGenerator(redshift=1.1, neff=3.044, vary_neff=True, neff_resolution=50, 
-    # h0 = 0.6736, ns=0.9649, mnu=0.05999991930682943, ob=0.049301692328524445, om_resolution=1)
+    from barry.cosmology.camb_generator import Omega_m_z, getCambGenerator
+    cc = getCambGenerator(redshift=1.1, Neff=3.044, vary_neff=False, neff_resolution=1,#50, 
+    h0 = 0.6736, ns=0.9649, mnu=0.05999991930682943, ob=0.049301692328524445, om_resolution=101)
     #cc._generate_data()
     
     #'om': 0.3151917236644108,

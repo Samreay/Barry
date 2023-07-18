@@ -166,7 +166,7 @@ class PowerSpectrumFit(Model):
             Neff=3.044
             if "Neff" in c:
                 Neff=c["Neff"]
-            cambpk = self.camb.get_data(om=c["om"], h0=c["h0"],neff=Neff)
+            cambpk = self.camb.get_data(om=c["om"], h0=c["h0"],Neff=Neff)
             modelpk = splev(kval, splrep(cambpk["ks"], cambpk["pk_lin"]))
             kaiserfac = datapk / modelpk
             f = self.get_default("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
@@ -197,7 +197,7 @@ class PowerSpectrumFit(Model):
         
 
     @lru_cache(maxsize=1024)
-    def compute_basic_power_spectrum(self, om, neff=3.044):
+    def compute_basic_power_spectrum(self, om, Neff=3.044):
         """Computes the smoothed linear power spectrum and the wiggle ratio
 
         Parameters
@@ -214,7 +214,7 @@ class PowerSpectrumFit(Model):
 
         """
         # Get base linear power spectrum from camb
-        res = self.camb.get_data(om=om, h0=self.camb.h0, neff=neff)
+        res = self.camb.get_data(om=om, h0=self.camb.h0, Neff=Neff)
         pk_smooth_lin = smooth_func(
             self.camb.ks,
             res["pk_lin"],
@@ -304,7 +304,10 @@ class PowerSpectrumFit(Model):
         # Get the basic power spectrum components
         if self.kvals is None or self.pksmooth is None or self.pkratio is None:
             ks = self.camb.ks
-            pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
+            if vary_neff:
+                pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"], p["Neff"])
+            else: 
+                pk_smooth_lin, pk_ratio = self.compute_basic_power_spectrum(p["om"])
         else:
             ks = self.kvals
             pk_smooth_lin, pk_ratio = self.pksmooth, self.pkratio
