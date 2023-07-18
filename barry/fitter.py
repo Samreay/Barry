@@ -7,7 +7,7 @@ import numpy as np
 
 from barry.config import get_config
 from barry.doJob import write_jobscript_slurm
-from barry.samplers import DynestySampler
+from barry.samplers import DynestySampler, GridSearch
 from barry.utils import get_hpc
 
 
@@ -161,7 +161,7 @@ class Fitter(object):
         self.logger.info("Running fitting job, saving to %s" % self.temp_dir)
         self.logger.info(f"\tModel is {model}")
         self.logger.info(f"\tData is {' '.join([d['name'] for d in self.model_datasets[model_index][1]])}")
-        sampler.fit(model.get_posterior, model.get_start, model.get_num_dim(), model.unscale, uid=uid, save_dims=self.save_dims)
+        sampler.fit(model, uid=uid, save_dims=self.save_dims)
         self.logger.info("Finished sampling")
 
     def is_local(self):
@@ -218,20 +218,25 @@ class Fitter(object):
         chain = d["chain"]
         weights = d.get("weights")
         evidence = d.get("evidence")
+        chi2 = d.get("chi2")
         if weights is None:
             weights = np.ones((chain.shape[0], 1))
         if evidence is None:
             evidence = np.full(chain.shape[0], np.nan)
+        if chi2 is None:
+            chi2 = np.full(chain.shape[0], np.nan)
         if len(weights.shape) == 1:
             weights = np.atleast_2d(weights).T
         if len(evidence.shape) == 1:
             evidence = np.atleast_2d(evidence).T
+        if len(chi2.shape) == 1:
+            chi2 = np.atleast_2d(chi2).T
         posterior = d.get("posterior")
         if posterior is None:
             posterior = np.ones((chain.shape[0], 1))
         if len(posterior.shape) == 1:
             posterior = np.atleast_2d(posterior).T
-        result = np.hstack((posterior, weights, evidence, chain))
+        result = np.hstack((posterior, weights, evidence, chi2, chain))
         return result
 
     def load(self, split_models=True, split_walkers=False):
@@ -294,8 +299,12 @@ class Fitter(object):
             posterior = result[:, 0]
             weight = result[:, 1]
             evidence = result[:, 2]
-            chain = result[:, 3:]
-            finals.append((posterior, weight, chain, evidence, model[0], model[1], model[2]))
+            chi2 = result[:, 3]
+            chain = result[:, 4:]
+            if np.any(~np.isnan(chi2)):
+                finals.append((posterior, weight, chain, evidence, chi2, model[0], model[1], model[2]))
+            else:
+                finals.append((posterior, weight, chain, evidence, model[0], model[1], model[2]))
         self.logger.info(f"Loaded {len(finals)} chains")
         if len(finals) == 1:
             self.logger.info(f"Chain has shape {finals[0][2].shape}")

@@ -18,7 +18,7 @@ class PowerSpectrumFit(Model):
         self,
         name="Pk Basic",
         smooth_type=None,
-        fix_params=("om"),
+        fix_params=("om",),
         postprocess=None,
         smooth=False,
         recon=None,
@@ -195,6 +195,7 @@ class PowerSpectrumFit(Model):
         """
         # Get base linear power spectrum from camb
         res = self.camb.get_data(om=om, h0=self.camb.h0)
+
         pk_smooth_lin = smooth_func(
             self.camb.ks,
             res["pk_lin"],
@@ -380,14 +381,15 @@ class PowerSpectrumFit(Model):
         if self.isotropic:
             shape = np.zeros(len(k))
             for ip in range(self.n_poly):
-                shape += p[f"a{0}_{{{ip+1}}}"] * k ** (ip - 1)
+                shape += p[f"a{{{0}}}_{{{ip+1}}}"] * k ** (ip - 1)
 
-            poly = np.zeros((1, len(kpoly)))
             if self.marg:
-                poly = [prefac * pk]
+                poly = np.zeros((self.n_poly + 1, 1, len(kpoly)))
+                poly[0, :, :] = prefac * pk
                 for ip in range(self.n_poly):
-                    poly.extend(kpoly ** (ip - 1))
-            poly = poly[:, None, :]
+                    poly[ip + 1, :, :] = kpoly ** (ip - 1)
+            else:
+                poly = np.zeros((1, 1, len(kpoly)))
         else:
             shape = np.zeros((6, len(k)))
             if self.marg:
@@ -677,15 +679,24 @@ class PowerSpectrumFit(Model):
 
         return pk_model, pk_model_odd, poly_model, poly_model_odd, mask
 
-    def plot(self, params, window=True, smooth_params=None, figname=None, title=None, display=True):
-        import matplotlib.pyplot as plt
+    def get_model_summary(self, params, window=True, smooth_params=None):
+        """Get the model summary for the given parameters.
 
-        # Ensures we plot the window convolved model
+        Parameters
+        ----------
+        params : array
+            The parameter vector.
+        smooth_params : array, optional
+            The parameter vector for the smooth model.
+
+        Returns
+        -------
+
+        """
+        # Ensures we return the window convolved model
         icov_m_w = self.data[0]["icov_m_w"]
         self.data[0]["icov_m_w"][0] = None
 
-        ks = self.data[0]["ks"]
-        err = np.sqrt(np.diag(self.data[0]["cov"]))
         mod, mod_odd, polymod, polymod_odd, _ = self.get_model(params, self.data[0], data_name=self.data[0]["name"], window=window)
         if smooth_params is not None:
             smooth, smooth_odd, polysmooth, polysmooth_odd, _ = self.get_model(
@@ -707,7 +718,9 @@ class PowerSpectrumFit(Model):
                 else self.data[0]["ndata"] * len(self.data[0]["ks"]) * len(self.data[0]["fit_poles"])
             )
             polymod_fit, polymod_fit_odd = np.empty((np.shape(polymod)[0], len_poly)), np.zeros((np.shape(polymod)[0], len_poly))
-            polysmooth_fit, polysmooth_fit_odd = np.empty((np.shape(polymod)[0], len_poly)), np.zeros((np.shape(polymod)[0], len_poly))
+            polysmooth_fit, polysmooth_fit_odd = np.empty((np.shape(polysmooth)[0], len_poly)), np.zeros(
+                (np.shape(polysmooth)[0], len_poly)
+            )
             for n in range(np.shape(polymod)[0]):
                 polymod_fit[n], polymod_fit_odd[n] = polymod[n, mask], polymod_odd[n, mask]
                 polysmooth_fit[n], polysmooth_fit_odd[n] = polysmooth[n, mask], polysmooth_odd[n, mask]
@@ -752,12 +765,25 @@ class PowerSpectrumFit(Model):
         mod = mod[self.data[0]["w_mask"]]
         smooth = smooth[self.data[0]["w_mask"]]
 
+        mods = mod.reshape((-1, self.data[0]["ndata"], len(self.data[0]["ks"])))
+        smooths = smooth.reshape((-1, self.data[0]["ndata"], len(self.data[0]["ks"])))
+
+        self.data[0]["icov_m_w"] = icov_m_w
+
+        return new_chi_squared, dof, bband, mods, smooths
+
+    def plot(self, params, window=True, smooth_params=None, figname=None, title=None, display=True):
+        import matplotlib.pyplot as plt
+
+        ks = self.data[0]["ks"]
+        err = np.sqrt(np.diag(self.data[0]["cov"]))
+
+        new_chi_squared, dof, bband, mods, smooths = self.get_model_summary(params, window=window, smooth_params=smooth_params)
+
         # Split up the different multipoles if we have them
         if len(err) > len(ks):
             assert len(err) % len(ks) == 0, f"Cannot split your data - have {len(err)} points and {len(ks)} modes"
         errs = err.reshape((-1, self.data[0]["ndata"], len(ks)))
-        mods = mod.reshape((-1, self.data[0]["ndata"], len(ks)))
-        smooths = smooth.reshape((-1, self.data[0]["ndata"], len(ks)))
         if self.isotropic:
             names = [f"pk0"]
         else:
@@ -800,6 +826,7 @@ class PowerSpectrumFit(Model):
 
                     # Plot ye old model
                     ax[0].plot(ks, ks * mod[i], c=c, ls=ls, label=l)
+                    ax[0].plot(ks, ks * smooth[i], c=c, ls="--", label=l)
                     ax[1].plot(ks, ks * (mod[i] - smooth[i]), c=c, ls=ls, label=l)
 
                     if name in [f"pk{n}" for n in self.data[0]["poles"] if n % 2 == 0]:
@@ -812,7 +839,6 @@ class PowerSpectrumFit(Model):
                         ax[1].set_facecolor("#e1e1e1")
 
             # Show the model parameters
-            self.data[0]["icov_m_w"] = icov_m_w
             string = f"$\\mathcal{{L}}$: {self.get_likelihood(params, self.data[0]):0.3g}\n"
             if self.marg:
                 string += "\n".join([f"{self.param_dict[l].label}={v:0.4g}" for l, v in params.items() if l not in self.fix_params])

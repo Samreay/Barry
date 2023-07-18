@@ -4,20 +4,13 @@ import abc
 class Sampler(object):
     __metaclass__ = abc.ABCMeta
 
-    def fit(self, log_posterior, start, num_dim, prior_transform, save_dims=None, uid=None):
-        """" Runs the sampler over the model and returns the flat chain of results
+    def fit(self, model, save_dims=None, uid=None):
+        """Runs the sampler over the model and returns the flat chain of results
 
         Parameters
         ----------
-        log_posterior : function
-            A function which takes a list of parameters and returns
-            the log posterior
-        start : function|list|ndarray
-            Either a starting position, or a function that can be called
-            to generate a starting position
-        prior_transform : function
-            A function to transform from the unit hypercube to the parameter
-            region of interest.
+        model : class <Model>
+            An instance of one of barry's model classes
         save_dims : int, optional
             Only return values for the first ``save_dims`` parameters.
             Useful to remove numerous marginalisation parameters if running
@@ -36,5 +29,5 @@ class Sampler(object):
         raise NotImplementedError()
 
     def load_file(self, filename):
-        """ Load existing results from a file"""
+        """Load existing results from a file"""
         raise NotImplementedError()

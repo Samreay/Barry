@@ -44,17 +44,13 @@ class EnsembleSampler(Sampler):
         self.save_interval = save_interval
         self.num_walkers = num_walkers
 
-    def fit(self, log_posterior, start, num_dim, prior_transform, save_dims=None, uid=None):
+    def fit(self, model, save_dims=None, uid=None):
         """Runs the sampler over the model and returns the flat chain of results
 
         Parameters
         ----------
-        log_posterior : function
-            A function which takes a list of parameters and returns
-            the log posterior
-        start : function|list|ndarray
-            Either a starting position, or a function that can be called
-            to generate a starting position
+        model : class <Model>
+            An instance of one of barry's model classes
         save_dims : int, optional
             Only return values for the first ``save_dims`` parameters.
             Useful to remove numerous marginalisation parameters if running
@@ -70,9 +66,14 @@ class EnsembleSampler(Sampler):
             flattened chain of dimensions
              ``(num_dimensions, num_walkers * (num_steps - num_burn))``
         """
+        import emcee
+
+        log_posterior = model.get_posterior
+        start = model.get_start
+        num_dim = model.get_num_dim()
+
         assert log_posterior is not None
         assert start is not None
-        import emcee
 
         if self.num_walkers is None:
             self.num_walkers = num_dim * 8

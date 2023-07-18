@@ -19,7 +19,7 @@ class CorrelationFunctionFit(Model):
         name="Corr Basic",
         smooth_type=None,
         recon=None,
-        fix_params=("om"),
+        fix_params=("om",),
         smooth=False,
         correction=None,
         isotropic=False,
@@ -576,20 +576,20 @@ class CorrelationFunctionFit(Model):
             dof = len(self.data[0]["xi"]) - len(self.get_active_params())
             new_chi_squared = 0.0
             bband = None
-            
+
         mods = [row for row in mod.reshape((-1, len(ss)))]
         smooths = [row for row in smooth.reshape((-1, len(ss)))]
-            
+
         return new_chi_squared, dof, bband, mods, smooths
-        
+
     def plot(self, params, smooth_params=None, figname=None, title=None, display=True):
         import matplotlib.pyplot as plt
 
         # Ensures we plot the window convolved model
         ss = self.data[0]["dist"]
         err = np.sqrt(np.diag(self.data[0]["cov"]))
-        
-        new_chi_squared, dof, bband, mods, smooths = self.get_model_summary(params, smooth_params)
+
+        new_chi_squared, dof, bband, mods, smooths = self.get_model_summary(params, smooth_params=smooth_params)
 
         # Split up the different multipoles if we have them
         if len(err) > len(ss):
@@ -655,13 +655,12 @@ class CorrelationFunctionFit(Model):
 
         return new_chi_squared, dof, bband, mods, smooths
 
-    
-    def simple_plot(self, params, smooth_params=None, figname=None, title=None, display=True, c='r'):
+    def simple_plot(self, params, smooth_params=None, figname=None, title=None, display=True, c="r"):
         import matplotlib.pyplot as plt
 
         ss = self.data[0]["dist"]
         err = np.sqrt(np.diag(self.data[0]["cov"]))
-        
+
         new_chi_squared, dof, bband, mods, smooths = self.get_model_summary(params, smooth_params)
 
         # Split up the different multipoles if we have them
@@ -674,7 +673,7 @@ class CorrelationFunctionFit(Model):
             names = [f"xi{n}" for n in self.data[0]["fit_poles"]]
         num_rows = len(names)
         ms = ["o", "o", "s"]
-        mfcs = [c, "w", c] 
+        mfcs = [c, "w", c]
         height = 2 + 1.4 * num_rows
 
         if display is True or figname is not None:
@@ -684,17 +683,17 @@ class CorrelationFunctionFit(Model):
             for err, mod, name, m, mfc in zip(errs, mods, names, ms, mfcs):
 
                 # Plot ye old data
-                axes[0,0].errorbar(ss, ss**2 * self.data[0][name], yerr=ss**2 * err, fmt=m, mfc=mfc, label="Data", c=c)
+                axes[0, 0].errorbar(ss, ss**2 * self.data[0][name], yerr=ss**2 * err, fmt=m, mfc=mfc, label="Data", c=c)
 
                 # Plot ye old model
-                axes[0,0].plot(ss, ss**2 * mod, c=c, label="Model")
+                axes[0, 0].plot(ss, ss**2 * mod, c=c, label="Model")
 
-            axes[0,0].set_ylabel("$s^{2} \\times \\xi(s)$ ")
-            
+            axes[0, 0].set_ylabel("$s^{2} \\times \\xi(s)$ ")
+
             # Add the chi_squared and dof
             string = f"$\\chi^{2}/$dof$=${new_chi_squared:.1f}$/${dof:d}\n"
-            axes[0,0].text(0.02, 0.98, string, horizontalalignment="left", verticalalignment='top',transform=axes[0,0].transAxes)
-            
+            axes[0, 0].text(0.02, 0.98, string, horizontalalignment="left", verticalalignment="top", transform=axes[0, 0].transAxes)
+
             if title is None:
                 title = self.data[0]["name"] + " + " + self.get_name()
             fig.suptitle(title)

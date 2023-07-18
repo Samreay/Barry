@@ -198,8 +198,8 @@ class Model(ABC):
         for p in self.params:
             p.active = p.name not in params
 
-    def get_param(self, dic, name):
-        return dic.get(name, self.get_default(name))
+    def get_param(self, name):
+        return self.param_dict.get(name, self.get_default(name))
 
     def get_active_params(self):
         """Returns a list of the active (non-fixed) parameters"""

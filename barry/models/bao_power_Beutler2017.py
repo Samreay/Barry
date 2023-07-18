@@ -13,7 +13,7 @@ class PowerBeutler2017(PowerSpectrumFit):
     def __init__(
         self,
         name="Pk Beutler 2017",
-        fix_params=("om"),
+        fix_params=("om",),
         smooth_type=None,
         recon=None,
         postprocess=None,
@@ -133,7 +133,8 @@ class PowerBeutler2017(PowerSpectrumFit):
                 pk[0] = pk_smooth * propagator
             else:
                 shape, poly = self.add_poly(k, k, p, prefac, pk_smooth)
-                pk[0] = (pk_smooth + shape) * propagator
+                if not self.marg:
+                    pk[0] = (pk_smooth + shape) * propagator
 
         else:
 

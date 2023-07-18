@@ -357,6 +357,41 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
         )
 
 
+class PowerSpectrum_SDSS_PV(PowerSpectrum):
+    """Power spectra for SDSS PV catalogue. Monopole only"""
+
+    def __init__(
+        self,
+        min_k=0.02,
+        max_k=0.30,
+        reduce_cov_factor=1,
+        fake_diag=False,
+        realisation=None,
+        num_mocks=256,
+    ):
+
+        self.nredshift_bins = 1
+        self.nsmoothtypes = 1
+        self.ndata = 1
+
+        super().__init__(
+            "sdss_pv.pkl",
+            name=None,
+            min_k=min_k,
+            max_k=max_k,
+            step_size=1,
+            recon=None,
+            reduce_cov_factor=reduce_cov_factor,
+            num_mocks=num_mocks,
+            postprocess=None,
+            fake_diag=fake_diag,
+            realisation=realisation,
+            isotropic=True,
+            fit_poles=(0,),
+            data_location=None,
+        )
+
+
 if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
