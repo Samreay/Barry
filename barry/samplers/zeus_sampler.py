@@ -18,9 +18,36 @@ class ZeusSampler(Sampler):
     def get_filename(self, uid):
         return os.path.join(self.temp_dir, f"{uid}_zeus_chain.npy")
 
-    def fit(self, log_posterior, start, num_dim, prior_transform, save_dims=None, uid=None):
+    def fit(self, model, save_dims=None, uid=None):
+        """
+        Fit the model
 
+        Parameters
+        ----------
+        model : class <Model>
+            An instance of one of barry's model classes
+        save_dims : int, optional
+            Only return values for the first ``save_dims`` parameters.
+            Useful to remove numerous marginalisation parameters if running
+            low on memory or hard drive space.
+        uid : str, optional
+            A unique identifier used to differentiate different fits
+            if two fits both serialise their chains and use the
+            same temporary directory
+
+        Returns
+        -------
+        dict
+            A dictionary containing the chain and the weights
+        """
         import zeus
+
+        log_posterior = model.get_posterior
+        start = model.get_start
+        num_dim = model.get_num_dim()
+
+        assert log_posterior is not None
+        assert start is not None
 
         filename = self.get_filename(uid)
         if os.path.exists(filename):

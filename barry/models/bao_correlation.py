@@ -19,7 +19,7 @@ class CorrelationFunctionFit(Model):
         name="Corr Basic",
         smooth_type=None,
         recon=None,
-        fix_params=("om"),
+        fix_params=("om",),
         smooth=False,
         correction=None,
         isotropic=False,
@@ -152,7 +152,7 @@ class CorrelationFunctionFit(Model):
         modelxi = self.pk2xi_0.__call__(cambpk["ks"], cambpk["pk_lin"], np.array([sval]))[0]
         kaiserfac = dataxi / modelxi
         f = self.param_dict.get("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
-        b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f**2)
+        b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f**2) if kaiserfac - 4.0 / 45.0 * f**2 > 0 else 1.0
         if not self.marg:
             min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
             # if self.param_dict.get("b") is not None:
@@ -381,7 +381,7 @@ class CorrelationFunctionFit(Model):
                 poly = [1.0 / dist ** (ip - 1) for ip in range(self.n_poly)]
             else:
                 for ip in range(self.n_poly):
-                    xi[0] += p[f"a{0}_{{{ip+1}}}_{1}"] / (dist ** (ip - 1))
+                    xi[0] += p[f"a{0}_{{{ip+1}}}_{{{1}}}"] / (dist ** (ip - 1))
 
         else:
             xi = [xi0, xi2, xi4]
@@ -395,93 +395,7 @@ class CorrelationFunctionFit(Model):
                 poly = np.zeros((1, 3, len(dist)))
                 for pole in self.poly_poles:
                     for ip in range(self.n_poly):
-                        xi[int(pole / 2)] += p[f"a{{{pole}}}_{{{ip+1}}}_{1}"] / dist ** (ip - 1)
-
-        return xi, poly
-
-    def add_three_poly(self, dist, p, xi_comp):
-        """Converts the xi components to a full model but with 3 polynomial terms for each multipole
-
-        Parameters
-        ----------
-        dist : np.ndarray
-            Array of distances in the correlation function to compute
-        p : dict
-            dictionary of parameter name to float value pairs
-        xi_comp : np.ndarray
-            the model monopole, quadrupole and hexadecapole interpolated to sprime.
-
-        Returns
-        -------
-        sprime : np.ndarray
-            distances of the computed xi
-        xi : np.ndarray
-            the convert model monopole, quadrupole and hexadecapole interpolated to sprime.
-        poly: np.ndarray
-            the additive terms in the model, necessary for analytical marginalisation
-
-        """
-
-        xi0, xi2, xi4 = xi_comp
-        xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
-
-        if self.isotropic:
-            xi[0] = xi0
-            poly = np.zeros((1, len(dist)))
-            if self.marg:
-                poly = [1.0 / (dist**2), 1.0 / dist, np.ones(len(dist))]
-            else:
-                xi[0] += p["a{0}_1_{1}"] / (dist**2) + p["a{0}_2_{1}"] / dist + p["a{0}_3_{1}"]
-
-        else:
-            xi = [xi0, xi2, xi4]
-
-            # Polynomial shape
-            if self.marg:
-                poly = np.zeros((3 * len(self.poly_poles), 3, len(dist)))
-                for npole, pole in enumerate(self.poly_poles):
-                    poly[3 * npole : 3 * (npole + 1), npole] = [1.0 / (dist**2), 1.0 / dist, np.ones(len(dist))]
-            else:
-                poly = np.zeros((1, 3, len(dist)))
-                for pole in self.poly_poles:
-                    xi[int(pole / 2)] += (
-                        p[f"a{{{pole}}}_1_{{{1}}}"] / dist**2 + p[f"a{{{pole}}}_2_{{{1}}}"] / dist + p[f"a{{{pole}}}_3_{{{1}}}"]
-                    )
-
-        return xi, poly
-
-    def add_zero_poly(self, dist, p, xi_comp):
-        """Converts the xi components to a full model but with 3 polynomial terms for each multipole
-
-        Parameters
-        ----------
-        dist : np.ndarray
-            Array of distances in the correlation function to compute
-        p : dict
-            dictionary of parameter name to float value pairs
-        xi_comp : np.ndarray
-            the model monopole, quadrupole and hexadecapole interpolated to sprime.
-
-        Returns
-        -------
-        sprime : np.ndarray
-            distances of the computed xi
-        xi : np.ndarray
-            the convert model monopole, quadrupole and hexadecapole interpolated to sprime.
-        poly: np.ndarray
-            the additive terms in the model, necessary for analytical marginalisation
-
-        """
-
-        xi0, xi2, xi4 = xi_comp
-        xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
-
-        if self.isotropic:
-            xi[0] = xi0
-            poly = np.zeros((1, len(dist)))
-        else:
-            xi = [xi0, xi2, xi4]
-            poly = np.zeros((3 * len(self.poly_poles), 3, len(dist)))
+                        xi[int(pole / 2)] += p[f"a{{{pole}}}_{{{ip+1}}}_{{{1}}}"] / dist ** (ip - 1)
 
         return xi, poly
 
@@ -602,12 +516,9 @@ class CorrelationFunctionFit(Model):
                 num_data=num_data,
             )
 
-    def plot(self, params, smooth_params=None, figname=None, title=None, display=True):
-        import matplotlib.pyplot as plt
+    def get_model_summary(self, params, smooth_params=None):
 
-        # Ensures we plot the window convolved model
         ss = self.data[0]["dist"]
-        err = np.sqrt(np.diag(self.data[0]["cov"]))
         mod, polymod = self.get_model(params, self.data[0])
         if smooth_params is not None:
             smooth, polysmooth = self.get_model(smooth_params, self.data[0], smooth=True)
@@ -666,12 +577,24 @@ class CorrelationFunctionFit(Model):
             new_chi_squared = 0.0
             bband = None
 
+        mods = [row for row in mod.reshape((-1, len(ss)))]
+        smooths = [row for row in smooth.reshape((-1, len(ss)))]
+
+        return new_chi_squared, dof, bband, mods, smooths
+
+    def plot(self, params, smooth_params=None, figname=None, title=None, display=True):
+        import matplotlib.pyplot as plt
+
+        # Ensures we plot the window convolved model
+        ss = self.data[0]["dist"]
+        err = np.sqrt(np.diag(self.data[0]["cov"]))
+
+        new_chi_squared, dof, bband, mods, smooths = self.get_model_summary(params, smooth_params=smooth_params)
+
         # Split up the different multipoles if we have them
         if len(err) > len(ss):
             assert len(err) % len(ss) == 0, f"Cannot split your data - have {len(err)} points and {len(ss)} bins"
         errs = [row for row in err.reshape((-1, len(ss)))]
-        mods = [row for row in mod.reshape((-1, len(ss)))]
-        smooths = [row for row in smooth.reshape((-1, len(ss)))]
         if self.isotropic:
             names = [f"xi0"]
         else:
@@ -721,6 +644,55 @@ class CorrelationFunctionFit(Model):
             else:
                 axes[0, 1].set_title("$\\xi(s) - data$")
             axes[0, 0].set_title("$s^{2} \\times \\xi(s)$")
+
+            if title is None:
+                title = self.data[0]["name"] + " + " + self.get_name()
+            fig.suptitle(title)
+            if figname is not None:
+                fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
+            if display:
+                plt.show()
+
+        return new_chi_squared, dof, bband, mods, smooths
+
+    def simple_plot(self, params, smooth_params=None, figname=None, title=None, display=True, c="r"):
+        import matplotlib.pyplot as plt
+
+        ss = self.data[0]["dist"]
+        err = np.sqrt(np.diag(self.data[0]["cov"]))
+
+        new_chi_squared, dof, bband, mods, smooths = self.get_model_summary(params, smooth_params)
+
+        # Split up the different multipoles if we have them
+        if len(err) > len(ss):
+            assert len(err) % len(ss) == 0, f"Cannot split your data - have {len(err)} points and {len(ss)} bins"
+        errs = [row for row in err.reshape((-1, len(ss)))]
+        if self.isotropic:
+            names = [f"xi0"]
+        else:
+            names = [f"xi{n}" for n in self.data[0]["fit_poles"]]
+        num_rows = len(names)
+        ms = ["o", "o", "s"]
+        mfcs = [c, "w", c]
+        height = 2 + 1.4 * num_rows
+
+        if display is True or figname is not None:
+            self.logger.info("Create plot")
+
+            fig, axes = plt.subplots(figsize=(height, height), nrows=1, ncols=1, sharex=True, squeeze=False)
+            for err, mod, name, m, mfc in zip(errs, mods, names, ms, mfcs):
+
+                # Plot ye old data
+                axes[0, 0].errorbar(ss, ss**2 * self.data[0][name], yerr=ss**2 * err, fmt=m, mfc=mfc, label="Data", c=c)
+
+                # Plot ye old model
+                axes[0, 0].plot(ss, ss**2 * mod, c=c, label="Model")
+
+            axes[0, 0].set_ylabel("$s^{2} \\times \\xi(s)$ ")
+
+            # Add the chi_squared and dof
+            string = f"$\\chi^{2}/$dof$=${new_chi_squared:.1f}$/${dof:d}\n"
+            axes[0, 0].text(0.02, 0.98, string, horizontalalignment="left", verticalalignment="top", transform=axes[0, 0].transAxes)
 
             if title is None:
                 title = self.data[0]["name"] + " + " + self.get_name()

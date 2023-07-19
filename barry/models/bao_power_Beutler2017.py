@@ -150,7 +150,8 @@ class PowerBeutler2017(PowerSpectrumFit):
                 pk[0] = pk_smooth * propagator
             else:
                 shape, poly = self.add_poly(k, k, p, prefac, pk_smooth)
-                pk[0] = (pk_smooth + shape) * propagator
+                if not self.marg:
+                    pk[0] = (pk_smooth + shape) * propagator
 
         else:
 

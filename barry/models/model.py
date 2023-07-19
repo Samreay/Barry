@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from numpy.random import uniform, normal
 import numpy as np
+from scipy.interpolate import splrep, splev
 from scipy.stats import truncnorm
 from scipy.special import loggamma
 from scipy.optimize import basinhopping, differential_evolution
@@ -185,6 +186,22 @@ class Model(ABC):
             "isotropic" if self.isotropic else "anisotropic",
         )
 
+    def overwrite_template(self, ks, pklin, pknw, pk_nonlin_0=None, pk_nonlin_z=None, r_drag=None):
+        """Overwrites the camb template power spectrum with the given values. For instance, if you have a fixed template from a file"""
+
+        self.kvals = ks
+        self.pksmooth = pknw
+        self.pkratio = pklin / pknw - 1.0
+
+        if r_drag is None:
+            r_drag = self.camb.get_data()["r_s"]
+        if pk_nonlin_0 is None or pk_nonlin_z is None:
+            pk_nonlin_0 = self.camb.get_data()["pk_nl_0"]
+            pk_nonlin_z = self.camb.get_data()["pk_nl_z"]
+
+        sinterp = splev(ks, splrep(self.camb.ks, self.camb.smoothing_kernel))
+        self.pregen = self.precompute(ks=ks, pk_lin=pklin, pk_nonlin_0=pk_nonlin_0, pk_nonlin_z=pk_nonlin_z, r_drag=r_drag, s=sinterp)
+
     def add_param(self, name, label, min, max, default, sigma=0.0, prior="flat"):
         assert prior.lower() in ["flat", "gaussian"], "ERROR: Prior must be flat or gaussian"
         p = Param(name, label, min, max, sigma, default, prior, name not in self.fix_params)
@@ -198,8 +215,8 @@ class Model(ABC):
         for p in self.params:
             p.active = p.name not in params
 
-    def get_param(self, dic, name):
-        return dic.get(name, self.get_default(name))
+    def get_param(self, name):
+        return self.param_dict.get(name, self.get_default(name))
 
     def get_active_params(self):
         """Returns a list of the active (non-fixed) parameters"""
@@ -528,7 +545,19 @@ class Model(ABC):
             h0 = self.camb.h0s[j]
             om = omch2 / (h0 * h0) + self.camb.omega_b
 
-            values = self.precompute(self.camb, om, h0)
+            c = self.camb.get_data(om, h0)
+
+            values = self.precompute(
+                om=c["om"],
+                h0=c["h0"],
+                ks=c["ks"],
+                pk_lin=c["pk_lin"],
+                pk_nonlin_0=c["pk_nl_0"],
+                pk_nonlin_z=c["pk_nl_z"],
+                r_drag=c["r_s"],
+                s=self.camb.smoothing_kernel,
+            )
+
             data.append([i, j, values])
         return data
 
@@ -545,7 +574,7 @@ class Model(ABC):
         func2 = getattr(super(type(self), self), self.precompute.__name__)
         return self.precompute.__func__ != func2.__func__
 
-    def precompute(self, camb, om, h0):
+    def precompute(self, om=None, h0=None, ks=None, pk_lin=None, pk_nonlin_0=None, pk_nonlin_z=None, r_drag=None, s=None):
         """A function available for overriding that precomputes values that depend only on the outputs of CAMB.
 
         Parameters

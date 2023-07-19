@@ -7,7 +7,7 @@ from barry.samplers.sampler import Sampler
 
 
 class MetropolisHastings(Sampler):
-    """ Self tuning Metropolis Hastings Sampler
+    """Self tuning Metropolis Hastings Sampler
 
     Parameters
     ----------
@@ -78,18 +78,14 @@ class MetropolisHastings(Sampler):
         self.covariance_file = None
         self.covariance_plot = None
 
-    def fit(self, log_posterior, start, num_dim, prior_transform, save_dims=None, uid=None):
+    def fit(self, model, save_dims=None, uid=None):
         """
         Fit the model
 
         Parameters
         ----------
-        log_posterior : function
-            A function that takes a list of parameters and returns the
-            log posterior
-        start : function|list|np.ndarray
-            A function that can be called to generate a starting position, or an
-            initial starting position to use.
+        model : class <Model>
+            An instance of one of barry's model classes
         save_dims : int, optional
             Only return values for the first ``save_dims`` parameters.
             Useful to remove numerous marginalisation parameters if running
@@ -104,6 +100,13 @@ class MetropolisHastings(Sampler):
         dict
             A dictionary containing the chain and the weights
         """
+
+        log_posterior = model.get_posterior
+        start = model.get_start
+
+        assert log_posterior is not None
+        assert start is not None
+
         if uid is None:
             uid = "mh"
         self._update_temp_files(uid)
@@ -162,7 +165,11 @@ class MetropolisHastings(Sampler):
             burnin[step, :], weight = self._get_next_step(burnin[step - 1, :], covariance, burnin=True)
             burnin[step - 1, self.IND_W] = weight
             if self.callback is not None:
-                self.callback(burnin[step - 1, self.IND_P], burnin[step - 1, self.space : self.space + self.save_dims], weight=burnin[step - 1, self.IND_W])
+                self.callback(
+                    burnin[step - 1, self.IND_P],
+                    burnin[step - 1, self.space : self.space + self.save_dims],
+                    weight=burnin[step - 1, self.IND_W],
+                )
             step += 1
             if step == self.num_burn or (self._do_save and (time() - last_save_time) > self.save_interval):
                 self._save(burnin[step - 1, :], burnin[:step, :], None, covariance)
@@ -190,7 +197,9 @@ class MetropolisHastings(Sampler):
             chain[current_step, :] = position[:size]
             chain[current_step - 1, self.IND_W] = weight
             if self.callback is not None:
-                self.callback(chain[current_step - 1, self.IND_P], chain[current_step - 1, self.space :], weight=chain[current_step - 1, self.IND_W])
+                self.callback(
+                    chain[current_step - 1, self.IND_P], chain[current_step - 1, self.space :], weight=chain[current_step - 1, self.IND_W]
+                )
             current_step += 1
             if current_step == self.num_steps or (self._do_save and (time() - last_save_time) > self.save_interval):
                 self._save(position, None, chain[:current_step, :], None)
@@ -206,7 +215,7 @@ class MetropolisHastings(Sampler):
             self.covariance_plot = self.temp_dir + os.sep + "%s_mh_covariance.png" % uid
 
     def _ensure_position(self, position):
-        """ Ensures that the position object, which can be none from loading, is a
+        """Ensures that the position object, which can be none from loading, is a
         valid [starting] position.
         """
 
@@ -234,7 +243,9 @@ class MetropolisHastings(Sampler):
         #     sigma_ratio *= 0.9
         # else:
         #     sigma_ratio /= 0.9
-        self.logger.debug("Adjusting sigma: Want %0.3f, got %0.3f. " "Updating ratio to %0.5f" % (self.accept_ratio, actual_ratio, sigma_ratio))
+        self.logger.debug(
+            "Adjusting sigma: Want %0.3f, got %0.3f. " "Updating ratio to %0.5f" % (self.accept_ratio, actual_ratio, sigma_ratio)
+        )
         return sigma_ratio
 
     def _adjust_covariance(self, burnin, index, return_cov=False):

@@ -68,14 +68,18 @@ class PowerNoda2019(PowerSpectrumFit):
     def get_unique_cosmo_name(self):
         return self.__class__.__name__ + "_" + self.camb.filename_unique + "_" + self.smooth_type + ".pkl"
 
-    def precompute(self, camb, om, h0):
+    def precompute(self, om=None, h0=None, ks=None, pk_lin=None, pk_nonlin_0=None, pk_nonlin_z=None, r_drag=None, s=None):
 
-        c = camb.get_data(om, h0)
-        ks = c["ks"]
-        r_drag = c["r_s"]
-        pk_lin = c["pk_lin"]
-        pk_nonlin_0 = c["pk_nl_0"]
-        pk_nonlin_z = c["pk_nl_z"]
+        if om is None or h0 is None or ks is None or pk_lin is None or pk_nonlin_0 is None or pk_nonlin_z is None:
+            c = self.camb.get_data()
+            om = c["om"]
+            h0 = c["h0"]
+            ks = c["ks"]
+            pk_lin = c["pk_lin"]
+            pk_nonlin_0 = c["pk_nl_0"]
+            pk_nonlin_z = c["pk_nl_z"]
+        if r_drag is None:
+            r_drag = self.camb.get_data()["r_s"]
 
         r, xs, J00, J01, J11 = self.get_extra()
 
@@ -86,9 +90,9 @@ class PowerNoda2019(PowerSpectrumFit):
         # Get the smoothed linear power spectrum which we need to calculate the
         # BAO damping and SPT integrals used in the Noda2017 model
 
-        pk_smooth_lin = smooth(ks, pk_lin, method=self.smooth_type, om=om, h0=h0)
-        pk_smooth_nonlin_0 = smooth(ks, pk_nonlin_0, method=self.smooth_type, om=om, h0=h0)
-        pk_smooth_nonlin_z = smooth(ks, pk_nonlin_z, method=self.smooth_type, om=om, h0=h0)
+        pk_smooth_lin = smooth_func(ks, pk_lin, method=self.smooth_type, om=om, h0=h0)
+        pk_smooth_nonlin_0 = smooth_func(ks, pk_nonlin_0, method=self.smooth_type, om=om, h0=h0)
+        pk_smooth_nonlin_z = smooth_func(ks, pk_nonlin_z, method=self.smooth_type, om=om, h0=h0)
         pk_smooth_spline = splrep(ks, pk_smooth_lin)
 
         # Sigma^2_dd,rs, Sigma^2_ss,rs (Noda2019 model)
@@ -104,7 +108,7 @@ class PowerNoda2019(PowerSpectrumFit):
             rx = np.outer(rvals, xs)
             y = kval * np.sqrt(-2.0 * rx.T + 1.0 + rvals**2)
             pk_smooth_interp = splev(y, pk_smooth_spline)
-            index = np.where(np.logical_and(y < camb.k_min, y > camb.k_max))
+            index = np.where(np.logical_and(y < self.camb.k_min, y > self.camb.k_max))
             pk_smooth_interp[index] = 0.0
             IP0 = kval**2 * ((-10.0 * rx * xs + 7.0 * xs).T + 3.0 * rvals) / (y**2)
             IP1 = kval**2 * ((-6.0 * rx * xs + 7.0 * xs).T - rvals) / (y**2)
@@ -121,7 +125,7 @@ class PowerNoda2019(PowerSpectrumFit):
         Ptt_spt += ks**2 * integrate.simps(pk_smooth_lin * J11, ks, axis=1) / (336.0 * np.pi**2)
 
         # Compute the non linear correction to the power spectra using the fitting formulae from Jennings2012
-        growth_0, growth_z = self.get_growth_factor_Linder(om, 1.0e-4), self.get_growth_factor_Linder(om, camb.redshift)
+        growth_0, growth_z = self.get_growth_factor_Linder(om, 1.0e-4), self.get_growth_factor_Linder(om, self.camb.redshift)
         cfactor = (growth_z + growth_z**2 + growth_z**3) / (growth_0 + growth_0**2 + growth_0**3)
         Pdt_0 = (-12483.8 * np.sqrt(pk_smooth_nonlin_0) + 2.554 * pk_smooth_nonlin_0**2) / (1381.29 + 2.540 * pk_smooth_nonlin_0)
         Ptt_0 = (-12480.5 * np.sqrt(pk_smooth_nonlin_0) + 1.824 * pk_smooth_nonlin_0**2) / (2165.87 + 1.796 * pk_smooth_nonlin_0)

@@ -159,10 +159,6 @@ class CorrelationFunction_DESI_KP4(CorrelationFunction):
         data_location=None,
     ):
 
-        if realisation is not None:
-            if not isinstance(realisation, int):
-                raise NotImplementedError("No data yet in DESI KP4, set realisation = None or an integer mock")
-
         self.nredshift_bins = 1
         self.nsmoothtypes = 1
         self.ndata = 1

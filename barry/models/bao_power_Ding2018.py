@@ -2,7 +2,7 @@ import logging
 from functools import lru_cache
 import numpy as np
 from scipy import integrate
-from scipy.special import jn
+from scipy.special import spherical_jn
 from barry.models.bao_power import PowerSpectrumFit
 from scipy.interpolate import splev, splrep
 
@@ -56,14 +56,17 @@ class PowerDing2018(PowerSpectrumFit):
 
         self.set_marg(fix_params, poly_poles, n_poly)
 
-    def precompute(self, camb, om, h0):
+    def precompute(self, om=None, h0=None, ks=None, pk_lin=None, pk_nonlin_0=None, pk_nonlin_z=None, r_drag=None, s=None):
 
-        c = camb.get_data(om, h0)
-        r_drag = c["r_s"]
-        ks = c["ks"]
-        pk_lin = c["pk_lin"]
-        j0 = jn(0, r_drag * ks)
-        s = camb.smoothing_kernel
+        if ks is None or pk_lin is None:
+            ks = self.camb.ks
+            pk_lin = self.camb.get_data()["pk_lin"]
+        if r_drag is None:
+            r_drag = self.camb.get_data()["r_s"]
+        if s is None:
+            s = self.camb.smoothing_kernel
+
+        j0 = spherical_jn(0, r_drag * ks)
 
         return {
             "sigma_nl": integrate.simps(pk_lin * (1.0 - j0), ks) / (6.0 * np.pi**2),
@@ -281,7 +284,7 @@ class PowerDing2018(PowerSpectrumFit):
             pk_smooth /= p["alpha"] ** 3
 
             if smooth:
-                pk2d = pk_smooth
+                pk2d = pk_smooth * fog
             else:
                 # Compute the BAO damping
                 power_par = 1.0 / (p["alpha"] ** 2 * (1.0 + epsilon) ** 4)

@@ -14,20 +14,13 @@ class Optimiser(Sampler):
         if temp_dir is not None and not os.path.exists(temp_dir):
             os.makedirs(temp_dir, exist_ok=True)
 
-    def fit(self, log_posterior, start, num_dim, prior_transform, save_dims=None, uid=None):
+    def fit(self, model, save_dims=None, uid=None):
         """ " Just runs a simple optimisation and stores the best fit in the chain file.
 
         Parameters
         ----------
-        log_posterior : function
-            A function which takes a list of parameters and returns
-            the log posterior
-        start : function|list|ndarray
-            Either a starting position, or a function that can be called
-            to generate a starting position
-        prior_transform : function
-            A function to transform from the unit hypercube to the parameter
-            region of interest.
+        model : class <Model>
+            An instance of one of barry's model classes
         save_dims : int, optional
             Only return values for the first ``save_dims`` parameters.
             Useful to remove numerous marginalisation parameters if running
@@ -43,6 +36,15 @@ class Optimiser(Sampler):
                 - *chain*: the best fit point
                 - *posterior*: the likelihood at this point
         """
+
+        log_posterior = model.get_posterior
+        start = model.get_start
+        num_dim = model.get_num_dim()
+        prior_transform = model.unscale
+
+        assert log_posterior is not None
+        assert start is not None
+        assert prior_transform is not None
 
         filename = os.path.join(self.temp_dir, f"{uid}_bestfit_chain.npy")
         if os.path.exists(filename):
@@ -63,7 +65,7 @@ class Optimiser(Sampler):
         return {"chain": ps, "posterior": -res.fun}
 
     def load_file(self, filename):
-        """ Load existing results from a file"""
+        """Load existing results from a file"""
 
         results = np.load(filename)
         likelihood = [results[0]]
