@@ -35,7 +35,7 @@ if __name__ == "__main__":
     )
     model_post = PowerBeutler2017(
         recon="sym",
-        isotropic=True,
+        isotropic=False,
         marg="full",
         poly_poles=[0, 2],
         n_poly=5,
