@@ -7,7 +7,7 @@ sys.path.append("../../")
 from barry.config import setup
 from barry.fitter import Fitter
 from barry.models.bao_power_Beutler2017 import PowerBeutler2017
-from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12
+from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_PV
 from barry.utils import plot_bestfit
 from barry.samplers import GridSearch
 
@@ -16,8 +16,17 @@ from barry.samplers import GridSearch
 if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
-    data = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
-    model = PowerBeutler2017(isotropic=data.isotropic, recon=data.recon, marg="full")
+    data = PowerSpectrum_SDSS_PV(realisation=0)
+    model = PowerBeutler2017(
+        recon=data.recon,
+        isotropic=data.isotropic,
+        marg="full",
+        fix_params=["om", "sigma_s", "sigma_nl"],
+        n_poly=1,
+        dilate_smooth=False,
+    )
+    model.set_default("sigma_s", 0.0)
+    model.set_default("sigma_nl", 0.0)
 
     sampler = GridSearch(temp_dir=dir_name)
 
@@ -31,22 +40,13 @@ if __name__ == "__main__":
 
         posterior, weight, chain, evidence, chi2, model, data, extra = fitter.load()[0]
 
-        print(np.shape(chain), model.get_labels())
         df = pd.DataFrame(chain, columns=model.get_labels())
 
         # Get the MAP point and set the model up at this point
-        model.set_data(data)
-        r_s = model.camb.get_data()["r_s"]
-        max_post = posterior.argmax()
-        params = df.loc[max_post]
-        params_dict = model.get_param_dict(chain[max_post])
-        for name, val in params_dict.items():
-            model.set_default(name, val)
-
-        chi2_bb, dof, bband, mods, smooths = model.plot(-0.5 * chi2, chain, model, title=extra["name"], figname=pfn + "_bestfit.pdf")
+        chi2_bb, dof, bband, mods, smooths = plot_bestfit(-0.5 * chi2, chain, model, title=extra["name"], figname=pfn + "_bestfit.pdf")
 
         plt.errorbar(df["$\\alpha$"], chi2, marker="None", ls="-", color="k")
         plt.xlabel(r"$\alpha$")
         plt.ylabel(r"$\chi^2$")
-        plt.xlim(0.7, 1.3)
+        plt.xlim(0.5, 1.5)
         plt.show()
