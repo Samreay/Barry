@@ -4,13 +4,13 @@ import numpy as np
 from barry.samplers.sampler import Sampler
 
 
-class DynestySampler(Sampler):
-    def __init__(self, temp_dir=None, max_iter=None, dynamic=False, nlive=500, print_progress=False):
+class NautilusSampler(Sampler):
+    def __init__(self, temp_dir=None, max_iter=None, dynamic=False, nlive=500, nupdate=None, print_progress=False):
 
         self.logger = logging.getLogger("barry")
         self.max_iter = max_iter
         self.nlive = nlive
-        # dynesty.utils.merge_runs()
+        self.nupdate = nupdate
         self.temp_dir = temp_dir
         if temp_dir is not None and not os.path.exists(temp_dir):
             os.makedirs(temp_dir, exist_ok=True)
@@ -18,10 +18,7 @@ class DynestySampler(Sampler):
         self.print_progress = print_progress
 
     def get_filename(self, uid):
-        if self.dynamic:
-            return os.path.join(self.temp_dir, f"{uid}_dyn_chain.npy")
-        else:
-            return os.path.join(self.temp_dir, f"{uid}_nest_chain.npy")
+        return os.path.join(self.temp_dir, f"{uid}_nautilus_chain.npy")
 
     def fit(self, model, save_dims=None, uid=None):
         """Runs the sampler over the model and returns the flat chain of results
@@ -48,7 +45,7 @@ class DynestySampler(Sampler):
                 - *evidence*: Bayesian evidence for the model/data combo.
 
         """
-        import dynesty
+        import nautilus
 
         log_likelihood = model.get_posterior
         num_dim = model.get_num_dim()
@@ -67,27 +64,24 @@ class DynestySampler(Sampler):
             save_dims = num_dim
         self.logger.debug("Fitting framework with %d dimensions" % num_dim)
         self.logger.info("Using dynesty Sampler")
-        if self.dynamic:
-            sampler = dynesty.DynamicNestedSampler(log_likelihood, prior_transform, num_dim)
-            sampler.run_nested(
-                maxiter=self.max_iter, print_progress=self.print_progress, nlive_init=self.nlive, nlive_batch=100, maxbatch=10
-            )
-        else:
-            sampler = dynesty.NestedSampler(log_likelihood, prior_transform, num_dim, nlive=self.nlive)
-            sampler.run_nested(maxiter=self.max_iter, print_progress=self.print_progress)
+        sampler = nautilus.Sampler(prior_transform, log_likelihood, n_dim=num_dim, n_live=self.nlive, n_update=self.nupdate)
+        sampler.run(verbose=self.print_progress)
 
         self.logger.debug("Fit finished")
 
-        dresults = sampler.results
-        logz = dresults["logz"]
-        chain = dresults["samples"]
-        weights = np.exp(dresults["logwt"] - dresults["logz"][-1])
+        chain, logw, likelihood = sampler.posterior()
+        logz = sampler.evidence()
+        weights = np.exp(logw)
         max_weight = weights.max()
         trim = max_weight / 1e5
         mask = weights > trim
-        likelihood = dresults["logl"]
-        self._save(chain[mask, :], weights[mask], likelihood[mask], filename, logz[mask], save_dims)
-        return {"chain": chain[mask, :], "weights": weights[mask], "posterior": likelihood[mask], "evidence": logz[mask]}
+        self._save(chain[mask, :], weights[mask], likelihood[mask], filename, np.zeros(len(mask))[mask] + logz, save_dims)
+        return {
+            "chain": chain[mask, :],
+            "weights": weights[mask],
+            "posterior": likelihood[mask],
+            "evidence": np.zeros(len(mask))[mask] + logz,
+        }
 
     def _save(self, chain, weights, likelihood, filename, logz, save_dims):
         res = np.vstack((likelihood, weights, logz, chain[:, :save_dims].T)).T

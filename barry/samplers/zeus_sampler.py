@@ -82,7 +82,7 @@ class ZeusSampler(Sampler):
 
         tau = zeus.AutoCorrTime(sampler.get_chain(discard=0.5))
         burnin = int(2 * np.max(tau))
-        samples = sampler.get_chain(discard=burnin, flat=True).T
+        samples = sampler.get_chain(discard=burnin, flat=True)
         likelihood = sampler.get_log_prob(discard=burnin, flat=True)
         self._save(samples, likelihood, filename, save_dims)
         return {"chain": samples, "weights": np.ones(len(likelihood)), "posterior": likelihood}

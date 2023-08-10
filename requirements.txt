@@ -10,3 +10,4 @@ dynesty
 pyyaml
 mpi4py
 pytest
+nautilus-sampler

@@ -7,7 +7,7 @@ from barry.fitter import Fitter
 from barry.models.bao_power_Beutler2017 import PowerBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12
 from barry.utils import plot_bestfit
-from barry.samplers import EnsembleSampler
+from barry.samplers import MetropolisHastings
 
 # Run a quick test using emcee to fit a mock mean.
 
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     data = PowerSpectrum_SDSS_DR12(isotropic=True, recon="iso")
     model = PowerBeutler2017(isotropic=data.isotropic, recon=data.recon, marg="full")
 
-    sampler = EnsembleSampler(temp_dir=dir_name)
+    sampler = MetropolisHastings(temp_dir=dir_name)
 
     fitter = Fitter(dir_name)
     fitter.add_model_and_dataset(model, data)
