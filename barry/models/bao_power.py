@@ -509,7 +509,7 @@ class PowerSpectrumFit(Model):
                     poly_model_fit[n], poly_model_fit_odd[n] = poly_model[n, mask], poly_model_odd[n, mask]
             else:
                 poly_model_fit, poly_model_fit_odd = poly_model, poly_model_odd
-                
+
         if self.marg_type == "partial":
             return self.get_chi2_partial_marg_likelihood(
                 d["pk"],

@@ -16,7 +16,7 @@ from barry.fitter import Fitter
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__, "/sigma_priors/")
+    pfn, dir_name, file = setup(__file__, "/k_max_cut/")
 
     # Set up the Fitting class and Optimiser sampler.
     fitter = Fitter(dir_name, remove_output=False)
@@ -77,7 +77,7 @@ if __name__ == "__main__":
                 recon=recon,
                 fit_poles=[0, 2],
                 min_k=0.02,
-                max_k=0.30,
+                max_k=0.25,
                 realisation=None,
                 num_mocks=1000,
                 datafile=datafile,
@@ -104,7 +104,7 @@ if __name__ == "__main__":
         dataname = datafile.split("_")[6].split(".")[0]
         results[dataname] = {}
         for recon in ["Prerecon", "RecSym"]:
-            results[dataname][recon] = np.empty((25, 4))
+            results[dataname][recon] = np.empty((25, 7))
 
     # alpha_par_trues = {"c000": 1.0, "c001": 1.01560850, "c002": 1.01431340, "c003": 1.00447187}
     # alpha_perp_trues = {"c000": 1.0, "c001": 1.03502325, "c002": 0.99011363, "c003": 1.01305502}
@@ -130,20 +130,20 @@ if __name__ == "__main__":
 
             alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
 
+            # Compute the best-fit models for both the best-fit alpha/epsilon and the true alpha/epsilon keeping all the other
+            # parameters fixed from the chain so we can investigate the differences in the best-fit models
+            # Get the MAP point and set the model up at this point
+            model.set_data(data)
+            r_s = model.camb.get_data()["r_s"]
+            max_post = posterior.argmax()
+            params = df.loc[max_post]
+            params_dict = model.get_param_dict(chain[max_post])
+            for name, val in params_dict.items():
+                model.set_default(name, val)
+
+            new_chi_squared, dof, bband, mods, smooths = model.get_model_summary(params_dict)
+
             if dataname == "c002" and recon_bin == "RecSym":
-                # Compute the best-fit models for both the best-fit alpha/epsilon and the true alpha/epsilon keeping all the other
-                # parameters fixed from the chain so we can investigate the differences in the best-fit models
-                # Get the MAP point and set the model up at this point
-                model.set_data(data)
-                r_s = model.camb.get_data()["r_s"]
-                max_post = posterior.argmax()
-                params = df.loc[max_post]
-                params_dict = model.get_param_dict(chain[max_post])
-                for name, val in params_dict.items():
-                    model.set_default(name, val)
-
-                new_chi_squared, dof, bband, mods, smooths = model.get_model_summary(params_dict)
-
                 params_dict["alpha"] = alpha_true
                 params_dict["epsilon"] = epsilon_true
                 new_chi_squared_true, dof_true, bband_true, mods_true, smooths_true = model.get_model_summary(params_dict)
@@ -161,9 +161,21 @@ if __name__ == "__main__":
             df["$\\alpha_\\perp$"] = alpha_perp - alpha_perp_true
             df["$\\alpha$"] -= alpha_true  # For easier plotting
             df["$\\epsilon$"] -= epsilon_true  # For easier plotting
-            results[dataname][recon_bin][realisation] = df[
-                ["$\\alpha$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]
-            ].to_numpy()
+            results[dataname][recon_bin][realisation] = np.concatenate(
+                [
+                    df[
+                        [
+                            "$\\alpha$",
+                            "$\\epsilon$",
+                            "$\\alpha_\\parallel$",
+                            "$\\alpha_\\perp$",
+                            "$\\Sigma_{nl,||}$",
+                            "$\\Sigma_{nl,\\perp}$",
+                        ]
+                    ].to_numpy()[0],
+                    [new_chi_squared],
+                ]
+            )
 
     res_pk0 = np.array(res_pk0)
     res_pk2 = np.array(res_pk2)
@@ -173,29 +185,34 @@ if __name__ == "__main__":
     res_mod_pk2 = np.array(res_mod_pk2)
 
     # Plot the residuals
-    for d in zip([[res_pk0, res_pk0_2, res_mod_pk0], [res_pk2, res_pk2_2, res_mod_pk2]]):
+    from matplotlib.colors import Normalize
+    from matplotlib.cm import ScalarMappable
+
+    bias = results["c000"]["RecSym"][:, 2] - results["c002"]["RecSym"][:, 2]
+    cmap = plt.get_cmap("viridis")
+    norm = Normalize(vmin=np.amin(bias), vmax=np.amax(bias))
+    s_map = ScalarMappable(cmap=cmap, norm=norm)
+    for i in range(25):
         plt.errorbar(
             data[0]["ks"],
-            np.mean(d[0][0], axis=0),
+            res_pk0[i],
             fmt="-",
-            color="r",
+            color=s_map.to_rgba(bias[i]),
+            alpha=0.3,
         )
+    plt.show()
+    for i in range(25):
         plt.errorbar(
             data[0]["ks"],
-            np.mean(d[0][1], axis=0),
+            res_pk2[i],
             fmt="-",
-            color="b",
+            color=s_map.to_rgba(bias[i]),
+            alpha=0.3,
         )
-        plt.errorbar(
-            data[0]["ks"],
-            50.0 * np.mean(d[0][2], axis=0),
-            fmt="-",
-            color="k",
-        )
-        plt.show()
+    plt.show()
 
     # Now we have all the results, we can plot them
-    firstind = 0
+    firstind = 2
     for cosmo in ["c001", "c002", "c003"]:
         fig, axes = plt.subplots(figsize=(8, 8), nrows=2, ncols=2, sharex="row", squeeze=False)
         plt.subplots_adjust(left=0.1, top=0.98, bottom=0.10, right=0.98, hspace=0.0, wspace=0.35)
@@ -271,3 +288,13 @@ if __name__ == "__main__":
                 axes[j, i].text(0.30, 0.95, recon, ha="right", va="top", transform=axes[j, i].transAxes, fontsize=14)
 
         plt.show()
+
+        # Output the results for comparison
+        # Save all the numbers to a file
+        for cosmo in ["c000", "c001", "c002", "c003"]:
+            for recon in ["Prerecon", "RecSym"]:
+                with open(dir_name + f"/Barry_fit_outputs_{cosmo}_{recon}.txt", "w") as f:
+                    f.write("# Realisation, alpha, epsilon, alpha_par, alpha_perp, Sigma_nl_par, Sigma_nl_perp, chi2\n")
+                    for i, l in enumerate(results[cosmo][recon]):
+                        outstr = f"{i:3d}, {l[0]:6.4f}, {l[1]:6.4f}, {l[2]:6.4f}, {l[3]:6.4f}, {l[4]:6.4f}, {l[5]:6.4f}, {l[6]:6.4f}\n"
+                        f.write(outstr)
