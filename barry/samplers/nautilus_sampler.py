@@ -63,7 +63,7 @@ class NautilusSampler(Sampler):
         if save_dims is None:
             save_dims = num_dim
         self.logger.debug("Fitting framework with %d dimensions" % num_dim)
-        self.logger.info("Using dynesty Sampler")
+        self.logger.info("Using Nautilus Sampler")
         sampler = nautilus.Sampler(prior_transform, log_likelihood, n_dim=num_dim, n_live=self.nlive, n_update=self.nupdate)
         sampler.run(verbose=self.print_progress)
 

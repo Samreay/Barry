@@ -2,7 +2,7 @@ import sys
 
 sys.path.append("..")
 sys.path.append("../..")
-from barry.samplers import DynestySampler
+from barry.samplers import NautilusSampler
 from barry.config import setup
 from barry.models import PowerBeutler2017, CorrBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESI_KP4
@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
-    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
+    sampler = NautilusSampler(temp_dir=dir_name)
 
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
@@ -37,7 +37,6 @@ if __name__ == "__main__":
         # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
         # First load up mock mean and add it to the fitting list.
         dataset_pk = PowerSpectrum_DESI_KP4(
-            datafile="desi_kp4_abacus_cubicbox_cv_pk_elg.pkl",
             recon=recon,
             fit_poles=[0, 2],
             min_k=0.02,
@@ -45,10 +44,10 @@ if __name__ == "__main__":
             realisation=None,
             num_mocks=1000,
             reduce_cov_factor=25,
+            datafile="desi_kp4_abacus_cubicbox_cv_pk_elg.pkl",
         )
 
         dataset_xi = CorrelationFunction_DESI_KP4(
-            datafile="desi_kp4_abacus_cubicbox_cv_xi_elg.pkl",
             recon=recon,
             fit_poles=[0, 2],
             min_dist=52.0,
@@ -56,6 +55,7 @@ if __name__ == "__main__":
             realisation=None,
             num_mocks=1000,
             reduce_cov_factor=25,
+            datafile="desi_kp4_abacus_cubicbox_cv_xi_elg.pkl",
         )
 
         for n_poly in range(1, 8):

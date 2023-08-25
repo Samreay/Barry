@@ -16,7 +16,7 @@ from barry.fitter import Fitter
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__, "/k_max_cut/")
+    pfn, dir_name, file = setup(__file__, "/sigma_priors/")
 
     # Set up the Fitting class and Optimiser sampler.
     fitter = Fitter(dir_name, remove_output=False)
@@ -47,14 +47,7 @@ if __name__ == "__main__":
     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
     model_pre.kvals, model_pre.pksmooth, model_pre.pkratio = pktemplate.T
 
-    model_post = PowerBeutler2017(
-        recon="sym",
-        isotropic=False,
-        fix_params=["om", "sigma_s"],
-        marg="full",
-        poly_poles=[0, 2],
-        n_poly=6,
-    )
+    model_post = PowerBeutler2017(recon="sym", isotropic=False, fix_params=["om", "sigma_s"], marg="full", poly_poles=[0, 2], n_poly=6)
     model_post.set_default("sigma_nl_par", 5.4, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model_post.set_default("sigma_nl_perp", 1.8, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model_post.set_default("sigma_s", 0.0)
@@ -104,7 +97,7 @@ if __name__ == "__main__":
         dataname = datafile.split("_")[6].split(".")[0]
         results[dataname] = {}
         for recon in ["Prerecon", "RecSym"]:
-            results[dataname][recon] = np.empty((25, 7))
+            results[dataname][recon] = np.empty((25, 8))
 
     # alpha_par_trues = {"c000": 1.0, "c001": 1.01560850, "c002": 1.01431340, "c003": 1.00447187}
     # alpha_perp_trues = {"c000": 1.0, "c001": 1.03502325, "c002": 0.99011363, "c003": 1.01305502}
@@ -161,6 +154,7 @@ if __name__ == "__main__":
             df["$\\alpha_\\perp$"] = alpha_perp - alpha_perp_true
             df["$\\alpha$"] -= alpha_true  # For easier plotting
             df["$\\epsilon$"] -= epsilon_true  # For easier plotting
+            df["$\\alpha_AP"] = (alpha_par / alpha_perp) - (alpha_par_true / alpha_perp_true)
             results[dataname][recon_bin][realisation] = np.concatenate(
                 [
                     df[
@@ -169,6 +163,7 @@ if __name__ == "__main__":
                             "$\\epsilon$",
                             "$\\alpha_\\parallel$",
                             "$\\alpha_\\perp$",
+                            "$\\alpha_AP",
                             "$\\Sigma_{nl,||}$",
                             "$\\Sigma_{nl,\\perp}$",
                         ]
@@ -294,7 +289,7 @@ if __name__ == "__main__":
         for cosmo in ["c000", "c001", "c002", "c003"]:
             for recon in ["Prerecon", "RecSym"]:
                 with open(dir_name + f"/Barry_fit_outputs_{cosmo}_{recon}.txt", "w") as f:
-                    f.write("# Realisation, alpha, epsilon, alpha_par, alpha_perp, Sigma_nl_par, Sigma_nl_perp, chi2\n")
+                    f.write("# Realisation, alpha, epsilon, alpha_par, alpha_perp, alpha_AP, Sigma_nl_par, Sigma_nl_perp, chi2\n")
                     for i, l in enumerate(results[cosmo][recon]):
-                        outstr = f"{i:3d}, {l[0]:6.4f}, {l[1]:6.4f}, {l[2]:6.4f}, {l[3]:6.4f}, {l[4]:6.4f}, {l[5]:6.4f}, {l[6]:6.4f}\n"
+                        outstr = f"{i:3d}, {l[0]:6.4f}, {l[1]:6.4f}, {l[2]:6.4f}, {l[3]:6.4f}, {l[4]:6.4f}, {l[5]:6.4f}, {l[6]:6.4f}, {l[7]:6.4f}\n"
                         f.write(outstr)

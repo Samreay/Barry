@@ -2,7 +2,7 @@ import sys
 
 sys.path.append("..")
 sys.path.append("../..")
-from barry.samplers import DynestySampler
+from barry.samplers import NautilusSampler
 from barry.config import setup
 from barry.models import PowerBeutler2017, CorrBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESI_KP4
@@ -24,89 +24,77 @@ if __name__ == "__main__":
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
-    sampler = DynestySampler(temp_dir=dir_name, nlive=500)
-
-    mocktypes = ["abacus_cubicbox", "abacus_cubicbox_cv"]
-    nzbins = [1, 1]
+    sampler = NautilusSampler(temp_dir=dir_name)
 
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
     # Loop over the mocktypes
     allnames = []
-    for i, (mocktype, redshift_bins) in enumerate(zip(mocktypes, nzbins)):
 
-        # Loop over the available redshift bins for each mock type
-        for z in range(redshift_bins):
+    # Loop over pre- and post-recon power spectrum measurements
+    for recon in [None, "sym"]:
 
-            # Loop over pre- and post-recon power spectrum measurements
-            for recon in [None, "sym"]:
+        # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
+        # First load up mock mean and add it to the fitting list.
+        dataset_pk = PowerSpectrum_DESI_KP4(
+            recon=recon,
+            fit_poles=[0, 2],
+            min_k=0.02,
+            max_k=0.30,
+            realisation=None,
+            num_mocks=1000,
+            reduce_cov_factor=25,
+            datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
+        )
 
-                # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
-                # First load up mock mean and add it to the fitting list.
-                dataset_pk = PowerSpectrum_DESI_KP4(
-                    recon=recon,
-                    fit_poles=[0, 2],
-                    min_k=0.02,
-                    max_k=0.30,
-                    mocktype=mocktype,
-                    redshift_bin=z + 1,
-                    realisation=None,
-                    num_mocks=1000,
-                    reduce_cov_factor=25,
-                )
+        dataset_xi = CorrelationFunction_DESI_KP4(
+            recon=recon,
+            fit_poles=[0, 2],
+            min_dist=52.0,
+            max_dist=150.0,
+            realisation=None,
+            num_mocks=1000,
+            reduce_cov_factor=25,
+            datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
+        )
 
-                if "abacus_cubicbox_cv" not in mocktype:
-                    dataset_xi = CorrelationFunction_DESI_KP4(
-                        recon=recon,
-                        fit_poles=[0, 2],
-                        min_dist=52.0,
-                        max_dist=150.0,
-                        mocktype=mocktype,
-                        redshift_bin=z + 1,
-                        realisation=None,
-                        num_mocks=1000,
-                        reduce_cov_factor=25,
-                    )
+        for n_poly in range(1, 8):
 
-                for n_poly in range(1, 8):
+            model = PowerBeutler2017(
+                recon=dataset_pk.recon,
+                isotropic=dataset_pk.isotropic,
+                fix_params=["om", "alpha", "epsilon"],
+                marg="full",
+                poly_poles=dataset_pk.fit_poles,
+                correction=Correction.NONE,
+                n_poly=n_poly,
+            )
 
-                    model = PowerBeutler2017(
-                        recon=dataset_pk.recon,
-                        isotropic=dataset_pk.isotropic,
-                        fix_params=["om", "alpha", "epsilon"],
-                        marg="full",
-                        poly_poles=dataset_pk.fit_poles,
-                        correction=Correction.NONE,
-                        n_poly=n_poly,
-                    )
+            # Load in a pre-existing BAO template
+            pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+            model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
-                    # Load in a pre-existing BAO template
-                    pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-                    model.kvals, model.pksmooth, model.pkratio = pktemplate.T
+            name = dataset_pk.name + " mock mean n_poly=" + str(n_poly)
+            fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[n_poly - 1])
+            allnames.append(name)
 
-                    name = dataset_pk.name + " mock mean n_poly=" + str(n_poly)
-                    fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[n_poly - 1])
-                    allnames.append(name)
+            model = CorrBeutler2017(
+                recon=dataset_xi.recon,
+                isotropic=dataset_xi.isotropic,
+                marg="full",
+                fix_params=["om", "alpha", "epsilon"],
+                poly_poles=dataset_xi.fit_poles,
+                correction=Correction.NONE,
+                n_poly=n_poly,
+            )
 
-                    if "abacus_cubicbox_cv" not in mocktype:
+            # Load in a pre-existing BAO template
+            pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+            model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
-                        model = CorrBeutler2017(
-                            recon=dataset_xi.recon,
-                            isotropic=dataset_xi.isotropic,
-                            marg="full",
-                            fix_params=["om", "alpha", "epsilon"],
-                            poly_poles=dataset_xi.fit_poles,
-                            correction=Correction.NONE,
-                            n_poly=n_poly,
-                        )
-
-                        # Load in a pre-existing BAO template
-                        pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-                        model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
-
-                        name = dataset_xi.name + " mock mean n_poly=" + str(n_poly)
-                        fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[n_poly - 1])
-                        allnames.append(name)
+            name = dataset_xi.name + " mock mean n_poly=" + str(n_poly)
+            fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[n_poly - 1])
+            allnames.append(name)
 
     # Submit all the job. We have quite a few (42), so we'll
     # only assign 1 walker (processor) to each. Note that this will only run if the
@@ -134,7 +122,7 @@ if __name__ == "__main__":
         ]
         fitname = [None for i in range(len(c))]
 
-        datanames = ["Xi", "Pk", "Pk_CV"]
+        datanames = ["Xi_CV", "Pk_CV"]
 
         # Loop over all the chains
         stats = {}
@@ -144,7 +132,7 @@ if __name__ == "__main__":
             # Get the realisation number and redshift bin
             print(extra["name"].split("_")[0])
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
-            data_bin = 0 if "Xi" in extra["name"] else 1 if "CV" not in extra["name"] else 2
+            data_bin = 0 if "Xi" in extra["name"] else 1
             redshift_bin = int(2.0 * data_bin + recon_bin)
             print(extra["name"], recon_bin, data_bin, redshift_bin)
 
