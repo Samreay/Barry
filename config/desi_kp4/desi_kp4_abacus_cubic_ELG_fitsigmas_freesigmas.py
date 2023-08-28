@@ -189,9 +189,9 @@ if __name__ == "__main__":
 
         for redshift_bin in range(len(c)):
             if "Pre" in fitname[redshift_bin]:
-                truth = {"$\\Sigma_{nl,||}$": 9.71, "$\\Sigma_{nl,\\perp}$": 4.66, "$\\Sigma_s$": None}
+                truth = {"$\\Sigma_{nl,||}$": 8.6, "$\\Sigma_{nl,\\perp}$": 4.0, "$\\Sigma_s$": 3.0}
             else:
-                truth = {"$\\Sigma_{nl,||}$": 5.29, "$\\Sigma_{nl,\\perp}$": 1.57, "$\\Sigma_s$": None}
+                truth = {"$\\Sigma_{nl,||}$": 5.4, "$\\Sigma_{nl,\\perp}$": 1.6, "$\\Sigma_s$": 0.0}
             c[redshift_bin].configure(bins=20, sigmas=[0, 1])
             fig = c[redshift_bin].plotter.plot(
                 parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],

@@ -117,8 +117,6 @@ if __name__ == "__main__":
             ChainConsumer(),
             ChainConsumer(),
             ChainConsumer(),
-            ChainConsumer(),
-            ChainConsumer(),
         ]
         fitname = [None for i in range(len(c))]
 
@@ -130,7 +128,6 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number and redshift bin
-            print(extra["name"].split("_")[0])
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
             data_bin = 0 if "Xi" in extra["name"] else 1
             redshift_bin = int(2.0 * data_bin + recon_bin)
@@ -191,9 +188,9 @@ if __name__ == "__main__":
 
         for redshift_bin in range(len(c)):
             if "Pre" in fitname[redshift_bin]:
-                truth = {"$\\Sigma_{nl,||}$": 9.71, "$\\Sigma_{nl,\\perp}$": 4.66, "$\\Sigma_s$": None}
+                truth = {"$\\Sigma_{nl,||}$": 9.6, "$\\Sigma_{nl,\\perp}$": 4.8, "$\\Sigma_s$": 2.0}
             else:
-                truth = {"$\\Sigma_{nl,||}$": 5.29, "$\\Sigma_{nl,\\perp}$": 1.57, "$\\Sigma_s$": None}
+                truth = {"$\\Sigma_{nl,||}$": 5.1, "$\\Sigma_{nl,\\perp}$": 1.6, "$\\Sigma_s$": 0.0}
             c[redshift_bin].configure(bins=20, sigmas=[0, 1])
             fig = c[redshift_bin].plotter.plot(
                 parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
