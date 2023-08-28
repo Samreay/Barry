@@ -136,7 +136,7 @@ if __name__ == "__main__":
             realisation=None,
             num_mocks=1000,
             reduce_cov_factor=25,
-            datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
+            datafile="desi_kp4_abacus_cubicbox_cv_pk_elg.pkl",
         )
 
         dataset_xi = CorrelationFunction_DESI_KP4(
@@ -147,7 +147,7 @@ if __name__ == "__main__":
             realisation=None,
             num_mocks=1000,
             reduce_cov_factor=25,
-            datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
+            datafile="desi_kp4_abacus_cubicbox_cv_xi_elg.pkl",
         )
 
         # Loop over pre- and post-recon measurements
