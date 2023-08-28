@@ -109,7 +109,7 @@ def plot_errors(stats, figname):
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__, "/reduced_cov/")
+    pfn, dir_name, file = setup(__file__)
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
@@ -135,7 +135,7 @@ if __name__ == "__main__":
             max_k=0.30,
             realisation=None,
             num_mocks=1000,
-            reduce_cov_factor=25,
+            reduce_cov_factor=1,
             datafile="desi_kp4_abacus_cubicbox_cv_pk_elg.pkl",
         )
 
@@ -146,7 +146,7 @@ if __name__ == "__main__":
             max_dist=150.0,
             realisation=None,
             num_mocks=1000,
-            reduce_cov_factor=25,
+            reduce_cov_factor=1,
             datafile="desi_kp4_abacus_cubicbox_cv_xi_elg.pkl",
         )
 
@@ -185,9 +185,9 @@ if __name__ == "__main__":
                     correction=Correction.NONE,
                     n_poly=n_poly,
                 )
-                model.set_default("sigma_nl_par", 5.4, min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
-                model.set_default("sigma_nl_perp", 1.8, min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
-                model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
+                model.set_default("sigma_nl_par", sigma[recon][0], min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
+                model.set_default("sigma_nl_perp", sigma[recon][1], min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
+                model.set_default("sigma_s", sigma[recon][2], min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
 
                 # Load in a pre-existing BAO template
                 pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
