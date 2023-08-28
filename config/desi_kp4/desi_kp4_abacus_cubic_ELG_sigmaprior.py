@@ -1,7 +1,7 @@
 import sys
 
-sys.path.append("")
-sys.path.append("../")
+sys.path.append("..")
+sys.path.append("../../")
 from barry.samplers import NautilusSampler
 from barry.config import setup
 from barry.models import PowerBeutler2017, CorrBeutler2017
