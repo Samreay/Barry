@@ -109,7 +109,7 @@ def plot_errors(stats, figname):
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__)
+    pfn, dir_name, file = setup(__file__, "/reduced_cov/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
@@ -135,7 +135,7 @@ if __name__ == "__main__":
             max_k=0.30,
             realisation=None,
             num_mocks=1000,
-            reduce_cov_factor=1,
+            reduce_cov_factor=25,
             datafile="desi_kp4_abacus_cubicbox_cv_pk_elg.pkl",
         )
 
@@ -146,7 +146,7 @@ if __name__ == "__main__":
             max_dist=150.0,
             realisation=None,
             num_mocks=1000,
-            reduce_cov_factor=1,
+            reduce_cov_factor=25,
             datafile="desi_kp4_abacus_cubicbox_cv_xi_elg.pkl",
         )
 
