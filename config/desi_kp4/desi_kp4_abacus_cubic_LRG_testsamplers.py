@@ -90,7 +90,7 @@ if __name__ == "__main__":
     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
     model_xi.parent.kvals, model_xi.parent.pksmooth, model_xi.parent.pkratio = pktemplate.T
 
-    for fitter, sampler, sampler_name in zip(fitters, samplers, sampler_names):
+    for i, (fitter, sampler, sampler_name) in enumerate(zip(fitters, samplers, sampler_names)):
         print(sampler, sampler_name)
         for m, d in zip([model_pk, model_xi], [dataset_pk, dataset_xi]):
             name = d.name + f" {sampler_name} mock mean"
@@ -103,6 +103,11 @@ if __name__ == "__main__":
         # Submit all the jobs
         fitter.set_sampler(sampler)
         fitter.set_num_walkers(1)
+        if len(sys.argv) == 1 and i != 0:
+            # If true, this code is run for the first time, and we should submit the jobs, but only if this is the
+            # first iteration, to avoid duplicating everything.
+            break
+
         fitter.fit(file)
 
     # Everything below here is for plotting the chains once they have been run. The should_plot()
