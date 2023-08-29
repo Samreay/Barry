@@ -5,7 +5,7 @@ from barry.samplers.sampler import Sampler
 
 
 class ZeusSampler(Sampler):
-    def __init__(self, num_walkers=None, temp_dir=None, num_steps=20000, autoconverge=True):
+    def __init__(self, num_walkers=None, temp_dir=None, num_steps=20000, autoconverge=True, print_progress=False):
 
         self.logger = logging.getLogger("barry")
         self.num_steps = num_steps
@@ -14,6 +14,7 @@ class ZeusSampler(Sampler):
         if temp_dir is not None and not os.path.exists(temp_dir):
             os.makedirs(temp_dir, exist_ok=True)
         self.autoconverge = autoconverge
+        self.print_progress = print_progress
 
     def get_filename(self, uid):
         return os.path.join(self.temp_dir, f"{uid}_zeus_chain.npy")
@@ -75,7 +76,7 @@ class ZeusSampler(Sampler):
         self.logger.info("Sampling posterior now")
 
         sampler = zeus.EnsembleSampler(self.num_walkers, num_dim, log_posterior, verbose=False)
-        sampler.run_mcmc(pos, self.num_steps, callbacks=callbacks)
+        sampler.run_mcmc(pos, self.num_steps, callbacks=callbacks, progress=self.print_progress)
 
         self.logger.debug("Fit finished")
 
