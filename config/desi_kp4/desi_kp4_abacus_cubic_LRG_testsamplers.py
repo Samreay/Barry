@@ -18,18 +18,18 @@ from chainconsumer import ChainConsumer
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__, "/reduced_cov/")
+    pfn, dir_name, file = setup(__file__)
 
-    # Set up the Fitting class and Dynesty sampler with 250 live points.
-    fitters = [Fitter(dir_name, remove_output=False) for _ in range(4)]
+    # Set up the Fitting classes
+    fitters = [Fitter(dir_name, remove_output=False) for _ in range(5)]
     samplers = [
-        NautilusSampler(temp_dir=dir_name),
+        NautilusSampler(temp_dir=dir_name, print_progress=True),
         ZeusSampler(temp_dir=dir_name),
-        EnsembleSampler(temp_dir=dir_name),
-        DynestySampler(temp_dir=dir_name),
-        DynestySampler(temp_dir=dir_name, dynamic=True),
+        EnsembleSampler(temp_dir=dir_name, print_progress=True),
+        DynestySampler(temp_dir=dir_name, print_progress=True),
+        DynestySampler(temp_dir=dir_name, dynamic=True, print_progress=True),
     ]
-    sampler_names = ["Nautilus", "Zeus", "Emcee", "Dynesty"]
+    sampler_names = ["Nautilus", "Zeus", "Emcee", "Dynesty_Static" "Dynesty_Dynamic"]
 
     # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
     # First load up mock mean and add it to the fitting list.
@@ -40,7 +40,7 @@ if __name__ == "__main__":
         max_k=0.30,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=25,
+        reduce_cov_factor=1,
         datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
     )
 
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         max_dist=150.0,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=25,
+        reduce_cov_factor=1,
         datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
     )
 
@@ -92,12 +92,15 @@ if __name__ == "__main__":
 
     for fitter, sampler, sampler_name in zip(fitters, samplers, sampler_names):
 
-        fitter.add_model_and_dataset(model_pk, dataset_pk, name=dataset_pk.name + f" mock mean {sampler_name}")
-        fitter.add_model_and_dataset(model_xi, dataset_xi, name=dataset_xi.name + f" mock mean {sampler_name}")
+        for m, d in zip([model_pk, model_xi], [dataset_pk, dataset_xi]):
+            name = d.name + f" {sampler_name} mock mean"
+            fitter.add_model_and_dataset(m, d, name=name)
+            for j in range(len(d.mock_data)):
+                d.set_realisation(j)
+                name = d.name + f" {sampler_name} realisation {j}"
+                fitter.add_model_and_dataset(m, d, name=name)
 
-        # Submit all the jobs to NERSC. We have quite a few (72), so we'll
-        # only assign 1 walker (processor) to each. Note that this will only run if the
-        # directory is empty (i.e., it won't overwrite existing chains)
+        # Submit all the jobs
         fitter.set_sampler(sampler)
         fitter.set_num_walkers(1)
         fitter.fit(file)
@@ -119,15 +122,13 @@ if __name__ == "__main__":
         ]
 
         # Loop over all the fitters
-        stats = [[] for _ in range(len(datanames))]
         output = {k: [] for k in datanames}
-        for posterior, weight, chain, evidence, model, data, extra in fitter.load():
+        for fitter, sampler, sampler_name in zip(fitters, samplers, sampler_names):
+
+            posterior, weight, chain, evidence, model, data, extra = fitter.load()
 
             # Get the realisation number and redshift bin
-            recon_bin = 0 if "Prerecon" in extra["name"] else 1
-            data_bin = 0 if "Xi" in extra["name"] else 1 if "CV" not in extra["name"] else 2
-            sigma_bin = int(extra["name"].split("fixed_type ")[1].split(" ")[0])
-            redshift_bin = int(2.0 * len(sigma_sigma) * data_bin + 2.0 * sigma_bin + recon_bin)
+            data_bin = 0 if "Xi" in extra["name"] else 1
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -142,18 +143,15 @@ if __name__ == "__main__":
                 axis=0,
             )
             extra.pop("realisation", None)
-            if "n_poly=5" in extra["name"]:
-                extra["name"] = datanames[data_bin] + f" fixed_type {sigma_bin}"
-                c[data_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+            c[data_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
 
             stats[data_bin].append(
                 [
-                    sigma_sigma[sigma_bin],
-                    model.n_poly,
+                    sampler_name,
                     mean[0] - 1.0,
                     mean[1] - 1.0,
-                    mean[2] - 5.4,
-                    mean[3] - 1.8,
+                    mean[2] - 5.1,
+                    mean[3] - 1.6,
                     mean[4],
                     np.sqrt(cov[0, 0]),
                     np.sqrt(cov[1, 1]),
@@ -163,28 +161,17 @@ if __name__ == "__main__":
                 ]
             )
             output[datanames[data_bin]].append(
-                f"{sigma_sigma[sigma_bin]:6.4f}, {model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {mean[3]:6.4f}, {mean[4]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {np.sqrt(cov[2, 2]):6.4f}, {np.sqrt(cov[3, 3]):6.4f}, {np.sqrt(cov[4, 4]):6.4f}"
+                f"{sampler_name:s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {mean[3]:6.4f}, {mean[4]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {np.sqrt(cov[2, 2]):6.4f}, {np.sqrt(cov[3, 3]):6.4f}, {np.sqrt(cov[4, 4]):6.4f}"
             )
 
-        print(stats)
-
         for data_bin in range(3):
-            if "Pre" in datanames[data_bin]:
-                truth = {
-                    "$\\alpha_\\perp$": 1.0,
-                    "$\\alpha_\\parallel$": 1.0,
-                    "$\\Sigma_{nl,||}$": 9.71,
-                    "$\\Sigma_{nl,\\perp}$": 4.66,
-                    "$\\Sigma_s$": None,
-                }
-            else:
-                truth = {
-                    "$\\alpha_\\perp$": 1.0,
-                    "$\\alpha_\\parallel$": 1.0,
-                    "$\\Sigma_{nl,||}$": 5.29,
-                    "$\\Sigma_{nl,\\perp}$": 1.57,
-                    "$\\Sigma_s$": None,
-                }
+            truth = {
+                "$\\alpha_\\perp$": 1.0,
+                "$\\alpha_\\parallel$": 1.0,
+                "$\\Sigma_{nl,||}$": 5.1,
+                "$\\Sigma_{nl,\\perp}$": 1.6,
+                "$\\Sigma_s$": 0.0,
+            }
 
             c[data_bin].configure(bins=20, sigmas=[0, 1])
             c[data_bin].plotter.plot(
@@ -194,10 +181,6 @@ if __name__ == "__main__":
                 legend=True,
                 extents=[(0.98, 1.02), (0.98, 1.02)],
             )
-
-            # Plot histograms of the errors and r_off
-            plot_alphas(np.array(stats[data_bin]), "/".join(pfn.split("/")[:-1]) + "/" + datanames[data_bin] + "_alphas.png")
-            plot_errors(np.array(stats[data_bin]), "/".join(pfn.split("/")[:-1]) + "/errs_" + datanames[data_bin] + "_alphas.png")
 
             # Save all the numbers to a file
             with open(dir_name + "/Barry_fit_" + datanames[data_bin] + ".txt", "w") as f:

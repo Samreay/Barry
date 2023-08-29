@@ -580,7 +580,7 @@ class Model(ABC):
         self.logger.info("Getting start position")
 
         bounds = [(0.0, 1.0) for _ in range(self.get_num_dim())]
-        res = differential_evolution(lambda *x: -self.get_posterior(self.unscale(*x)), bounds, tol=1.0e-5)
+        res = differential_evolution(lambda *x: -self.get_posterior(self.unscale(*x)), bounds, tol=1.0e-3)
 
         scaled_start = res.x
         ratio = 0.05  # 5% of the unit hypercube
