@@ -1,12 +1,11 @@
 import logging
 import os
 import numpy as np
-from barry.samplers.hdemcee import EmceeWrapper
 from barry.samplers.sampler import Sampler
 
 
 class EnsembleSampler(Sampler):
-    def __init__(self, num_walkers=None, num_steps=1000, num_burn=300, temp_dir=None, save_interval=300):
+    def __init__(self, num_walkers=None, num_steps=20000, temp_dir=None, autoconverge=True, print_progress=False):
         """Uses ``emcee`` and the `EnsembleSampler
         <http://dan.iel.fm/emcee/current/api/#emcee.EnsembleSampler>`_ to fit the supplied
         model.
@@ -19,17 +18,14 @@ class EnsembleSampler(Sampler):
         Parameters
         ----------
         num_walkers : int, optional
-            The number of walkers to run. If not supplied, it defaults to eight times the
+            The number of walkers to run. If not supplied, it defaults to four times the
             framework dimensionality
         num_steps : int, optional
-            The number of steps to run
-        num_burn : int, optional
-            The number of steps to discard for burn in
+            The maximum number of steps to run
         temp_dir : str
             If set, specifies a directory in which to save temporary results, like the emcee chain
-        save_interval : float
-            The amount of seconds between saving the chain to file. Setting to ``None``
-            disables serialisation.
+        autoconverge : bool
+            Whether or not to perform automated converge checking and stop early if this is achieved
         """
 
         self.logger = logging.getLogger("barry")
@@ -37,12 +33,15 @@ class EnsembleSampler(Sampler):
         self.pool = None
         self.master = True
         self.num_steps = num_steps
-        self.num_burn = num_burn
         self.temp_dir = temp_dir
         if temp_dir is not None and not os.path.exists(temp_dir):
             os.makedirs(temp_dir, exist_ok=True)
-        self.save_interval = save_interval
         self.num_walkers = num_walkers
+        self.autoconverge = autoconverge
+        self.print_progress = print_progress
+
+    def get_filename(self, uid):
+        return os.path.join(self.temp_dir, f"{uid}_emcee_chain.npy")
 
     def fit(self, model, save_dims=None, uid=None):
         """Runs the sampler over the model and returns the flat chain of results
@@ -75,36 +74,64 @@ class EnsembleSampler(Sampler):
         assert log_posterior is not None
         assert start is not None
 
+        filename = self.get_filename(uid)
+        if os.path.exists(filename):
+            self.logger.info("Not sampling, returning result from file.")
+            return self.load_file(filename)
+
         if self.num_walkers is None:
-            self.num_walkers = num_dim * 8
-            self.num_walkers = max(self.num_walkers, 50)
+            self.num_walkers = num_dim * 4
 
+        if save_dims is None:
+            save_dims = num_dim
         self.logger.debug("Fitting framework with %d dimensions" % num_dim)
-
         self.logger.info("Using Ensemble Sampler")
-        sampler = emcee.EnsembleSampler(self.num_walkers, num_dim, log_posterior, live_dangerously=True)
 
-        emcee_wrapper = EmceeWrapper(sampler)
-        flat_chain = emcee_wrapper.run_chain(
-            self.num_steps,
-            self.num_burn,
-            self.num_walkers,
-            num_dim,
-            start=start,
-            save_dim=save_dims,
-            temp_dir=self.temp_dir,
-            uid=uid,
-            save_interval=self.save_interval,
-        )
-        self.logger.debug("Fit finished")
-        if self.pool is not None:  # pragma: no cover
-            self.pool.close()
-            self.logger.debug("Pool closed")
-        return {"chain": flat_chain, "weights": np.ones(flat_chain.shape[0])}
+        pos = start(num_walkers=self.num_walkers)
+        self.logger.info("Sampling posterior now")
+
+        sampler = emcee.EnsembleSampler(self.num_walkers, num_dim, log_posterior)
+
+        # the chain is longer than 100 times the estimated autocorrelation time and if this estimate
+        # changed by less than 1%. I copied this from the emcee site as it seemed reasonable.
+        index = 0
+        counter = 0
+        old_tau = np.inf
+        autocorr = np.empty(self.num_steps)
+        for sample in sampler.sample(pos, iterations=self.num_steps, progress=self.print_progress):
+
+            # Only check convergence every 100 steps
+            if sampler.iteration % 100:
+                continue
+
+            # Compute the autocorrelation time so far
+            # Using tol=0 means that we'll always get an estimate even
+            # if it isn't trustworthy
+            tau = sampler.get_autocorr_time(tol=0)
+            autocorr[index] = np.mean(tau)
+            counter += 100
+
+            # Check convergence
+            converged = np.all(tau * 50 < sampler.iteration)
+            converged &= np.all(np.abs(old_tau - tau) / tau < 0.01)
+            if converged:
+                break
+            old_tau = tau
+            index += 1
+
+        tau = sampler.get_autocorr_time(tol=0)
+        burnin = int(2 * np.max(tau))
+        samples = sampler.get_chain(discard=burnin, flat=True)
+        likelihood = sampler.get_log_prob(discard=burnin, flat=True)
+        self._save(samples, likelihood, filename, save_dims)
+        return {"chain": samples, "weights": np.ones(len(likelihood)), "posterior": likelihood}
+
+    def _save(self, chain, likelihood, filename, save_dims):
+        res = np.vstack((likelihood, chain[:, :save_dims].T)).T
+        np.save(filename, res.astype(np.float32))
 
     def load_file(self, filename):
         results = np.load(filename)
-        posterior = np.load(filename.replace("chain.npy", "prob.npy"))
-        flat_chain = results[:, self.num_burn :, :].reshape((-1, results.shape[2]))
-        flat_posterior = posterior[:, self.num_burn :].reshape((-1, 1))
-        return {"chain": flat_chain, "posterior": flat_posterior}
+        likelihood = results[:, 0]
+        flat_chain = results[:, 1:]
+        return {"chain": flat_chain, "weights": np.ones(len(likelihood)), "posterior": likelihood}

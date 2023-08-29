@@ -5,7 +5,7 @@ from barry.samplers.sampler import Sampler
 
 
 class ZeusSampler(Sampler):
-    def __init__(self, num_walkers=None, temp_dir=None, num_steps=1000, autoconverge=True):
+    def __init__(self, num_walkers=None, temp_dir=None, num_steps=20000, autoconverge=True):
 
         self.logger = logging.getLogger("barry")
         self.num_steps = num_steps
@@ -67,10 +67,9 @@ class ZeusSampler(Sampler):
         callbacks = []
         if self.autoconverge:
             # Default convergence criteria from Zeus docos. Seem reasonable.
-            cb0 = zeus.callbacks.AutocorrelationCallback(ncheck=50, dact=0.01, nact=50, discard=0.5)
-            cb1 = zeus.callbacks.SplitRCallback(ncheck=50, epsilon=0.01, nsplits=2, discard=0.5)
-            cb2 = zeus.callbacks.MinIterCallback(nmin=50)
-            callbacks = [cb0, cb1, cb2]
+            cb0 = zeus.callbacks.AutocorrelationCallback(ncheck=100, dact=0.01, nact=50)
+            cb1 = zeus.callbacks.MinIterCallback(nmin=500)
+            callbacks = [cb0, cb1]
 
         pos = start(num_walkers=self.num_walkers)
         self.logger.info("Sampling posterior now")
@@ -80,7 +79,7 @@ class ZeusSampler(Sampler):
 
         self.logger.debug("Fit finished")
 
-        tau = zeus.AutoCorrTime(sampler.get_chain(discard=0.5))
+        tau = zeus.AutoCorrTime(sampler.get_chain())
         burnin = int(2 * np.max(tau))
         samples = sampler.get_chain(discard=burnin, flat=True)
         likelihood = sampler.get_log_prob(discard=burnin, flat=True)

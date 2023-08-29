@@ -579,22 +579,8 @@ class Model(ABC):
         """Gets an optimised `n` starting points by calculating a best fit starting point using basinhopping"""
         self.logger.info("Getting start position")
 
-        def minimise(scale_params):
-            return -self.get_posterior(self.unscale(scale_params))
-
-        close_default = 3
-        start_random = self.get_raw_start()
-        start_close = [(s + p.default * close_default) / (1 + close_default) for s, p in zip(start_random, self.get_active_params())]
-
-        self.logger.info("Starting basin hopping to find a good starting point")
-        res = basinhopping(
-            minimise,
-            self.scale(start_close),
-            niter_success=3,
-            niter=30,
-            stepsize=0.05,
-            minimizer_kwargs={"method": "Nelder-Mead", "options": {"maxiter": 600}},
-        )
+        bounds = [(0.0, 1.0) for _ in range(self.get_num_dim())]
+        res = differential_evolution(lambda *x: -self.get_posterior(self.unscale(*x)), bounds, tol=1.0e-5)
 
         scaled_start = res.x
         ratio = 0.05  # 5% of the unit hypercube
