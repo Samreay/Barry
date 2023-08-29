@@ -74,7 +74,7 @@ class ZeusSampler(Sampler):
         pos = start(num_walkers=self.num_walkers)
         self.logger.info("Sampling posterior now")
 
-        sampler = zeus.EnsembleSampler(self.num_walkers, num_dim, log_posterior)
+        sampler = zeus.EnsembleSampler(self.num_walkers, num_dim, log_posterior, verbose=False)
         sampler.run_mcmc(pos, self.num_steps, callbacks=callbacks)
 
         self.logger.debug("Fit finished")
