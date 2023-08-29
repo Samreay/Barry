@@ -23,13 +23,13 @@ if __name__ == "__main__":
     # Set up the Fitting classes
     fitters = [Fitter(dir_name, remove_output=False) for _ in range(5)]
     samplers = [
-        NautilusSampler(temp_dir=dir_name, print_progress=True),
+        NautilusSampler(temp_dir=dir_name),
         ZeusSampler(temp_dir=dir_name),
-        EnsembleSampler(temp_dir=dir_name, print_progress=True),
-        DynestySampler(temp_dir=dir_name, print_progress=True),
-        DynestySampler(temp_dir=dir_name, dynamic=True, print_progress=True),
+        EnsembleSampler(temp_dir=dir_name),
+        DynestySampler(temp_dir=dir_name),
+        DynestySampler(temp_dir=dir_name, dynamic=True),
     ]
-    sampler_names = ["Nautilus", "Zeus", "Emcee", "Dynesty_Static" "Dynesty_Dynamic"]
+    sampler_names = ["Nautilus", "Zeus", "Emcee", "Dynesty_Static", "Dynesty_Dynamic"]
 
     # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
     # First load up mock mean and add it to the fitting list.
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     model_xi.parent.kvals, model_xi.parent.pksmooth, model_xi.parent.pkratio = pktemplate.T
 
     for fitter, sampler, sampler_name in zip(fitters, samplers, sampler_names):
-
+        print(sampler, sampler_name)
         for m, d in zip([model_pk, model_xi], [dataset_pk, dataset_xi]):
             name = d.name + f" {sampler_name} mock mean"
             fitter.add_model_and_dataset(m, d, name=name)
