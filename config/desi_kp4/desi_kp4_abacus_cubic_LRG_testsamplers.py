@@ -2,6 +2,7 @@ import sys
 
 sys.path.append("..")
 sys.path.append("../../")
+import time
 from barry.samplers import NautilusSampler, ZeusSampler, EnsembleSampler, DynestySampler
 from barry.config import setup
 from barry.models import PowerBeutler2017, CorrBeutler2017
@@ -108,7 +109,9 @@ if __name__ == "__main__":
             # first iteration, to avoid duplicating everything.
             break
 
+        start = time.time()
         fitter.fit(file)
+        fitter.logger.info(f"Time to do fit: {(time.time()-start)/60.0} minutes")
 
     # Everything below here is for plotting the chains once they have been run. The should_plot()
     # function will check for the presence of chains and plot if it finds them on your laptop. On the HPC you can
