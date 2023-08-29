@@ -153,7 +153,7 @@ if __name__ == "__main__":
         # Loop over pre- and post-recon measurements
         for sig in range(len(sigma_sigma)):
 
-            for n_poly in range(3, 7):
+            for n_poly in range(3, 8):
 
                 model = PowerBeutler2017(
                     recon=dataset_pk.recon,
@@ -175,6 +175,8 @@ if __name__ == "__main__":
                 name = dataset_pk.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
                 fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[sig])
                 allnames.append(name)
+
+            for n_poly in range(1, 6):
 
                 model = CorrBeutler2017(
                     recon=dataset_xi.recon,
