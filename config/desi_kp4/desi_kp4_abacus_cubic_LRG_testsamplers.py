@@ -92,8 +92,8 @@ if __name__ == "__main__":
     model_xi.parent.kvals, model_xi.parent.pksmooth, model_xi.parent.pkratio = pktemplate.T
 
     for i, (fitter, sampler, sampler_name) in enumerate(zip(fitters, samplers, sampler_names)):
-        print(sampler, sampler_name)
         for m, d in zip([model_pk, model_xi], [dataset_pk, dataset_xi]):
+            d.set_realisation(None)
             name = d.name + f" {sampler_name} mock mean"
             fitter.add_model_and_dataset(m, d, name=name)
             for j in range(len(d.mock_data)):
@@ -104,7 +104,7 @@ if __name__ == "__main__":
         # Submit all the jobs
         fitter.set_sampler(sampler)
         fitter.set_num_walkers(1)
-        if len(sys.argv) == 1 and i != 0:
+        if len(sys.argv) == 1 and i != 0 and not fitter.is_local():
             # If true, this code is run for the first time, and we should submit the jobs, but only if this is the
             # first iteration, to avoid duplicating everything.
             break
@@ -122,78 +122,92 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
-        datanames = ["Xi_CV", "Pk_CV"]
-
-        c = [
-            ChainConsumer(),
-            ChainConsumer(),
-        ]
+        data_names = [r"$\xi_{s}$ CV", r"$P(k)$ CV"]
+        c = ChainConsumer()
 
         # Loop over all the fitters
-        output = {k: [] for k in datanames}
+        stats = [[] for _ in range(len(sampler_names))]
+        output = {k: [] for k in sampler_names}
         for fitter, sampler, sampler_name in zip(fitters, samplers, sampler_names):
+            print(fitter, sampler, sampler_name)
 
-            posterior, weight, chain, evidence, model, data, extra = fitter.load()
+            for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
-            # Get the realisation number and redshift bin
-            data_bin = 0 if "Xi" in extra["name"] else 1
+                # Get the realisation number and redshift bin
+                data_bin = 0 if "Xi" in extra["name"] else 1
+                sampler_bin = [i for i, name in enumerate(sampler_names) if extra["name"].split(" ")[-3] == name][0]
 
-            # Store the chain in a dictionary with parameter names
-            df = pd.DataFrame(chain, columns=model.get_labels())
+                # Store the chain in a dictionary with parameter names
+                df = pd.DataFrame(chain, columns=model.get_labels())
 
-            # Compute alpha_par and alpha_perp for each point in the chain
-            alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
-            df["$\\alpha_\\parallel$"] = alpha_par
-            df["$\\alpha_\\perp$"] = alpha_perp
-            mean, cov = weighted_avg_and_cov(
-                df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"]],
-                weight,
-                axis=0,
-            )
-            extra.pop("realisation", None)
-            c[data_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
-
-            stats[data_bin].append(
-                [
-                    sampler_name,
-                    mean[0] - 1.0,
-                    mean[1] - 1.0,
-                    mean[2] - 5.1,
-                    mean[3] - 1.6,
-                    mean[4],
-                    np.sqrt(cov[0, 0]),
-                    np.sqrt(cov[1, 1]),
-                    np.sqrt(cov[2, 2]),
-                    np.sqrt(cov[3, 3]),
-                    np.sqrt(cov[4, 4]),
-                ]
-            )
-            output[datanames[data_bin]].append(
-                f"{sampler_name:s}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {mean[3]:6.4f}, {mean[4]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {np.sqrt(cov[2, 2]):6.4f}, {np.sqrt(cov[3, 3]):6.4f}, {np.sqrt(cov[4, 4]):6.4f}"
-            )
-
-        for data_bin in range(3):
-            truth = {
-                "$\\alpha_\\perp$": 1.0,
-                "$\\alpha_\\parallel$": 1.0,
-                "$\\Sigma_{nl,||}$": 5.1,
-                "$\\Sigma_{nl,\\perp}$": 1.6,
-                "$\\Sigma_s$": 0.0,
-            }
-
-            c[data_bin].configure(bins=20, sigmas=[0, 1])
-            c[data_bin].plotter.plot(
-                filename=["/".join(pfn.split("/")[:-1]) + "/" + datanames[data_bin] + "_contour.png"],
-                truth=truth,
-                parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
-                legend=True,
-                extents=[(0.98, 1.02), (0.98, 1.02)],
-            )
-
-            # Save all the numbers to a file
-            with open(dir_name + "/Barry_fit_" + datanames[data_bin] + ".txt", "w") as f:
-                f.write(
-                    "# N_poly, alpha_par, alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
+                # Compute alpha_par and alpha_perp for each point in the chain
+                alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
+                df["$\\alpha_\\parallel$"] = alpha_par
+                df["$\\alpha_\\perp$"] = alpha_perp
+                mean, cov = weighted_avg_and_cov(
+                    df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"]],
+                    weight,
+                    axis=0,
                 )
-                for l in output[datanames[data_bin]]:
-                    f.write(l + "\n")
+
+                realisation = extra.pop("realisation", None)
+                if "realisation 13" in extra["name"]:
+                    extra["name"] = f"{sampler_name} + {data_names[data_bin]}"
+                    c.add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+
+                # Use chainconsumer to get summary statistics for each chain
+                cc = ChainConsumer()
+                cc.add_chain(df, weights=weight, **extra)
+                onesigma = cc.analysis.get_summary()
+                cc.configure(summary_area=0.9545)
+                twosigma = cc.analysis.get_summary()
+
+                stats[sampler_bin].append(
+                    [
+                        data_bin,
+                        realisation,
+                        onesigma["$\\alpha_\\parallel$"][1],
+                        onesigma["$\\alpha_\\perp$"][1],
+                        onesigma["$\\Sigma_{nl,||}$"][1],
+                        onesigma["$\\Sigma_{nl,\\perp}$"][1],
+                        onesigma["$\\Sigma_s$"][1],
+                        onesigma["$\\alpha_\\parallel$"][1] - onesigma["$\\alpha_\\parallel$"][0],
+                        onesigma["$\\alpha_\\perp$"][1] - onesigma["$\\alpha_\\perp$"][0],
+                        onesigma["$\\Sigma_{nl,||}$"][1] - onesigma["$\\Sigma_{nl,||}$"][0],
+                        onesigma["$\\Sigma_{nl,\\perp}$"][1] - onesigma["$\\Sigma_{nl,\\perp}$"][0],
+                        onesigma["$\\Sigma_s$"][1] - onesigma["$\\Sigma_s$"][1],
+                        onesigma["$\\alpha_\\parallel$"][2] - onesigma["$\\alpha_\\parallel$"][1],
+                        onesigma["$\\alpha_\\perp$"][2] - onesigma["$\\alpha_\\perp$"][1],
+                        onesigma["$\\Sigma_{nl,||}$"][2] - onesigma["$\\Sigma_{nl,||}$"][1],
+                        onesigma["$\\Sigma_{nl,\\perp}$"][2] - onesigma["$\\Sigma_{nl,\\perp}$"][1],
+                        onesigma["$\\Sigma_s$"][2] - onesigma["$\\Sigma_s$"][1],
+                        twosigma["$\\alpha_\\parallel$"][1] - twosigma["$\\alpha_\\parallel$"][0],
+                        twosigma["$\\alpha_\\perp$"][1] - twosigma["$\\alpha_\\perp$"][0],
+                        twosigma["$\\Sigma_{nl,||}$"][1] - twosigma["$\\Sigma_{nl,||}$"][0],
+                        twosigma["$\\Sigma_{nl,\\perp}$"][1] - twosigma["$\\Sigma_{nl,\\perp}$"][0],
+                        twosigma["$\\Sigma_s$"][1] - twosigma["$\\Sigma_s$"][1],
+                        twosigma["$\\alpha_\\parallel$"][2] - twosigma["$\\alpha_\\parallel$"][1],
+                        twosigma["$\\alpha_\\perp$"][2] - twosigma["$\\alpha_\\perp$"][1],
+                        twosigma["$\\Sigma_{nl,||}$"][2] - twosigma["$\\Sigma_{nl,||}$"][1],
+                        twosigma["$\\Sigma_{nl,\\perp}$"][2] - twosigma["$\\Sigma_{nl,\\perp}$"][1],
+                        twosigma["$\\Sigma_s$"][2] - twosigma["$\\Sigma_s$"][1],
+                    ]
+                )
+
+        print(stats)
+
+        truth = {
+            "$\\alpha_\\perp$": 1.0,
+            "$\\alpha_\\parallel$": 1.0,
+            "$\\Sigma_{nl,||}$": 5.1,
+            "$\\Sigma_{nl,\\perp}$": 1.6,
+            "$\\Sigma_s$": 0.0,
+        }
+
+        c.configure(bins=20, bar_shade=True)
+        c.plotter.plot_summary(
+            filename=["/".join(pfn.split("/")[:-1]) + "/summary.png"],
+            truth=truth,
+            parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
+            extents=[(0.98, 1.02), (0.98, 1.02)],
+        )

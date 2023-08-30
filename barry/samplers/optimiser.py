@@ -14,6 +14,9 @@ class Optimiser(Sampler):
         if temp_dir is not None and not os.path.exists(temp_dir):
             os.makedirs(temp_dir, exist_ok=True)
 
+    def get_file_suffix(self):
+        return "bestfit_chain.npy"
+
     def fit(self, model, save_dims=None, uid=None):
         """ " Just runs a simple optimisation and stores the best fit in the chain file.
 
@@ -46,7 +49,7 @@ class Optimiser(Sampler):
         assert start is not None
         assert prior_transform is not None
 
-        filename = os.path.join(self.temp_dir, f"{uid}_bestfit_chain.npy")
+        filename = self.get_filename(uid)
         if os.path.exists(filename):
             self.logger.info("Not sampling, returning result from file.")
             return self.load_file(filename)

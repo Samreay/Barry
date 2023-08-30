@@ -17,11 +17,11 @@ class DynestySampler(Sampler):
         self.dynamic = dynamic
         self.print_progress = print_progress
 
-    def get_filename(self, uid):
+    def get_file_suffix(self):
         if self.dynamic:
-            return os.path.join(self.temp_dir, f"{uid}_dyn_chain.npy")
+            return "dyn_chain.npy"
         else:
-            return os.path.join(self.temp_dir, f"{uid}_nest_chain.npy")
+            return "nest_chain.npy"
 
     def fit(self, model, save_dims=None, uid=None):
         """Runs the sampler over the model and returns the flat chain of results

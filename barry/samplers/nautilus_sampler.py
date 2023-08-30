@@ -17,8 +17,8 @@ class NautilusSampler(Sampler):
         self.dynamic = dynamic
         self.print_progress = print_progress
 
-    def get_filename(self, uid):
-        return os.path.join(self.temp_dir, f"{uid}_nautilus_chain.npy")
+    def get_file_suffix(self):
+        return "nautilus_chain.npy"
 
     def fit(self, model, save_dims=None, uid=None):
         """Runs the sampler over the model and returns the flat chain of results
