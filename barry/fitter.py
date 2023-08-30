@@ -4,6 +4,7 @@ import shutil
 import socket
 import sys
 import numpy as np
+import time
 
 from barry.config import get_config
 from barry.doJob import write_jobscript_slurm
@@ -161,8 +162,11 @@ class Fitter(object):
         self.logger.info("Running fitting job, saving to %s" % self.temp_dir)
         self.logger.info(f"\tModel is {model}")
         self.logger.info(f"\tData is {' '.join([d['name'] for d in self.model_datasets[model_index][1]])}")
+        self.logger.info(f"\tSampler is {sampler}")
+        start = time.time()
         sampler.fit(model, uid=uid, save_dims=self.save_dims)
         self.logger.info("Finished sampling")
+        self.logger.info(f"Time to do fit: {(time.time()-start)/60.0} minutes")
 
     def is_local(self):
         return shutil.which(get_config()["hpc_determining_command"]) is None

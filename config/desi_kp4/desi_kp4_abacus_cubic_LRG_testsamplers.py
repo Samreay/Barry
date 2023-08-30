@@ -22,7 +22,7 @@ if __name__ == "__main__":
     pfn, dir_name, file = setup(__file__)
 
     # Set up the Fitting classes
-    fitters = [Fitter(dir_name, remove_output=False) for _ in range(5)]
+    fitter = Fitter(dir_name, remove_output=False)
     samplers = [
         NautilusSampler(temp_dir=dir_name),
         ZeusSampler(temp_dir=dir_name),
@@ -91,32 +91,32 @@ if __name__ == "__main__":
     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
     model_xi.parent.kvals, model_xi.parent.pksmooth, model_xi.parent.pkratio = pktemplate.T
 
-    for i, (fitter, sampler, sampler_name) in enumerate(zip(fitters, samplers, sampler_names)):
-        for m, d in zip([model_pk, model_xi], [dataset_pk, dataset_xi]):
-            d.set_realisation(None)
-            name = d.name + f" {sampler_name} mock mean"
+    for m, d in zip([model_pk, model_xi], [dataset_pk, dataset_xi]):
+        d.set_realisation(None)
+        name = d.name + f" mock mean"
+        fitter.add_model_and_dataset(m, d, name=name)
+        for j in range(len(d.mock_data)):
+            d.set_realisation(j)
+            name = d.name + f" realisation {j}"
             fitter.add_model_and_dataset(m, d, name=name)
-            for j in range(len(d.mock_data)):
-                d.set_realisation(j)
-                name = d.name + f" {sampler_name} realisation {j}"
-                fitter.add_model_and_dataset(m, d, name=name)
+
+    fitter.set_num_walkers(1)
+
+    for i, (sampler, sampler_name) in enumerate(zip(samplers, sampler_names)):
 
         # Submit all the jobs
         fitter.set_sampler(sampler)
-        fitter.set_num_walkers(1)
         if len(sys.argv) == 1 and i != 0 and not fitter.is_local():
             # If true, this code is run for the first time, and we should submit the jobs, but only if this is the
             # first iteration, to avoid duplicating everything.
             break
 
-        start = time.time()
         fitter.fit(file)
-        fitter.logger.info(f"Time to do fit: {(time.time()-start)/60.0} minutes")
 
     # Everything below here is for plotting the chains once they have been run. The should_plot()
     # function will check for the presence of chains and plot if it finds them on your laptop. On the HPC you can
     # also force this by passing in "plot" as the second argument when calling this code from the command line.
-    if fitters[-1].should_plot():
+    if fitter.should_plot():
         import logging
 
         logging.info("Creating plots")
@@ -128,14 +128,13 @@ if __name__ == "__main__":
         # Loop over all the fitters
         stats = [[] for _ in range(len(sampler_names))]
         output = {k: [] for k in sampler_names}
-        for fitter, sampler, sampler_name in zip(fitters, samplers, sampler_names):
-            print(fitter, sampler, sampler_name)
+        for sampler_bin, (sampler, sampler_name) in enumerate(zip(samplers, sampler_names)):
+            fitter.set_sampler(sampler)
 
             for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
                 # Get the realisation number and redshift bin
                 data_bin = 0 if "Xi" in extra["name"] else 1
-                sampler_bin = [i for i, name in enumerate(sampler_names) if extra["name"].split(" ")[-3] == name][0]
 
                 # Store the chain in a dictionary with parameter names
                 df = pd.DataFrame(chain, columns=model.get_labels())
