@@ -267,7 +267,6 @@ class Fitter(object):
                     - dict containing any `extra` information passed in.
         """
         self.logger.info("Loading chains")
-        print(self.sampler)
         files = [f for f in os.listdir(self.temp_dir) if f.endswith(self.sampler.get_file_suffix())]
         files.sort(key=lambda s: [int(s.split("_")[1]), int(s.split("_")[2])])
         filenames = [self.temp_dir + "/" + f for f in files]

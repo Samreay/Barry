@@ -1,4 +1,5 @@
 import sys
+import copy
 
 sys.path.append("..")
 sys.path.append("../../")
@@ -102,18 +103,10 @@ if __name__ == "__main__":
 
     fitter.set_num_walkers(1)
 
-    for i, (sampler, sampler_name) in enumerate(zip(samplers, sampler_names)):
-
-        # Submit all the jobs
-        fitter.set_sampler(sampler)
-        if len(sys.argv) == 1 and i != 0 and not fitter.is_local():
-            # If true, this code is run for the first time, and we should submit the jobs, but only if this is the
-            # first iteration, to avoid duplicating everything.
-            break
-
-        start = time.time()
-        fitter.fit(file)
-        print(f"Time taken {(time.time()-start)/60.0:.2f} minutes")
+    # Submit all the jobs
+    sampler_index = 0
+    fitter.set_sampler(samplers[sampler_index])
+    fitter.fit(file)
 
     # Everything below here is for plotting the chains once they have been run. The should_plot()
     # function will check for the presence of chains and plot if it finds them on your laptop. On the HPC you can
@@ -128,9 +121,10 @@ if __name__ == "__main__":
         c = ChainConsumer()
 
         # Loop over all the fitters
-        stats = [[] for _ in range(len(sampler_names))]
+        stats = [[[] for _ in range(len(data_names))] for _ in range(len(sampler_names))]
         output = {k: [] for k in sampler_names}
         for sampler_bin, (sampler, sampler_name) in enumerate(zip(samplers, sampler_names)):
+            print(sampler_bin, sampler, sampler_name)
             fitter.set_sampler(sampler)
 
             for posterior, weight, chain, evidence, model, data, extra in fitter.load():
@@ -151,36 +145,37 @@ if __name__ == "__main__":
                     axis=0,
                 )
 
-                realisation = extra.pop("realisation", None)
                 if "realisation 13" in extra["name"]:
-                    extra["name"] = f"{sampler_name} + {data_names[data_bin]}"
-                    c.add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+                    name = f"{sampler_name} + {data_names[data_bin]}"
+                    c.add_chain(df, weights=weight, name=name, plot_contour=True, plot_point=False, show_as_1d_prior=False)
 
                 # Use chainconsumer to get summary statistics for each chain
                 cc = ChainConsumer()
-                cc.add_chain(df, weights=weight, **extra)
+                cc.add_chain(df, weights=weight)
                 onesigma = cc.analysis.get_summary()
                 cc.configure(summary_area=0.9545)
                 twosigma = cc.analysis.get_summary()
 
-                stats[sampler_bin].append(
-                    [
-                        data_bin,
-                        realisation,
-                        onesigma["$\\alpha_\\parallel$"][1],
-                        onesigma["$\\alpha_\\perp$"][1],
-                        onesigma["$\\alpha_\\parallel$"][1] - onesigma["$\\alpha_\\parallel$"][0],
-                        onesigma["$\\alpha_\\perp$"][1] - onesigma["$\\alpha_\\perp$"][0],
-                        onesigma["$\\alpha_\\parallel$"][2] - onesigma["$\\alpha_\\parallel$"][1],
-                        onesigma["$\\alpha_\\perp$"][2] - onesigma["$\\alpha_\\perp$"][1],
-                        twosigma["$\\alpha_\\parallel$"][1] - twosigma["$\\alpha_\\parallel$"][0],
-                        twosigma["$\\alpha_\\perp$"][1] - twosigma["$\\alpha_\\perp$"][0],
-                        twosigma["$\\alpha_\\parallel$"][2] - twosigma["$\\alpha_\\parallel$"][1],
-                        twosigma["$\\alpha_\\perp$"][2] - twosigma["$\\alpha_\\perp$"][1],
-                    ]
-                )
+                if None in twosigma["$\\alpha_\\parallel$"] or None in twosigma["$\\alpha_\\perp$"]:
+                    continue
 
-        print(stats)
+                # Store the summary statistics
+                if extra["realisation"] is not None:
+                    stats[sampler_bin][data_bin].append(
+                        [
+                            extra["realisation"],
+                            onesigma["$\\alpha_\\parallel$"][1],
+                            onesigma["$\\alpha_\\perp$"][1],
+                            onesigma["$\\alpha_\\parallel$"][1] - onesigma["$\\alpha_\\parallel$"][0],
+                            onesigma["$\\alpha_\\perp$"][1] - onesigma["$\\alpha_\\perp$"][0],
+                            onesigma["$\\alpha_\\parallel$"][2] - onesigma["$\\alpha_\\parallel$"][1],
+                            onesigma["$\\alpha_\\perp$"][2] - onesigma["$\\alpha_\\perp$"][1],
+                            twosigma["$\\alpha_\\parallel$"][1] - twosigma["$\\alpha_\\parallel$"][0],
+                            twosigma["$\\alpha_\\perp$"][1] - twosigma["$\\alpha_\\perp$"][0],
+                            twosigma["$\\alpha_\\parallel$"][2] - twosigma["$\\alpha_\\parallel$"][1],
+                            twosigma["$\\alpha_\\perp$"][2] - twosigma["$\\alpha_\\perp$"][1],
+                        ]
+                    )
 
         truth = {
             "$\\alpha_\\perp$": 1.0,
@@ -197,3 +192,22 @@ if __name__ == "__main__":
             parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
             extents=[(0.98, 1.02), (0.98, 1.02)],
         )
+
+        # Plot the summary statistics
+        print(stats)
+        stats = np.array(stats)
+        print(stats)
+
+        fig, axes = plt.subplots(figsize=(4, 5), nrows=6, ncols=1, sharex=True, squeeze=False)
+        plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
+        for panel in range(6):
+            axes[panel, 0].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
+
+            for data_bin in range(2):
+
+                diff = stats[:, data_bin, :, panel] - stats[0, data_bin, :, panel]
+                mean_diff, std_diff = np.mean(diff, axis=1), np.std(diff, axis=1)
+
+                axes[panel].errorbar(np.arange(len(sampler_names)) + (2 * data_bin - 1) * 0.05, mean_diff, err=std_diff)
+
+        fig.savefig("bias.png", bbox_inches="tight", transparent=True, dpi=300)
