@@ -111,7 +111,9 @@ if __name__ == "__main__":
             # first iteration, to avoid duplicating everything.
             break
 
+        start = time.time()
         fitter.fit(file)
+        print(f"Time taken {(time.time()-start)/60.0:.2f} minutes")
 
     # Everything below here is for plotting the chains once they have been run. The should_plot()
     # function will check for the presence of chains and plot if it finds them on your laptop. On the HPC you can
