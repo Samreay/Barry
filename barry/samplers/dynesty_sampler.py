@@ -5,7 +5,7 @@ from barry.samplers.sampler import Sampler
 
 
 class DynestySampler(Sampler):
-    def __init__(self, temp_dir=None, max_iter=None, dynamic=False, nlive=500, print_progress=False):
+    def __init__(self, temp_dir=None, max_iter=None, dynamic=False, nlive=1000, print_progress=False):
 
         self.logger = logging.getLogger("barry")
         self.max_iter = max_iter
