@@ -76,7 +76,7 @@ class EnsembleSampler(Sampler):
 
         filename = self.get_filename(uid)
         if os.path.exists(filename):
-            self.logger.info("Not sampling, returning result from file.")
+            self.logger.info("Not sampling, returning result from Emcee file.")
             return self.load_file(filename)
 
         if self.num_walkers is None:
