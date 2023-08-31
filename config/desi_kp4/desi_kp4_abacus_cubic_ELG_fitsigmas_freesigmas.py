@@ -156,6 +156,13 @@ if __name__ == "__main__":
                 fitname[redshift_bin] = data[0]["name"].replace(" ", "_")
                 stats[fitname[redshift_bin]] = []
                 output[fitname[redshift_bin]] = []
+
+            if data_bin == 1 and ("n_poly=1" in extra["name"] or "n_poly=2" in extra["name"] or "n_poly=7" in extra["name"]):
+                continue
+
+            if data_bin == 0 and ("n_poly=5" in extra["name"] or "n_poly=6" in extra["name"] or "n_poly=7" in extra["name"]):
+                continue
+
             chainname = f'N={extra["name"].split("n_poly=")[1].split(" ")[0]}'
             extra["name"] = f'N={extra["name"].split("n_poly=")[1].split(" ")[0]}'
             c[redshift_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
