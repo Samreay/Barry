@@ -152,7 +152,7 @@ if __name__ == "__main__":
                 n_poly=n_poly,
             )
             model.set_default("sigma_nl_par", sigma_nl_par)
-            model.set_default("sigma_nl_perp", sigma_nl_perp[sig])
+            model.set_default("sigma_nl_perp", sigma_nl_perp)
             model.set_default("sigma_s", sigma_s[sig])
 
             # Load in a pre-existing BAO template
