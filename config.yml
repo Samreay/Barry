@@ -10,6 +10,7 @@ hpcs:
     num_fits_per_job: 1
     mpi_module: openmpi3_eth/3.0.0
     fort_compile_module: gnu/7.2.0
+    num_concurrent: 200
 
   cori:
     account: desi

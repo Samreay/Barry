@@ -2,7 +2,7 @@ import sys
 
 sys.path.append("..")
 sys.path.append("../..")
-from barry.samplers import DynestySampler
+from barry.samplers import NautilusSampler
 from barry.config import setup
 from barry.models import PowerBeutler2017, CorrBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESI_KP4
@@ -17,7 +17,7 @@ from chainconsumer import ChainConsumer
 
 # Config file to fit the abacus cutsky mock means and individual realisations using Dynesty.
 
-
+# Convenience function to plot histograms of the errors and cross-correlation coefficients
 def plot_alphas(stats, figname):
 
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
@@ -50,12 +50,14 @@ def plot_alphas(stats, figname):
         )
         axes[0, n_poly - 1].set_ylim(-0.04, 0.04)
         axes[1, n_poly - 1].set_ylim(-0.02, 0.02)
-        axes[1, n_poly - 1].set_xlabel(r"$\Sigma_{s}$")
+        axes[1, n_poly - 1].set_xlabel(r"$\Sigma_{nl,\perp}$")
         if n_poly == 1:
             axes[0, n_poly - 1].set_ylabel(r"$\alpha_{||}-1$")
             axes[1, n_poly - 1].set_ylabel(r"$\alpha_{\perp}-1$")
         axes[0, n_poly - 1].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
+        axes[0, n_poly - 1].axvline(1.8, color="k", ls=":", zorder=0, lw=0.8)
         axes[1, n_poly - 1].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
+        axes[1, n_poly - 1].axvline(1.8, color="k", ls=":", zorder=0, lw=0.8)
         axes[0, n_poly - 1].text(
             0.05,
             0.95,
@@ -73,103 +75,93 @@ def plot_alphas(stats, figname):
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__)
+    pfn, dir_name, file = setup(__file__, "/reduced_cov/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
-    sampler = DynestySampler(temp_dir=dir_name, nlive=250)
+    sampler = NautilusSampler(temp_dir=dir_name)
 
-    mocktypes = ["abacus_cubicbox", "abacus_cubicbox_cv"]
-    nzbins = [1, 1]
-    sigma_nl_perp = 1.8
-    sigma_nl_par = 5.4
+    sigma_nl_perp = 1.6
+    sigma_nl_par = 5.1
     sigma_s = [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
 
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
     # Loop over the mocktypes
     allnames = []
-    for i, (mocktype, redshift_bins) in enumerate(zip(mocktypes, nzbins)):
 
-        # Loop over the available redshift bins for each mock type
-        for z in range(redshift_bins):
+    # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
+    # First load up mock mean and add it to the fitting list.
+    dataset_pk = PowerSpectrum_DESI_KP4(
+        recon="sym",
+        fit_poles=[0, 2],
+        min_k=0.02,
+        max_k=0.30,
+        realisation=None,
+        num_mocks=1000,
+        reduce_cov_factor=25,
+        datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
+    )
 
-            # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
-            # First load up mock mean and add it to the fitting list.
-            dataset_pk = PowerSpectrum_DESI_KP4(
-                recon="sym",
-                fit_poles=[0, 2],
-                min_k=0.02,
-                max_k=0.30,
-                mocktype=mocktype,
-                redshift_bin=z + 1,
-                realisation=None,
-                num_mocks=1000,
-                reduce_cov_factor=1,
+    dataset_xi = CorrelationFunction_DESI_KP4(
+        recon="sym",
+        fit_poles=[0, 2],
+        min_dist=52.0,
+        max_dist=150.0,
+        realisation=None,
+        num_mocks=1000,
+        reduce_cov_factor=25,
+        datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
+    )
+
+    # Loop over pre- and post-recon measurements
+    for sig in range(len(sigma_s)):
+
+        for n_poly in range(3, 7):
+
+            model = PowerBeutler2017(
+                recon=dataset_pk.recon,
+                isotropic=dataset_pk.isotropic,
+                fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
+                marg="full",
+                poly_poles=dataset_pk.fit_poles,
+                correction=Correction.NONE,
+                n_poly=n_poly,
             )
+            model.set_default("sigma_nl_par", sigma_nl_par)
+            model.set_default("sigma_nl_perp", sigma_nl_perp)
+            model.set_default("sigma_s", sigma_s[sig])
 
-            if "abacus_cubicbox_cv" not in mocktype:
+            # Load in a pre-existing BAO template
+            pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+            model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
-                dataset_xi = CorrelationFunction_DESI_KP4(
-                    recon="sym",
-                    fit_poles=[0, 2],
-                    min_dist=52.0,
-                    max_dist=150.0,
-                    mocktype=mocktype,
-                    redshift_bin=z + 1,
-                    realisation=None,
-                    num_mocks=1000,
-                    reduce_cov_factor=1,
-                )
+            name = dataset_pk.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
+            fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[n_poly - 1])
+            allnames.append(name)
 
-            # Loop over pre- and post-recon measurements
-            for sig in range(len(sigma_s)):
+        for n_poly in range(1, 6):
 
-                for n_poly in range(1, 8):
+            model = CorrBeutler2017(
+                recon=dataset_xi.recon,
+                isotropic=dataset_xi.isotropic,
+                marg="full",
+                fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
+                poly_poles=dataset_xi.fit_poles,
+                correction=Correction.NONE,
+                n_poly=n_poly,
+            )
+            model.set_default("sigma_nl_par", sigma_nl_par)
+            model.set_default("sigma_nl_perp", sigma_nl_perp[sig])
+            model.set_default("sigma_s", sigma_s[sig])
 
-                    model = PowerBeutler2017(
-                        recon=dataset_pk.recon,
-                        isotropic=dataset_pk.isotropic,
-                        fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
-                        marg="full",
-                        poly_poles=dataset_pk.fit_poles,
-                        correction=Correction.NONE,
-                        n_poly=n_poly,
-                    )
-                    model.set_default("sigma_nl_par", sigma_nl_par)
-                    model.set_default("sigma_nl_perp", sigma_nl_perp)
-                    model.set_default("sigma_s", sigma_s[sig])
+            # Load in a pre-existing BAO template
+            pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+            model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
-                    # Load in a pre-existing BAO template
-                    pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-                    model.kvals, model.pksmooth, model.pkratio = pktemplate.T
-
-                    name = dataset_pk.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
-                    fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[n_poly - 1])
-                    allnames.append(name)
-
-                    if "abacus_cubicbox_cv" not in mocktype:
-
-                        model = CorrBeutler2017(
-                            recon=dataset_xi.recon,
-                            isotropic=dataset_xi.isotropic,
-                            marg="full",
-                            fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
-                            poly_poles=dataset_xi.fit_poles,
-                            correction=Correction.NONE,
-                            n_poly=n_poly,
-                        )
-                        model.set_default("sigma_nl_par", sigma_nl_par)
-                        model.set_default("sigma_nl_perp", sigma_nl_perp)
-                        model.set_default("sigma_s", sigma_s[sig])
-
-                        # Load in a pre-existing BAO template
-                        pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-                        model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
-
-                        name = dataset_xi.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
-                        fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[n_poly - 1])
-                        allnames.append(name)
+            name = dataset_xi.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
+            fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[n_poly - 1])
+            allnames.append(name)
 
     # Submit all the jobs to NERSC. We have quite a few (189), so we'll
     # only assign 1 walker (processor) to each. Note that this will only run if the
@@ -197,7 +189,7 @@ if __name__ == "__main__":
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
             data_bin = 0 if "Xi" in extra["name"] else 1 if "CV" not in extra["name"] else 2
             sigma_bin = int(extra["name"].split("fixed_type ")[1].split(" ")[0])
-            redshift_bin = int(2.0 * len(sigma_s) * data_bin + 2.0 * sigma_bin + recon_bin)
+            redshift_bin = int(2.0 * len(sigma_nl_perp) * data_bin + 2.0 * sigma_bin + recon_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -217,9 +209,9 @@ if __name__ == "__main__":
                 axis=0,
             )
 
-            stats[data_bin].append([sigma_s[sigma_bin], model.n_poly, mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])])
+            stats[data_bin].append([sigma_nl_perp[sigma_bin], model.n_poly, mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])])
             output[datanames[data_bin]].append(
-                f"{sigma_s[sigma_bin]:6.4f}, {model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
+                f"{sigma_nl_perp[sigma_bin]:6.4f}, {model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[ 1, 1]):6.4f}"
             )
 
         print(stats)
