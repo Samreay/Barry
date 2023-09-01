@@ -31,7 +31,13 @@ if __name__ == "__main__":
         DynestySampler(temp_dir=dir_name),
         DynestySampler(temp_dir=dir_name, dynamic=True),
     ]
-    sampler_names = ["Nautilus", "Zeus", "Emcee", "Dynesty_Static", "Dynesty_Dynamic"]
+    sampler_names = [
+        r"$\mathrm{Nautilus}$",
+        r"$\mathrm{Zeus}$",
+        r"$\mathrm{Emcee}$",
+        r"$\mathrm{Dynesty\,Static}$",
+        r"$\mathrm{Dynesty\,Dynamic}$",
+    ]
 
     # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
     # First load up mock mean and add it to the fitting list.
@@ -117,7 +123,7 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
-        data_names = [r"$\xi_{s}$ CV", r"$P(k)$ CV"]
+        data_names = [r"$\xi_{s}$", r"$P(k)$"]
         c = ChainConsumer()
 
         # Loop over all the fitters
@@ -145,7 +151,7 @@ if __name__ == "__main__":
                     axis=0,
                 )
 
-                if "realisation 13" in extra["name"]:
+                if "mock mean" in extra["name"]:
                     name = f"{sampler_name} + {data_names[data_bin]}"
                     c.add_chain(df, weights=weight, name=name, plot_contour=True, plot_point=False, show_as_1d_prior=False)
 
@@ -156,8 +162,8 @@ if __name__ == "__main__":
                 cc.configure(summary_area=0.9545)
                 twosigma = cc.analysis.get_summary()
 
-                if None in twosigma["$\\alpha_\\parallel$"] or None in twosigma["$\\alpha_\\perp$"]:
-                    continue
+                # if None in twosigma["$\\alpha_\\parallel$"] or None in twosigma["$\\alpha_\\perp$"]:
+                #    continue
 
                 # Store the summary statistics
                 if extra["realisation"] is not None:
@@ -166,14 +172,10 @@ if __name__ == "__main__":
                             extra["realisation"],
                             onesigma["$\\alpha_\\parallel$"][1],
                             onesigma["$\\alpha_\\perp$"][1],
-                            onesigma["$\\alpha_\\parallel$"][1] - onesigma["$\\alpha_\\parallel$"][0],
-                            onesigma["$\\alpha_\\perp$"][1] - onesigma["$\\alpha_\\perp$"][0],
-                            onesigma["$\\alpha_\\parallel$"][2] - onesigma["$\\alpha_\\parallel$"][1],
-                            onesigma["$\\alpha_\\perp$"][2] - onesigma["$\\alpha_\\perp$"][1],
-                            twosigma["$\\alpha_\\parallel$"][1] - twosigma["$\\alpha_\\parallel$"][0],
-                            twosigma["$\\alpha_\\perp$"][1] - twosigma["$\\alpha_\\perp$"][0],
-                            twosigma["$\\alpha_\\parallel$"][2] - twosigma["$\\alpha_\\parallel$"][1],
-                            twosigma["$\\alpha_\\perp$"][2] - twosigma["$\\alpha_\\perp$"][1],
+                            onesigma["$\\alpha_\\parallel$"][2] - onesigma["$\\alpha_\\parallel$"][0],
+                            onesigma["$\\alpha_\\perp$"][2] - onesigma["$\\alpha_\\perp$"][0],
+                            twosigma["$\\alpha_\\parallel$"][2] - twosigma["$\\alpha_\\parallel$"][0],
+                            twosigma["$\\alpha_\\perp$"][2] - twosigma["$\\alpha_\\perp$"][0],
                         ]
                     )
 
@@ -203,11 +205,37 @@ if __name__ == "__main__":
         for panel in range(6):
             axes[panel, 0].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
 
-            for data_bin in range(2):
+            for data_bin, label in enumerate(data_names):
 
-                diff = stats[:, data_bin, :, panel] - stats[0, data_bin, :, panel]
+                diff = stats[:, data_bin, :, panel + 1] - stats[0, data_bin, :, panel + 1]
                 mean_diff, std_diff = np.mean(diff, axis=1), np.std(diff, axis=1)
 
-                axes[panel].errorbar(np.arange(len(sampler_names)) + (2 * data_bin - 1) * 0.05, mean_diff, err=std_diff)
+                axes[panel, 0].errorbar(
+                    np.arange(len(sampler_names[1:])) + (2 * data_bin - 1) * 0.1,
+                    100.0 * mean_diff[1:],
+                    yerr=100.0 * std_diff[1:] / np.sqrt(25.0),
+                    marker="o",
+                    ls="None",
+                    label=label if panel == 3 else None,
+                )
 
-        fig.savefig("bias.png", bbox_inches="tight", transparent=True, dpi=300)
+        axes[0, 0].set_ylabel("$\\Delta \\alpha_{\\perp} (\\%)$")
+        axes[1, 0].set_ylabel("$\\Delta \\alpha_{||} (\\%)$")
+        axes[2, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{||}} (\\%)$")
+        axes[3, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{\\perp}} (\\%)$")
+        axes[4, 0].set_ylabel("$\\Delta \\sigma^{95\\%}_{\\alpha_{||}} (\\%)$")
+        axes[5, 0].set_ylabel("$\\Delta \\sigma^{95\\%}_{\\alpha_{\\perp}} (\\%)$")
+        axes[0, 0].set_ylim(-0.07, 0.07)
+        axes[1, 0].set_ylim(-0.06, 0.06)
+        axes[2, 0].set_ylim(-0.015, 0.015)
+        axes[3, 0].set_ylim(-0.015, 0.015)
+        axes[4, 0].set_ylim(-0.04, 0.04)
+        axes[5, 0].set_ylim(-0.018, 0.018)
+        axes[3, 0].legend(
+            loc="center right",
+            bbox_to_anchor=(1.25, 1.0),
+            frameon=False,
+        )
+        plt.setp(axes, xticks=[0, 1, 2, 3], xticklabels=sampler_names[1:])
+        plt.xticks(rotation=30)
+        fig.savefig("/".join(pfn.split("/")[:-1]) + "/bias.png", bbox_inches="tight", transparent=True, dpi=300)
