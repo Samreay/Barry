@@ -98,23 +98,34 @@ if __name__ == "__main__":
     # Loop over pre- and post-recon measurements
     for r, recon in enumerate([None, "sym"]):
 
+        # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
+        # First load up mock mean and add it to the fitting list.
+        dataset_pk = PowerSpectrum_DESI_KP4(
+            recon=recon,
+            fit_poles=[0, 2],
+            min_k=0.02,
+            max_k=0.30,
+            realisation=None,
+            num_mocks=1000,
+            reduce_cov_factor=1,
+            datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
+        )
+
+        dataset_xi = CorrelationFunction_DESI_KP4(
+            recon=recon,
+            fit_poles=[0, 2],
+            min_dist=52.0,
+            max_dist=150.0,
+            realisation=None,
+            num_mocks=1000,
+            reduce_cov_factor=1,
+            datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
+        )
+
         # Loop over pre- and post-recon measurements
         for sig in range(len(sigma_sigma)):
 
             for n_poly in range(3, 7):
-
-                # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
-                # First load up mock mean and add it to the fitting list.
-                dataset_pk = PowerSpectrum_DESI_KP4(
-                    recon=recon,
-                    fit_poles=[0, 2],
-                    min_k=0.02,
-                    max_k=0.30,
-                    realisation=None,
-                    num_mocks=1000,
-                    reduce_cov_factor=1,
-                    datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
-                )
 
                 model = PowerBeutler2017(
                     recon=dataset_pk.recon,
@@ -133,6 +144,7 @@ if __name__ == "__main__":
                 pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
                 model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
+                dataset_pk.set_realisation(None)
                 name = dataset_pk.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
                 fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[sig])
                 allnames.append(name)
@@ -144,17 +156,6 @@ if __name__ == "__main__":
                     allnames.append(name)
 
             for n_poly in range(1, 6):
-
-                dataset_xi = CorrelationFunction_DESI_KP4(
-                    recon=recon,
-                    fit_poles=[0, 2],
-                    min_dist=52.0,
-                    max_dist=150.0,
-                    realisation=None,
-                    num_mocks=1000,
-                    reduce_cov_factor=1,
-                    datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
-                )
 
                 model = CorrBeutler2017(
                     recon=dataset_xi.recon,
@@ -173,6 +174,7 @@ if __name__ == "__main__":
                 pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
                 model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
+                dataset_xi.set_realisation(None)
                 name = dataset_xi.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
                 fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[sig])
                 allnames.append(name)
