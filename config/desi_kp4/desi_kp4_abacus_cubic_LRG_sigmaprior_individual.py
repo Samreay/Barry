@@ -29,20 +29,23 @@ def plot_errors(stats, figname, type="xi"):
         colmin = 3
         colmax = 7
 
+    statsmean = np.mean(stats, axis=0)
+    statsstd = np.std(stats, axis=0)
+
     fig, axes = plt.subplots(figsize=(4, 5), nrows=4, ncols=colmax - colmin, sharex=True, sharey="row", squeeze=False)
     plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
     for n_poly in range(colmax - colmin):
-        index = np.where(stats[:, 1] == n_poly + colmin)[0]
-        print(stats[index, 0], stats[index, 2], stats[index, 3])
+        index = np.where(statsmean[:, 1] == n_poly + colmin)[0]
+        print(statsmean[index, 0], statsmean[index, 2], statsmean[index, 3])
 
         for param in range(2):
             axes[param, n_poly].plot(
-                stats[index, 0], stats[index, param + 2] * 100.0, color=colors[n_poly + colmin - 1], zorder=1, alpha=0.75, lw=0.8
+                statsmean[index, 0], statsmean[index, param + 2] * 100.0, color=colors[n_poly + colmin - 1], zorder=1, alpha=0.75, lw=0.8
             )
             axes[param, n_poly].fill_between(
-                stats[index, 0],
-                (stats[index, param + 2] - stats[index, param + 7]) * 100.0,
-                (stats[index, param + 2] + stats[index, param + 7]) * 100.0,
+                statsmean[index, 0],
+                (statsmean[index, param + 2] - statsstd[index, param + 2]) * 100.0,
+                (statsmean[index, param + 2] + statsstd[index, param + 2]) * 100.0,
                 color=colors[n_poly + colmin - 1],
                 zorder=1,
                 alpha=0.5,
@@ -50,7 +53,7 @@ def plot_errors(stats, figname, type="xi"):
             )
             axes[param, n_poly].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
             axes[param + 2, n_poly].plot(
-                stats[index, 0], stats[index, param + 7] * 100.0, color=colors[n_poly + colmin - 1], zorder=1, alpha=0.75, lw=0.8
+                statsmean[index, 0], statsstd[index, param + 2] * 100.0, color=colors[n_poly + colmin - 1], zorder=1, alpha=0.75, lw=0.8
             )
 
         axes[0, n_poly].set_ylim(-0.5, 0.5)
@@ -203,87 +206,40 @@ if __name__ == "__main__":
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
         datanames = ["Xi_CV", "Pk_CV"]
 
-        c = [
-            ChainConsumer(),
-            ChainConsumer(),
-        ]
-
         # Loop over all the chains
-        stats = [[] for _ in range(len(datanames))]
-        output = {k: [] for k in datanames}
+        stats = [[[] for _ in range(len(dataset_xi.mock_data))] for _ in range(len(datanames))]
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             if "Prerecon" in extra["name"]:
                 continue
 
+            if "mock mean" in extra["name"]:
+                continue
+
             # Get the realisation number and redshift bin
             data_bin = 0 if "Xi" in extra["name"] else 1
             sigma_bin = int(extra["name"].split("fixed_type ")[1].split(" ")[0])
+            realisation = int(extra["name"].split("realisation ")[1].split(" ")[0])
 
             # Store the chain in a dictionary with parameter names
-            df = pd.DataFrame(chain, columns=model.get_labels())
+            df = pd.DataFrame(chain, columns=model.get_labels()).to_numpy()[0]
 
             # Compute alpha_par and alpha_perp for each point in the chain
-            alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
-            df["$\\alpha_\\parallel$"] = alpha_par
-            df["$\\alpha_\\perp$"] = alpha_perp
-            mean, cov = weighted_avg_and_cov(
-                df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"]],
-                weight,
-                axis=0,
-            )
-            extra.pop("realisation", None)
-            if "n_poly=5" in extra["name"]:
-                extra["name"] = datanames[data_bin] + f" fixed_type {sigma_bin}"
-                c[data_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+            alpha_par, alpha_perp = model.get_alphas(df[0], df[1])
 
-            stats[data_bin].append(
+            stats[data_bin][realisation].append(
                 [
                     sigma_sigma[sigma_bin],
                     model.n_poly,
-                    mean[0] - 1.0,
-                    mean[1] - 1.0,
-                    mean[2] - 5.1,
-                    mean[3] - 1.6,
-                    mean[4],
-                    np.sqrt(cov[0, 0]),
-                    np.sqrt(cov[1, 1]),
-                    np.sqrt(cov[2, 2]),
-                    np.sqrt(cov[3, 3]),
-                    np.sqrt(cov[4, 4]),
+                    alpha_par - 1.0,
+                    alpha_perp - 1.0,
+                    df[2] - 5.1,
+                    df[3] - 1.6,
+                    df[4],
                 ]
             )
-            output[datanames[data_bin]].append(
-                f"{sigma_sigma[sigma_bin]:6.4f}, {model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {mean[3]:6.4f}, {mean[4]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {np.sqrt(cov[2, 2]):6.4f}, {np.sqrt(cov[3, 3]):6.4f}, {np.sqrt(cov[4, 4]):6.4f}"
-            )
 
-        print(stats)
-
-        for data_bin in range(2):
-            truth = {
-                "$\\alpha_\\perp$": 1.0,
-                "$\\alpha_\\parallel$": 1.0,
-                "$\\Sigma_{nl,||}$": 5.1,
-                "$\\Sigma_{nl,\\perp}$": 1.6,
-                "$\\Sigma_s$": None,
-            }
-
-            c[data_bin].configure(bins=20, sigmas=[0, 1])
-            c[data_bin].plotter.plot(
-                filename=["/".join(pfn.split("/")[:-1]) + "/" + datanames[data_bin] + "_contour.png"],
-                truth=truth,
-                parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
-                legend=True,
-                extents=[(0.98, 1.02), (0.98, 1.02)],
-            )
-
-            # Save all the numbers to a file
-            with open(dir_name + "/Barry_fit_" + datanames[data_bin] + ".txt", "w") as f:
-                f.write(
-                    "# N_poly, alpha_par, alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
-                )
-                for l in output[datanames[data_bin]]:
-                    f.write(l + "\n")
+        print(np.array(np.shape(stats[1])))
 
         # Plot the error on the alpha parameters as a function of the width of the sigma prior
         plot_errors(np.array(stats[0]), "/".join(pfn.split("/")[:-1]) + "/" + datanames[0] + "_alphas.png", type="xi")

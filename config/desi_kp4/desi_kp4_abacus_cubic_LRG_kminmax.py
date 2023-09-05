@@ -2,7 +2,7 @@ import sys
 
 sys.path.append("..")
 sys.path.append("../../")
-from barry.samplers import DynestySampler
+from barry.samplers import NautilusSampler
 from barry.config import setup
 from barry.models import PowerBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESI_KP4
@@ -122,12 +122,12 @@ if __name__ == "__main__":
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
-    sampler = DynestySampler(temp_dir=dir_name, nlive=250)
+    sampler = NautilusSampler(temp_dir=dir_name)
 
     # The optimal sigma values we found when fitting the mocks with fixed alpha/epsilon
-    sigma_nl_par = {None: 9.6, "sym": 5.4}
-    sigma_nl_perp = {None: 5.0, "sym": 1.8}
-    sigma_s = 0.0
+    sigma_nl_par = {None: 9.6, "sym": 5.1}
+    sigma_nl_perp = {None: 4.8, "sym": 1.6}
+    sigma_s = {None: 2.0, "sym": 0.0}
 
     kmins = [0.0, 0.01, 0.02, 0.03, 0.04, 0.05]
     kmaxs = [0.20, 0.22, 0.24, 0.26, 0.28, 0.30, 0.32, 0.34, 0.36, 0.38, 0.40]
@@ -142,18 +142,17 @@ if __name__ == "__main__":
 
         model = PowerBeutler2017(
             recon=recon,
+            fix_params=["om"],
             marg="full",
             poly_poles=[0, 2],
             correction=Correction.NONE,
-            n_poly=4,  # 4 polynomial terms for Xi(s)
+            n_poly=5,
         )
+        model.set_default("sigma_nl_par", sigma_nl_par[recon], min=0.0, max=20.0, sigma=1.5, prior="gaussian")
+        model.set_default("sigma_nl_perp", sigma_nl_perp[recon], min=0.0, max=20.0, sigma=1.5, prior="gaussian")
+        model.set_default("sigma_s", sigma_s[recon], min=0.0, max=20.0, sigma=1.5, prior="gaussian")
 
-        # Set Gaussian priors for the BAO damping centred on the optimal values
-        # found from fitting with fixed alpha/epsilon and with width 2 Mpc/h
-        model.set_default("sigma_nl_par", sigma_nl_par[recon], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-        model.set_default("sigma_nl_perp", sigma_nl_perp[recon], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-        model.set_default("sigma_s", sigma_s, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-
+        # Load in a pre-existing BAO template
         pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
         model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 

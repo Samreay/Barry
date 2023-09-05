@@ -189,6 +189,9 @@ class Fitter(object):
         self.logger.info(f"With {num_models} models+datasets and {self.num_walkers} walkers, " f"have {num_jobs} jobs")
 
         if self.is_local() or self.is_interactive():
+            if len(sys.argv) == 2:
+                if sys.argv[1] != "plot":
+                    index = int(sys.argv[1])
             mi, wi = self._get_indexes_from_index(index)
             self.logger.info("Running model_dataset %d, walker number %d" % (mi, wi))
             self._run_fit(mi, wi)

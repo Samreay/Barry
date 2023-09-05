@@ -18,55 +18,68 @@ from chainconsumer import ChainConsumer
 # Config file to fit the abacus cutsky mock means and individual realisations using Dynesty.
 
 # Convenience function to plot histograms of the errors and cross-correlation coefficients
-def plot_alphas(stats, figname):
+def plot_alphas(stats, figname, type="xi"):
 
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
-    fig, axes = plt.subplots(figsize=(7, 2), nrows=2, ncols=7, sharex=True, sharey="row", squeeze=False)
+    if type == "xi":
+        colmin = 1
+        colmax = 6
+    else:
+        colmin = 3
+        colmax = 7
+
+    fig, axes = plt.subplots(figsize=(7, 2), nrows=2, ncols=colmax - colmin, sharex=True, sharey="row", squeeze=False)
     plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
-    for n_poly in range(1, 8):
-        index = np.where(stats[:, 1] == n_poly)[0]
+    for n_poly in range(colmax - colmin):
+        index = np.where(stats[:, 1] == n_poly + colmin)[0]
         print(stats[index, 0], stats[index, 2], stats[index, 3])
 
-        axes[0, n_poly - 1].plot(stats[index, 0], stats[index, 2] - 1.0, color=colors[n_poly - 1], zorder=1, alpha=0.75, lw=0.8)
-        axes[1, n_poly - 1].plot(stats[index, 0], stats[index, 3] - 1.0, color=colors[n_poly - 1], zorder=1, alpha=0.75, lw=0.8)
-        axes[0, n_poly - 1].fill_between(
+        axes[0, n_poly].plot(stats[index, 0], stats[index, 2] * 100.0, color=colors[n_poly + colmin - 1], zorder=1, alpha=0.75, lw=0.8)
+        axes[1, n_poly].plot(stats[index, 0], stats[index, 3] * 100.0, color=colors[n_poly + colmin - 1], zorder=1, alpha=0.75, lw=0.8)
+        axes[0, n_poly].fill_between(
             stats[index, 0],
-            stats[index, 2] - stats[index, 4] - 1.0,
-            stats[index, 2] + stats[index, 4] - 1.0,
-            color=colors[n_poly - 1],
+            (stats[index, 2] - stats[index, 4]) * 100.0,
+            (stats[index, 2] + stats[index, 4]) * 100.0,
+            color=colors[n_poly + colmin - 1],
             zorder=1,
             alpha=0.5,
             lw=0.8,
         )
-        axes[1, n_poly - 1].fill_between(
+        axes[1, n_poly].fill_between(
             stats[index, 0],
-            stats[index, 3] - stats[index, 5] - 1.0,
-            stats[index, 3] + stats[index, 5] - 1.0,
-            color=colors[n_poly - 1],
+            (stats[index, 3] - stats[index, 5]) * 100.0,
+            (stats[index, 3] + stats[index, 5]) * 100.0,
+            color=colors[n_poly + colmin - 1],
             zorder=1,
             alpha=0.5,
             lw=0.8,
         )
-        axes[0, n_poly - 1].set_ylim(-0.04, 0.04)
-        axes[1, n_poly - 1].set_ylim(-0.02, 0.02)
-        axes[1, n_poly - 1].set_xlabel(r"$\Sigma_{nl,||}$")
-        if n_poly == 1:
-            axes[0, n_poly - 1].set_ylabel(r"$\alpha_{||}-1$")
-            axes[1, n_poly - 1].set_ylabel(r"$\alpha_{\perp}-1$")
-        axes[0, n_poly - 1].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
-        axes[0, n_poly - 1].axvline(5.4, color="k", ls=":", zorder=0, lw=0.8)
-        axes[1, n_poly - 1].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
-        axes[1, n_poly - 1].axvline(5.4, color="k", ls=":", zorder=0, lw=0.8)
-        axes[0, n_poly - 1].text(
+        axes[0, n_poly].set_xlim(2.3, 7.7)
+        axes[1, n_poly].set_xlim(2.3, 7.7)
+        axes[0, n_poly].set_ylim(-0.75, 0.75)
+        axes[1, n_poly].set_ylim(-0.45, 0.45)
+        axes[1, n_poly].set_xlabel(r"$\Sigma_{nl,||}$")
+        if n_poly == 0:
+            axes[0, n_poly].set_ylabel(r"$\alpha_{||} - 1\,(\%)$")
+            axes[1, n_poly].set_ylabel(r"$\alpha_{\perp} - 1\,(\%)$")
+        axes[0, n_poly].axhline(0.1, color="k", ls=":", zorder=0, lw=0.8)
+        axes[0, n_poly].axhline(-0.1, color="k", ls=":", zorder=0, lw=0.8)
+        axes[0, n_poly].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
+        axes[0, n_poly].axvline(5.1, color="k", ls=":", zorder=0, lw=0.8)
+        axes[1, n_poly].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
+        axes[1, n_poly].axhline(0.1, color="k", ls=":", zorder=0, lw=0.8)
+        axes[1, n_poly].axhline(-0.1, color="k", ls=":", zorder=0, lw=0.8)
+        axes[1, n_poly].axvline(5.1, color="k", ls=":", zorder=0, lw=0.8)
+        axes[0, n_poly].text(
             0.05,
             0.95,
-            f"$N_{{poly}} = {{{n_poly}}}$",
-            transform=axes[0, n_poly - 1].transAxes,
+            f"$N_{{poly}} = {{{n_poly+colmin}}}$",
+            transform=axes[0, n_poly].transAxes,
             ha="left",
             va="top",
             fontsize=8,
-            color=colors[n_poly - 1],
+            color=colors[n_poly + colmin - 1],
         )
 
     fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
@@ -81,8 +94,8 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name, remove_output=False)
     sampler = NautilusSampler(temp_dir=dir_name)
 
-    sigma_nl_perp = 1.6
-    sigma_nl_par = [2.6, 3.1, 3.6, 4.1, 4.6, 5.1, 5.6, 6.1, 6.6, 7.1, 7.6]
+    sigma_nl_perp = 2.0
+    sigma_nl_par = [1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5]
     sigma_s = 0.0
 
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
@@ -179,7 +192,7 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
-        datanames = ["Xi", "Pk", "Pk_CV"]
+        datanames = ["Xi_CV", "Pk_CV"]
 
         # Loop over all the chains
         stats = [[] for _ in range(len(datanames))]
@@ -187,10 +200,8 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number and redshift bin
-            recon_bin = 0 if "Prerecon" in extra["name"] else 1
-            data_bin = 0 if "Xi" in extra["name"] else 1 if "CV" not in extra["name"] else 2
+            data_bin = 0 if "Xi" in extra["name"] else 1
             sigma_bin = int(extra["name"].split("fixed_type ")[1].split(" ")[0])
-            redshift_bin = int(2.0 * len(sigma_nl_par) * data_bin + 2.0 * sigma_bin + recon_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -210,18 +221,20 @@ if __name__ == "__main__":
                 axis=0,
             )
 
-            stats[data_bin].append([sigma_nl_par[sigma_bin], model.n_poly, mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])])
+            stats[data_bin].append(
+                [sigma_nl_par[sigma_bin], model.n_poly, mean[0] - 1.0, mean[1] - 1.0, np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])]
+            )
             output[datanames[data_bin]].append(
-                f"{sigma_nl_par[sigma_bin]:6.4f}, {model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
+                f"{sigma_nl_par[sigma_bin]:6.4f}, {model.n_poly:3d}, {mean[0]-1.0:6.4f}, {mean[1]-1.0:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
             )
 
         print(stats)
 
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
-        for data_bin in range(3):
+        for data_bin, type in enumerate(["xi", "pk"]):
 
             # Plot histograms of the errors and r_off
-            plot_alphas(np.array(stats[data_bin]), "/".join(pfn.split("/")[:-1]) + "/" + datanames[data_bin] + "_alphas.png")
+            plot_alphas(np.array(stats[data_bin]), "/".join(pfn.split("/")[:-1]) + "/" + datanames[data_bin] + "_alphas.png", type=type)
 
             # Save all the numbers to a file
             with open(dir_name + "/Barry_fit_" + datanames[data_bin] + ".txt", "w") as f:

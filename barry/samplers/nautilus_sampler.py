@@ -56,7 +56,7 @@ class NautilusSampler(Sampler):
 
         filename = self.get_filename(uid)
         if os.path.exists(filename):
-            self.logger.info("Not sampling, returning result from Nautilus file.")
+            self.logger.info(f"Not sampling, returning result from Nautilus file {filename}.")
             return self.load_file(filename)
         self.logger.info("Sampling posterior now")
 

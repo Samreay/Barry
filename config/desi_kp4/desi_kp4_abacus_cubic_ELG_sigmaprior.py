@@ -53,10 +53,10 @@ def plot_errors(stats, figname, type="xi"):
                 stats[index, 0], stats[index, param + 7] * 100.0, color=colors[n_poly + colmin - 1], zorder=1, alpha=0.75, lw=0.8
             )
 
-        axes[0, n_poly].set_ylim(-0.5, 0.5)
-        axes[1, n_poly].set_ylim(-0.35, 0.35)
-        axes[2, n_poly].set_ylim(0.144, 0.160)
-        axes[3, n_poly].set_ylim(0.080, 0.0895)
+        axes[0, n_poly].set_ylim(-0.5 * 5.0, 0.5 * 5.0)
+        axes[1, n_poly].set_ylim(-0.35 * 5.0, 0.35 * 5.0)
+        axes[2, n_poly].set_ylim(0.144 * 5.0, 0.160 * 5.0)
+        axes[3, n_poly].set_ylim(0.080 * 5.0, 0.0895 * 5.0)
         if n_poly == int(np.floor(colmax - colmin) / 2.0):
             axes[3, n_poly].set_xlabel(r"$\sigma_{\Sigma}\,(h^{-1}\mathrm{Mpc})$", fontsize=12)
         if n_poly == 0:
