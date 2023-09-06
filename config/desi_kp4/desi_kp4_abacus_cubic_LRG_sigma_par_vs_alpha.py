@@ -55,8 +55,8 @@ def plot_alphas(stats, figname, type="xi"):
             alpha=0.5,
             lw=0.8,
         )
-        axes[0, n_poly].set_xlim(2.3, 7.7)
-        axes[1, n_poly].set_xlim(2.3, 7.7)
+        axes[0, n_poly].set_xlim(1.3, 6.7)
+        axes[1, n_poly].set_xlim(1.3, 6.7)
         axes[0, n_poly].set_ylim(-0.75, 0.75)
         axes[1, n_poly].set_ylim(-0.45, 0.45)
         axes[1, n_poly].set_xlabel(r"$\Sigma_{nl,||}$")
@@ -66,11 +66,11 @@ def plot_alphas(stats, figname, type="xi"):
         axes[0, n_poly].axhline(0.1, color="k", ls=":", zorder=0, lw=0.8)
         axes[0, n_poly].axhline(-0.1, color="k", ls=":", zorder=0, lw=0.8)
         axes[0, n_poly].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
-        axes[0, n_poly].axvline(5.1, color="k", ls=":", zorder=0, lw=0.8)
+        axes[0, n_poly].axvline(4.0, color="k", ls=":", zorder=0, lw=0.8)
         axes[1, n_poly].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
         axes[1, n_poly].axhline(0.1, color="k", ls=":", zorder=0, lw=0.8)
         axes[1, n_poly].axhline(-0.1, color="k", ls=":", zorder=0, lw=0.8)
-        axes[1, n_poly].axvline(5.1, color="k", ls=":", zorder=0, lw=0.8)
+        axes[1, n_poly].axvline(4.0, color="k", ls=":", zorder=0, lw=0.8)
         axes[0, n_poly].text(
             0.05,
             0.95,

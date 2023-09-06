@@ -125,6 +125,10 @@ if __name__ == "__main__":
     sampler = NautilusSampler(temp_dir=dir_name)
 
     # The optimal sigma values we found when fitting the mocks with fixed alpha/epsilon
+    sigma_nl_par = {None: 9.6, "sym": 5.1}
+    sigma_nl_perp = {None: 4.8, "sym": 1.6}
+    sigma_s = {None: 2.0, "sym": 0.0}
+
     kmins = [0.0, 0.01, 0.02, 0.03, 0.04, 0.05]
     kmaxs = [0.20, 0.22, 0.24, 0.26, 0.28, 0.30, 0.32, 0.34, 0.36, 0.38, 0.40]
 
@@ -163,12 +167,18 @@ if __name__ == "__main__":
                     max_k=kmax,
                     realisation=None,
                     num_mocks=1000,
-                    reduce_cov_factor=25,
+                    reduce_cov_factor=1,
                 )
 
                 name = dataset.name + f" mock mean kmin =" + str(kmin) + " kmax =" + str(kmax)
                 fitter.add_model_and_dataset(model, dataset, name=name)
                 allnames.append(name)
+
+                for j in range(len(dataset.mock_data)):
+                    dataset.set_realisation(j)
+                    name = dataset.name + f" realisation {j} kmin =" + str(kmin) + " kmax =" + str(kmax)
+                    fitter.add_model_and_dataset(model, dataset, name=name)
+                    allnames.append(name)
 
     # Submit all the jobs to NERSC. We have quite a few (72), so we'll
     # only assign 1 walker (processor) to each. Note that this will only run if the
