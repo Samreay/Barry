@@ -2,7 +2,7 @@ import sys
 
 sys.path.append("..")
 sys.path.append("../../")
-from barry.samplers import NautilusSampler
+from barry.samplers import Optimiser
 from barry.config import setup
 from barry.models import PowerBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESI_KP4
@@ -122,13 +122,9 @@ if __name__ == "__main__":
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
-    sampler = NautilusSampler(temp_dir=dir_name)
+    sampler = Optimiser(temp_dir=dir_name)
 
     # The optimal sigma values we found when fitting the mocks with fixed alpha/epsilon
-    sigma_nl_par = {None: 9.6, "sym": 5.1}
-    sigma_nl_perp = {None: 4.8, "sym": 1.6}
-    sigma_s = {None: 2.0, "sym": 0.0}
-
     kmins = [0.0, 0.01, 0.02, 0.03, 0.04, 0.05]
     kmaxs = [0.20, 0.22, 0.24, 0.26, 0.28, 0.30, 0.32, 0.34, 0.36, 0.38, 0.40]
 
