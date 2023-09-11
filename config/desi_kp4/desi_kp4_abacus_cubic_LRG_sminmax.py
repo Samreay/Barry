@@ -181,8 +181,8 @@ if __name__ == "__main__":
     sampler = NautilusSampler(temp_dir=dir_name)
 
     # The optimal sigma values we found when fitting the mocks with fixed alpha/epsilon
-    smins = np.array([25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0])
-    smaxs = np.array([120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 175.0, 180.0])
+    smins = np.array([26.0, 30.0, 34.0, 38.0, 42.0, 46.0, 50.0, 54.0, 58.0, 62.0, 66.0, 70.0, 74.0, 78.0, 82.0])
+    smaxs = np.array([122.0, 126.0, 130.0, 134.0, 138.0, 142.0, 146.0, 150.0, 154.0, 158.0, 162.0, 166.0, 170.0, 174.0, 178.0, 182.0])
 
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
