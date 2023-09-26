@@ -71,7 +71,7 @@ class PowerSpectrumFit(Model):
             if not isinstance(npoly, int):
                 raise ValueError("For broadband_type == spline, the n_poly kwarg be a single integer (maximum) value, not a list")
             self.n_poly = range(npoly)
-            self.delta = kwargs.get("delta", 2.1)
+            self.delta = kwargs.get("delta", 2.0)
             self.logger.info(f"Setting up {npoly} broadband terms with delta={self.delta}*pi/r_s")
         else:
             self.n_poly = []

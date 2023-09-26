@@ -130,30 +130,27 @@ if __name__ == "__main__":
     # Loop over pre- and post-recon measurements
     for sig in range(len(sigma_nl_par)):
 
-        for n_poly in range(3, 7):
+        model = PowerBeutler2017(
+            recon=dataset_pk.recon,
+            isotropic=dataset_pk.isotropic,
+            fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
+            marg="full",
+            poly_poles=dataset_pk.fit_poles,
+            correction=Correction.NONE,
+        )
+        model.set_default("sigma_nl_par", sigma_nl_par[sig])
+        model.set_default("sigma_nl_perp", sigma_nl_perp)
+        model.set_default("sigma_s", sigma_s)
 
-            model = PowerBeutler2017(
-                recon=dataset_pk.recon,
-                isotropic=dataset_pk.isotropic,
-                fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
-                marg="full",
-                poly_poles=dataset_pk.fit_poles,
-                correction=Correction.NONE,
-                n_poly=n_poly,
-            )
-            model.set_default("sigma_nl_par", sigma_nl_par[sig])
-            model.set_default("sigma_nl_perp", sigma_nl_perp)
-            model.set_default("sigma_s", sigma_s)
+        # Load in a pre-existing BAO template
+        pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+        model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
-            # Load in a pre-existing BAO template
-            pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-            model.kvals, model.pksmooth, model.pkratio = pktemplate.T
+        name = dataset_pk.name + f" mock mean fixed_type {sig}"
+        fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[0])
+        allnames.append(name)
 
-            name = dataset_pk.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
-            fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[n_poly - 1])
-            allnames.append(name)
-
-        for n_poly in range(1, 6):
+        for n_poly in [[0], [0, 2], [0, 2, 4], [0, 2, 4, 6]]:
 
             model = CorrBeutler2017(
                 recon=dataset_xi.recon,
@@ -172,8 +169,8 @@ if __name__ == "__main__":
             pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
             model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
-            name = dataset_xi.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
-            fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[n_poly - 1])
+            name = dataset_xi.name + f" mock mean fixed_type {sig} n_poly=" + str(len(n_poly))
+            fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[len(n_poly) - 1])
             allnames.append(name)
 
     # Submit all the jobs to NERSC. We have quite a few (231), so we'll
