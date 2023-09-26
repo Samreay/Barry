@@ -51,7 +51,6 @@ class PowerNoda2019(PowerSpectrumFit):
             marg=None,
             n_poly=0,
             n_data=n_data,
-            data_share_poly=False,
         )
 
         if self.recon_type == "ani":
@@ -312,8 +311,6 @@ class PowerNoda2019(PowerSpectrumFit):
 
         if self.isotropic:
 
-            pk = [np.zeros(len(k))]
-
             kprime = k / p["alpha"]
 
             fog = np.exp(-p["A"] * ks**2)
@@ -344,8 +341,7 @@ class PowerNoda2019(PowerSpectrumFit):
                 propagator = self.get_damping(growth, om, gamma)
                 pk1d = integrate.simps(pk_smooth * ((1.0 + pk_ratio * propagator) * kaiser_prefac**2 + pk_nonlinear), self.mu, axis=0)
 
-            poly = np.zeros((1, len(k)))
-            pk[0] = splev(kprime, splrep(ks, pk1d))
+            pk = [splev(kprime, splrep(ks, pk1d))]
 
         else:
             epsilon = np.round(p["epsilon"], decimals=5)
@@ -392,9 +388,8 @@ class PowerNoda2019(PowerSpectrumFit):
             pk0, pk2, pk4 = self.integrate_mu(pk2d)
 
             pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4, np.zeros(len(k))]
-            poly = np.zeros((1, 5, len(k)))
 
-        return kprime, pk, poly
+        return kprime, pk
 
 
 if __name__ == "__main__":
@@ -424,7 +419,6 @@ if __name__ == "__main__":
     model = PowerNoda2019(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
-        marg=None,
         correction=Correction.HARTLAP,
     )
     model.sanity_check(dataset)

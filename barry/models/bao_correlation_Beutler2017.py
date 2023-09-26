@@ -24,7 +24,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
         poly_poles=(0, 2),
         marg=None,
         dilate_smooth=True,
-        n_poly=3,
+        n_poly=(0, 2),
     ):
 
         self.dilate_smooth = dilate_smooth
@@ -39,7 +39,6 @@ class CorrBeutler2017(CorrelationFunctionFit):
             isotropic=isotropic,
             poly_poles=poly_poles,
             marg=marg,
-            includeb2=False,
             n_poly=n_poly,
         )
         self.parent = PowerBeutler2017(
@@ -51,14 +50,13 @@ class CorrBeutler2017(CorrelationFunctionFit):
             isotropic=isotropic,
             marg=marg,
             dilate_smooth=dilate_smooth,
-            n_poly=n_poly,
+            broadband_type=None,
         )
 
-        self.set_marg(fix_params, poly_poles, n_poly, do_bias=False)
+        self.set_marg(fix_params, poly_poles, n_poly, do_bias=True, marg_bias=1)
 
     def declare_parameters(self):
         super().declare_parameters()
-        self.add_param("b{0}_{1}", r"$b{0}_{1}$", 0.1, 10.0, 1.0)  # Galaxy bias
         self.add_param("sigma_s", r"$\Sigma_s$", 0.0, 20.0, 10.0)  # Fingers-of-god damping
         if self.isotropic:
             self.add_param("sigma_nl", r"$\Sigma_{nl}$", 0.0, 20.0, 10.0)  # BAO damping
@@ -67,43 +65,8 @@ class CorrBeutler2017(CorrelationFunctionFit):
             self.add_param("sigma_nl_par", r"$\Sigma_{nl,||}$", 0.0, 20.0, 8.0)  # BAO damping parallel to LOS
             self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.0, 20.0, 4.0)  # BAO damping perpendicular to LOS
         for pole in self.poly_poles:
-            for ip in range(self.n_poly):
-                self.add_param(f"a{{{pole}}}_{{{ip+1}}}_{{{1}}}", f"$a_{{{pole},{ip+1},1}}$", -100.0, 100.0, 0)
-
-    def compute_correlation_function(self, dist, p, smooth=False):
-        """Computes the correlation function model using the Beutler et. al., 2017 power spectrum
-            and 3 bias parameters and polynomial terms per multipole
-
-        Parameters
-        ----------
-        dist : np.ndarray
-            Array of distances in the correlation function to compute
-        p : dict
-            dictionary of parameter name to float value pairs
-        smooth : bool, optional
-            Whether or not to generate a smooth model without the BAO feature
-
-        Returns
-        -------
-        sprime : np.ndarray
-            distances of the computed xi
-        xi : np.ndarray
-            the model monopole, quadrupole and hexadecapole interpolated to sprime.
-        poly: np.ndarray
-            the additive terms in the model, necessary for analytical marginalisation
-
-        """
-
-        ks, pks, _ = self.parent.compute_power_spectrum(self.parent.camb.ks, p, smooth=smooth, nopoly=True)
-        xi_comp = np.array([self.pk2xi_0.__call__(ks, pks[0], dist), np.zeros(len(dist)), np.zeros(len(dist))])
-
-        if not self.isotropic:
-            xi_comp[1] = self.pk2xi_2.__call__(ks, pks[2], dist)
-            xi_comp[2] = self.pk2xi_4.__call__(ks, pks[4], dist)
-
-        xi, poly = self.add_poly(dist, p, xi_comp)
-
-        return dist, xi, poly
+            for ip in self.n_poly:
+                self.add_param(f"a{{{pole}}}_{{{ip}}}_{{{1}}}", f"$a_{{{pole},{ip},1}}$", -10.0, 10.0, 0)
 
 
 if __name__ == "__main__":
@@ -111,8 +74,6 @@ if __name__ == "__main__":
 
     sys.path.append("../..")
     from barry.datasets.dataset_correlation_function import (
-        CorrelationFunction_ROSS_DR12,
-        CorrelationFunction_DESIMockChallenge_Post,
         CorrelationFunction_DESI_KP4,
     )
     from barry.config import setup_logging
@@ -122,7 +83,7 @@ if __name__ == "__main__":
 
     dataset = CorrelationFunction_DESI_KP4(
         recon="sym",
-        fit_poles=[0, 2],
+        fit_poles=[0, 2, 4],
         min_dist=52.0,
         max_dist=150.0,
         realisation=None,
@@ -135,15 +96,14 @@ if __name__ == "__main__":
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
-        fix_params=["om", "sigma_s", "sigma_nl_par", "sigma_nl_perp"],
+        fix_params=["om"],
         poly_poles=dataset.fit_poles,
         correction=Correction.NONE,
-        n_poly=3,
+        n_poly=[0, 2],
     )
-    model.set_default("sigma_s", 0.0)
-    model.set_default("sigma_nl_perp", 1.8)
-    model.set_default("sigma_nl_par", 5.4)
-    print(model.get_active_params())
+    model.set_default("sigma_nl_par", 5.4, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model.set_default("sigma_nl_perp", 1.6, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
     # Load in a pre-existing BAO template
     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")

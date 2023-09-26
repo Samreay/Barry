@@ -26,13 +26,12 @@ class PowerDing2018(PowerSpectrumFit):
         isotropic=False,
         poly_poles=(0, 2),
         marg=None,
-        n_poly=5,
+        broadband_type="spline",
         n_data=1,
-        data_share_bias=False,
-        data_share_poly=False,
+        **kwargs,
     ):
 
-        self.marg_bias = False
+        self.marg_bias = 0
 
         super().__init__(
             name=name,
@@ -45,16 +44,15 @@ class PowerDing2018(PowerSpectrumFit):
             isotropic=isotropic,
             poly_poles=poly_poles,
             marg=marg,
-            n_poly=n_poly,
+            broadband_type=broadband_type,
             n_data=n_data,
-            data_share_bias=data_share_bias,
-            data_share_poly=data_share_poly,
+            **kwargs,
         )
 
         if self.recon_type == "sym" or self.recon_type == "ani":
             raise NotImplementedError("Symmetric and Anisotropic reconstruction not yet available for Ding2018 model")
 
-        self.set_marg(fix_params, poly_poles, n_poly)
+        self.set_marg(fix_params, poly_poles, self.n_poly, do_bias=True, marg_bias=1)
 
     def precompute(self, om=None, h0=None, ks=None, pk_lin=None, pk_nonlin_0=None, pk_nonlin_z=None, r_drag=None, s=None):
 
@@ -163,8 +161,8 @@ class PowerDing2018(PowerSpectrumFit):
         self.add_param("b_delta", r"$b_{\delta}$", -5.0, 5.0, 0.0)  # Non-linear galaxy bias
         for i in range(self.n_data_poly):
             for pole in self.poly_poles:
-                for ip in range(self.n_poly):
-                    self.add_param(f"a{{{pole}}}_{{{ip+1}}}_{{{i+1}}}", f"$a_{{{pole}}},{{{ip+1}}},{{{i+1}}}$", -20000.0, 20000.0, 0)
+                for ip in self.n_poly:
+                    self.add_param(f"a{{{pole}}}_{{{ip}}}_{{{i+1}}}", f"$a_{{{pole},{ip},{i+1}}}$", -20000.0, 20000.0, 0)
 
     def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None, nopoly=False):
         """Computes the power spectrum model using the Ding et. al., 2018 EFT0 propagator
@@ -209,8 +207,6 @@ class PowerDing2018(PowerSpectrumFit):
 
         if self.isotropic:
 
-            pk = [np.zeros(len(k))]
-
             kprime = k if for_corr else k / p["alpha"]
 
             # Compute the smooth model
@@ -249,21 +245,8 @@ class PowerDing2018(PowerSpectrumFit):
                     kaiser_prefac = 1.0 + np.tile(p["beta"] * self.mu**2, (len(ks), 1)).T + bdelta_prefac
                     propagator = (kaiser_prefac**2 - bdelta_prefac**2) * damping
 
-            if smooth:
-                prefac = np.ones(len(kprime))
-            else:
-                prefac = splev(kprime, splrep(ks, integrate.simps((fog + pk_ratio * propagator), self.mu, axis=0)))
-
-            if for_corr or nopoly:
-                poly = None
-                pk1d = integrate.simps(pk_smooth * (fog + pk_ratio * propagator), self.mu, axis=0)
-            else:
-                shape, poly = self.add_poly(ks, k, p, prefac, np.zeros(len(k)))
-                if self.marg:
-                    poly = poly[1:]  # Remove the bias marginalisation.
-                pk1d = integrate.simps((pk_smooth + shape) * (fog + pk_ratio * propagator), self.mu, axis=0)
-
-            pk[0] = splev(kprime, splrep(ks, pk1d))
+            pk1d = integrate.simps(pk_smooth * (fog + pk_ratio * propagator), self.mu, axis=0)
+            pk = [splev(kprime, splrep(ks, pk1d))]
 
         else:
             epsilon = np.round(p["epsilon"], decimals=5)
@@ -323,22 +306,9 @@ class PowerDing2018(PowerSpectrumFit):
                 pk2d = pk_smooth * (fog + splev(kprime, splrep(ks, pk_ratio)) * propagator)
 
             pk0, pk2, pk4 = self.integrate_mu(pk2d)
-
-            # Polynomial shape
             pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4, np.zeros(len(k))]
 
-            if for_corr or nopoly:
-                poly = None
-                kprime = k
-            else:
-                shape, poly = self.add_poly(k, k, p, np.ones(len(k)), pk)
-                if self.marg:
-                    poly = poly[1:]  # Remove the bias marginalisation.
-                else:
-                    for pole in self.poly_poles:
-                        pk[pole] += shape[pole]
-
-        return kprime, pk, poly
+        return kprime, pk
 
 
 if __name__ == "__main__":
@@ -352,12 +322,10 @@ if __name__ == "__main__":
     setup_logging()
 
     dataset = PowerSpectrum_DESI_KP4(
-        recon=None,
+        recon="sym",
         fit_poles=[0, 2],
         min_k=0.02,
         max_k=0.30,
-        mocktype="abacus_cubicbox",
-        redshift_bin=0,
         realisation=None,
         num_mocks=1000,
         reduce_cov_factor=25,
@@ -368,10 +336,10 @@ if __name__ == "__main__":
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
-        fix_params=["om", "sigma_s"],
-        poly_poles=dataset.fit_poles,
+        fix_params=["om"],
+        poly_poles=[0, 2],
         correction=Correction.HARTLAP,
-        n_poly=5,
+        broadband_type="spline",
     )
-    model.set_default("sigma_s", 0.0)
+    model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model.sanity_check(dataset)

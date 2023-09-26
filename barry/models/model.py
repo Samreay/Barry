@@ -104,6 +104,7 @@ class Model(ABC):
             if marg.lower() == "partial":
                 self.marg_type = "partial"
             self.marg = True
+            self.marg_precompute = None
             self.logger.info(f"Using {self.marg_type} analytic marginalisation")
             assert (
                 self.correction != Correction.SELLENTIN
@@ -260,7 +261,7 @@ class Model(ABC):
                 log_prior += -0.5 * ((val - self.param_dict[pname].default) / self.param_dict[pname].sigma) ** 2
         return log_prior
 
-    def get_chi2_likelihood(self, data, model, model_odd, icov, icov_m_w, num_mocks=None, num_data=None):
+    def get_chi2_likelihood(self, data, model, icov, num_mocks=None, num_data=None):
         """Computes the chi2 corrected likelihood.
 
         Parameters
@@ -280,18 +281,8 @@ class Model(ABC):
             The (corrected) log-likelihood value from the computed chi2.
         """
 
-        if icov_m_w[0] is None:
-            diff = data - (model + model_odd)
-            chi2 = diff.T @ icov @ diff
-        else:
-            chi2 = (
-                data.T @ icov @ data
-                - 2.0 * model_odd.T @ icov_m_w[0] @ data
-                - 2.0 * model.T @ icov_m_w[1] @ data
-                + model_odd.T @ icov_m_w[2] @ model_odd
-                + 2.0 * model.T @ icov_m_w[3] @ model_odd
-                + model.T @ icov_m_w[4] @ model.T
-            )
+        diff = data - model
+        chi2 = diff.T @ icov @ diff
 
         if self.correction in [Correction.HARTLAP, Correction.SELLENTIN]:
             assert (
@@ -318,7 +309,7 @@ class Model(ABC):
         else:
             return -0.5 * chi2
 
-    def get_chi2_marg_likelihood(self, data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w, num_mocks=None, num_data=None):
+    def get_chi2_marg_likelihood(self, data, model, marg_model, icov, num_mocks=None, num_data=None, marg_bias=0):
         """Computes the chi2 corrected likelihood.
 
         Parameters
@@ -341,39 +332,32 @@ class Model(ABC):
         log_likelihood : float
             The (corrected) log-likelihood value from the computed chi2.
         """
-        if icov_m_w[0] is None:
-            model += model_odd
-            marg_model += marg_model_odd
-            diff = data - model
-            F02 = diff @ icov @ diff
-            F11 = marg_model @ icov @ diff
-            F2 = marg_model @ icov @ marg_model.T
+
+        if self.marg_precompute is None:
+            F2 = marg_model[marg_bias:] @ icov @ marg_model[marg_bias:].T
+            import matplotlib.pyplot as plt
+
+            # plt.imshow(np.log(marg_model[marg_bias:]), aspect="auto")
+            # plt.show()
             F2inv = np.linalg.inv(F2)
+            icov_mod = icov @ marg_model[marg_bias:].T @ F2inv @ marg_model[marg_bias:] @ icov
+            icov_new = icov - icov_mod
+
+            self.marg_precompute = [icov_new, np.log(np.linalg.det(F2))]
+
+        diff = data - model
+        if marg_bias == 1:
+            chi2p = marg_model[0] @ self.marg_precompute[0] @ marg_model[0]
+            logdetchi2p = np.log(chi2p)
+            chi2 = diff @ self.marg_precompute[0] @ diff - (marg_model[0] @ self.marg_precompute[0] @ diff) ** 2 / chi2p
+        elif marg_bias > 1:
+            chi2p1 = marg_model[:marg_bias] @ self.marg_precompute[0] @ diff
+            chi2p2 = marg_model[:marg_bias] @ self.marg_precompute[0] @ marg_model[:marg_bias].T
+            logdetchi2p = np.log(np.linalg.det(chi2p2))
+            chi2 = diff @ self.marg_precompute[0] @ diff - chi2p1.T @ np.linalg.inv(chi2p2) @ chi2p1
         else:
-            F02 = (
-                data @ icov @ data
-                - 2.0 * model_odd @ icov_m_w[0] @ data
-                - 2.0 * model @ icov_m_w[1] @ data
-                + model_odd @ icov_m_w[2] @ model_odd
-                + 2.0 * model @ icov_m_w[3] @ model_odd
-                + model @ icov_m_w[4] @ model
-            )
-            F11 = (
-                marg_model_odd @ icov_m_w[0] @ data
-                + marg_model @ icov_m_w[1] @ data
-                - marg_model_odd @ icov_m_w[2] @ model_odd
-                - marg_model @ icov_m_w[3] @ model_odd
-                - marg_model_odd @ icov_m_w[3].T @ model
-                - marg_model @ icov_m_w[4] @ model
-            )
-            F2 = (
-                marg_model_odd @ icov_m_w[2] @ marg_model_odd.T
-                + marg_model @ icov_m_w[3] @ marg_model_odd.T
-                + marg_model_odd @ icov_m_w[3].T @ marg_model.T
-                + marg_model @ icov_m_w[4] @ marg_model.T
-            )
-            F2inv = np.linalg.inv(F2)
-        chi2 = F02 - F11 @ F2inv @ F11
+            logdetchi2p = 1.0, 0.0
+            chi2 = diff @ self.marg_precompute[0] @ diff
 
         if self.correction in [Correction.HARTLAP]:
             assert (
@@ -385,13 +369,11 @@ class Model(ABC):
             if key not in self.correction_data:
                 self.correction_data[key] = (num_mocks - num_data - 2.0) / (num_mocks - 1.0)
             c_p = self.correction_data[key]
-            return -0.5 * (chi2 * c_p + np.log(np.linalg.det(F2)) + np.shape(F2)[0] * np.log(c_p))
+            return -0.5 * (chi2 * c_p + self.marg_precompute[1] + logdetchi2p + np.shape(marg_model)[0] * np.log(c_p))
         else:
-            return -0.5 * (chi2 + np.log(np.linalg.det(F2)))
+            return -0.5 * (chi2 + self.marg_precompute[1] + logdetchi2p)
 
-    def get_chi2_partial_marg_likelihood(
-        self, data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w, num_mocks=None, num_data=None
-    ):
+    def get_chi2_partial_marg_likelihood(self, data, model, marg_model, icov, num_mocks=None, num_data=None):
         """Computes the chi2 corrected likelihood.
 
         Parameters
@@ -416,38 +398,18 @@ class Model(ABC):
         """
 
         # First compute the MLE values for the nuisance parameters
-        bband = self.get_ML_nuisance(data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w)
+        bband = self.get_ML_nuisance(data, model, marg_model, icov)
 
         # Add these on to the models
         model += bband @ marg_model
-        model_odd += bband @ marg_model_odd
 
-        return self.get_chi2_likelihood(data, model, model_odd, icov, icov_m_w, num_mocks=num_mocks, num_data=num_data)
+        return self.get_chi2_likelihood(data, model, icov, num_mocks=num_mocks, num_data=num_data)
 
-    def get_ML_nuisance(self, data, model, model_odd, marg_model, marg_model_odd, icov, icov_m_w):
+    def get_ML_nuisance(self, data, model, marg_model, icov):
 
-        if icov_m_w[0] is None:
-            full_model = model + model_odd
-            full_marg_model = marg_model + marg_model_odd
-            F11 = full_marg_model @ icov @ (data - full_model)
-            F2 = full_marg_model @ icov @ full_marg_model.T
-            F2inv = np.linalg.inv(F2)
-        else:
-            F11 = (
-                marg_model_odd @ icov_m_w[0] @ data
-                + marg_model @ icov_m_w[1] @ data
-                - marg_model_odd @ icov_m_w[2] @ model_odd
-                - marg_model @ icov_m_w[3] @ model_odd
-                - marg_model_odd @ icov_m_w[3].T @ model
-                - marg_model @ icov_m_w[4] @ model
-            )
-            F2 = (
-                marg_model_odd @ icov_m_w[2] @ marg_model_odd.T
-                + 2.0 * marg_model @ icov_m_w[3] @ marg_model_odd.T
-                + marg_model @ icov_m_w[4] @ marg_model.T
-            )
-            F2inv = np.linalg.inv(F2)
-
+        F11 = marg_model @ icov @ (data - model)
+        F2 = marg_model @ icov @ marg_model.T
+        F2inv = np.linalg.inv(F2)
         bband = F2inv @ F11
 
         return bband

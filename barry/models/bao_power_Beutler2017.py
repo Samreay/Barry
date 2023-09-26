@@ -23,10 +23,9 @@ class PowerBeutler2017(PowerSpectrumFit):
         poly_poles=(0, 2),
         marg=None,
         dilate_smooth=True,
-        n_poly=5,
+        broadband_type="spline",
         n_data=1,
-        data_share_bias=False,
-        data_share_poly=False,
+        **kwargs,
     ):
 
         self.dilate_smooth = dilate_smooth
@@ -42,13 +41,12 @@ class PowerBeutler2017(PowerSpectrumFit):
             isotropic=isotropic,
             poly_poles=poly_poles,
             marg=marg,
-            n_poly=n_poly,
+            broadband_type=broadband_type,
             n_data=n_data,
-            data_share_bias=data_share_bias,
-            data_share_poly=data_share_poly,
+            **kwargs,
         )
 
-        self.set_marg(fix_params, poly_poles, n_poly, do_bias=True)
+        self.set_marg(fix_params, poly_poles, self.n_poly, do_bias=True, marg_bias=1)
 
     def declare_parameters(self):
         super().declare_parameters()
@@ -61,10 +59,10 @@ class PowerBeutler2017(PowerSpectrumFit):
             self.add_param("sigma_nl_perp", r"$\Sigma_{nl,\perp}$", 0.0, 20.0, 4.0)  # BAO damping perpendicular to LOS
         for i in range(self.n_data_poly):
             for pole in self.poly_poles:
-                for ip in range(self.n_poly):
-                    self.add_param(f"a{{{pole}}}_{{{ip+1}}}_{{{i+1}}}", f"$a_{{{pole},{ip+1},{i+1}}}$", -20000.0, 20000.0, 0)
+                for ip in self.n_poly:
+                    self.add_param(f"a{{{pole}}}_{{{ip}}}_{{{i+1}}}", f"$a_{{{pole},{ip},{i+1}}}$", -20000.0, 20000.0, 0)
 
-    def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None, nopoly=False):
+    def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None):
         """Computes the power spectrum model using the Beutler et. al., 2017 method
 
         Parameters
@@ -108,12 +106,14 @@ class PowerBeutler2017(PowerSpectrumFit):
                 p = self.deal_with_ndata(p, 0)
 
         if self.isotropic:
-            pk = [np.zeros(len(k))]
             kprime = k if for_corr else k / p["alpha"]
             if self.dilate_smooth:
-                pk_smooth = splev(kprime, splrep(ks, pk_smooth_lin)) / (1.0 + kprime**2 * p["sigma_s"] ** 2 / 2.0) ** 2
+                fog = 1.0 / (1.0 + kprime**2 * p["sigma_s"] ** 2 / 2.0) ** 2
+                pk_smooth = splev(kprime, splrep(ks, pk_smooth_lin))
             else:
-                pk_smooth = splev(k, splrep(ks, pk_smooth_lin)) / (1.0 + k**2 * p["sigma_s"] ** 2 / 2.0) ** 2
+                fog = 1.0 / (1.0 + k**2 * p["sigma_s"] ** 2 / 2.0) ** 2
+                pk_smooth = splev(k, splrep(ks, pk_smooth_lin))
+
             if not for_corr:
                 pk_smooth *= p["b{0}"]
 
@@ -121,20 +121,13 @@ class PowerBeutler2017(PowerSpectrumFit):
             pk_smooth /= p["alpha"] ** 3
 
             if smooth:
-                propagator = np.ones(len(kprime))
+                pk0 = pk_smooth * fog
             else:
                 # Compute the propagator
                 C = np.exp(-0.5 * kprime**2 * p["sigma_nl"] ** 2)
-                propagator = 1.0 + splev(kprime, splrep(ks, pk_ratio)) * C
-            prefac = np.ones(len(kprime)) if smooth else propagator
+                pk0 = pk_smooth * (fog + splev(kprime, splrep(ks, pk_ratio)) * C)
 
-            if for_corr or nopoly:
-                poly = None
-                pk[0] = pk_smooth * propagator
-            else:
-                shape, poly = self.add_poly(k, k, p, prefac, pk_smooth)
-                if not self.marg:
-                    pk[0] = (pk_smooth + shape) * propagator
+            pk = [pk0]
 
         else:
 
@@ -171,18 +164,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             # Polynomial shape
             pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4, np.zeros(len(k))]
 
-            if for_corr or nopoly:
-                poly = None
-                kprime = k
-            else:
-                shape, poly = self.add_poly(k, k, p, np.ones(len(k)), pk)
-                if self.marg:
-                    pk = [np.zeros(len(k))] * 6
-                else:
-                    for pole in self.poly_poles:
-                        pk[pole] += shape[pole]
-
-        return kprime, pk, poly
+        return kprime, pk
 
 
 if __name__ == "__main__":
@@ -200,11 +182,11 @@ if __name__ == "__main__":
     dataset = PowerSpectrum_DESI_KP4(
         recon="sym",
         fit_poles=[0, 2],
-        min_k=0.00,
+        min_k=0.02,
         max_k=0.30,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=1,
+        reduce_cov_factor=25,
     )
     data = dataset.get_data()
 
@@ -214,11 +196,10 @@ if __name__ == "__main__":
         marg="full",
         fix_params=["om"],
         poly_poles=dataset.fit_poles,
-        correction=Correction.NONE,
-        n_poly=5,
+        correction=Correction.HARTLAP,
     )
     model.set_default("sigma_nl_par", 5.4, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-    model.set_default("sigma_nl_perp", 1.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model.set_default("sigma_nl_perp", 1.6, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
     # Load in a pre-existing BAO template

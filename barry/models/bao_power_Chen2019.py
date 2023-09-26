@@ -27,13 +27,12 @@ class PowerChen2019(PowerSpectrumFit):
         isotropic=False,
         poly_poles=(0, 2),
         marg=None,
-        n_poly=5,
+        broadband_type="spline",
         n_data=1,
-        data_share_bias=False,
-        data_share_poly=False,
+        **kwargs,
     ):
 
-        self.marg_bias = False
+        self.marg_bias = 0
 
         super().__init__(
             name=name,
@@ -46,16 +45,15 @@ class PowerChen2019(PowerSpectrumFit):
             isotropic=isotropic,
             poly_poles=poly_poles,
             marg=marg,
-            n_poly=n_poly,
+            broadband_type=broadband_type,
             n_data=n_data,
-            data_share_bias=data_share_bias,
-            data_share_poly=data_share_poly,
+            **kwargs,
         )
 
         if self.recon_type == "ani":
             raise NotImplementedError("Anisotropic reconstruction not yet available for Chen2019 model")
 
-        self.set_marg(fix_params, poly_poles, n_poly)
+        self.set_marg(fix_params, poly_poles, self.n_poly, do_bias=True, marg_bias=1)
 
     def precompute(self, om=None, h0=None, ks=None, pk_lin=None, pk_nonlin_0=None, pk_nonlin_z=None, r_drag=None, s=None):
 
@@ -67,7 +65,6 @@ class PowerChen2019(PowerSpectrumFit):
         if s is None:
             s = self.camb.smoothing_kernel
 
-        print(ks, pk_lin, r_drag, s)
         j0 = spherical_jn(0, r_drag * ks)
 
         return {
@@ -223,8 +220,8 @@ class PowerChen2019(PowerSpectrumFit):
         self.add_param("sigma_s", r"$\Sigma_s$", 0.0, 10.0, 5.0)  # Fingers-of-god damping
         for i in range(self.n_data_poly):
             for pole in self.poly_poles:
-                for ip in range(self.n_poly):
-                    self.add_param(f"a{{{pole}}}_{{{ip+1}}}_{{{i+1}}}", f"$a_{{{pole}}},{{{ip+1}}},{{{i+1}}}$", -20000.0, 20000.0, 0)
+                for ip in self.n_poly:
+                    self.add_param(f"a{{{pole}}}_{{{ip}}}_{{{i+1}}}", f"$a_{{{pole},{ip},{i+1}}}$", -20000.0, 20000.0, 0)
 
     def compute_power_spectrum(self, k, p, smooth=False, for_corr=False, data_name=None, nopoly=False):
         """Computes the power spectrum model using the Chen et. al., 2019 propagator
@@ -269,8 +266,6 @@ class PowerChen2019(PowerSpectrumFit):
 
         if self.isotropic:
 
-            pk = [np.zeros(len(k))]
-
             kprime = k if for_corr else k / p["alpha"]
 
             # Compute the smooth model
@@ -308,21 +303,8 @@ class PowerChen2019(PowerSpectrumFit):
                     kaiser_prefac = 1.0 + np.tile(p["beta"] * self.mu**2, (len(ks), 1)).T
                     propagator = kaiser_prefac**2 * damping
 
-            if smooth:
-                prefac = np.ones(len(kprime))
-            else:
-                prefac = splev(kprime, splrep(ks, integrate.simps((fog + pk_ratio * propagator), self.mu, axis=0)))
-
-            if for_corr or nopoly:
-                poly = None
-                pk1d = integrate.simps(pk_smooth * (fog + pk_ratio * propagator), self.mu, axis=0)
-            else:
-                shape, poly = self.add_poly(ks, k, p, prefac, np.zeros(len(k)))
-                if self.marg:
-                    poly = poly[1:]  # Remove the bias marginalisation.
-                pk1d = integrate.simps((pk_smooth + shape) * (fog + pk_ratio * propagator), self.mu, axis=0)
-
-            pk[0] = splev(kprime, splrep(ks, pk1d))
+            pk1d = integrate.simps(pk_smooth * (fog + pk_ratio * propagator), self.mu, axis=0)
+            pk = [splev(kprime, splrep(ks, pk1d))]
 
         else:
             epsilon = np.round(p["epsilon"], decimals=5)
@@ -395,22 +377,9 @@ class PowerChen2019(PowerSpectrumFit):
                 pk2d = pk_smooth * (broadband + splev(kprime, splrep(ks, pk_ratio)) * propagator)
 
             pk0, pk2, pk4 = self.integrate_mu(pk2d)
-
-            # Polynomial shape
             pk = [pk0, np.zeros(len(k)), pk2, np.zeros(len(k)), pk4, np.zeros(len(k))]
 
-            if for_corr or nopoly:
-                poly = None
-                kprime = k
-            else:
-                shape, poly = self.add_poly(k, k, p, np.ones(len(k)), pk)
-                if self.marg:
-                    poly = poly[1:]  # Remove the bias marginalisation.
-                else:
-                    for pole in self.poly_poles:
-                        pk[pole] += shape[pole]
-
-        return kprime, pk, poly
+        return kprime, pk
 
 
 if __name__ == "__main__":
@@ -440,7 +409,7 @@ if __name__ == "__main__":
         fix_params=["om"],
         poly_poles=[0, 2],
         correction=Correction.HARTLAP,
-        n_poly=5,
+        broadband_type="spline",
     )
     model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model.sanity_check(dataset)

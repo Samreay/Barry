@@ -25,8 +25,8 @@ class CorrelationFunctionFit(Model):
         isotropic=False,
         poly_poles=(0, 2),
         marg=None,
-        includeb2=True,
-        n_poly=3,
+        includeb2=False,
+        n_poly=(0, 2),
     ):
 
         """Generic correlation function model
@@ -52,7 +52,7 @@ class CorrelationFunctionFit(Model):
             correction=correction,
             isotropic=isotropic,
             marg=marg,
-            n_poly=n_poly,
+            broadband_type=None,
         )
         if smooth_type is None:
             self.smooth_type = {"method": "hinton2017"}
@@ -62,7 +62,7 @@ class CorrelationFunctionFit(Model):
         self.n_data_bias = 1
         self.n_data_poly = 1
 
-        if n_poly > 0 and self.isotropic:
+        if len(n_poly) > 0 and self.isotropic:
             poly_poles = [0]
 
         self.recon = recon
@@ -70,8 +70,8 @@ class CorrelationFunctionFit(Model):
         self.poly_poles = poly_poles
         self.data_share_poly = True
 
-        self.declare_parameters()
         self.includeb2 = includeb2
+        self.declare_parameters()
 
         # Set up data structures for model fitting
         self.smooth = smooth
@@ -82,21 +82,26 @@ class CorrelationFunctionFit(Model):
         self.pk2xi_2 = None
         self.pk2xi_4 = None
 
-        self.fixed_xi = False
-        self.store_xi = [None, None, None]
-        self.store_xi_smooth = [None, None, None]
+        self.poly = None  # Basic polynomial terms
+        self.winpoly = None  # Polynomial terms convolved with the window function
 
-    def set_marg(self, fix_params, poly_poles, n_poly, do_bias=False):
+    def set_marg(self, fix_params, poly_poles, n_poly, do_bias=False, marg_bias=0):
+
+        self.marg_bias = marg_bias
 
         if self.marg:
             fix_params = list(fix_params)
             if do_bias:
                 for i in range(self.n_data_bias):
                     fix_params.extend([f"b{{{0}}}_{{{i+1}}}"])
+                if self.includeb2:
+                    for pole in self.poly_poles:
+                        if pole != 0:
+                            fix_params.extend([f"b{{{pole}}}_{{{i+1}}}"])
             for i in range(self.n_data_poly):
                 for pole in poly_poles:
-                    for ip in range(n_poly):
-                        fix_params.extend([f"a{{{pole}}}_{{{ip+1}}}_{{{i+1}}}"])
+                    for ip in n_poly:
+                        fix_params.extend([f"a{{{pole}}}_{{{ip}}}_{{{i+1}}}"])
 
         self.set_fix_params(fix_params)
 
@@ -104,10 +109,14 @@ class CorrelationFunctionFit(Model):
             if do_bias:
                 for i in range(self.n_data_bias):
                     self.set_default(f"b{{{0}}}_{{{i+1}}}", 1.0)
+                    if self.includeb2:
+                        for pole in self.poly_poles:
+                            if pole != 0:
+                                self.set_default(f"b{{{pole}}}_{{{i+1}}}", 1.0)
             for i in range(self.n_data_poly):
                 for pole in self.poly_poles:
-                    for ip in range(n_poly):
-                        self.set_default(f"a{{{pole}}}_{{{ip+1}}}_{{{i+1}}}", 0.0)
+                    for ip in n_poly:
+                        self.set_default(f"a{{{pole}}}_{{{ip}}}_{{{i+1}}}", 0.0)
 
     def set_data(self, data):
         """Sets the models data, including fetching the right cosmology and PT generator.
@@ -121,12 +130,6 @@ class CorrelationFunctionFit(Model):
             A list of datas to use
         """
         super().set_data(data)
-        # self.pk2xi_0 = PowerToCorrelationGauss(self.camb.ks, ell=0, interpolateDetail=20)
-        # self.pk2xi_2 = PowerToCorrelationGauss(self.camb.ks, ell=2, interpolateDetail=20)
-        # self.pk2xi_4 = PowerToCorrelationGauss(self.camb.ks, ell=4, interpolateDetail=20)
-        # self.pk2xi_0 = PowerToCorrelationFFTLog(ell=0, r0=50.0)
-        # self.pk2xi_2 = PowerToCorrelationFFTLog(ell=2, r0=50.0)
-        # self.pk2xi_4 = PowerToCorrelationFFTLog(ell=4, r0=50.0)
         cambpk = self.camb.get_data(om=data[0]["cosmology"]["om"], h0=data[0]["cosmology"]["h0"])
         self.pk2xi_0 = PowerToCorrelationSphericalBessel(qs=cambpk["ks"], ell=0)
         self.pk2xi_2 = PowerToCorrelationSphericalBessel(qs=cambpk["ks"], ell=2)
@@ -155,12 +158,12 @@ class CorrelationFunctionFit(Model):
         b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f**2) if kaiserfac - 4.0 / 45.0 * f**2 > 0 else 1.0
         if not self.marg:
             min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
-            # if self.param_dict.get("b") is not None:
-            #    self.set_default(f"b", b**2, min=min_b**2, max=max_b**2)
-            #    self.logger.info(f"Setting default bias to b={b:0.5f} with {width:0.5f} fractional width")
-            # else:
             self.set_default(f"b{{{0}}}_{{{1}}}", b**2, min=min_b**2, max=max_b**2)
             self.logger.info(f"Setting default bias to b0={b:0.5f} with {width:0.5f} fractional width")
+            if self.includeb2:
+                for pole in self.poly_poles:
+                    self.set_default(f"b{{{pole}}}_{{{1}}}", b**2, min=min_b**2, max=max_b**2)
+                    self.logger.info(f"Setting default bias to b{{{pole}}}={b:0.5f} with {width:0.5f} fractional width")
         if self.param_dict.get("beta") is not None:
             if self.get_default("beta") is None:
                 beta, beta_min, beta_max = f / b, (1.0 - width) * f / b, (1.0 + width) * f / b
@@ -172,6 +175,7 @@ class CorrelationFunctionFit(Model):
 
     def declare_parameters(self):
         """Defines model parameters, their bounds and default value."""
+        self.add_param(f"b{{{0}}}_{{{1}}}", f"$b{{{0}}}_{{{1}}}$", 0.01, 10.0, 1.0)  # Linear galaxy bias for each multipole
         self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.31)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch for monopole
         if not self.isotropic:
@@ -228,101 +232,9 @@ class CorrelationFunctionFit(Model):
             xi4 = 35.0 * simps(xi2d * mu**4, self.mu, axis=1)
         return xi0, xi2, xi4
 
-    def compute_basic_correlation_function(self, dist, p, smooth=False):
-        """Computes the basic correlation function computes usig the parent Power spectrum class
-
-        Parameters
-        ----------
-        dist : np.ndarray
-            Array of distances in the correlation function to compute
-        p : dict
-            dictionary of parameter name to float value pairs
-        smooth : bool, optional
-            Whether or not to generate a smooth model without the BAO feature
-
-        Returns
-        -------
-        sprime : np.ndarray
-            distances of the computed xi
-        xi : np.ndarray
-            the model monopole, quadrupole and hexadecapole components interpolated to sprime.
-        """
-
-        if self.fixed_xi:
-            if smooth:
-                if self.store_xi_smooth[0] is None:
-                    ks, pks, _ = self.parent.compute_power_spectrum(self.parent.camb.ks, p, smooth=smooth, for_corr=True)
-            else:
-                if self.store_xi[0] is None:
-                    ks, pks, _ = self.parent.compute_power_spectrum(self.parent.camb.ks, p, smooth=smooth, for_corr=True)
-        else:
-            ks, pks, _ = self.parent.compute_power_spectrum(self.parent.camb.ks, p, smooth=smooth, for_corr=True)
-
-        xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
-
-        finedist = np.linspace(0.0, 300.0, 601)
-        if self.isotropic:
-            sprime = p["alpha"] * dist
-            if self.fixed_xi:
-                if smooth:
-                    if self.store_xi_smooth[0] is None:
-                        pk2xi0 = splrep(finedist, self.pk2xi_0.__call__(ks, pks[0], finedist))
-                        self.store_xi_smooth[0] = pk2xi0
-                    else:
-                        pk2xi0 = self.store_xi_smooth[0]
-                else:
-                    if self.store_xi[0] is None:
-                        pk2xi0 = splrep(finedist, self.pk2xi_0.__call__(ks, pks[0], finedist))
-                        self.store_xi[0] = pk2xi0
-                    else:
-                        pk2xi0 = self.store_xi[0]
-            else:
-                pk2xi0 = self.pk2xi_0.__call__(ks, pks[0], sprime)
-            xi[0] = splev(sprime, pk2xi0)
-        else:
-            # Construct the dilated 2D correlation function by splining the undilated multipoles. We could have computed these
-            # directly at sprime, but sprime depends on both s and mu, so splining is quicker
-            # epsilon = np.round(p["epsilon"], decimals=5)
-            epsilon = p["epsilon"]
-            sprime = np.outer(dist * p["alpha"], self.get_sprimefac(epsilon))
-            muprime = self.get_muprime(epsilon)
-
-            if self.fixed_xi:
-                if smooth:
-                    if self.store_xi_smooth[0] is None:
-                        pk2xi0 = splrep(finedist, self.pk2xi_0.__call__(ks, pks[0], finedist))
-                        pk2xi2 = splrep(finedist, self.pk2xi_2.__call__(ks, pks[2], finedist))
-                        pk2xi4 = splrep(finedist, self.pk2xi_4.__call__(ks, pks[4], finedist))
-                        self.store_xi_smooth = [pk2xi0, pk2xi2, pk2xi4]
-                    else:
-                        pk2xi0, pk2xi2, pk2xi4 = self.store_xi_smooth
-                else:
-                    if self.store_xi[0] is None:
-                        pk2xi0 = splrep(finedist, self.pk2xi_0.__call__(ks, pks[0], finedist))
-                        pk2xi2 = splrep(finedist, self.pk2xi_2.__call__(ks, pks[2], finedist))
-                        pk2xi4 = splrep(finedist, self.pk2xi_4.__call__(ks, pks[4], finedist))
-                        self.store_xi = [pk2xi0, pk2xi2, pk2xi4]
-                    else:
-                        pk2xi0, pk2xi2, pk2xi4 = self.store_xi
-            else:
-                pk2xi0 = splrep(finedist, self.pk2xi_0.__call__(ks, pks[0], finedist))
-                pk2xi2 = splrep(finedist, self.pk2xi_2.__call__(ks, pks[2], finedist))
-                pk2xi4 = splrep(finedist, self.pk2xi_4.__call__(ks, pks[4], finedist))
-
-            xi0 = splev(sprime, pk2xi0)
-            xi2 = splev(sprime, pk2xi2)
-            xi4 = splev(sprime, pk2xi4)
-
-            xi2d = xi0 + 0.5 * (3.0 * muprime**2 - 1) * xi2 + 0.125 * (35.0 * muprime**4 - 30.0 * muprime**2 + 3.0) * xi4
-
-            # Now compute the dilated xi multipoles
-            xi[0], xi[1], xi[2] = self.integrate_mu(xi2d, self.mu)
-
-        return sprime, xi
-
     def compute_correlation_function(self, dist, p, smooth=False):
         """Computes the correlation function model using the Beutler et. al., 2017 power spectrum
-            and 3 bias parameters but no polynomial terms
+            and 3 bias parameters and polynomial terms per multipole
 
         Parameters
         ----------
@@ -343,12 +255,17 @@ class CorrelationFunctionFit(Model):
             the additive terms in the model, necessary for analytical marginalisation
 
         """
-        sprime, xi_comp = self.compute_basic_correlation_function(dist, p, smooth=smooth)
-        xi, poly = self.add_poly(dist, p, xi_comp)
 
-        return sprime, xi, poly
+        _, pks = self.parent.compute_power_spectrum(self.parent.camb.ks, p, smooth=smooth)
+        xi_comp = np.array([self.pk2xi_0.__call__(self.parent.camb.ks, pks[0], dist), np.zeros(len(dist)), np.zeros(len(dist))])
 
-    def add_poly(self, dist, p, xi_comp):
+        if not self.isotropic:
+            xi_comp[1] = self.pk2xi_2.__call__(self.parent.camb.ks, pks[2], dist)
+            xi_comp[2] = self.pk2xi_4.__call__(self.parent.camb.ks, pks[4], dist)
+
+        return dist, xi_comp
+
+    def compute_poly(self, dist):
         """Converts the xi components to a full model but with 3 polynomial terms for each multipole
 
         Parameters
@@ -370,34 +287,18 @@ class CorrelationFunctionFit(Model):
             the additive terms in the model, necessary for analytical marginalisation
 
         """
-
-        xi0, xi2, xi4 = xi_comp
-        xi = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
-
+        # Prefactor, roughly equal to the typical k_min/2pi, set so that the free coefficients are all of the same order
+        A = 0.02 / (2.0 * np.pi)
         if self.isotropic:
-            xi[0] = xi0
-            poly = np.zeros((1, len(dist)))
-            if self.marg:
-                poly = [1.0 / dist ** (ip - 1) for ip in range(self.n_poly)]
-            else:
-                for ip in range(self.n_poly):
-                    xi[0] += p[f"a{0}_{{{ip+1}}}_{{{1}}}"] / (dist ** (ip - 1))
-
+            self.poly = [(A * dist) ** ip for ip in self.n_poly]
+            # self.poly = np.zeros((len(self.n_poly), 1, len(dist)))
+            # for i, ip in enumerate(self.n_poly):
+            #    self.poly[i, :, :] = (A * dist) ** ip
         else:
-            xi = [xi0, xi2, xi4]
-
-            # Polynomial shape
-            if self.marg:
-                poly = np.zeros((self.n_poly * len(self.poly_poles), 3, len(dist)))
-                for npole, pole in enumerate(self.poly_poles):
-                    poly[self.n_poly * npole : self.n_poly * (npole + 1), npole] = [1.0 / dist ** (ip - 1) for ip in range(self.n_poly)]
-            else:
-                poly = np.zeros((1, 3, len(dist)))
-                for pole in self.poly_poles:
-                    for ip in range(self.n_poly):
-                        xi[int(pole / 2)] += p[f"a{{{pole}}}_{{{ip+1}}}_{{{1}}}"] / dist ** (ip - 1)
-
-        return xi, poly
+            self.poly = np.zeros((len(self.n_poly) * len(self.poly_poles), 3, len(dist)))
+            polyvec = [(A * dist) ** ip for ip in self.n_poly]
+            for i, pole in enumerate(self.poly_poles):
+                self.poly[len(self.n_poly) * i : len(self.n_poly) * (i + 1), int(pole / 2)] = polyvec
 
     def get_model(self, p, d, smooth=False):
         """Gets the model prediction using the data passed in and parameter location specified
@@ -421,30 +322,41 @@ class CorrelationFunctionFit(Model):
             k values correspond to d['dist']
         """
 
-        dist, xis, poly = self.compute_correlation_function(d["dist_input"], p, smooth=smooth)
+        dist, xis = self.compute_correlation_function(d["dist_input"], p, smooth=smooth)
 
-        # Convolve the xi model with the binning matrix
+        # If we are not analytically marginalising, we now add the polynomial terms on to the correlation function
+        if not self.marg:
+            if self.poly is None:
+                self.compute_poly(d["dist_input"])
+            for pole in self.poly_poles:
+                for i, ip in enumerate(self.n_poly):
+                    xis[int(pole / 2)] += p[f"a{{{pole}}}_{{{ip}}}_{{{1}}}"] * self.poly[i, int(pole / 2), :]
+
+        # Convolve the xi model with the binning matrix and concatenate into a single data vector
         xi_generated = [xi @ d["binmat"] for xi in xis]
+        xi_model = np.concatenate([xi_generated[l] for l in range(len(d["poles"]))])
 
-        xi_model = xi_generated[0] if self.isotropic else np.concatenate([xi_generated[0], xi_generated[1]])
-        if 4 in d["poles"] and not self.isotropic:
-            xi_model = np.concatenate([xi_model, xi_generated[2]])
-
+        # Now sort out the polynomial terms in the case of analytical marginalisation
         poly_model = None
         if self.marg:
-            len_poly = len(d["dist"])
-            if not self.isotropic:
-                len_poly *= len(d["poles"])
-            poly_model = np.empty((np.shape(poly)[0], len_poly))
-            for n in range(np.shape(poly)[0]):
-                if self.isotropic:
-                    poly_model[n] = poly[n] @ d["binmat"]
-                else:
-                    poly_generated = [pol @ d["binmat"] for pol in poly[n]]
-                    if 4 in d["poles"]:
-                        poly_model[n] = np.concatenate(poly_generated)
-                    else:
-                        poly_model[n] = np.concatenate([poly_generated[0], poly_generated[1]])
+
+            # Load the polynomial terms if computed already, or compute them for the first time.
+            if self.winpoly is None:
+                if self.poly is None:
+                    self.compute_poly(d["dist_input"])
+
+                nmarg, nell = np.shape(self.poly)[:2]
+                len_poly = len(d["dist"]) if self.isotropic else len(d["dist"]) * nell
+                self.winpoly = np.zeros((nmarg, len_poly))
+                for n in range(nmarg):
+                    self.winpoly[n] = np.concatenate([pol @ d["binmat"] for ip, pol in enumerate(self.poly[n])])
+
+            if self.marg_bias > 0:
+                # We need to update/include the poly terms corresponding to the galaxy bias
+                poly_model = np.vstack([xi_model, self.winpoly])
+                xi_model = np.zeros(len(xi_model))
+            else:
+                poly_model = self.winpoly
 
         return xi_model, poly_model
 
@@ -485,11 +397,8 @@ class CorrelationFunctionFit(Model):
             return self.get_chi2_partial_marg_likelihood(
                 d["xi"],
                 xi_model_fit,
-                np.zeros(xi_model_fit.shape),
                 poly_model_fit,
-                np.zeros(poly_model_fit.shape),
                 d["icov"],
-                [None],
                 num_mocks=num_mocks,
                 num_data=num_data,
             )
@@ -497,21 +406,17 @@ class CorrelationFunctionFit(Model):
             return self.get_chi2_marg_likelihood(
                 d["xi"],
                 xi_model_fit,
-                np.zeros(xi_model_fit.shape),
                 poly_model_fit,
-                np.zeros(poly_model_fit.shape),
                 d["icov"],
-                [None],
                 num_mocks=num_mocks,
                 num_data=num_data,
+                marg_bias=self.marg_bias,
             )
         else:
             return self.get_chi2_likelihood(
                 d["xi"],
                 xi_model_fit,
-                np.zeros(xi_model_fit.shape),
                 d["icov"],
-                [None],
                 num_mocks=num_mocks,
                 num_data=num_data,
             )
@@ -543,35 +448,27 @@ class CorrelationFunctionFit(Model):
                     polysmooth_fit[n] = break_vector_and_get_blocks(
                         polysmooth[n], np.shape(polysmooth)[1] / len(self.data[0]["dist"]), self.data[0]["fit_pole_indices"]
                     )
-            bband = self.get_ML_nuisance(
-                self.data[0]["xi"], mod_fit, np.zeros(mod_fit.shape), polymod_fit, np.zeros(polymod_fit.shape), self.data[0]["icov"], [None]
-            )
+            bband = self.get_ML_nuisance(self.data[0]["xi"], mod_fit, polymod_fit, self.data[0]["icov"])
             mod = mod + bband @ polymod
             mod_fit = mod_fit + bband @ polymod_fit
 
-            # print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
+            print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
             new_chi_squared = -2.0 * self.get_chi2_likelihood(
                 self.data[0]["xi"],
                 mod_fit,
-                np.zeros(mod_fit.shape),
                 self.data[0]["icov"],
-                [None],
                 num_mocks=self.data[0]["num_mocks"],
                 num_data=len(self.data[0]["xi"]),
             )
-            alphas = params["alpha"] if self.isotropic else self.get_alphas(params["alpha"], params["epsilon"])
             dof = len(self.data[0]["xi"]) - len(self.get_active_params()) - len(bband)
 
             bband_smooth = self.get_ML_nuisance(
                 self.data[0]["xi"],
                 smooth_fit,
-                np.zeros(smooth_fit.shape),
                 polysmooth_fit,
-                np.zeros(polysmooth_fit.shape),
                 self.data[0]["icov"],
-                [None],
             )
-            smooth = smooth + bband_smooth @ polysmooth
+            smooth = smooth + bband @ polysmooth
         else:
             dof = len(self.data[0]["xi"]) - len(self.get_active_params())
             new_chi_squared = 0.0
@@ -618,6 +515,7 @@ class CorrelationFunctionFit(Model):
 
                 # Plot ye old model
                 ax[0].plot(ss, ss**2 * mod, c=c, label="Model")
+                ax[0].plot(ss, ss**2 * smooth, c=c, ls="--", label="Smooth")
                 ax[1].plot(ss, ss**2 * (mod - smooth), c=c, label="Model")
 
                 ax[0].set_ylabel("$s^{2} \\times $ " + label)

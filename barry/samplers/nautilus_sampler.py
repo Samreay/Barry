@@ -67,7 +67,7 @@ class NautilusSampler(Sampler):
         sampler = nautilus.Sampler(prior_transform, log_likelihood, n_dim=num_dim, n_live=self.nlive, n_update=self.nupdate)
         sampler.run(verbose=self.print_progress, discard_exploration=True)
 
-        self.logger.debug("Fit finished")
+        self.logger.debug(f"Fit finished. Effective sample size: {sampler.effective_sample_size()}")
 
         chain, logw, likelihood = sampler.posterior()
         logz = sampler.evidence()
