@@ -136,7 +136,7 @@ if __name__ == "__main__":
             fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
             marg="full",
             poly_poles=dataset_pk.fit_poles,
-            correction=Correction.NONE,
+            correction=Correction.HARTLAP,
         )
         model.set_default("sigma_nl_par", sigma_nl_par[sig])
         model.set_default("sigma_nl_perp", sigma_nl_perp)
