@@ -26,8 +26,8 @@ def plot_alphas(stats, figname, type="xi"):
         colmin = 1
         colmax = 6
     else:
-        colmin = 3
-        colmax = 7
+        colmin = 30
+        colmax = 31
 
     fig, axes = plt.subplots(figsize=(7, 2), nrows=2, ncols=colmax - colmin, sharex=True, sharey="row", squeeze=False)
     plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
@@ -35,13 +35,13 @@ def plot_alphas(stats, figname, type="xi"):
         index = np.where(stats[:, 1] == n_poly + colmin)[0]
         print(stats[index, 0], stats[index, 2], stats[index, 3])
 
-        axes[0, n_poly].plot(stats[index, 0], stats[index, 2] * 100.0, color=colors[n_poly + colmin - 1], zorder=1, alpha=0.75, lw=0.8)
-        axes[1, n_poly].plot(stats[index, 0], stats[index, 3] * 100.0, color=colors[n_poly + colmin - 1], zorder=1, alpha=0.75, lw=0.8)
+        axes[0, n_poly].plot(stats[index, 0], stats[index, 2] * 100.0, color=colors[1], zorder=1, alpha=0.75, lw=0.8)
+        axes[1, n_poly].plot(stats[index, 0], stats[index, 3] * 100.0, color=colors[1], zorder=1, alpha=0.75, lw=0.8)
         axes[0, n_poly].fill_between(
             stats[index, 0],
             (stats[index, 2] - stats[index, 4]) * 100.0,
             (stats[index, 2] + stats[index, 4]) * 100.0,
-            color=colors[n_poly + colmin - 1],
+            color=colors[1],
             zorder=1,
             alpha=0.5,
             lw=0.8,
@@ -50,7 +50,7 @@ def plot_alphas(stats, figname, type="xi"):
             stats[index, 0],
             (stats[index, 3] - stats[index, 5]) * 100.0,
             (stats[index, 3] + stats[index, 5]) * 100.0,
-            color=colors[n_poly + colmin - 1],
+            color=colors[1],
             zorder=1,
             alpha=0.5,
             lw=0.8,
@@ -79,7 +79,7 @@ def plot_alphas(stats, figname, type="xi"):
             ha="left",
             va="top",
             fontsize=8,
-            color=colors[n_poly + colmin - 1],
+            color=colors[1],
         )
 
     fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
@@ -219,10 +219,10 @@ if __name__ == "__main__":
             )
 
             stats[data_bin].append(
-                [sigma_nl_par[sigma_bin], model.n_poly, mean[0] - 1.0, mean[1] - 1.0, np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])]
+                [sigma_nl_par[sigma_bin], len(model.n_poly), mean[0] - 1.0, mean[1] - 1.0, np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])]
             )
             output[datanames[data_bin]].append(
-                f"{sigma_nl_par[sigma_bin]:6.4f}, {model.n_poly:3d}, {mean[0]-1.0:6.4f}, {mean[1]-1.0:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
+                f"{sigma_nl_par[sigma_bin]:6.4f}, {len(model.n_poly):3d}, {mean[0]-1.0:6.4f}, {mean[1]-1.0:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
             )
 
         print(stats)
