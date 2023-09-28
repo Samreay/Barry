@@ -1,3 +1,6 @@
+import sys
+
+sys.path.append("../..")
 import logging
 from functools import lru_cache
 import numpy as np
@@ -52,7 +55,7 @@ class PowerDing2018(PowerSpectrumFit):
         if self.recon_type == "sym" or self.recon_type == "ani":
             raise NotImplementedError("Symmetric and Anisotropic reconstruction not yet available for Ding2018 model")
 
-        self.set_marg(fix_params, poly_poles, self.n_poly, do_bias=True, marg_bias=1)
+        self.set_marg(fix_params, poly_poles, self.n_poly, do_bias=False, marg_bias=0)
 
     def precompute(self, om=None, h0=None, ks=None, pk_lin=None, pk_nonlin_0=None, pk_nonlin_z=None, r_drag=None, s=None):
 
@@ -322,7 +325,7 @@ if __name__ == "__main__":
     setup_logging()
 
     dataset = PowerSpectrum_DESI_KP4(
-        recon="sym",
+        recon=None,
         fit_poles=[0, 2],
         min_k=0.02,
         max_k=0.30,

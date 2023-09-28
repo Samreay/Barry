@@ -152,7 +152,7 @@ class PowerSpectrumFit(Model):
             if self.broadband_type == "spline":
                 self.delta *= np.pi / self.camb.get_data(om=data[0]["cosmology"]["om"], h0=data[0]["cosmology"]["h0"])["r_s"]
                 self.logger.info(f"Broadband Delta fixed to {self.delta}")
-            self.compute_poly(data[0]["ks_input"], data[0]["ks"])
+            self.compute_poly(data[0]["ks_input"])
 
     def set_bias(self, data, kval=0.2, width=0.4):
         """Sets the bias default value by comparing the data monopole and linear pk
@@ -195,7 +195,7 @@ class PowerSpectrumFit(Model):
     def declare_parameters(self):
         """Defines model parameters, their bounds and default value."""
         for i in range(self.n_data_bias):
-            self.add_param(f"b{{{0}}}_{{{i+1}}}", f"$b{{{0}}}_{{{i+1}}}$", 0.1, 10.0, 1.0)  # Galaxy bias
+            self.add_param(f"b{{{0}}}_{{{i+1}}}", f"$b_{{{0},{i+1}}}$", 0.1, 10.0, 1.0)  # Galaxy bias
         self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.31)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch for monopole
         if not self.isotropic:
@@ -362,7 +362,7 @@ class PowerSpectrumFit(Model):
 
         return kprime, pk
 
-    def compute_poly(self, k, kout):
+    def compute_poly(self, k):
         """Returns the polynomial components for 3 terms per multipole
 
         Parameters
@@ -595,10 +595,10 @@ class PowerSpectrumFit(Model):
             # If we are not analytically marginalising, we now add the polynomial terms on to the power spectrum model
             if not self.marg:
                 if self.poly is None:
-                    self.compute_poly(d["ks_input"], d["ks_output"])
-                for pole in self.poly_poles:
-                    for i, ip in enumerate(self.n_poly):
-                        pk[pole] += p[f"a{{{pole}}}_{{{ip}}}"] * self.poly[i, pole, :]
+                    self.compute_poly(d["ks_input"])
+                for j, pole in enumerate(self.poly_poles):
+                    for n, ip in enumerate(self.n_poly):
+                        pk[pole] += p[f"a{{{pole}}}_{{{ip}}}"] * self.poly[len(self.n_poly) * j + n, pole, :]
 
             all_pks.append(pk)
 
@@ -631,7 +631,7 @@ class PowerSpectrumFit(Model):
             # Load the polynomial terms if computed already, or compute them for the first time.
             if self.winpoly is None:
                 if self.poly is None:
-                    self.compute_poly(d["ks_input"], d["ks_output"])
+                    self.compute_poly(d["ks_input"])
 
                 # Concatenate the poly matrix in the correct way for our datasets based on the parameters they are sharing
                 nmarg, nell = np.shape(self.poly)[:2]
@@ -665,7 +665,7 @@ class PowerSpectrumFit(Model):
 
             if self.marg_bias > 0:
                 # We need to update/include the poly terms corresponding to the galaxy bias
-                poly_model = np.vstack([pk_model_even, self.winpoly])
+                poly_model = np.vstack([pk_model, self.winpoly])
                 pk_model = np.zeros(len(pk_model))
             else:
                 poly_model = self.winpoly
@@ -696,17 +696,6 @@ class PowerSpectrumFit(Model):
         if self.marg:
             mod_fit = mod[mask]
             smooth_fit = smooth[mask]
-
-            """len_poly = (
-                self.data[0]["ndata"] * len(self.data[0]["ks"])
-                if self.isotropic
-                else self.data[0]["ndata"] * len(self.data[0]["ks"]) * len(self.data[0]["fit_poles"])
-            )
-            polymod_fit = np.empty((np.shape(polymod)[0], len_poly))
-            polysmooth_fit = np.empty((np.shape(polysmooth)[0], len_poly))
-            for n in range(np.shape(polymod)[0]):
-                polymod_fit[n] = polymod[n, mask]
-                polysmooth_fit[n] = polysmooth[n, mask]"""
 
             polymod_fit = self.maskpoly
             # Ensure the first terms is updated to match the model if we are marginalising over bias

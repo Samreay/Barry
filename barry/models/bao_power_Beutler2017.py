@@ -1,3 +1,6 @@
+import sys
+
+sys.path.append("../..")
 import numpy as np
 from barry.models.bao_power import PowerSpectrumFit
 from scipy.interpolate import splev, splrep
@@ -193,13 +196,14 @@ if __name__ == "__main__":
     model = PowerBeutler2017(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
-        marg="full",
+        marg=None,
         fix_params=["om"],
         poly_poles=dataset.fit_poles,
-        correction=Correction.HARTLAP,
+        correction=Correction.NONE,
+        broadband_type="poly",
     )
-    model.set_default("sigma_nl_par", 5.4, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-    model.set_default("sigma_nl_perp", 1.6, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model.set_default("sigma_nl_par", 4.75, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model.set_default("sigma_nl_perp", 1.50, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
     # Load in a pre-existing BAO template

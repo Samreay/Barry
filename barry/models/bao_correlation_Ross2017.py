@@ -1,8 +1,6 @@
-import logging
 import sys
 
 sys.path.append("../..")
-
 from barry.models import PowerBeutler2017
 from barry.models.bao_correlation import CorrelationFunctionFit
 from scipy.interpolate import splev, splrep
@@ -24,7 +22,7 @@ class CorrRoss2017(CorrelationFunctionFit):
         poly_poles=(0, 2),
         marg=None,
         includeb2=True,
-        n_poly=(-2, 0),
+        n_poly=(0, 2),
     ):
 
         super().__init__(
@@ -47,7 +45,7 @@ class CorrRoss2017(CorrelationFunctionFit):
             correction=correction,
             isotropic=isotropic,
             marg=marg,
-            n_poly=0,
+            broadband_type=None,
         )
 
         if self.includeb2:
@@ -330,7 +328,7 @@ if __name__ == "__main__":
         poly_poles=dataset.fit_poles,
         correction=Correction.NONE,
         includeb2=False,
-        n_poly=[-2, 0],
+        n_poly=[0, 2],
     )
     model.set_default("sigma_nl_par", 5.4, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model.set_default("sigma_nl_perp", 1.6, min=0.0, max=20.0, sigma=2.0, prior="gaussian")

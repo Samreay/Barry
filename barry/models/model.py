@@ -335,14 +335,9 @@ class Model(ABC):
 
         if self.marg_precompute is None:
             F2 = marg_model[marg_bias:] @ icov @ marg_model[marg_bias:].T
-            import matplotlib.pyplot as plt
-
-            # plt.imshow(np.log(marg_model[marg_bias:]), aspect="auto")
-            # plt.show()
             F2inv = np.linalg.inv(F2)
             icov_mod = icov @ marg_model[marg_bias:].T @ F2inv @ marg_model[marg_bias:] @ icov
             icov_new = icov - icov_mod
-
             self.marg_precompute = [icov_new, np.log(np.linalg.det(F2))]
 
         diff = data - model
@@ -356,7 +351,7 @@ class Model(ABC):
             logdetchi2p = np.log(np.linalg.det(chi2p2))
             chi2 = diff @ self.marg_precompute[0] @ diff - chi2p1.T @ np.linalg.inv(chi2p2) @ chi2p1
         else:
-            logdetchi2p = 1.0, 0.0
+            logdetchi2p = 0.0
             chi2 = diff @ self.marg_precompute[0] @ diff
 
         if self.correction in [Correction.HARTLAP]:
@@ -656,7 +651,6 @@ class Model(ABC):
         p = self.get_defaults()
         p_dict = self.get_param_dict(p)
         posterior = self.get_posterior(p)
-        print(self.get_active_params())
         print(f"Posterior {posterior:0.3f} for defaults {dict(p_dict)}")
 
         assert not np.isnan(posterior), "Posterior should not be nan"

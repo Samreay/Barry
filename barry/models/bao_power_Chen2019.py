@@ -1,3 +1,6 @@
+import sys
+
+sys.path.append("../..")
 import logging
 from functools import lru_cache
 import numpy as np
@@ -53,7 +56,7 @@ class PowerChen2019(PowerSpectrumFit):
         if self.recon_type == "ani":
             raise NotImplementedError("Anisotropic reconstruction not yet available for Chen2019 model")
 
-        self.set_marg(fix_params, poly_poles, self.n_poly, do_bias=True, marg_bias=1)
+        self.set_marg(fix_params, poly_poles, self.n_poly, do_bias=False, marg_bias=0)
 
     def precompute(self, om=None, h0=None, ks=None, pk_lin=None, pk_nonlin_0=None, pk_nonlin_z=None, r_drag=None, s=None):
 

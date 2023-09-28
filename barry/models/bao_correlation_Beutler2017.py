@@ -1,11 +1,8 @@
-import logging
 import sys
 
 sys.path.append("../..")
-
 from barry.models import PowerBeutler2017
 from barry.models.bao_correlation import CorrelationFunctionFit
-from scipy.interpolate import splev, splrep
 import numpy as np
 
 

@@ -328,7 +328,7 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
         realisation=None,
         num_mocks=1000,
         fit_poles=(0,),
-        datafile="desi_kp4_abacus_cubicbox_pk_lrg.pkl",
+        datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
         data_location=None,
     ):
 

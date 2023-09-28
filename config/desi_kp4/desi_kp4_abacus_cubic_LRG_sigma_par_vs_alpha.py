@@ -13,73 +13,124 @@ import pandas as pd
 from barry.models.model import Correction
 from barry.utils import weighted_avg_and_cov
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 from chainconsumer import ChainConsumer
 
 # Config file to fit the abacus cutsky mock means and individual realisations using Dynesty.
 
 # Convenience function to plot histograms of the errors and cross-correlation coefficients
-def plot_alphas(stats, figname, type="xi"):
+def plot_alphas(stats, figname):
 
-    colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
+    colors = ["#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
-    if type == "xi":
-        colmin = 1
-        colmax = 6
-    else:
-        colmin = 30
-        colmax = 31
+    xis, pks = np.array(stats[0]), np.array(stats[1])
 
-    fig, axes = plt.subplots(figsize=(7, 2), nrows=2, ncols=colmax - colmin, sharex=True, sharey="row", squeeze=False)
-    plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
-    for n_poly in range(colmax - colmin):
-        index = np.where(stats[:, 1] == n_poly + colmin)[0]
-        print(stats[index, 0], stats[index, 2], stats[index, 3])
+    # Split up Pk and Xi
+    fig = plt.figure(figsize=(8, 2))
+    axes = gridspec.GridSpec(
+        2, 2, figure=fig, width_ratios=[1.25 / 6.0, 5.0 / 6.0], left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.3
+    )
+    axes1 = axes[0, 1].subgridspec(1, 4, hspace=0.0, wspace=0.0)
+    axes2 = axes[1, 1].subgridspec(1, 4, hspace=0.0, wspace=0.0)
 
-        axes[0, n_poly].plot(stats[index, 0], stats[index, 2] * 100.0, color=colors[1], zorder=1, alpha=0.75, lw=0.8)
-        axes[1, n_poly].plot(stats[index, 0], stats[index, 3] * 100.0, color=colors[1], zorder=1, alpha=0.75, lw=0.8)
-        axes[0, n_poly].fill_between(
-            stats[index, 0],
-            (stats[index, 2] - stats[index, 4]) * 100.0,
-            (stats[index, 2] + stats[index, 4]) * 100.0,
-            color=colors[1],
+    ax1, ax2 = fig.add_subplot(axes[0, 0]), fig.add_subplot(axes[1, 0])
+    ax1.plot(pks[:, 0], pks[:, 2] * 100.0, color=colors[0], zorder=1, alpha=0.75, lw=0.8)
+    ax2.plot(pks[:, 0], pks[:, 3] * 100.0, color=colors[0], zorder=1, alpha=0.75, lw=0.8)
+    ax1.fill_between(
+        pks[:, 0],
+        (pks[:, 2] - pks[:, 4]) * 100.0,
+        (pks[:, 2] + pks[:, 4]) * 100.0,
+        color=colors[0],
+        zorder=1,
+        alpha=0.5,
+        lw=0.8,
+    )
+    ax2.fill_between(
+        pks[:, 0],
+        (pks[:, 3] - pks[:, 5]) * 100.0,
+        (pks[:, 3] + pks[:, 5]) * 100.0,
+        color=colors[0],
+        zorder=1,
+        alpha=0.5,
+        lw=0.8,
+    )
+    ax1.set_xlim(1.3, 6.7)
+    ax2.set_xlim(1.3, 6.7)
+    ax1.set_ylim(-0.75, 0.75)
+    ax2.set_ylim(-0.45, 0.45)
+    ax2.set_xlabel(r"$\Sigma_{nl,||}$")
+    ax1.set_ylabel(r"$\alpha_{||} - 1\,(\%)$")
+    ax2.set_ylabel(r"$\alpha_{\perp} - 1\,(\%)$")
+    ax1.set_xticklabels([])
+    for val, ls in zip([-0.1, 0.0, 0.1], [":", "--", ":"]):
+        ax1.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
+        ax2.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
+    ax1.axvline(4.75, color="k", ls=":", zorder=0, lw=0.8)
+    ax2.axvline(4.75, color="k", ls=":", zorder=0, lw=0.8)
+    ax1.text(
+        0.05,
+        0.95,
+        f"$P(k)$",
+        transform=ax1.transAxes,
+        ha="left",
+        va="top",
+        fontsize=8,
+        color=colors[0],
+    )
+
+    # Further split up Xi into different polynomial types
+    for n_poly in range(4):
+        ax1 = fig.add_subplot(axes1[n_poly])
+        ax2 = fig.add_subplot(axes2[n_poly])
+
+        index = np.where(xis[:, 1] == n_poly + 1)[0]
+
+        ax1.plot(xis[index, 0], xis[index, 2] * 100.0, color=colors[n_poly + 1], zorder=1, alpha=0.75, lw=0.8)
+        ax2.plot(xis[index, 0], xis[index, 3] * 100.0, color=colors[n_poly + 1], zorder=1, alpha=0.75, lw=0.8)
+        ax1.fill_between(
+            xis[index, 0],
+            (xis[index, 2] - xis[index, 4]) * 100.0,
+            (xis[index, 2] + xis[index, 4]) * 100.0,
+            color=colors[n_poly + 1],
             zorder=1,
             alpha=0.5,
             lw=0.8,
         )
-        axes[1, n_poly].fill_between(
-            stats[index, 0],
-            (stats[index, 3] - stats[index, 5]) * 100.0,
-            (stats[index, 3] + stats[index, 5]) * 100.0,
-            color=colors[1],
+        ax2.fill_between(
+            xis[index, 0],
+            (xis[index, 3] - xis[index, 5]) * 100.0,
+            (xis[index, 3] + xis[index, 5]) * 100.0,
+            color=colors[n_poly + 1],
             zorder=1,
             alpha=0.5,
             lw=0.8,
         )
-        axes[0, n_poly].set_xlim(1.3, 6.7)
-        axes[1, n_poly].set_xlim(1.3, 6.7)
-        axes[0, n_poly].set_ylim(-0.75, 0.75)
-        axes[1, n_poly].set_ylim(-0.45, 0.45)
-        axes[1, n_poly].set_xlabel(r"$\Sigma_{nl,||}$")
+        ax1.set_xlim(1.3, 6.7)
+        ax2.set_xlim(1.3, 6.7)
+        ax1.set_ylim(-0.75, 0.75)
+        ax2.set_ylim(-0.35, 0.35)
+        ax2.set_xlabel(r"$\Sigma_{nl,||}$")
         if n_poly == 0:
-            axes[0, n_poly].set_ylabel(r"$\alpha_{||} - 1\,(\%)$")
-            axes[1, n_poly].set_ylabel(r"$\alpha_{\perp} - 1\,(\%)$")
-        axes[0, n_poly].axhline(0.1, color="k", ls=":", zorder=0, lw=0.8)
-        axes[0, n_poly].axhline(-0.1, color="k", ls=":", zorder=0, lw=0.8)
-        axes[0, n_poly].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
-        axes[0, n_poly].axvline(4.0, color="k", ls=":", zorder=0, lw=0.8)
-        axes[1, n_poly].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
-        axes[1, n_poly].axhline(0.1, color="k", ls=":", zorder=0, lw=0.8)
-        axes[1, n_poly].axhline(-0.1, color="k", ls=":", zorder=0, lw=0.8)
-        axes[1, n_poly].axvline(4.0, color="k", ls=":", zorder=0, lw=0.8)
-        axes[0, n_poly].text(
+            ax1.set_ylabel(r"$\alpha_{||} - 1\,(\%)$")
+            ax2.set_ylabel(r"$\alpha_{\perp} - 1\,(\%)$")
+        else:
+            ax1.set_yticklabels([])
+            ax2.set_yticklabels([])
+        ax1.set_xticklabels([])
+        for val, ls in zip([-0.1, 0.0, 0.1], [":", "--", ":"]):
+            ax1.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
+            ax2.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
+        ax1.axvline(4.75, color="k", ls=":", zorder=0, lw=0.8)
+        ax2.axvline(4.75, color="k", ls=":", zorder=0, lw=0.8)
+        ax1.text(
             0.05,
             0.95,
-            f"$N_{{poly}} = {{{n_poly+colmin}}}$",
-            transform=axes[0, n_poly].transAxes,
+            r"$\xi(s)\,\mathrm{N_{max}}$ =" + str(n_poly),
+            transform=ax1.transAxes,
             ha="left",
             va="top",
             fontsize=8,
-            color=colors[1],
+            color=colors[n_poly + 1],
         )
 
     fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
@@ -230,9 +281,6 @@ if __name__ == "__main__":
         truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
         for data_bin, type in enumerate(["xi", "pk"]):
 
-            # Plot histograms of the errors and r_off
-            plot_alphas(np.array(stats[data_bin]), "/".join(pfn.split("/")[:-1]) + "/" + datanames[data_bin] + "_alphas.png", type=type)
-
             # Save all the numbers to a file
             with open(dir_name + "/Barry_fit_" + datanames[data_bin] + ".txt", "w") as f:
                 f.write(
@@ -240,3 +288,6 @@ if __name__ == "__main__":
                 )
                 for l in output[datanames[data_bin]]:
                     f.write(l + "\n")
+
+        # Plot histograms of the errors and r_off
+        plot_alphas(stats, "/".join(pfn.split("/")[:-1]) + "/alphas.png", type=type)

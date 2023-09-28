@@ -1,5 +1,6 @@
-import logging
+import sys
 
+sys.path.append("../..")
 import numpy as np
 from barry.models import PowerSeo2016
 from barry.models.bao_correlation import CorrelationFunctionFit
@@ -22,7 +23,7 @@ class CorrSeo2016(CorrelationFunctionFit):
         isotropic=False,
         poly_poles=(0, 2),
         marg=None,
-        n_poly=3,
+        n_poly=(0, 2),
     ):
 
         super().__init__(
@@ -45,7 +46,7 @@ class CorrSeo2016(CorrelationFunctionFit):
             correction=correction,
             isotropic=isotropic,
             marg=marg,
-            n_poly=n_poly,
+            broadband_type=None,
         )
 
         self.set_marg(fix_params, poly_poles, n_poly, do_bias=False)
@@ -56,8 +57,8 @@ class CorrSeo2016(CorrelationFunctionFit):
         self.add_param("beta", r"$\beta$", 0.01, 4.0, None)  # RSD parameter f/b
         self.add_param("sigma_s", r"$\Sigma_s$", 0.00, 10.0, 5.0)  # Fingers-of-god damping
         for pole in self.poly_poles:
-            for ip in range(self.n_poly):
-                self.add_param(f"a{{{pole}}}_{{{ip+1}}}_{{{1}}}", f"$a_{{{pole},{ip+1},1}}$", -100.0, 100.0, 0)
+            for ip in self.n_poly:
+                self.add_param(f"a{{{pole}}}_{{{ip}}}_{{{1}}}", f"$a_{{{pole},{ip},1}}$", -10.0, 10.0, 0)
 
 
 if __name__ == "__main__":
@@ -88,7 +89,7 @@ if __name__ == "__main__":
         fix_params=["om"],
         poly_poles=dataset.fit_poles,
         correction=Correction.HARTLAP,
-        n_poly=3,
+        n_poly=[0, 2],
     )
     model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 

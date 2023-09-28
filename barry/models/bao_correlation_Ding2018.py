@@ -1,11 +1,8 @@
-import logging
 import sys
 
 sys.path.append("../..")
-
 from barry.models import PowerDing2018
 from barry.models.bao_correlation import CorrelationFunctionFit
-from scipy.interpolate import splev, splrep
 import numpy as np
 
 
@@ -27,7 +24,7 @@ class CorrDing2018(CorrelationFunctionFit):
         isotropic=False,
         poly_poles=(0, 2),
         marg=None,
-        n_poly=3,
+        n_poly=(0, 2),
     ):
 
         super().__init__(
@@ -50,7 +47,7 @@ class CorrDing2018(CorrelationFunctionFit):
             correction=correction,
             isotropic=isotropic,
             marg=marg,
-            n_poly=n_poly,
+            broadband_type=None,
         )
 
         self.set_marg(fix_params, poly_poles, n_poly, do_bias=False)
@@ -61,8 +58,8 @@ class CorrDing2018(CorrelationFunctionFit):
         self.add_param("sigma_s", r"$\Sigma_s$", 0.0, 10.0, 5.0)  # Fingers-of-god damping
         self.add_param("b_delta", r"$b_{\delta}$", -5.0, 5.0, 0.0)  # Non-linear galaxy bias
         for pole in self.poly_poles:
-            for ip in range(self.n_poly):
-                self.add_param(f"a{{{pole}}}_{{{ip+1}}}_{{{1}}}", f"$a_{{{pole},{ip+1},1}}$", -100.0, 100.0, 0)
+            for ip in self.n_poly:
+                self.add_param(f"a{{{pole}}}_{{{ip}}}_{{{1}}}", f"$a_{{{pole},{ip},1}}$", -10.0, 10.0, 0)
 
 
 if __name__ == "__main__":
@@ -76,7 +73,7 @@ if __name__ == "__main__":
     setup_logging()
 
     dataset = CorrelationFunction_DESI_KP4(
-        recon="sym",
+        recon=None,
         fit_poles=[0, 2],
         min_dist=52.0,
         max_dist=150.0,
@@ -93,7 +90,7 @@ if __name__ == "__main__":
         fix_params=["om", "sigma_s"],
         poly_poles=dataset.fit_poles,
         correction=Correction.HARTLAP,
-        n_poly=3,
+        n_poly=[0, 2],
     )
     model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
