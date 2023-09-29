@@ -104,7 +104,6 @@ if __name__ == "__main__":
     )
     model_poly.set_default("sigma_nl_par", 4.0)
     model_poly.set_default("sigma_nl_perp", 2.0)
-    model_poly.sanity_check(datasets[0])
 
     model_spline = PowerBeutler2017(
         recon="iso",
@@ -116,7 +115,6 @@ if __name__ == "__main__":
     )
     model_spline.set_default("sigma_nl_par", 4.0)
     model_spline.set_default("sigma_nl_perp", 2.0)
-    model_spline.sanity_check(datasets[0])
 
     for d in datasets:
         fitter.add_model_and_dataset(model_poly, d, name=d.name)
