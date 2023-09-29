@@ -22,70 +22,48 @@ if __name__ == "__main__":
 
     sampler = NautilusSampler(temp_dir=dir_name)
 
-    cmap = plt.cm.get_cmap("viridis")
-
     datasets = [
-        PowerSpectrum_SDSS_DR12(
-            redshift_bin=1,
-            realisation="data",
-            galactic_cap="ngc",
-            recon="iso",
-            isotropic=False,
-            fit_poles=[0, 2],
-            min_k=0.02,
-            max_k=0.30,
-            num_mocks=999,
-        ),
-        PowerSpectrum_SDSS_DR12(
-            redshift_bin=1,
-            realisation="data",
-            galactic_cap="sgc",
-            recon="iso",
-            isotropic=False,
-            fit_poles=[0, 2],
-            min_k=0.02,
-            max_k=0.30,
-            num_mocks=999,
-        ),
-        PowerSpectrum_SDSS_DR12(
-            redshift_bin=2,
-            realisation="data",
-            galactic_cap="ngc",
-            recon="iso",
-            isotropic=False,
-            fit_poles=[0, 2],
-            min_k=0.02,
-            max_k=0.30,
-            num_mocks=999,
-        ),
-        PowerSpectrum_SDSS_DR12(
-            redshift_bin=2,
-            realisation="data",
-            galactic_cap="sgc",
-            recon="iso",
-            isotropic=False,
-            fit_poles=[0, 2],
-            min_k=0.02,
-            max_k=0.30,
-            num_mocks=999,
+        PowerSpectrum_eBOSS_LRGpCMASS(
+            realisation="data", galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
         ),
         PowerSpectrum_eBOSS_LRGpCMASS(
-            realisation="data", galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.02, max_k=0.30, num_mocks=999
-        ),
-        PowerSpectrum_eBOSS_LRGpCMASS(
-            realisation="data", galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2, 4], min_k=0.02, max_k=0.30, num_mocks=999
+            realisation="data", galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
         ),
     ]
 
     # Standard Beutler Model
-    model = PowerBeutler2017(recon="iso", isotropic=False, fix_params=["om"], poly_poles=[0, 2], correction=Correction.HARTLAP, marg="full")
+    model_poly = PowerBeutler2017(
+        recon="iso",
+        isotropic=False,
+        fix_params=["om", "sigma_nl_par", "sigma_nl_perp"],
+        poly_poles=[0, 2],
+        correction=Correction.HARTLAP,
+        marg="full",
+        broadband_type="poly",
+        n_poly=[-3, -2, -1, 0, 1],
+    )
+    model_poly.set_default("sigma_nl_par", 7.0)
+    model_poly.set_default("sigma_nl_perp", 2.0)
+    model_poly.sanity_check(datasets[0])
+
+    model_spline = PowerBeutler2017(
+        recon="iso",
+        isotropic=False,
+        fix_params=["om", "sigma_nl_par", "sigma_nl_perp"],
+        poly_poles=[0, 2],
+        correction=Correction.HARTLAP,
+        marg="full",
+    )
+    model_spline.set_default("sigma_nl_par", 7.0)
+    model_spline.set_default("sigma_nl_perp", 2.0)
+    model_spline.sanity_check(datasets[0])
 
     for d in datasets:
-        fitter.add_model_and_dataset(model, d, name=d.name)
+        fitter.add_model_and_dataset(model_poly, d, name=d.name)
+        fitter.add_model_and_dataset(model_spline, d, name=d.name)
 
     fitter.set_sampler(sampler)
-    fitter.set_num_walkers(5)
-    fitter.set_num_concurrent(100)
+    fitter.set_num_walkers(1)
     fitter.fit(file)
 
     # Everything below is nasty plotting code ###########################################################

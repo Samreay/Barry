@@ -190,17 +190,18 @@ if __name__ == "__main__":
         realisation=None,
         num_mocks=1000,
         reduce_cov_factor=25,
+        datafile="desi_kp4_abacus_cubicbox_pk_lrg.pkl",
     )
     data = dataset.get_data()
 
     model = PowerBeutler2017(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
-        marg=None,
+        marg="full",
         fix_params=["om"],
         poly_poles=dataset.fit_poles,
         correction=Correction.NONE,
-        broadband_type="poly",
+        broadband_type="spline",
     )
     model.set_default("sigma_nl_par", 4.75, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model.set_default("sigma_nl_perp", 1.50, min=0.0, max=20.0, sigma=2.0, prior="gaussian")

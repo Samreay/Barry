@@ -385,7 +385,7 @@ class PowerSpectrumFit(Model):
 
         if self.broadband_type == "poly":
 
-            polyvec = [k**ip for ip in self.n_poly]
+            polyvec = [(10.0 * k) ** ip for ip in self.n_poly]
             if self.isotropic:
                 self.poly = polyvec
             else:

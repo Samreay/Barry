@@ -290,4 +290,4 @@ if __name__ == "__main__":
                     f.write(l + "\n")
 
         # Plot histograms of the errors and r_off
-        plot_alphas(stats, "/".join(pfn.split("/")[:-1]) + "/alphas.png", type=type)
+        plot_alphas(stats, "/".join(pfn.split("/")[:-1]) + "/alphas.png")
