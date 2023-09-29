@@ -71,8 +71,8 @@ class PowerSpectrumFit(Model):
             if not isinstance(npoly, int):
                 raise ValueError("For broadband_type == spline, the n_poly kwarg be a single integer (maximum) value, not a list")
             self.n_poly = range(npoly)
-            self.delta = kwargs.get("delta", 2.0)
-            self.logger.info(f"Setting up {npoly} broadband terms with delta={self.delta}*pi/r_s")
+            self.delta_fac = kwargs.get("delta", 2.0)
+            self.logger.info(f"Setting up {npoly} broadband terms with delta={self.delta_fac}*pi/r_s")
         else:
             self.n_poly = []
 
@@ -150,7 +150,9 @@ class PowerSpectrumFit(Model):
         if not parent:
             self.set_bias(data[0])
             if self.broadband_type == "spline":
-                self.delta *= np.pi / self.camb.get_data(om=data[0]["cosmology"]["om"], h0=data[0]["cosmology"]["h0"])["r_s"]
+                self.delta = (
+                    self.delta_fac * np.pi / self.camb.get_data(om=data[0]["cosmology"]["om"], h0=data[0]["cosmology"]["h0"])["r_s"]
+                )
                 self.logger.info(f"Broadband Delta fixed to {self.delta}")
             self.compute_poly(data[0]["ks_input"])
 
@@ -476,6 +478,24 @@ class PowerSpectrumFit(Model):
 
         return pk_normalised
 
+    def build_maskpoly(self, d, poly_model, mask):
+
+        nmarg = np.shape(poly_model)[0]
+        len_poly = d["ndata"] * len(d["ks"]) if self.isotropic else d["ndata"] * len(d["ks"]) * len(d["fit_poles"])
+        poly_model_fit = np.zeros((nmarg, len_poly))
+        for n in range(nmarg):
+            poly_model_fit[n] = poly_model[n, mask]
+
+        # Some columns of winpoly are completely empty after masking, because the value of W3 is 0 or all k values
+        # of interest at that n. We need to remove these columns to make the analytic marginalisation matrix non-singular
+        # and to avoid wasting time computing the broadband terms from these columns.
+        nempty = [n for n in range(nmarg) if np.all(poly_model_fit[n] == 0.0)]
+        nkeep = [n for n in range(nmarg) if n not in nempty]
+        poly_model_fit = poly_model_fit[nkeep]
+        self.maskpoly = poly_model_fit
+
+        return poly_model_fit
+
     def get_likelihood(self, p, d):
         """Uses the stated likelihood correction and `get_model` to compute the likelihood
 
@@ -500,20 +520,7 @@ class PowerSpectrumFit(Model):
 
         if self.marg:
             if self.maskpoly is None:
-                nmarg = np.shape(poly_model)[0]
-                len_poly = d["ndata"] * len(d["ks"]) if self.isotropic else d["ndata"] * len(d["ks"]) * len(d["fit_poles"])
-                poly_model_fit = np.zeros((nmarg, len_poly))
-                for n in range(nmarg):
-                    poly_model_fit[n] = poly_model[n, mask]
-
-                # Some columns of winpoly are completely empty after masking, because the value of W3 is 0 or all k values
-                # of interest at that n. We need to remove these columns to make the analytic marginalisation matrix non-singular
-                # and to avoid wasting time computing the broadband terms from these columns.
-                nempty = [n for n in range(nmarg) if np.all(poly_model_fit[n] == 0.0)]
-                nkeep = [n for n in range(nmarg) if n not in nempty]
-                poly_model_fit = poly_model_fit[nkeep]
-                self.maskpoly = poly_model_fit
-
+                poly_model_fit = self.build_maskpoly(d, poly_model, mask)
             else:
                 poly_model_fit = self.maskpoly
                 # Ensure the first terms is updated to match the model if we are marginalising over bias
@@ -697,10 +704,13 @@ class PowerSpectrumFit(Model):
             mod_fit = mod[mask]
             smooth_fit = smooth[mask]
 
-            polymod_fit = self.maskpoly
-            # Ensure the first terms is updated to match the model if we are marginalising over bias
-            for i in range(self.marg_bias):
-                polymod_fit[i] = polymod[i, mask]
+            if self.maskpoly is None:
+                polymod_fit = self.build_maskpoly(self.data[0], polymod, mask)
+            else:
+                polymod_fit = self.maskpoly
+                # Ensure the first terms is updated to match the model if we are marginalising over bias
+                for i in range(self.marg_bias):
+                    polymod_fit[i] = polymod[i, mask]
 
             bband = self.get_ML_nuisance(self.data[0]["pk"], mod_fit, polymod_fit, self.data[0]["icov"])
             bband_poles = np.split(bband[self.marg_bias :], len(self.poly_poles))

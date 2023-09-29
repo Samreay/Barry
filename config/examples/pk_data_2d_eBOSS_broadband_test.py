@@ -57,8 +57,8 @@ if __name__ == "__main__":
     model_spline.set_default("sigma_nl_perp", 2.0)
 
     for d in datasets:
-        fitter.add_model_and_dataset(model_poly, d, name=d.name)
-        fitter.add_model_and_dataset(model_spline, d, name=d.name)
+        fitter.add_model_and_dataset(model_poly, d, name=d.name + " poly")
+        fitter.add_model_and_dataset(model_spline, d, name=d.name + " spline")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
@@ -73,17 +73,12 @@ if __name__ == "__main__":
         from chainconsumer import ChainConsumer
 
         counter = 0
-        c = ChainConsumer()
-        for i, (posterior, weight, chain, evidence, model, data, extra) in enumerate(fitter.load()):
+        c = [ChainConsumer(), ChainConsumer()]
+        for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
-            fitname = "_".join(extra["name"].split()[:5])
-            extra["name"] = extra["name"].replace("_", " ")
+            fitname = "_".join([extra["name"].split()[4], extra["name"].split()[6]])
+            skybin = 0 if "ngc" in fitname.lower() else 1
             print(fitname)
-
-            color = plt.colors.rgb2hex(cmap(float(i / len(datasets))))
-
-            model.set_data(data)
-            r_s = model.camb.get_data()["r_s"]
 
             df = pd.DataFrame(chain, columns=model.get_labels())
             alpha = df["$\\alpha$"].to_numpy()
@@ -93,23 +88,29 @@ if __name__ == "__main__":
             df["$\\alpha_\\perp$"] = alpha_perp
 
             extra.pop("realisation", None)
-            c.add_chain(df, weights=weight, color=color, posterior=posterior, **extra)
+            extra.pop("name", None)
+            c[skybin].add_chain(df, weights=weight, posterior=posterior, name=fitname, **extra)
 
+            # Get the MAP point and set the model up at this point
+            model.set_data(data)
+            r_s = model.camb.get_data()["r_s"]
             max_post = posterior.argmax()
-            chi2 = -2 * posterior[max_post]
-
-            params = model.get_param_dict(chain[max_post])
-            for name, val in params.items():
+            params = df.loc[max_post]
+            params_dict = model.get_param_dict(chain[max_post])
+            for name, val in params_dict.items():
                 model.set_default(name, val)
 
-            new_chi_squared, dof, bband, mods, smooths = model.plot(params, figname=pfn + fitname + "_bestfit.pdf", display=False)
+            new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, figname=pfn + fitname + "_bestfit.pdf", display=False)
 
-        c.configure(shade=True, bins=20, legend_artists=True, max_ticks=4, legend_location=(0, -1), plot_contour=True)
-        truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
-        c.plotter.plot(
-            filename=[pfn + "_contour.pdf"],
-            truth=truth,
-            parameters=["$\\alpha$", "$\\epsilon$"],
-        )
-        results = c.analysis.get_summary(parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"])
-        print(results)
+        for skybin in range(2):
+
+            sky = "NGC" if skybin == 0 else "SGC"
+            c[skybin].configure(shade=True, bins=20, legend_artists=True, max_ticks=4, plot_contour=True)
+            truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
+            c[skybin].plotter.plot(
+                filename=pfn + f"{sky}_contour.pdf",
+                truth=truth,
+                parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+            )
+            results = c[skybin].analysis.get_summary(parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"])
+            print(results)
