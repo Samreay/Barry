@@ -4,14 +4,13 @@ sys.path.append("..")
 sys.path.append("../..")
 from barry.samplers import NautilusSampler
 from barry.config import setup
-from barry.utils import weighted_avg_and_cov
 from barry.models import PowerBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_SDSS_DR12, PowerSpectrum_eBOSS_LRGpCMASS
 from barry.fitter import Fitter
 import numpy as np
 import pandas as pd
 from barry.models.model import Correction
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 # Run an optimisation on each of the post-recon SDSS DR12 mocks. Then compare to the pre-recon mocks
 # to compute the cross-correlation between BAO parameters and pre-recon measurements
@@ -52,6 +51,7 @@ if __name__ == "__main__":
         poly_poles=[0, 2],
         correction=Correction.HARTLAP,
         marg="full",
+        delta=3.0,
     )
     model_spline.set_default("sigma_nl_par", 7.0)
     model_spline.set_default("sigma_nl_perp", 2.0)
@@ -102,15 +102,33 @@ if __name__ == "__main__":
 
             new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, figname=pfn + fitname + "_bestfit.pdf", display=False)
 
+        aperp, apar = [1.042, 0.992], [0.947, 0.996]
+        aperp_err, apar_err = [0.024, 0.038], [0.026, 0.113]
         for skybin in range(2):
 
             sky = "NGC" if skybin == 0 else "SGC"
-            c[skybin].configure(shade=True, bins=20, legend_artists=True, max_ticks=4, plot_contour=True)
-            truth = {"$\\Omega_m$": 0.3121, "$\\alpha$": 1.0, "$\\epsilon$": 0, "$\\alpha_\\perp$": 1.0, "$\\alpha_\\parallel$": 1.0}
-            c[skybin].plotter.plot(
-                filename=pfn + f"{sky}_contour.pdf",
-                truth=truth,
-                parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+            c[skybin].configure(shade=True, bins=20, legend_artists=True, max_ticks=4, plot_contour=True, zorder=[5, 4])
+            truth = {
+                "$\\Omega_m$": 0.3121,
+                "$\\alpha$": 1.0,
+                "$\\epsilon$": 0,
+                "$\\alpha_\\perp$": aperp[skybin],
+                "$\\alpha_\\parallel$": apar[skybin],
+            }
+            axes = (
+                c[skybin]
+                .plotter.plot(
+                    # filename=pfn + f"{sky}_contour.pdf",
+                    truth=truth,
+                    parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+                )
+                .get_axes()
             )
+            axes[0].axvspan(apar[skybin] - apar_err[skybin], apar[skybin] + apar_err[skybin], color="k", alpha=0.1, zorder=1)
+            axes[2].axhspan(aperp[skybin] - aperp_err[skybin], aperp[skybin] + aperp_err[skybin], color="k", alpha=0.1, zorder=1)
+            axes[2].axvspan(apar[skybin] - apar_err[skybin], apar[skybin] + apar_err[skybin], color="k", alpha=0.1, zorder=1)
+            axes[3].axhspan(aperp[skybin] - aperp_err[skybin], aperp[skybin] + aperp_err[skybin], color="k", alpha=0.1, zorder=1)
             results = c[skybin].analysis.get_summary(parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"])
             print(results)
+            plt.tight_layout()
+            plt.savefig(pfn + f"{sky}_contour.pdf")
