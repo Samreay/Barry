@@ -43,7 +43,7 @@ if __name__ == "__main__":
     )
     model_poly.set_default("sigma_nl_par", 7.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model_poly.set_default("sigma_nl_perp", 2.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-    model_poly.set_default("sigma_nl_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model_poly.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
     model_spline = PowerBeutler2017(
         recon="iso",
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     )
     model_spline.set_default("sigma_nl_par", 7.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model_spline.set_default("sigma_nl_perp", 2.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-    model_spline.set_default("sigma_nl_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model_spline.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
     for d in datasets:
         fitter.add_model_and_dataset(model_poly, d, name=d.name + " poly")
