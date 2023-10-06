@@ -34,27 +34,29 @@ if __name__ == "__main__":
     model_poly = PowerBeutler2017(
         recon="iso",
         isotropic=False,
-        fix_params=["om", "sigma_nl_par", "sigma_nl_perp"],
+        fix_params=["om"],
         poly_poles=[0, 2],
         correction=Correction.HARTLAP,
         marg="full",
         broadband_type="poly",
-        n_poly=[-3, -2, -1, 0, 1],
+        n_poly=[-1, 0, 1, 2, 3, 4],
     )
-    model_poly.set_default("sigma_nl_par", 7.0)
-    model_poly.set_default("sigma_nl_perp", 2.0)
+    model_poly.set_default("sigma_nl_par", 7.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model_poly.set_default("sigma_nl_perp", 2.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model_poly.set_default("sigma_nl_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
     model_spline = PowerBeutler2017(
         recon="iso",
         isotropic=False,
-        fix_params=["om", "sigma_nl_par", "sigma_nl_perp"],
+        fix_params=["om"],
         poly_poles=[0, 2],
         correction=Correction.HARTLAP,
         marg="full",
-        delta=3.0,
+        delta=2.0,
     )
-    model_spline.set_default("sigma_nl_par", 7.0)
-    model_spline.set_default("sigma_nl_perp", 2.0)
+    model_spline.set_default("sigma_nl_par", 7.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model_spline.set_default("sigma_nl_perp", 2.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model_spline.set_default("sigma_nl_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
     for d in datasets:
         fitter.add_model_and_dataset(model_poly, d, name=d.name + " poly")
@@ -78,7 +80,6 @@ if __name__ == "__main__":
 
             fitname = "_".join([extra["name"].split()[4], extra["name"].split()[6]])
             skybin = 0 if "ngc" in fitname.lower() else 1
-            print(fitname)
 
             df = pd.DataFrame(chain, columns=model.get_labels())
             alpha = df["$\\alpha$"].to_numpy()
@@ -89,7 +90,8 @@ if __name__ == "__main__":
 
             extra.pop("realisation", None)
             extra.pop("name", None)
-            c[skybin].add_chain(df, weights=weight, posterior=posterior, name=fitname, **extra)
+            print(" ".join(fitname.split("_")))
+            c[skybin].add_chain(df, weights=weight, posterior=posterior, name=" ".join(fitname.split("_")), **extra)
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
@@ -100,14 +102,25 @@ if __name__ == "__main__":
             for name, val in params_dict.items():
                 model.set_default(name, val)
 
-            new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, figname=pfn + fitname + "_bestfit.pdf", display=False)
+            new_chi_squared, dof, bband, mods, smooths = model.plot(
+                params_dict, figname=pfn + "_" + fitname + "_bestfit.pdf", display=False
+            )
 
         aperp, apar = [1.042, 0.992], [0.947, 0.996]
         aperp_err, apar_err = [0.024, 0.038], [0.026, 0.113]
         for skybin in range(2):
 
             sky = "NGC" if skybin == 0 else "SGC"
-            c[skybin].configure(shade=True, bins=20, legend_artists=True, max_ticks=4, plot_contour=True, zorder=[5, 4])
+            c[skybin].configure(
+                shade=True,
+                bins=20,
+                legend_artists=True,
+                max_ticks=4,
+                # legend_location=(0, -1),
+                legend_kwargs={"fontsize": 10},
+                plot_contour=True,
+                zorder=[5, 4],
+            )
             truth = {
                 "$\\Omega_m$": 0.3121,
                 "$\\alpha$": 1.0,
@@ -130,5 +143,5 @@ if __name__ == "__main__":
             axes[3].axhspan(aperp[skybin] - aperp_err[skybin], aperp[skybin] + aperp_err[skybin], color="k", alpha=0.1, zorder=1)
             results = c[skybin].analysis.get_summary(parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"])
             print(results)
-            plt.tight_layout()
-            plt.savefig(pfn + f"{sky}_contour.pdf")
+            # plt.tight_layout()
+            plt.savefig(pfn + f"_{sky}_contour.pdf", bbox_inches="tight")
