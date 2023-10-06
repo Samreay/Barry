@@ -219,7 +219,7 @@ split = {
     "post-recon mocks": [v for k, v in res.items() if "postrecon" in k],
     "pre-recon cov": None,
     "post-recon cov": None,
-    "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.698, "ob": 0.04814, "ns": 0.97, "mnu": 0.0, "reconsmoothscale": 15},
+    "cosmology": {"om": 0.31, "h0": 0.676, "z": 0.698, "ob": 0.04814, "ns": 0.97, "mnu": 0.06, "reconsmoothscale": 15},
     "name": f"eBOSS DR16 LRGpCMASS Pk ngc+sgc",
     "winfit": getwin_comb(wfiles),
     "winpk": None,  # We can set this to None; Barry will set it to zeroes given the length of the data vector.

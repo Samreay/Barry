@@ -4,8 +4,8 @@ sys.path.append("..")
 sys.path.append("../..")
 from barry.samplers import NautilusSampler
 from barry.config import setup
-from barry.models import PowerBeutler2017
-from barry.datasets.dataset_power_spectrum import PowerSpectrum_eBOSS_LRGpCMASS
+from barry.models import CorrBeutler2017
+from barry.datasets.dataset_correlation_function import CorrelationFunction_eBOSS_LRGpCMASS
 from barry.fitter import Fitter
 import numpy as np
 import pandas as pd
@@ -21,46 +21,43 @@ if __name__ == "__main__":
 
     sampler = NautilusSampler(temp_dir=dir_name)
 
-    datasets = [
-        PowerSpectrum_eBOSS_LRGpCMASS(
-            realisation="data", galactic_cap="ngc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
-        ),
-        PowerSpectrum_eBOSS_LRGpCMASS(
-            realisation="data", galactic_cap="sgc", recon="iso", isotropic=False, fit_poles=[0, 2], min_k=0.02, max_k=0.30, num_mocks=999
-        ),
-    ]
+    dataset = CorrelationFunction_eBOSS_LRGpCMASS(
+        realisation="data", recon="iso", isotropic=False, fit_poles=[0, 2], min_dist=50.0, max_dist=150.0
+    )
 
     # Standard Beutler Model
-    model_poly = PowerBeutler2017(
+    model_poly = CorrBeutler2017(
         recon="iso",
         isotropic=False,
         fix_params=["om"],
         poly_poles=[0, 2],
-        correction=Correction.HARTLAP,
+        correction=Correction.NONE,
         marg="full",
-        broadband_type="poly",
-        n_poly=[-1, 0, 1, 2, 3, 4],
+        n_poly=[-2, -1, 0],
     )
     model_poly.set_default("sigma_nl_par", 7.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model_poly.set_default("sigma_nl_perp", 2.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model_poly.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
-    model_spline = PowerBeutler2017(
+    model_poly.sanity_check(dataset)
+
+    model_spline = CorrBeutler2017(
         recon="iso",
         isotropic=False,
         fix_params=["om"],
         poly_poles=[0, 2],
-        correction=Correction.HARTLAP,
+        correction=Correction.NONE,
         marg="full",
-        delta=2.0,
+        n_poly=[0, 2, 4],
     )
     model_spline.set_default("sigma_nl_par", 7.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model_spline.set_default("sigma_nl_perp", 2.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model_spline.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
-    for d in datasets:
-        fitter.add_model_and_dataset(model_poly, d, name=d.name + " poly")
-        fitter.add_model_and_dataset(model_spline, d, name=d.name + " spline")
+    model_spline.sanity_check(dataset)
+
+    fitter.add_model_and_dataset(model_poly, dataset, name=dataset.name + " poly")
+    fitter.add_model_and_dataset(model_spline, dataset, name=dataset.name + " spline")
 
     fitter.set_sampler(sampler)
     fitter.set_num_walkers(1)
@@ -106,17 +103,11 @@ if __name__ == "__main__":
                 params_dict, figname=pfn + "_" + fitname + "_bestfit.pdf", display=False
             )
 
+        aperp, apar = [1.042, 0.992], [0.947, 0.996]
+        aperp_err, apar_err = [0.024, 0.038], [0.026, 0.113]
         for skybin in range(2):
 
             sky = "NGC" if skybin == 0 else "SGC"
-
-            # Read in the original eBOSS chain from Hector
-            infile = f"mcmcBAOANISO_output_P02_kmax030_BAOANISO_postrecon_DATAv7_cov7_{sky}.txt"
-            og_chain = pd.read_csv(infile, header=None, delim_whitespace=True).to_numpy()
-            c[skybin].add_chain(
-                np.c_[og_chain[1], og_chain[2]], weights=og_chain[0], name="Gil-Marin et. al., 2020", color="g", shade_alpha=0.5
-            )
-
             c[skybin].configure(
                 shade=True,
                 bins=20,
@@ -127,14 +118,26 @@ if __name__ == "__main__":
                 plot_contour=True,
                 zorder=[5, 4],
             )
+            truth = {
+                "$\\Omega_m$": 0.3121,
+                "$\\alpha$": 1.0,
+                "$\\epsilon$": 0,
+                "$\\alpha_\\perp$": aperp[skybin],
+                "$\\alpha_\\parallel$": apar[skybin],
+            }
             axes = (
                 c[skybin]
                 .plotter.plot(
                     # filename=pfn + f"{sky}_contour.pdf",
+                    truth=truth,
                     parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
                 )
                 .get_axes()
             )
+            axes[0].axvspan(apar[skybin] - apar_err[skybin], apar[skybin] + apar_err[skybin], color="k", alpha=0.1, zorder=1)
+            axes[2].axhspan(aperp[skybin] - aperp_err[skybin], aperp[skybin] + aperp_err[skybin], color="k", alpha=0.1, zorder=1)
+            axes[2].axvspan(apar[skybin] - apar_err[skybin], apar[skybin] + apar_err[skybin], color="k", alpha=0.1, zorder=1)
+            axes[3].axhspan(aperp[skybin] - aperp_err[skybin], aperp[skybin] + aperp_err[skybin], color="k", alpha=0.1, zorder=1)
             results = c[skybin].analysis.get_summary(parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"])
             print(results)
             # plt.tight_layout()

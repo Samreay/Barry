@@ -83,6 +83,53 @@ class CorrelationFunction_ROSS_DR12(CorrelationFunction):
         )
 
 
+class CorrelationFunction_eBOSS_LRGpCMASS(CorrelationFunction):
+
+    """Correlation Function for SDSS DR16 eBOSS LRGpCMASS sample for combined NGC and SGC at redshift 0.698."""
+
+    def __init__(
+        self,
+        galactic_cap="both",
+        name=None,
+        min_dist=30.0,
+        max_dist=200.0,
+        recon=None,
+        reduce_cov_factor=1,
+        num_mocks=None,
+        fake_diag=False,
+        realisation="data",
+        isotropic=True,
+        fit_poles=(0,),
+    ):
+
+        if galactic_cap.lower() not in ["both"]:
+            raise NotImplementedError("Separate NGC and SGC Galactic caps for eBOSS_LRGpCMASS Xi not available")
+
+        if realisation is not None:
+            if isinstance(realisation, int):
+                raise NotImplementedError("Only data (no mocks) available for eBOSS LRGpCMASS Xi")
+            elif realisation.lower() != "data":
+                raise ValueError("Realisation is set to a string, but not 'data'")
+        else:
+            raise NotImplementedError("Only data (no mocks) available for eBOSS LRGpCMASS Xi")
+
+        datafile = "sdss_dr16_lrgpcmass_xi_" + galactic_cap.lower() + ".pkl"
+
+        super().__init__(
+            datafile,
+            name=name,
+            min_dist=min_dist,
+            max_dist=max_dist,
+            recon=recon,
+            reduce_cov_factor=reduce_cov_factor,
+            num_mocks=num_mocks,
+            fake_diag=fake_diag,
+            realisation=realisation,
+            isotropic=isotropic,
+            fit_poles=fit_poles,
+        )
+
+
 class CorrelationFunction_DESIMockChallenge_Post(CorrelationFunction):
     """Power spectrum from the DESI Mock Challenge"""
 
