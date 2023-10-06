@@ -39,8 +39,6 @@ if __name__ == "__main__":
     model_poly.set_default("sigma_nl_perp", 2.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model_poly.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
-    model_poly.sanity_check(dataset)
-
     model_spline = CorrBeutler2017(
         recon="iso",
         isotropic=False,
@@ -53,8 +51,6 @@ if __name__ == "__main__":
     model_spline.set_default("sigma_nl_par", 7.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model_spline.set_default("sigma_nl_perp", 2.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
     model_spline.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-
-    model_spline.sanity_check(dataset)
 
     fitter.add_model_and_dataset(model_poly, dataset, name=dataset.name + " poly")
     fitter.add_model_and_dataset(model_spline, dataset, name=dataset.name + " spline")
