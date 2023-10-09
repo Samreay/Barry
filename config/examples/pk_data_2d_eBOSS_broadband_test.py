@@ -106,36 +106,52 @@ if __name__ == "__main__":
                 params_dict, figname=pfn + "_" + fitname + "_bestfit.pdf", display=False
             )
 
+        extents = {
+            "NGC": [
+                [0.95, 1.05],
+                [-0.10, 0.05],
+            ],
+            "SGC": [
+                [0.80, 1.20],
+                [-0.2, 0.20],
+            ],
+        }
         for skybin in range(2):
 
             sky = "NGC" if skybin == 0 else "SGC"
 
             # Read in the original eBOSS chain from Hector
-            infile = f"mcmcBAOANISO_output_P02_kmax030_BAOANISO_postrecon_DATAv7_cov7_{sky}.txt"
-            og_chain = pd.read_csv(infile, header=None, delim_whitespace=True).to_numpy()
+            infile = f"../../barry/data/sdss_dr16_lrgpcmass_pk/mcmcBAOANISO_output_P02_kmax030_BAOANISO_postrecon_DATAv7_cov7_{sky}.txt"
+            og_chain = pd.read_csv(infile, header=None, delim_whitespace=True).to_numpy().T
+            alp, eps = og_chain[2] ** (1.0 / 3.0) * og_chain[3] ** (2.0 / 3.0), (og_chain[2] / og_chain[3]) ** (1.0 / 3.0) - 1.0
             c[skybin].add_chain(
-                np.c_[og_chain[1], og_chain[2]], weights=og_chain[0], name="Gil-Marin et. al., 2020", color="g", shade_alpha=0.5
+                np.c_[alp, eps],
+                # parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+                parameters=["$\\alpha$", "$\\epsilon$"],
+                weights=og_chain[0],
+                name="Gil-Marin et. al., 2020",
+                color="k",
+                shade_alpha=0.5,
             )
 
             c[skybin].configure(
                 shade=True,
-                bins=20,
                 legend_artists=True,
-                max_ticks=4,
                 # legend_location=(0, -1),
                 legend_kwargs={"fontsize": 10},
                 plot_contour=True,
-                zorder=[5, 4],
+                zorder=[4, 3, 5],
             )
             axes = (
                 c[skybin]
                 .plotter.plot(
                     # filename=pfn + f"{sky}_contour.pdf",
-                    parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+                    # parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+                    parameters=["$\\alpha$", "$\\epsilon$"],
+                    extents=extents[sky],
                 )
                 .get_axes()
             )
             results = c[skybin].analysis.get_summary(parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"])
             print(results)
-            # plt.tight_layout()
             plt.savefig(pfn + f"_{sky}_contour.pdf", bbox_inches="tight")

@@ -25,7 +25,7 @@ class PowerBeutler2017(PowerSpectrumFit):
         isotropic=False,
         poly_poles=(0, 2),
         marg=None,
-        dilate_smooth=True,
+        dilate_smooth=False,
         broadband_type="spline",
         n_data=1,
         **kwargs,
@@ -144,9 +144,9 @@ class PowerBeutler2017(PowerSpectrumFit):
                 pk_smooth = kaiser_prefac**2 * splev(kprime, splrep(ks, pk_smooth_lin))
             else:
                 ktile = np.tile(k, (self.nmu, 1)).T
-                fog = 1.0 / (1.0 + muprime**2 * ktile**2 * p["sigma_s"] ** 2 / 2.0) ** 2
+                fog = 1.0 / (1.0 + self.mu**2 * ktile**2 * p["sigma_s"] ** 2 / 2.0) ** 2
                 reconfac = splev(ktile, splrep(self.camb.ks, self.camb.smoothing_kernel)) if self.recon_type.lower() == "iso" else 0.0
-                kaiser_prefac = 1.0 + p["beta"] * muprime**2 * (1.0 - reconfac)
+                kaiser_prefac = 1.0 + p["beta"] * self.mu**2 * (1.0 - reconfac)
                 pk_smooth = kaiser_prefac**2 * splev(ktile, splrep(ks, pk_smooth_lin))
 
             if not for_corr:

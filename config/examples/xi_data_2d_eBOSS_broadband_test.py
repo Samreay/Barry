@@ -99,9 +99,11 @@ if __name__ == "__main__":
                 params_dict, figname=pfn + "_" + fitname + "_bestfit.pdf", display=False
             )
 
+        data = pd.read_csv()
+
         aperp, apar = [1.042, 0.992], [0.947, 0.996]
         aperp_err, apar_err = [0.024, 0.038], [0.026, 0.113]
-        for skybin in range(2):
+        for skybin in range(1):
 
             sky = "NGC" if skybin == 0 else "SGC"
             c[skybin].configure(
@@ -126,14 +128,15 @@ if __name__ == "__main__":
                 .plotter.plot(
                     # filename=pfn + f"{sky}_contour.pdf",
                     truth=truth,
-                    parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+                    # parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+                    parameters=["$\\alpha$", "$\\epsilon$"],
                 )
                 .get_axes()
             )
-            axes[0].axvspan(apar[skybin] - apar_err[skybin], apar[skybin] + apar_err[skybin], color="k", alpha=0.1, zorder=1)
-            axes[2].axhspan(aperp[skybin] - aperp_err[skybin], aperp[skybin] + aperp_err[skybin], color="k", alpha=0.1, zorder=1)
-            axes[2].axvspan(apar[skybin] - apar_err[skybin], apar[skybin] + apar_err[skybin], color="k", alpha=0.1, zorder=1)
-            axes[3].axhspan(aperp[skybin] - aperp_err[skybin], aperp[skybin] + aperp_err[skybin], color="k", alpha=0.1, zorder=1)
+            # axes[0].axvspan(apar[skybin] - apar_err[skybin], apar[skybin] + apar_err[skybin], color="k", alpha=0.1, zorder=1)
+            # axes[2].axhspan(aperp[skybin] - aperp_err[skybin], aperp[skybin] + aperp_err[skybin], color="k", alpha=0.1, zorder=1)
+            # axes[2].axvspan(apar[skybin] - apar_err[skybin], apar[skybin] + apar_err[skybin], color="k", alpha=0.1, zorder=1)
+            # axes[3].axhspan(aperp[skybin] - aperp_err[skybin], aperp[skybin] + aperp_err[skybin], color="k", alpha=0.1, zorder=1)
             results = c[skybin].analysis.get_summary(parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"])
             print(results)
             # plt.tight_layout()
