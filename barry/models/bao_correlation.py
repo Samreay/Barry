@@ -461,6 +461,7 @@ class CorrelationFunctionFit(Model):
                 num_data=len(self.data[0]["xi"]),
             )
             dof = len(self.data[0]["xi"]) - len(self.get_active_params()) - len(bband)
+            print(f"Chi squared/dof is {new_chi_squared}/{dof} at these values")
 
             bband_smooth = self.get_ML_nuisance(
                 self.data[0]["xi"],

@@ -99,11 +99,45 @@ if __name__ == "__main__":
                 params_dict, figname=pfn + "_" + fitname + "_bestfit.pdf", display=False
             )
 
-        data = pd.read_csv()
+        alp_per, alp_par = 17.85823691865007 / 17.436, 19.32575373059217 / 20.194
+        alp_cov = np.array(
+            [
+                [0.2838176386340292 / 20.194**2, -0.05831820341302727 / (17.436 * 20.194)],
+                [-0.0583182034130273 / (17.436 * 20.194), 0.1076634008565565 / 17.436**2],
+            ]
+        )
+        alp, eps = alp_per ** (2.0 / 3.0) * alp_par ** (1.0 / 3.0), (alp_par / alp_per) ** (1.0 / 3.0) - 1.0
+        jac = np.array(
+            [
+                [
+                    (1.0 / 3.0) * alp_per ** (2.0 / 3.0) * alp_par ** (-2.0 / 3.0),
+                    (2.0 / 3.0) * alp_per ** (-1.0 / 3.0) * alp_par ** (1.0 / 3.0),
+                ],
+                [
+                    (1.0 / 3.0) * alp_par ** (-2.0 / 3.0) * alp_per ** (-1.0 / 3.0),
+                    (-1.0 / 3.0) * alp_par ** (1.0 / 3.0) * alp_per ** (-4.0 / 3.0),
+                ],
+            ]
+        )
+        alp_cov2 = jac @ alp_cov @ jac.T
+        print(alp, eps, alp_par, alp_per)
+        print(np.sqrt(np.diag(alp_cov2)), np.sqrt(np.diag(alp_cov)))
 
         aperp, apar = [1.042, 0.992], [0.947, 0.996]
         aperp_err, apar_err = [0.024, 0.038], [0.026, 0.113]
         for skybin in range(1):
+
+            """c[skybin].add_covariance(
+                [alp_par, alp_per],
+                alp_cov,
+                parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+                name="Bautista et. al., 2020",
+                color="k",
+                shade_alpha=0.5,
+            )"""
+            c[skybin].add_covariance(
+                [alp, eps], alp_cov2, parameters=["$\\alpha$", "$\\epsilon$"], name="Bautista et. al., 2021", color="k", shade_alpha=0.5
+            )
 
             sky = "NGC" if skybin == 0 else "SGC"
             c[skybin].configure(
@@ -114,20 +148,12 @@ if __name__ == "__main__":
                 # legend_location=(0, -1),
                 legend_kwargs={"fontsize": 10},
                 plot_contour=True,
-                zorder=[5, 4],
+                zorder=[3, 5, 4],
             )
-            truth = {
-                "$\\Omega_m$": 0.3121,
-                "$\\alpha$": 1.0,
-                "$\\epsilon$": 0,
-                "$\\alpha_\\perp$": aperp[skybin],
-                "$\\alpha_\\parallel$": apar[skybin],
-            }
             axes = (
                 c[skybin]
                 .plotter.plot(
                     # filename=pfn + f"{sky}_contour.pdf",
-                    truth=truth,
                     # parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
                     parameters=["$\\alpha$", "$\\epsilon$"],
                 )
@@ -138,6 +164,7 @@ if __name__ == "__main__":
             # axes[2].axvspan(apar[skybin] - apar_err[skybin], apar[skybin] + apar_err[skybin], color="k", alpha=0.1, zorder=1)
             # axes[3].axhspan(aperp[skybin] - aperp_err[skybin], aperp[skybin] + aperp_err[skybin], color="k", alpha=0.1, zorder=1)
             results = c[skybin].analysis.get_summary(parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"])
+            print(c[skybin].analysis.get_latex_table(parameters=["$\\alpha$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]))
             print(results)
             # plt.tight_layout()
             plt.savefig(pfn + f"_{sky}_contour.pdf", bbox_inches="tight")

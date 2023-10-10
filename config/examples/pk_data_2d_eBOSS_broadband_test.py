@@ -125,9 +125,8 @@ if __name__ == "__main__":
             og_chain = pd.read_csv(infile, header=None, delim_whitespace=True).to_numpy().T
             alp, eps = og_chain[2] ** (1.0 / 3.0) * og_chain[3] ** (2.0 / 3.0), (og_chain[2] / og_chain[3]) ** (1.0 / 3.0) - 1.0
             c[skybin].add_chain(
-                np.c_[alp, eps],
-                # parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
-                parameters=["$\\alpha$", "$\\epsilon$"],
+                np.c_[alp, eps, og_chain[2], og_chain[3]],
+                parameters=["$\\alpha$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
                 weights=og_chain[0],
                 name="Gil-Marin et. al., 2020",
                 color="k",
@@ -153,5 +152,6 @@ if __name__ == "__main__":
                 .get_axes()
             )
             results = c[skybin].analysis.get_summary(parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$"])
+            print(c[skybin].analysis.get_latex_table(parameters=["$\\alpha$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]))
             print(results)
             plt.savefig(pfn + f"_{sky}_contour.pdf", bbox_inches="tight")
