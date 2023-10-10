@@ -255,10 +255,10 @@ class PowerSpectrum(Dataset, ABC):
     def _load_comp_file(self):
         self.m_transform = self.data_obj["m_mat"]
         if self.m_transform is not None:
+            self.logger.info(f"Compression matrix has shape {self.m_transform.shape}")
             self.m_w_transform = self.w_transform @ self.m_transform
         else:
             self.m_w_transform = self.w_transform
-        self.logger.info(f"Compression matrix has shape {self.m_transform.shape}")
 
     def get_data(self):
         d = {
