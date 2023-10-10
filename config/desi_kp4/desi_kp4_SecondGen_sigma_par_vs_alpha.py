@@ -193,8 +193,6 @@ if __name__ == "__main__":
                         pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
                         model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
-                        model.sanity_check(dataset_xi)
-
                         name = dataset_xi.name + f" mock mean fixed_type {sig} n_poly=" + str(i)
                         fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i - 1])
                         allnames.append(name)
