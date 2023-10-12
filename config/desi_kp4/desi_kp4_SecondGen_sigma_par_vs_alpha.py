@@ -19,39 +19,44 @@ from chainconsumer import ChainConsumer
 # Config file to fit the abacus cutsky mock means and individual realisations using Dynesty.
 
 # Convenience function to plot histograms of the errors and cross-correlation coefficients
-def plot_alphas(xis, figname):
+def plot_alphas(data, figname, plotnames):
 
     colors = ["#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
     # Split up Pk and Xi
-    fig = plt.figure(figsize=(8, 2))
+    fig = plt.figure(figsize=(10, 3))
     axes = gridspec.GridSpec(2, 1, figure=fig, left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
-    axes1 = axes[0, 0].subgridspec(1, 3, hspace=0.0, wspace=0.0)
-    axes2 = axes[1, 0].subgridspec(1, 3, hspace=0.0, wspace=0.0)
+    axes1 = axes[0, 0].subgridspec(1, np.shape(data)[0], hspace=0.0, wspace=0.0)
+    axes2 = axes[1, 0].subgridspec(1, np.shape(data)[0], hspace=0.0, wspace=0.0)
+
+    print(np.shape(data))
 
     # Further split up Xi into different polynomial types
-    for n_poly in range(3):
-        ax1 = fig.add_subplot(axes1[n_poly])
-        ax2 = fig.add_subplot(axes2[n_poly])
+    for index in range(np.shape(data)[0]):
+        print(data[index], plotnames[index])
+        ax1 = fig.add_subplot(axes1[index])
+        ax2 = fig.add_subplot(axes2[index])
 
-        index = np.where(xis[:, 1] == n_poly)[0]
+        xis = data[index]
 
-        ax1.plot(xis[index, 0], xis[index, 2] * 100.0, color=colors[n_poly + 1], zorder=1, alpha=0.75, lw=0.8)
-        ax2.plot(xis[index, 0], xis[index, 3] * 100.0, color=colors[n_poly + 1], zorder=1, alpha=0.75, lw=0.8)
+        print(xis[:, 0], xis[:, 2] * 100.0)
+
+        ax1.plot(xis[:, 0], xis[:, 1] * 100.0, color=colors[index], zorder=1, alpha=0.75, lw=0.8)
+        ax2.plot(xis[:, 0], xis[:, 2] * 100.0, color=colors[index], zorder=1, alpha=0.75, lw=0.8)
         ax1.fill_between(
-            xis[index, 0],
-            (xis[index, 2] - xis[index, 4]) * 100.0,
-            (xis[index, 2] + xis[index, 4]) * 100.0,
-            color=colors[n_poly + 1],
+            xis[:, 0],
+            (xis[:, 1] - xis[:, 3]) * 100.0,
+            (xis[:, 1] + xis[:, 3]) * 100.0,
+            color=colors[index],
             zorder=1,
             alpha=0.5,
             lw=0.8,
         )
         ax2.fill_between(
-            xis[index, 0],
-            (xis[index, 3] - xis[index, 5]) * 100.0,
-            (xis[index, 3] + xis[index, 5]) * 100.0,
-            color=colors[n_poly + 1],
+            xis[:, 0],
+            (xis[:, 2] - xis[:, 4]) * 100.0,
+            (xis[:, 2] + xis[:, 4]) * 100.0,
+            color=colors[index],
             zorder=1,
             alpha=0.5,
             lw=0.8,
@@ -76,12 +81,12 @@ def plot_alphas(xis, figname):
         ax1.text(
             0.05,
             0.95,
-            r"$\xi(s)\,\mathrm{N_{max}}$ =" + str(n_poly),
+            f"{plotnames[index]}",
             transform=ax1.transAxes,
             ha="left",
             va="top",
             fontsize=8,
-            color=colors[n_poly + 1],
+            color=colors[index],
         )
 
     fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
@@ -176,27 +181,23 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
-        datanames = [
-            "lrg_ffa_gccomb_0.4_0.6",
-            "lrg_ffa_gccomb_0.6_0.8",
-            "lrg_ffa_gccomb_0.8_1.1",
-            "elg_lop_ffa_gccomb_0.8_1.1",
-            "elg_lop_ffa_gccomb_1.1_1.6",
-        ]
+        plotnames = [f"{t.lower()}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
+        datanames = [f"{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
+        print(datanames)
 
         # Loop over all the chains
-        stats = [[] for _ in range(len(datanames) * 2)]
+        stats = [[] for _ in range(len(datanames) * 2 - 1)]
         output_pre = {k: [] for k in datanames}
         output_post = {k: [] for k in datanames}
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the tracer bin, sigma bin and n_poly bin
+            print(extra["name"].split(" ")[3].lower())
             data_bin = datanames.index(extra["name"].split(" ")[3].lower())
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
             sigma_bin = int(extra["name"].split("fixed_type ")[1].split(" ")[0])
-            n_poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
-            stats_bin = data_bin * 2 + recon_bin
-            print(extra["name"], data_bin, recon_bin, sigma_bin, n_poly_bin, stats_bin)
+            stats_bin = recon_bin * len(datanames) + data_bin
+            print(extra["name"], data_bin, recon_bin, sigma_bin, stats_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -216,20 +217,18 @@ if __name__ == "__main__":
                 axis=0,
             )
 
-            stats[stats_bin].append(
-                [sigma_nl_par[sigma_bin], n_poly_bin, mean[0] - 1.0, mean[1] - 1.0, np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])]
-            )
+            stats[stats_bin].append([sigma_nl_par[sigma_bin], mean[0] - 1.0, mean[1] - 1.0, np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])])
             if recon_bin == 0:
                 output_pre[datanames[data_bin]].append(
-                    f"{sigma_nl_par[sigma_bin]:6.4f}, {n_poly_bin:3d}, {mean[0]-1.0:6.4f}, {mean[1]-1.0:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
+                    f"{sigma_nl_par[sigma_bin]:6.4f}, {mean[0]-1.0:6.4f}, {mean[1]-1.0:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
                 )
             else:
                 output_post[datanames[data_bin]].append(
-                    f"{sigma_nl_par[sigma_bin]:6.4f}, {n_poly_bin:3d}, {mean[0]-1.0:6.4f}, {mean[1]-1.0:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
+                    f"{sigma_nl_par[sigma_bin]:6.4f}, {mean[0]-1.0:6.4f}, {mean[1]-1.0:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
                 )
 
         # Plot histograms of the errors and r_off
-        for recon_bin, recon in enumerate(["Prerecon", "Postrecon"]):
-            for data_bin, name in enumerate(datanames):
-                figname = "/".join(pfn.split("/")[:-1]) + f"/{recon}_{name}_alphas.png"
-                plot_alphas(np.array(stats[data_bin * 2 + recon_bin]), figname)
+        figname = "/".join(pfn.split("/")[:-1]) + f"/Prerecon_alphas.png"
+        plot_alphas(np.array(stats[: len(datanames)]), figname, plotnames)
+        figname = "/".join(pfn.split("/")[:-1]) + f"/Postrecon_alphas.png"
+        plot_alphas(np.array(stats[len(datanames) :]), figname, plotnames)

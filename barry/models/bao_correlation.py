@@ -297,8 +297,9 @@ class CorrelationFunctionFit(Model):
         else:
             self.poly = np.zeros((len(self.n_poly) * len(self.poly_poles), 3, len(dist)))
             polyvec = [(A * dist) ** ip for ip in self.n_poly]
-            for i, pole in enumerate(self.poly_poles):
-                self.poly[len(self.n_poly) * i : len(self.n_poly) * (i + 1), int(pole / 2)] = polyvec
+            if len(self.n_poly) > 0:
+                for i, pole in enumerate(self.poly_poles):
+                    self.poly[len(self.n_poly) * i : len(self.n_poly) * (i + 1), int(pole / 2)] = polyvec
 
     def get_model(self, p, d, smooth=False):
         """Gets the model prediction using the data passed in and parameter location specified
