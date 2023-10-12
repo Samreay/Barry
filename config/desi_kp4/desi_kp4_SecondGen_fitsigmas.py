@@ -88,26 +88,18 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
-        c = [
-            ChainConsumer(),
-            ChainConsumer(),
-            ChainConsumer(),
-            ChainConsumer(),
-        ]
-        fitname = [None for i in range(len(c))]
-
-        datanames = ["Xi_CV", "Pk_CV"]
-
-        # Loop over all the chains
-        stats = {}
-        output = {}
+        plotnames = [f"{t.lower()}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
+        datanames = [f"{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
+        print(datanames)
+        c = [ChainConsumer() for i in range(len(datanames) * 2 - 1)]
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
-            # Get the realisation number and redshift bin
+            # Get the tracer bin, sigma bin and n_poly bin
+            data_bin = datanames.index(extra["name"].split(" ")[3].lower())
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
-            data_bin = 0 if "Xi" in extra["name"] else 1
-            redshift_bin = int(2.0 * data_bin + recon_bin)
-            print(extra["name"], recon_bin, data_bin, redshift_bin)
+            poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
+            stats_bin = recon_bin * len(datanames) + data_bin
+            print(extra["name"], data_bin, recon_bin, poly_bin, stats_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -122,79 +114,33 @@ if __name__ == "__main__":
                 model.set_default(name, val)
 
             # Get some useful properties of the fit, and plot the MAP model against the data if it's the mock mean
-            figname = "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
-            new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=None)
+            plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
+            figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
+            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(params_dict, display=False, figname=figname)
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
-            if "n_poly=1" in extra["name"]:
-                fitname[redshift_bin] = data[0]["name"].replace(" ", "_")
-                stats[fitname[redshift_bin]] = []
-                output[fitname[redshift_bin]] = []
-
-            if data_bin == 1 and ("n_poly=1" in extra["name"] or "n_poly=2" in extra["name"] or "n_poly=7" in extra["name"]):
-                continue
-
-            if data_bin == 0 and ("n_poly=5" in extra["name"] or "n_poly=6" in extra["name"] or "n_poly=7" in extra["name"]):
-                continue
-
-            chainname = f'N={extra["name"].split("n_poly=")[1].split(" ")[0]}'
-            extra["name"] = f'N={extra["name"].split("n_poly=")[1].split(" ")[0]}'
-            c[redshift_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
-            mean, cov = weighted_avg_and_cov(
-                df[["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"]],
-                weight,
-                axis=0,
-            )
-            print(redshift_bin, fitname[redshift_bin], mean, np.sqrt(np.diag(cov)), new_chi_squared, dof)
-
-            corr0 = cov[0, 1] / np.sqrt(cov[0, 0] * cov[1, 1])
-            corr1 = cov[0, 2] / np.sqrt(cov[0, 0] * cov[2, 2])
-            corr2 = cov[1, 2] / np.sqrt(cov[1, 1] * cov[2, 2])
-            stats[fitname[redshift_bin]].append(
-                [
-                    mean[0],
-                    mean[1],
-                    mean[2],
-                    np.sqrt(cov[0, 0]),
-                    np.sqrt(cov[1, 1]),
-                    np.sqrt(cov[2, 2]),
-                    corr0,
-                    corr1,
-                    corr2,
-                    new_chi_squared,
-                ]
-            )
-            output[fitname[redshift_bin]].append(
-                f"{model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {np.sqrt(cov[2, 2]):6.4f}, {corr0:7.3f}, {corr1:7.3f}, {corr2:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
+            extra.pop("name", None)
+            c[stats_bin].add_chain(
+                df, weights=weight, name=plotname + f"_npoly={poly_bin}", plot_contour=True, plot_point=False, show_as_1d_prior=False
             )
 
-        for redshift_bin in range(len(c)):
-            if "Pre" in fitname[redshift_bin]:
-                truth = {"$\\Sigma_{nl,||}$": 9.6, "$\\Sigma_{nl,\\perp}$": 4.8, "$\\Sigma_s$": 2.0}
-            else:
-                truth = {"$\\Sigma_{nl,||}$": 5.1, "$\\Sigma_{nl,\\perp}$": 1.6, "$\\Sigma_s$": 0.0}
-            c[redshift_bin].configure(bins=20, sigmas=[0, 1])
-            fig = c[redshift_bin].plotter.plot(
-                parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
-                legend=True,
-                truth=truth,
-            )
-            xvals = np.linspace(0.0, 20.0, 100)
-            fig.get_axes()[3].plot(xvals, xvals / (1.0 + 0.8), color="k", linestyle=":", linewidth=1.3)
-            fig.savefig(
-                fname="/".join(pfn.split("/")[:-1]) + "/" + fitname[redshift_bin] + "_contour.png",
-                bbox_inches="tight",
-                dpi=300,
-                pad_inches=0.05,
-            )
+        for data_bin, data_name in enumerate(datanames):
+            nrec = 1 if "qso" in data_name else 2
+            for recon_bin in range(nrec):
+                stats_bin = recon_bin * len(datanames) + data_bin
+                plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
 
-            # Save all the numbers to a file
-            with open(dir_name + "/Barry_fit_" + fitname[redshift_bin] + ".txt", "w") as f:
-                f.write(
-                    "# N_poly, Sigma_nl_par, Sigma_nl_perp, Sigma_s, sigma_Sigma_nl__par, sigma_Sigma_nl_perp, sigma_Sigma_s, corr_Sigma_nl, corr_Sigma_nl_par_s, corr_Sigma_nl_perp_s, rd_of_template, bf_chi2, dof\n"
+                c[stats_bin].configure(bins=20, sigmas=[0, 1])
+                fig = c[stats_bin].plotter.plot(
+                    parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
+                    legend=True,
                 )
-                for l in output[fitname[redshift_bin]]:
-                    f.write(l + "\n")
-
-            # print(fitname[recon_bin], c[recon_bin].analysis.get_summary())
+                xvals = np.linspace(0.0, 20.0, 100)
+                fig.get_axes()[3].plot(xvals, xvals / (1.0 + 0.8), color="k", linestyle=":", linewidth=1.3)
+                fig.savefig(
+                    fname="/".join(pfn.split("/")[:-1]) + "/" + plotname + "_contour.png",
+                    bbox_inches="tight",
+                    dpi=300,
+                    pad_inches=0.05,
+                )
