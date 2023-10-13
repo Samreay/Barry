@@ -185,27 +185,23 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
-        datanames = [
-            "lrg_ffa_gccomb_0.4_0.6",
-            "lrg_ffa_gccomb_0.6_0.8",
-            "lrg_ffa_gccomb_0.8_1.1",
-            "elg_lop_ffa_gccomb_0.8_1.1",
-            "elg_lop_ffa_gccomb_1.1_1.6",
-        ]
+        plotnames = [f"{t.lower()}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
+        datanames = [f"{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
+        print(datanames)
 
         # Loop over all the chains
-        stats = [[] for _ in range(len(datanames) * 2)]
+        stats = [[] for _ in range(len(datanames) * 2 - 1)]
         output_pre = {k: [] for k in datanames}
         output_post = {k: [] for k in datanames}
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the tracer bin, sigma bin and n_poly bin
+            print(extra["name"].split(" ")[3].lower())
             data_bin = datanames.index(extra["name"].split(" ")[3].lower())
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
             sigma_bin = int(extra["name"].split("fixed_type ")[1].split(" ")[0])
-            n_poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
-            stats_bin = data_bin * 2 + recon_bin
-            print(extra["name"], data_bin, recon_bin, sigma_bin, n_poly_bin, stats_bin)
+            stats_bin = recon_bin * len(datanames) + data_bin
+            print(extra["name"], data_bin, recon_bin, sigma_bin, stats_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -225,18 +221,18 @@ if __name__ == "__main__":
                 axis=0,
             )
 
-            stats[stats_bin].append([sigma_s[sigma_bin], n_poly_bin, mean[0] - 1.0, mean[1] - 1.0, np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])])
+            stats[stats_bin].append([sigma_nl_perp[sigma_bin], mean[0] - 1.0, mean[1] - 1.0, np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])])
             if recon_bin == 0:
                 output_pre[datanames[data_bin]].append(
-                    f"{sigma_s[sigma_bin]:6.4f}, {n_poly_bin:3d}, {mean[0]-1.0:6.4f}, {mean[1]-1.0:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
+                    f"{sigma_nl_perp[sigma_bin]:6.4f}, {mean[0]-1.0:6.4f}, {mean[1]-1.0:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
                 )
             else:
                 output_post[datanames[data_bin]].append(
-                    f"{sigma_s[sigma_bin]:6.4f}, {n_poly_bin:3d}, {mean[0]-1.0:6.4f}, {mean[1]-1.0:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
+                    f"{sigma_nl_perp[sigma_bin]:6.4f}, {mean[0]-1.0:6.4f}, {mean[1]-1.0:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
                 )
 
         # Plot histograms of the errors and r_off
-        for recon_bin, recon in enumerate(["Prerecon", "Postrecon"]):
-            for data_bin, name in enumerate(datanames):
-                figname = "/".join(pfn.split("/")[:-1]) + f"/{recon}_{name}_alphas.png"
-                plot_alphas(np.array(stats[data_bin * 2 + recon_bin]), figname)
+        figname = "/".join(pfn.split("/")[:-1]) + f"/Prerecon_alphas.png"
+        plot_alphas(np.array(stats[: len(datanames)]), figname, plotnames)
+        figname = "/".join(pfn.split("/")[:-1]) + f"/Postrecon_alphas.png"
+        plot_alphas(np.array(stats[len(datanames) :]), figname, plotnames)

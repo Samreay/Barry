@@ -29,7 +29,7 @@ if __name__ == "__main__":
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
     tracers = {"LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]], "ELG_LOP": [[0.8, 1.1], [1.1, 1.6]], "QSO": [[0.8, 2.1]]}
-    nmocks = {"LRG": [0, 25], "ELG_LOP": [0, 10], "QSO": [7, 25]}
+    nmocks = {"LRG": [0, 25], "ELG_LOP": [0, 10], "QSO": [0, 25]}
 
     allnames = []
     cap = "gccomb"
@@ -58,11 +58,12 @@ if __name__ == "__main__":
                         recon=dataset_xi.recon,
                         isotropic=dataset_xi.isotropic,
                         marg="full",
-                        fix_params=["om", "alpha", "epsilon"],
+                        fix_params=["om", "alpha", "epsilon", "sigma_s"],
                         poly_poles=dataset_xi.fit_poles,
                         correction=Correction.NONE,
                         n_poly=n_poly,
                     )
+                    model.set_default("sigma_s", 0.0)
 
                     # Load in a pre-existing BAO template
                     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")

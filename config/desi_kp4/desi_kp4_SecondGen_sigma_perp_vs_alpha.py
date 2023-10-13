@@ -26,7 +26,7 @@ def plot_alphas(data, figname, plotnames):
 
     # Split up Pk and Xi
     fig = plt.figure(figsize=(10, 3))
-    axes = gridspec.GridSpec(2, 1, figure=fig, left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
+    axes = gridspec.GridSpec(2, 1, figure=fig, left=0.15, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
     axes1 = axes[0, 0].subgridspec(1, np.shape(data)[0], hspace=0.0, wspace=0.0)
     axes2 = axes[1, 0].subgridspec(1, np.shape(data)[0], hspace=0.0, wspace=0.0)
 
