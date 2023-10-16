@@ -29,7 +29,7 @@ if __name__ == "__main__":
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
     tracers = {"LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]], "ELG_LOP": [[0.8, 1.1], [1.1, 1.6]], "QSO": [[0.8, 2.1]]}
-    nmocks = {"LRG": [0, 25], "ELG_LOP": [0, 10], "QSO": [0, 25]}
+    nmocks = {"LRG": [0, 25], "ELG_LOP": [0, 25], "QSO": [0, 25]}
 
     allnames = []
     cap = "gccomb"
@@ -52,7 +52,7 @@ if __name__ == "__main__":
                     datafile=name,
                 )
 
-                for n, n_poly in enumerate([[], [-2, 0], [0, 2], [-2, 0, 2]]):
+                for n, n_poly in enumerate([[], [-2, -1, 0], [0, 2], [-2, -1, 0, 2]]):
 
                     model = CorrBeutler2017(
                         recon=dataset_xi.recon,
