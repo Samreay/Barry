@@ -29,7 +29,7 @@ if __name__ == "__main__":
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
     tracers = {"LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]], "ELG_LOP": [[0.8, 1.1], [1.1, 1.6]], "QSO": [[0.8, 2.1]]}
-    nmocks = {"LRG": [0, 25], "ELG_LOP": [0, 25], "QSO": [0, 25]}
+    reconsmooth = {"LRG": 10, "ELG_LOP": 10, "QSO": 20}
 
     allnames = []
     cap = "gccomb"
@@ -39,16 +39,15 @@ if __name__ == "__main__":
     rp = f"{imaging}_rpcut2.5" if rpcut else f"{imaging}"
     for t in tracers:
         for i, zs in enumerate(tracers[t]):
-            rec = [None] if t == "QSO" else [None, "sym"]
-            for r, recon in enumerate(rec):
-                name = f"DESI_SecondGen_sm10_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_xi.pkl"
+            for r, recon in enumerate([None, "sym"]):
+                name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_xi.pkl"
                 dataset_xi = CorrelationFunction_DESI_KP4(
                     recon=recon,
                     fit_poles=[0, 2],
                     min_dist=50.0,
                     max_dist=150.0,
                     realisation=None,
-                    reduce_cov_factor=len(range(nmocks[t][0], nmocks[t][1])),
+                    reduce_cov_factor=25,
                     datafile=name,
                 )
 
@@ -113,7 +112,7 @@ if __name__ == "__main__":
             for name, val in params_dict.items():
                 model.set_default(name, val)
             if poly_bin == 3:
-                print(params_dict["sigma_nl_par"], params_dict["sigma_nl_perp"])
+                print(params_dict["sigma_nl_par"], params_dict["sigma_nl_perp"], params_dict["sigma_s"])
 
             # Get some useful properties of the fit, and plot the MAP model against the data if it's the mock mean
             plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
