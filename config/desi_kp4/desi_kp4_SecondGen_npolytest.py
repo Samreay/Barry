@@ -30,14 +30,15 @@ if __name__ == "__main__":
 
     tracers = {"LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]], "ELG_LOP": [[0.8, 1.1], [1.1, 1.6]], "QSO": [[0.8, 2.1]]}
     nmocks = {"LRG": [0, 25], "ELG_LOP": [0, 25], "QSO": [0, 25]}
+    reconsmooth = {"LRG": 10, "ELG_LOP": 10, "QSO": 20}
     sigma_nl_par = {
         "LRG": [
             [9.0, 6.0],
             [9.0, 6.0],
             [8.0, 5.5],
         ],
-        "ELG_LOP": [[9.0, 6.0], [9.0, 6.0]],
-        "QSO": [[11.0, 0.0]],
+        "ELG_LOP": [[9.0, 6.0], [8.5, 5.0]],
+        "QSO": [[11.0, 8.0]],
     }
     sigma_nl_perp = {
         "LRG": [
@@ -45,10 +46,10 @@ if __name__ == "__main__":
             [4.0, 2.0],
             [5.0, 3.5],
         ],
-        "ELG_LOP": [[4.5, 4.0], [4.5, 4.0]],
-        "QSO": [[0.0, 0.0]],
+        "ELG_LOP": [[4.5, 4.0], [4.0, 4.0]],
+        "QSO": [[2.0, 2.0]],
     }
-    sigma_s = {"LRG": [[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]], "ELG_LOP": [[7.0, 10.0], [7.0, 0.0]], "QSO": [[2.0, 0.0]]}
+    sigma_s = {"LRG": [[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]], "ELG_LOP": [[4.0, 6.0], [3.0, 2.0]], "QSO": [[2.0, 2.0]]}
 
     allnames = []
     cap = "gccomb"
@@ -58,8 +59,7 @@ if __name__ == "__main__":
     rp = f"{imaging}_rpcut2.5" if rpcut else f"{imaging}"
     for t in tracers:
         for i, zs in enumerate(tracers[t]):
-            rec = [None] if t == "QSO" else [None, "sym"]
-            for r, recon in enumerate(rec):
+            for r, recon in enumerate([None, "sym"]):
                 for n, n_poly in enumerate([[], [-2, -1, 0], [0, 2], [-2, 0, 2]]):
 
                     model = CorrBeutler2017(
@@ -79,7 +79,7 @@ if __name__ == "__main__":
                     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
                     model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
-                    name = f"DESI_SecondGen_sm10_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_xi.pkl"
+                    name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_xi.pkl"
                     dataset = CorrelationFunction_DESI_KP4(
                         recon=model.recon,
                         fit_poles=model.poly_poles,

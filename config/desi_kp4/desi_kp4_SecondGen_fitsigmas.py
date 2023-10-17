@@ -90,7 +90,7 @@ if __name__ == "__main__":
         plotnames = [f"{t.lower()}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
         datanames = [f"{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
         print(datanames)
-        c = [ChainConsumer() for i in range(len(datanames) * 2 - 1)]
+        c = [ChainConsumer() for i in range(len(datanames) * 2)]
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the tracer bin, sigma bin and n_poly bin
@@ -117,7 +117,7 @@ if __name__ == "__main__":
             # Get some useful properties of the fit, and plot the MAP model against the data if it's the mock mean
             plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
             figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
-            # new_chi_squared, dof, bband, mods, smooths = model.simple_plot(params_dict, display=False, figname=figname)
+            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(params_dict, display=False, figname=figname)
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
@@ -127,8 +127,7 @@ if __name__ == "__main__":
             )
 
         for data_bin, data_name in enumerate(datanames):
-            nrec = 1 if "qso" in data_name else 2
-            for recon_bin in range(nrec):
+            for recon_bin in range(2):
                 stats_bin = recon_bin * len(datanames) + data_bin
                 plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
 
