@@ -2,7 +2,7 @@ import sys
 
 sys.path.append("..")
 sys.path.append("../..")
-from barry.samplers import Optimiser
+from barry.samplers import NautilusSampler
 from barry.config import setup
 from barry.models import PowerBeutler2017, CorrBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESI_KP4
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
-    sampler = Optimiser(temp_dir=dir_name)
+    sampler = NautilusSampler(temp_dir=dir_name)
 
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
@@ -73,45 +73,44 @@ if __name__ == "__main__":
         for t in tracers:
             for i, zs in enumerate(tracers[t]):
                 for r, recon in enumerate([None, "sym"]):
-                    for n, n_poly in enumerate([[], [-2, -1, 0], [0, 2], [-2, 0, 2]]):
 
-                        model = CorrBeutler2017(
-                            recon=recon,
-                            isotropic=False,
-                            marg="full",
-                            fix_params=["om"],
-                            poly_poles=[0, 2],
-                            correction=Correction.NONE,
-                            n_poly=n_poly,
-                        )
-                        model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-                        model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-                        model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+                    model = CorrBeutler2017(
+                        recon=recon,
+                        isotropic=False,
+                        marg="full",
+                        fix_params=["om"],
+                        poly_poles=[0, 2],
+                        correction=Correction.NONE,
+                        n_poly=[-2, -1, 0],
+                    )
+                    model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+                    model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+                    model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
-                        # Load in a pre-existing BAO template
-                        pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-                        model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
+                    # Load in a pre-existing BAO template
+                    pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+                    model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
-                        name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_xi.pkl"
-                        dataset = CorrelationFunction_DESI_KP4(
-                            recon=model.recon,
-                            fit_poles=model.poly_poles,
-                            min_dist=50.0,
-                            max_dist=150.0,
-                            realisation=None,
-                            reduce_cov_factor=1,
-                            datafile=name,
-                        )
+                    name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_xi.pkl"
+                    dataset = CorrelationFunction_DESI_KP4(
+                        recon=model.recon,
+                        fit_poles=model.poly_poles,
+                        min_dist=50.0,
+                        max_dist=150.0,
+                        realisation=None,
+                        reduce_cov_factor=1,
+                        datafile=name,
+                    )
 
-                        name = dataset.name + f" mock mean n_poly=" + str(n)
+                    name = dataset.name + f" mock mean"
+                    fitter.add_model_and_dataset(model, dataset, name=name, color=colors[i - 1])
+                    allnames.append(name)
+
+                    for j in range(len(dataset.mock_data)):
+                        dataset.set_realisation(j)
+                        name = dataset.name + f" realisation {j}"
                         fitter.add_model_and_dataset(model, dataset, name=name, color=colors[i - 1])
                         allnames.append(name)
-
-                        for j in range(len(dataset.mock_data)):
-                            dataset.set_realisation(j)
-                            name = dataset.name + f" realisation {j} n_poly=" + str(n)
-                            fitter.add_model_and_dataset(model, dataset, name=name, color=colors[i - 1])
-                            allnames.append(name)
 
         # Submit all the job. We have quite a few (42), so we'll
         # only assign 1 walker (processor) to each. Note that this will only run if the
