@@ -128,99 +128,96 @@ if __name__ == "__main__":
             logging.info("Creating plots")
 
             # Loop over all the fitters
-            stats = [[[[], []] for _ in range(len(datanames))] for _ in range(4)]
+            c = [ChainConsumer() for i in range(2 * len(datanames))]
+            stats = [[[], []] for _ in range(len(datanames))]
 
             for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
                 data_bin = datanames.index(extra["name"].split(" ")[3].lower())
                 recon_bin = 0 if "Prerecon" in extra["name"] else 1
-                poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
-                stats_bin = recon_bin * 4 + poly_bin
-                print(extra["name"], data_bin, recon_bin, poly_bin, stats_bin)
+                stats_bin = recon_bin * len(datanames) + data_bin
+                realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
+                print(extra["name"], data_bin, recon_bin, stats_bin, realisation)
 
                 # Store the chain in a dictionary with parameter names
                 df = pd.DataFrame(chain, columns=model.get_labels())
-
-                model.set_data(data)
-                params_dict = model.get_param_dict(chain[0])
-                for name, val in params_dict.items():
-                    model.set_default(name, val)
-
-                new_chi_squared, dof, bband, mods, smooths = model.simple_plot(params_dict, display=False)
 
                 # Compute alpha_par and alpha_perp for each point in the chain
                 alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
                 df["$\\alpha_\\parallel$"] = alpha_par
                 df["$\\alpha_\\perp$"] = alpha_perp
 
-                style = "o" if "mock mean" in extra["name"] else "."
+                # Get the MAP point and set the model up at this point
+                model.set_data(data)
+                r_s = model.camb.get_data()["r_s"]
+                max_post = posterior.argmax()
+                params = df.loc[max_post]
+                params_dict = model.get_param_dict(chain[max_post])
+                for name, val in params_dict.items():
+                    model.set_default(name, val)
 
-                plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
+                # Get some useful properties of the fit, and plot the MAP model against the data if it's the mock mean
+                figname = (
+                    "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
+                    if realisation == "mean" or realisation == "10"
+                    else None
+                )
+                new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname)
 
-                # Store the summary statistics
-                stats[poly_bin][data_bin][recon_bin].append(
-                    [
-                        extra["realisation"],
-                        df["$\\alpha$"].to_numpy()[0],
-                        df["$\\epsilon$"].to_numpy()[0],
-                        df["$\\alpha_\\parallel$"].to_numpy()[0],
-                        df["$\\alpha_\\perp$"].to_numpy()[0],
-                        df["$\\beta$"].to_numpy()[0],
-                        df["$\\Sigma_{nl,||}$"].to_numpy()[0],
-                        df["$\\Sigma_{nl,\\perp}$"].to_numpy()[0],
-                        df["$\\Sigma_s$"].to_numpy()[0],
-                        new_chi_squared,
-                        dof,
-                    ]
+                # Add the chain or MAP to the Chainconsumer plots
+                extra.pop("realisation", None)
+                if realisation == "mean":
+                    c[stats_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+                else:
+                    c[stats_bin].add_marker(params, **extra)
+
+                # Compute some summary statistics and add them to a dictionary
+                mean, cov = weighted_avg_and_cov(
+                    df[
+                        [
+                            "$\\alpha_\\parallel$",
+                            "$\\alpha_\\perp$",
+                        ]
+                    ],
+                    weight,
+                    axis=0,
                 )
 
-            with open("/".join(pfn.split("/")[:-1]) + "/stats.pkl", "wb") as f:
-                pickle.dump(stats, f)
+                corr = cov[1, 0] / np.sqrt(cov[0, 0] * cov[1, 1])
+                stats[stats_bin][recon_bin].append([mean[0], mean[1], np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1]), corr, new_chi_squared])
 
-    if fitter.should_plot():
+            for t in tracers:
+                for i, zs in enumerate(tracers[t]):
+                    for recon_bin in range(2):
+                        for poly_bin in range(4):
+                            dataname = f"{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}"
+                            data_bin = datanames.index(dataname.lower())
 
-        """names = [
-            "$\\alpha$",
-            "$\\epsilon$",
-            "$\\alpha_\\parallel$",
-            "$\\alpha_\\perp$",
-            "$\\beta$",
-            "$\\Sigma_{nl,||}$",
-            "$\\Sigma_{nl,\\perp}$",
-            "$\\Sigma_s$",
-        ]
-        for t in tracers:
-            for i, zs in enumerate(tracers[t]):
-                for recon_bin in range(2):
-                    for poly_bin in range(4):
-                        dataname = f"{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}"
-                        data_bin = datanames.index(dataname.lower())
+                            c = ChainConsumer()
+                            print(stats[poly_bin][data_bin][recon_bin][0][1:-2])
+                            c.add_marker(stats[poly_bin][data_bin][recon_bin][0][1:-2], parameters=names, marker_style="X")
+                            for j in range(25):
+                                print(stats[poly_bin][data_bin][recon_bin][j][1:-2])
+                                c.add_marker(stats[poly_bin][data_bin][recon_bin][j][1:-2], parameters=names, marker_style=".")
 
-                        c = ChainConsumer()
-                        print(stats[poly_bin][data_bin][recon_bin][0][1:-2])
-                        c.add_marker(stats[poly_bin][data_bin][recon_bin][0][1:-2], parameters=names, marker_style="X")
-                        for j in range(25):
-                            print(stats[poly_bin][data_bin][recon_bin][j][1:-2])
-                            c.add_marker(stats[poly_bin][data_bin][recon_bin][j][1:-2], parameters=names, marker_style=".")
+                            truth = {
+                                "$\\alpha_\\perp$": 1.0,
+                                "$\\alpha_\\parallel$": 1.0,
+                                "$\\Sigma_{nl,||}$": sigma_nl_par[t][i][recon_bin],
+                                "$\\Sigma_{nl,\\perp}$": sigma_nl_perp[t][i][recon_bin],
+                                "$\\Sigma_s$": sigma_s[t][i][recon_bin],
+                            }
 
-                        truth = {
-                            "$\\alpha_\\perp$": 1.0,
-                            "$\\alpha_\\parallel$": 1.0,
-                            "$\\Sigma_{nl,||}$": sigma_nl_par[t][i][recon_bin],
-                            "$\\Sigma_{nl,\\perp}$": sigma_nl_perp[t][i][recon_bin],
-                            "$\\Sigma_s$": sigma_s[t][i][recon_bin],
-                        }
-
-                        plotname = f"{dataname}_prerecon" if recon_bin == 0 else f"{dataname}_postrecon"
-                        c.plotter.plot(
-                            filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly{poly_bin}_contour.png"],
-                            truth=truth,
-                            parameters=[
-                                "$\\alpha_\\parallel$",
-                                "$\\alpha_\\perp$",
-                            ],
-                            legend=False,
-                        )"""
+                            plotname = f"{dataname}_prerecon" if recon_bin == 0 else f"{dataname}_postrecon"
+                            c.plotter.plot(
+                                filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly{poly_bin}_contour.png"],
+                                truth=truth,
+                                parameters=[
+                                    "$\\alpha_\\parallel$",
+                                    "$\\alpha_\\perp$",
+                                ],
+                                legend=False,
+                            )
 
         # Summarise the many realisations in a different way
         stats2 = np.zeros((6, len(datanames), 2, 3))
