@@ -20,7 +20,7 @@ from chainconsumer import ChainConsumer
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__, "/reduced_cov/")
+    pfn, dir_name, file = setup(__file__, "/reduced_cov_v2/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
@@ -34,21 +34,21 @@ if __name__ == "__main__":
         "LRG": [
             [9.0, 6.0],
             [9.0, 6.0],
-            [8.0, 5.5],
+            [9.0, 6.0],
         ],
-        "ELG_LOP": [[9.0, 6.0], [8.5, 5.0]],
-        "QSO": [[11.0, 8.0]],
+        "ELG_LOP": [[8.5, 6.0], [8.5, 6.0]],
+        "QSO": [[9.0, 6.0]],
     }
     sigma_nl_perp = {
         "LRG": [
-            [3.5, 3.0],
-            [4.0, 2.0],
-            [5.0, 3.5],
+            [4.5, 3.0],
+            [4.5, 3.0],
+            [4.5, 3.0],
         ],
-        "ELG_LOP": [[4.5, 4.0], [4.0, 4.0]],
-        "QSO": [[2.0, 2.0]],
+        "ELG_LOP": [[4.5, 3.0], [4.5, 3.0]],
+        "QSO": [[3.5, 3.0]],
     }
-    sigma_s = {"LRG": [[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]], "ELG_LOP": [[4.0, 6.0], [3.0, 2.0]], "QSO": [[2.0, 2.0]]}
+    sigma_s = {"LRG": [[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]], "ELG_LOP": [[2.0, 2.0], [2.0, 2.0]], "QSO": [[2.0, 2.0]]}
 
     allnames = []
     cap = "gccomb"
@@ -90,7 +90,7 @@ if __name__ == "__main__":
                     model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
                     name = dataset_xi.name + f" mock mean n_poly=" + str(n)
-                    fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i - 1])
+                    fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i + 1])
                     allnames.append(name)
 
     # Submit all the job. We have quite a few (42), so we'll
@@ -125,7 +125,18 @@ if __name__ == "__main__":
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
 
-            # Get the MAP point and set the model up at this point
+            # Compute alpha_par and alpha_perp for each point in the chain
+            alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
+            df["$\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
+            df["$\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
+            df["$\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
+            df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
+            df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
+
+            if poly_bin == 3:
+                print(np.corrcoef(alpha_par, alpha_perp))
+
+            """# Get the MAP point and set the model up at this point
             model.set_data(data)
             r_s = model.camb.get_data()["r_s"]
             max_post = posterior.argmax()
@@ -133,37 +144,60 @@ if __name__ == "__main__":
             params_dict = model.get_param_dict(chain[max_post])
             for name, val in params_dict.items():
                 model.set_default(name, val)
-            if poly_bin == 3:
-                print(params_dict["sigma_nl_par"], params_dict["sigma_nl_perp"], params_dict["sigma_s"])
 
-            # Get some useful properties of the fit, and plot the MAP model against the data if it's the mock mean
+            # Get some useful properties of the fit, and plot the MAP model against the data
             plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
             figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
-            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(params_dict, display=False, figname=figname)
+            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
+                params_dict, display=False, figname=figname, title=plotname, c=colors[data_bin + 1]
+            )"""
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
             extra.pop("name", None)
             c[stats_bin].add_chain(
-                df, weights=weight, name=plotname + f"_npoly={poly_bin}", plot_contour=True, plot_point=False, show_as_1d_prior=False
+                df, weights=weight, name=f"npoly={poly_bin}", plot_contour=True, plot_point=False, show_as_1d_prior=False
             )
 
-        for data_bin, data_name in enumerate(datanames):
-            for recon_bin in range(2):
-                stats_bin = recon_bin * len(datanames) + data_bin
-                plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
+        for t in tracers:
+            for i, zs in enumerate(tracers[t]):
+                for recon_bin in range(2):
+                    dataname = f"{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}"
+                    data_bin = datanames.index(dataname.lower())
+                    stats_bin = recon_bin * len(datanames) + data_bin
 
-                c[stats_bin].configure(bins=20, sigmas=[0, 1])
-                fig = c[stats_bin].plotter.plot(
-                    parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
-                    legend=True,
-                )
-                xvals = np.linspace(0.0, 20.0, 100)
-                fig.get_axes()[3].plot(xvals, xvals / (1.0 + 0.8), color="k", linestyle=":", linewidth=1.3)
-                fig.savefig(
-                    fname="/".join(pfn.split("/")[:-1]) + "/" + plotname + "_contour.png",
-                    bbox_inches="tight",
-                    dpi=300,
-                    pad_inches=0.05,
-                )
-                print(c[stats_bin].analysis.get_latex_table())
+                    truth = {
+                        "$\\alpha$": 1.0,
+                        "$\\alpha_{ap}$": 1.0,
+                        "$\\alpha_\\perp$": 1.0,
+                        "$\\alpha_\\parallel$": 1.0,
+                        "$\\Sigma_{nl,||}$": sigma_nl_par[t][i][recon_bin],
+                        "$\\Sigma_{nl,\\perp}$": sigma_nl_perp[t][i][recon_bin],
+                        "$\\Sigma_s$": sigma_s[t][i][recon_bin],
+                    }
+
+                    plotname = f"{dataname}_prerecon" if recon_bin == 0 else f"{dataname}_postrecon"
+                    """c[stats_bin].plotter.plot(
+                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour.png"],
+                        truth=truth,
+                        parameters=[
+                            "$\\alpha_\\parallel$",
+                            "$\\alpha_\\perp$",
+                        ],
+                    )
+                    c[stats_bin].plotter.plot(
+                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour2.png"],
+                        truth=truth,
+                        parameters=[
+                            "$\\alpha$",
+                            "$\\alpha_{ap}$",
+                        ],
+                    )"""
+
+                    print(
+                        data_bin,
+                        recon_bin,
+                        c[stats_bin].analysis.get_latex_table(
+                            parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]
+                        ),
+                    )

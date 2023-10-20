@@ -21,7 +21,7 @@ from chainconsumer import ChainConsumer
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__)
+    pfn, dir_name, file = setup(__file__, "/v2/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
@@ -35,21 +35,21 @@ if __name__ == "__main__":
         "LRG": [
             [9.0, 6.0],
             [9.0, 6.0],
-            [8.0, 5.5],
+            [9.0, 6.0],
         ],
-        "ELG_LOPnotqso": [[9.0, 6.0], [8.5, 5.0]],
-        "QSO": [[11.0, 8.0]],
+        "ELG_LOP": [[8.5, 6.0], [8.5, 6.0]],
+        "QSO": [[9.0, 6.0]],
     }
     sigma_nl_perp = {
         "LRG": [
-            [3.5, 3.0],
-            [4.0, 2.0],
-            [5.0, 3.5],
+            [4.5, 3.0],
+            [4.5, 3.0],
+            [4.5, 3.0],
         ],
-        "ELG_LOPnotqso": [[4.5, 4.0], [4.0, 4.0]],
-        "QSO": [[2.0, 2.0]],
+        "ELG_LOP": [[4.5, 3.0], [4.5, 3.0]],
+        "QSO": [[3.5, 3.0]],
     }
-    sigma_s = {"LRG": [[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]], "ELG_LOPnotqso": [[4.0, 6.0], [3.0, 2.0]], "QSO": [[2.0, 2.0]]}
+    sigma_s = {"LRG": [[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]], "ELG_LOP": [[2.0, 2.0], [2.0, 2.0]], "QSO": [[2.0, 2.0]]}
 
     version = 0.6
     cap = "gccomb"
@@ -113,83 +113,92 @@ if __name__ == "__main__":
 
         logging.info("Creating plots")
 
-        # Loop over all the fitters
-        stats = [[[[], []] for _ in range(len(datanames))] for _ in range(4)]
-
+        # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
+        plotnames = [f"{t.lower()}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
+        datanames = [f"{t.lower()}_{cap}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
+        c = [ChainConsumer() for i in range(len(datanames) * 2)]
+        stats = [[[], []] for _ in range(len(datanames))]
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
-            data_bin = datanames.index(extra["name"].split(" ")[3].lower())
+            # Get the tracer bin, sigma bin and n_poly bin
+            data_bin = datanames.index(extra["name"].split(" ")[5].lower())
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
             poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
-            stats_bin = recon_bin * 4 + poly_bin
+            stats_bin = recon_bin * len(datanames) + data_bin
             print(extra["name"], data_bin, recon_bin, poly_bin, stats_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
 
-            model.set_data(data)
-            params_dict = model.get_param_dict(chain[0])
-            for name, val in params_dict.items():
-                model.set_default(name, val)
-
-            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(params_dict, display=False)
-
             # Compute alpha_par and alpha_perp for each point in the chain
             alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
+            df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
 
-            style = "o" if "mock mean" in extra["name"] else "."
+            # Get the MAP point and set the model up at this point
+            model.set_data(data)
+            r_s = model.camb.get_data()["r_s"]
+            max_post = posterior.argmax()
+            params = df.loc[max_post]
+            params_dict = model.get_param_dict(chain[max_post])
+            for name, val in params_dict.items():
+                model.set_default(name, val)
 
+            # Get some useful properties of the fit, and plot the MAP model against the data
             plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
+            figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
+            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
+                params_dict, display=False, figname=figname, title=plotname, c=colors[data_bin + 1]
+            )
 
-            # Store the summary statistics
-            stats[poly_bin][data_bin][recon_bin].append(
+            # Add the chain or MAP to the Chainconsumer plots
+            extra.pop("realisation", None)
+            extra.pop("name", None)
+            c[stats_bin].add_chain(
+                df, weights=weight, name=f"npoly={poly_bin}", plot_contour=True, plot_point=False, show_as_1d_prior=False
+            )
+
+            # Compute some summary statistics and add them to a dictionary
+            mean, cov = weighted_avg_and_cov(
+                df[
+                    [
+                        "$\\alpha$",
+                        "$\\alpha_{ap}$",
+                        "$\\alpha_\\parallel$",
+                        "$\\alpha_\\perp$",
+                    ]
+                ],
+                weight,
+                axis=0,
+            )
+
+            stats[data_bin][recon_bin].append(
                 [
-                    extra["realisation"],
-                    df["$\\alpha$"].to_numpy()[0],
-                    df["$\\epsilon$"].to_numpy()[0],
-                    df["$\\alpha_\\parallel$"].to_numpy()[0],
-                    df["$\\alpha_\\perp$"].to_numpy()[0],
-                    df["$\\beta$"].to_numpy()[0],
-                    df["$\\Sigma_{nl,||}$"].to_numpy()[0],
-                    df["$\\Sigma_{nl,\\perp}$"].to_numpy()[0],
-                    df["$\\Sigma_s$"].to_numpy()[0],
+                    mean[0],
+                    mean[1],
+                    mean[2],
+                    mean[3],
+                    np.sqrt(cov[0, 0]),
+                    np.sqrt(cov[1, 1]),
+                    np.sqrt(cov[2, 2]),
+                    np.sqrt(cov[3, 3]),
+                    cov[0, 1] / np.sqrt(cov[0, 0] * cov[1, 1]),
+                    cov[2, 3] / np.sqrt(cov[2, 2] * cov[3, 3]),
                     new_chi_squared,
-                    dof,
                 ]
             )
 
-        with open("/".join(pfn.split("/")[:-1]) + "/stats.pkl", "wb") as f:
-            pickle.dump(stats, f)
-
-if fitter.should_plot():
-
-    """names = [
-        "$\\alpha$",
-        "$\\epsilon$",
-        "$\\alpha_\\parallel$",
-        "$\\alpha_\\perp$",
-        "$\\beta$",
-        "$\\Sigma_{nl,||}$",
-        "$\\Sigma_{nl,\\perp}$",
-        "$\\Sigma_s$",
-    ]
-    for t in tracers:
-        for i, zs in enumerate(tracers[t]):
-            for recon_bin in range(2):
-                for poly_bin in range(4):
-                    dataname = f"{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}"
+        for t in tracers:
+            for i, zs in enumerate(tracers[t]):
+                for recon_bin in range(2):
+                    dataname = f"{t.lower()}_{cap}_{zs[0]}_{zs[1]}"
                     data_bin = datanames.index(dataname.lower())
-
-                    c = ChainConsumer()
-                    print(stats[poly_bin][data_bin][recon_bin][0][1:-2])
-                    c.add_marker(stats[poly_bin][data_bin][recon_bin][0][1:-2], parameters=names, marker_style="X")
-                    for j in range(25):
-                        print(stats[poly_bin][data_bin][recon_bin][j][1:-2])
-                        c.add_marker(stats[poly_bin][data_bin][recon_bin][j][1:-2], parameters=names, marker_style=".")
+                    stats_bin = recon_bin * len(datanames) + data_bin
 
                     truth = {
+                        "$\\alpha$": 1.0,
+                        "$\\alpha_{ap}$": 1.0,
                         "$\\alpha_\\perp$": 1.0,
                         "$\\alpha_\\parallel$": 1.0,
                         "$\\Sigma_{nl,||}$": sigma_nl_par[t][i][recon_bin],
@@ -198,100 +207,24 @@ if fitter.should_plot():
                     }
 
                     plotname = f"{dataname}_prerecon" if recon_bin == 0 else f"{dataname}_postrecon"
-                    c.plotter.plot(
-                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly{poly_bin}_contour.png"],
-                        truth=truth,
+                    c[stats_bin].plotter.plot(
+                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour.png"],
                         parameters=[
                             "$\\alpha_\\parallel$",
                             "$\\alpha_\\perp$",
                         ],
-                        legend=False,
-                    )"""
+                    )
+                    c[stats_bin].plotter.plot(
+                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour2.png"],
+                        parameters=[
+                            "$\\alpha$",
+                            "$\\alpha_{ap}$",
+                        ],
+                    )
 
-    # Summarise the many realisations in a different way
-    stats2 = np.zeros((6, len(datanames), 2, 3))
-    for t in tracers:
-        for i, zs in enumerate(tracers[t]):
-            for recon_bin in range(2):
-                for poly_bin, poly in enumerate([0, 2, 3]):
-                    dataname = f"{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}"
-                    data_bin = datanames.index(dataname.lower())
-
-                    x0 = np.array(stats[1][data_bin][recon_bin][1:])
-                    x = np.array(stats[poly][data_bin][recon_bin][1:])
-                    delta_apar, delta_aperp = (x - x0)[:, 3], (x - x0)[:, 4]
-                    delta_std_apar, delta_std_aperp = (np.std(x, axis=0) - np.std(x0, axis=0))[3], (np.std(x, axis=0) - np.std(x0, axis=0))[
-                        4
-                    ]
-
-                    stats2[0, data_bin, recon_bin, poly_bin] = np.mean(delta_apar, axis=0)
-                    stats2[1, data_bin, recon_bin, poly_bin] = np.mean(delta_aperp, axis=0)
-                    stats2[2, data_bin, recon_bin, poly_bin] = np.std(delta_apar, axis=0) / np.sqrt(25.0)
-                    stats2[3, data_bin, recon_bin, poly_bin] = np.std(delta_aperp, axis=0) / np.sqrt(25.0)
-                    stats2[4, data_bin, recon_bin, poly_bin] = delta_std_apar
-                    stats2[5, data_bin, recon_bin, poly_bin] = delta_std_aperp
-
-    print(stats2)
-
-    # Plot the summary statistics
-    fig, axes = plt.subplots(figsize=(8, 5), nrows=4, ncols=1, sharex=True, squeeze=False)
-    plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
-    for panel in range(2):
-        axes[panel, 0].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
-
-        for data_bin, label in enumerate(datanames):
-
-            print(data_bin + np.arange(3) * 0.1 - 0.3, stats2[panel, data_bin, 0], stats2[panel + 2, data_bin, 0])
-            print(data_bin + np.arange(3) * 0.1, stats2[panel, data_bin, 1], stats2[panel + 2, data_bin, 1])
-
-            axes[panel, 0].errorbar(
-                data_bin + np.arange(3) * 0.1 - 0.25,
-                100.0 * stats2[panel, data_bin, 0],
-                yerr=100.0 * stats2[panel + 2, data_bin, 0],
-                marker="o",
-                ls="None",
-                label=label if panel == 1 else None,
-                c="r",
-            )
-            axes[panel, 0].errorbar(
-                data_bin + np.arange(3) * 0.1 + 0.05,
-                100.0 * stats2[panel, data_bin, 1],
-                yerr=100.0 * stats2[panel + 2, data_bin, 1],
-                marker="o",
-                ls="None",
-                label=label if panel == 1 else None,
-                c="b",
-            )
-            axes[panel + 2, 0].errorbar(
-                data_bin + np.arange(3) * 0.1 - 0.25,
-                100.0 * stats2[panel + 4, data_bin, 0],
-                marker="o",
-                ls="None",
-                label=label if panel == 1 else None,
-                c="r",
-            )
-            axes[panel + 2, 0].errorbar(
-                data_bin + np.arange(3) * 0.1 + 0.05,
-                100.0 * stats2[panel + 4, data_bin, 1],
-                marker="o",
-                ls="None",
-                label=label if panel == 1 else None,
-                c="b",
-            )
-
-    axes[0, 0].set_ylabel("$\\Delta \\alpha_{||} (\\%)$")
-    axes[1, 0].set_ylabel("$\\Delta \\alpha_{\\perp} (\\%)$")
-    axes[2, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{||}} (\\%)$")
-    axes[3, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{\\perp}} (\\%)$")
-    # axes[0, 0].set_ylim(-0.07, 0.07)
-    # axes[1, 0].set_ylim(-0.06, 0.06)
-    # axes[2, 0].set_ylim(-0.015, 0.015)
-    # axes[3, 0].set_ylim(-0.015, 0.015)
-    # axes[3, 0].legend(
-    #    loc="center right",
-    #    bbox_to_anchor=(1.25, 1.0),
-    #    frameon=False,
-    # )
-    plt.setp(axes, xticks=[0, 1, 2, 3, 4, 5], xticklabels=datanames)
-    plt.xticks(rotation=30)
-    fig.savefig("/".join(pfn.split("/")[:-1]) + "/bias.png", bbox_inches="tight", transparent=True, dpi=300)
+                    print(
+                        c[stats_bin].analysis.get_latex_table(
+                            parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]
+                        )
+                    )
+                    # print(t, i, recon_bin, np.array(stats[data_bin][recon_bin][1])[[4, 5, 10]])

@@ -18,26 +18,28 @@ import pickle
 from chainconsumer import ChainConsumer
 
 
-def plot_errors(stats, figname):
+def plot_errors(stats, data_sig, figname):
 
-    nstats = len(stats)
     covs = np.cov(stats, rowvar=False)
 
     labels = [r"$\sigma_{\alpha}$", r"$\sigma_{\alpha_{ap}}$", r"$\chi^{2}$"]
     colors = ["r", "b", "g"]
     fig, axes = plt.subplots(figsize=(7, 2), nrows=1, ncols=3, sharey=True, squeeze=False)
     plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.3)
-    for ax, vals, avgs, stds, l, c in zip(
-        axes.T,
-        np.array(stats[1:]).T[[4, 5, 10]],
-        np.array(stats[0]).T[[4, 5, 10]],
-        [np.sqrt(covs[0, 0]), np.sqrt(covs[1, 1]), 0.0],
-        labels,
-        colors,
+    for i, (ax, vals, avgs, stds, l, c) in enumerate(
+        zip(
+            axes.T,
+            np.array(stats[1:]).T[[4, 5, 10]],
+            np.array(stats[0]).T[[4, 5, 10]],
+            [np.sqrt(covs[0, 0]), np.sqrt(covs[1, 1]), 0.0],
+            labels,
+            colors,
+        )
     ):
 
         ax[0].hist(vals, 10, color=c, histtype="stepfilled", alpha=0.2, density=False, zorder=0)
         ax[0].hist(vals, 10, color=c, histtype="step", alpha=1.0, lw=1.3, density=False, zorder=1)
+        ax[0].axvline(data_sig[i], color="k", ls="-", zorder=2)
         if l != r"$\chi^{2}$":
             ax[0].axvline(avgs, color="k", ls="--", zorder=2)
             ax[0].axvline(stds, color="k", ls=":", zorder=2)
@@ -52,13 +54,13 @@ def plot_errors(stats, figname):
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__)
+    pfn, dir_name, file = setup(__file__, "/v2/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
     sampler = NautilusSampler(temp_dir=dir_name)
 
-    # colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
+    colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
     tracers = {"LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]], "ELG_LOP": [[0.8, 1.1], [1.1, 1.6]], "QSO": [[0.8, 2.1]]}
     nmocks = {"LRG": [0, 25], "ELG_LOP": [0, 25], "QSO": [0, 25]}
@@ -67,21 +69,21 @@ if __name__ == "__main__":
         "LRG": [
             [9.0, 6.0],
             [9.0, 6.0],
-            [8.0, 5.5],
+            [9.0, 6.0],
         ],
-        "ELG_LOP": [[9.0, 6.0], [8.5, 5.0]],
-        "QSO": [[11.0, 8.0]],
+        "ELG_LOP": [[8.5, 6.0], [8.5, 6.0]],
+        "QSO": [[9.0, 6.0]],
     }
     sigma_nl_perp = {
         "LRG": [
-            [3.5, 3.0],
-            [4.0, 2.0],
-            [5.0, 3.5],
+            [4.5, 3.0],
+            [4.5, 3.0],
+            [4.5, 3.0],
         ],
-        "ELG_LOP": [[4.5, 4.0], [4.0, 4.0]],
-        "QSO": [[2.0, 2.0]],
+        "ELG_LOP": [[4.5, 3.0], [4.5, 3.0]],
+        "QSO": [[3.5, 3.0]],
     }
-    sigma_s = {"LRG": [[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]], "ELG_LOP": [[4.0, 6.0], [3.0, 2.0]], "QSO": [[2.0, 2.0]]}
+    sigma_s = {"LRG": [[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]], "ELG_LOP": [[2.0, 2.0], [2.0, 2.0]], "QSO": [[2.0, 2.0]]}
 
     cap = "gccomb"
     ffa = "ffa"  # Flavour of fibre assignment. Can be "ffa" for fast fiber assign, or "complete"
@@ -129,13 +131,13 @@ if __name__ == "__main__":
                 )
 
                 name = dataset.name + f" mock mean"
-                fitter.add_model_and_dataset(model, dataset, name=name)
+                fitter.add_model_and_dataset(model, dataset, name=name, color=colors[i + 1])
                 allnames.append(name)
 
                 for j in range(len(dataset.mock_data)):
                     dataset.set_realisation(j)
                     name = dataset.name + f" realisation {j}"
-                    fitter.add_model_and_dataset(model, dataset, name=name)
+                    fitter.add_model_and_dataset(model, dataset, name=name, color=colors[i + 1])
                     allnames.append(name)
 
     # Submit all the job. We have quite a few (42), so we'll
@@ -200,7 +202,8 @@ if __name__ == "__main__":
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
             if realisation == "mean":
-                c[stats_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+                extra.pop("color", None)
+                c[stats_bin].add_chain(df, weights=weight, color="k", **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
                 figname = None
                 mean_mean, cov_mean = mean, cov
             else:
@@ -215,7 +218,9 @@ if __name__ == "__main__":
                     else None
                 )
 
-            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(params_dict, display=False, figname=figname)
+            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
+                params_dict, display=False, figname=figname, title=extra["name"], c=colors[data_bin + 1]
+            )
 
             stats[data_bin][recon_bin].append(
                 [
@@ -245,9 +250,9 @@ if __name__ == "__main__":
 
                     c[stats_bin].add_covariance(
                         mean[:4],
-                        cov[:4, :4] / np.sqrt(25),
+                        cov[:4, :4],
                         parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
-                        color="r",
+                        color=colors[data_bin + 1],
                         plot_contour=True,
                         plot_point=False,
                         show_as_1d_prior=False,
@@ -284,12 +289,31 @@ if __name__ == "__main__":
                     )
 
         # Plot histograms of the chi squared values and uncertainties for comparison to the data
+        data_sigmas_prerecon = {
+            "LRG": [
+                [2.14527108e-02, 8.19956495e-02, 3.07760894e01],
+                [3.96549062e-02, 1.83725316e-01, 4.48914154e01],
+                [1.14493661e-02, 4.58292575e-02, 3.96928716e01],
+            ],
+            "ELG_LOP": [[0.09296832, 0.38090567, 53.94349078], [1.56714252e-02, 5.57112833e-02, 3.50858939e01]],
+            "QSO": [[0.03921801, 0.16956768, 31.27747987]],
+        }
+        data_sigmas_postrecon = {
+            "LRG": [
+                [9.7586959e-03, 3.1017183e-02, 3.8796406e01],
+                [1.17593304e-02, 4.97423358e-02, 3.55522212e01],
+                [7.93262784e-03, 2.94448866e-02, 2.95412023e01],
+            ],
+            "ELG_LOP": [[0.09587112, 0.35813297, 42.7803474], [1.11089479e-02, 3.85486295e-02, 5.14678368e01]],
+            "QSO": [[0.0549746, 0.21809336, 51.08381597]],
+        }
         for t in tracers:
             for i, zs in enumerate(tracers[t]):
                 for recon_bin in range(2):
                     dataname = f"{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}"
                     data_bin = datanames.index(dataname.lower())
                     stats_bin = recon_bin * len(datanames) + data_bin
+                    data_sig = data_sigmas_prerecon[t][i] if recon_bin == 0 else data_sigmas_postrecon[t][i]
 
                     plotname = f"{dataname}_prerecon" if recon_bin == 0 else f"{dataname}_postrecon"
-                    plot_errors(stats[data_bin][recon_bin], "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_errors.png")
+                    plot_errors(stats[data_bin][recon_bin], data_sig, "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_errors.png")

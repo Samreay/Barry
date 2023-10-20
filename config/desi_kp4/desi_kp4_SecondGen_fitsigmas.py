@@ -68,7 +68,7 @@ if __name__ == "__main__":
                     model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
                     name = dataset_xi.name + f" mock mean n_poly=" + str(n)
-                    fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i - 1])
+                    fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i + 1])
                     allnames.append(name)
 
     # Submit all the job. We have quite a few (42), so we'll
@@ -117,7 +117,9 @@ if __name__ == "__main__":
             # Get some useful properties of the fit, and plot the MAP model against the data if it's the mock mean
             plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
             figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
-            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(params_dict, display=False, figname=figname)
+            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
+                params_dict, display=False, figname=figname, c=colors[data_bin + 1]
+            )
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)

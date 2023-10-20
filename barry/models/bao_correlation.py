@@ -580,13 +580,14 @@ class CorrelationFunctionFit(Model):
             self.logger.info("Create plot")
 
             fig, axes = plt.subplots(figsize=(height, height), nrows=1, ncols=1, sharex=True, squeeze=False)
-            for err, mod, name, m, mfc in zip(errs, mods, names, ms, mfcs):
+            for err, mod, smooth, name, m, mfc in zip(errs, mods, smooths, names, ms, mfcs):
 
                 # Plot ye old data
                 axes[0, 0].errorbar(ss, ss**2 * self.data[0][name], yerr=ss**2 * err, fmt=m, mfc=mfc, label="Data", c=c)
 
                 # Plot ye old model
                 axes[0, 0].plot(ss, ss**2 * mod, c=c, label="Model")
+                axes[0, 0].plot(ss, ss**2 * smooth, c=c, ls="--", label="Smooth")
 
             axes[0, 0].set_ylabel("$s^{2} \\times \\xi(s)$ ")
 
