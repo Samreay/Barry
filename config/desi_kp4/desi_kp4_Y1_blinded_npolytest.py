@@ -37,7 +37,7 @@ if __name__ == "__main__":
             [9.0, 6.0],
             [9.0, 6.0],
         ],
-        "ELG_LOP": [[8.5, 6.0], [8.5, 6.0]],
+        "ELG_LOPnotqso": [[8.5, 6.0], [8.5, 6.0]],
         "QSO": [[9.0, 6.0]],
     }
     sigma_nl_perp = {
@@ -46,10 +46,10 @@ if __name__ == "__main__":
             [4.5, 3.0],
             [4.5, 3.0],
         ],
-        "ELG_LOP": [[4.5, 3.0], [4.5, 3.0]],
+        "ELG_LOPnotqso": [[4.5, 3.0], [4.5, 3.0]],
         "QSO": [[3.5, 3.0]],
     }
-    sigma_s = {"LRG": [[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]], "ELG_LOP": [[2.0, 2.0], [2.0, 2.0]], "QSO": [[2.0, 2.0]]}
+    sigma_s = {"LRG": [[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]], "ELG_LOPnotqso": [[2.0, 2.0], [2.0, 2.0]], "QSO": [[2.0, 2.0]]}
 
     version = 0.6
     cap = "gccomb"
@@ -76,7 +76,7 @@ if __name__ == "__main__":
                         n_poly=n_poly,
                     )
                     model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-                    model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+                    model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
                     model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
                     # Load in a pre-existing BAO template
