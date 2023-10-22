@@ -20,7 +20,7 @@ from chainconsumer import ChainConsumer
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__, "/reduced_cov_v2/")
+    pfn, dir_name, file = setup(__file__, "/reduced_cov_fixed_sigma_s/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
@@ -83,7 +83,7 @@ if __name__ == "__main__":
                     )
                     model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
                     model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
-                    model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+                    model.set_default("sigma_s", 0.0)
 
                     # Load in a pre-existing BAO template
                     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
@@ -127,16 +127,20 @@ if __name__ == "__main__":
 
             # Compute alpha_par and alpha_perp for each point in the chain
             alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
-            df["$\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
-            df["$\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
-            df["$\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
-            df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
-            df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
+            df["$\\alpha_\\parallel$"] = alpha_par
+            df["$\\alpha_\\perp$"] = alpha_perp
+            df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+
+            # df["$\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
+            # df["$\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
+            # df["$\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
+            # df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
+            # df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
 
             if poly_bin == 3:
                 print(np.corrcoef(alpha_par, alpha_perp))
 
-            """# Get the MAP point and set the model up at this point
+            # Get the MAP point and set the model up at this point
             model.set_data(data)
             r_s = model.camb.get_data()["r_s"]
             max_post = posterior.argmax()
@@ -150,7 +154,7 @@ if __name__ == "__main__":
             figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
             new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
                 params_dict, display=False, figname=figname, title=plotname, c=colors[data_bin + 1]
-            )"""
+            )
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
@@ -177,7 +181,7 @@ if __name__ == "__main__":
                     }
 
                     plotname = f"{dataname}_prerecon" if recon_bin == 0 else f"{dataname}_postrecon"
-                    """c[stats_bin].plotter.plot(
+                    c[stats_bin].plotter.plot(
                         filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour.png"],
                         truth=truth,
                         parameters=[
@@ -192,12 +196,12 @@ if __name__ == "__main__":
                             "$\\alpha$",
                             "$\\alpha_{ap}$",
                         ],
-                    )"""
-
-                    print(
-                        data_bin,
-                        recon_bin,
-                        c[stats_bin].analysis.get_latex_table(
-                            parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]
-                        ),
                     )
+
+                    # print(
+                    #    data_bin,
+                    #    recon_bin,
+                    #    c[stats_bin].analysis.get_latex_table(
+                    #        parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]
+                    #    ),
+                    # )

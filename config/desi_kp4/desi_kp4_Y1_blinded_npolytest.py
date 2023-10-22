@@ -207,7 +207,7 @@ if __name__ == "__main__":
                     }
 
                     plotname = f"{dataname}_prerecon" if recon_bin == 0 else f"{dataname}_postrecon"
-                    c[stats_bin].plotter.plot(
+                    """c[stats_bin].plotter.plot(
                         filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour.png"],
                         parameters=[
                             "$\\alpha_\\parallel$",
@@ -226,5 +226,13 @@ if __name__ == "__main__":
                         c[stats_bin].analysis.get_latex_table(
                             parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]
                         )
+                    )"""
+                    summary = c[stats_bin].analysis.get_summary(chains=f"npoly=1", parameters=["$\\alpha$", "$\\alpha_{ap}$"])
+                    print(t, i, recon_bin, np.array(stats[data_bin][recon_bin][1])[[4, 5, 10]])
+                    print(
+                        [
+                            [(summary[k][2] - summary[k][0]) / 2.0]
+                            for k in ["$\\alpha$", "$\\alpha_{ap}$"]
+                            if summary[k][0] is not None and summary[k][1] is not None and summary[k][2] is not None
+                        ]
                     )
-                    # print(t, i, recon_bin, np.array(stats[data_bin][recon_bin][1])[[4, 5, 10]])
