@@ -76,7 +76,7 @@ if __name__ == "__main__":
                         recon=dataset_xi.recon,
                         isotropic=dataset_xi.isotropic,
                         marg="full",
-                        fix_params=["om"],
+                        fix_params=["om", "sigma_s"],
                         poly_poles=dataset_xi.fit_poles,
                         correction=Correction.NONE,
                         n_poly=n_poly,
@@ -127,15 +127,15 @@ if __name__ == "__main__":
 
             # Compute alpha_par and alpha_perp for each point in the chain
             alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
-            df["$\\alpha_\\parallel$"] = alpha_par
-            df["$\\alpha_\\perp$"] = alpha_perp
-            df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+            # df["$\\alpha_\\parallel$"] = alpha_par
+            # df["$\\alpha_\\perp$"] = alpha_perp
+            # df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
 
-            # df["$\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
-            # df["$\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
-            # df["$\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
-            # df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
-            # df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
+            df["$\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
+            df["$\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
+            df["$\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
+            df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
+            df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
 
             if poly_bin == 3:
                 print(np.corrcoef(alpha_par, alpha_perp))
@@ -198,10 +198,10 @@ if __name__ == "__main__":
                         ],
                     )
 
-                    # print(
-                    #    data_bin,
-                    #    recon_bin,
-                    #    c[stats_bin].analysis.get_latex_table(
-                    #        parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]
-                    #    ),
-                    # )
+                    print(
+                        data_bin,
+                        recon_bin,
+                        c[stats_bin].analysis.get_latex_table(
+                            parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]
+                        ),
+                    )
