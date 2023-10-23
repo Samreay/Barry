@@ -20,7 +20,7 @@ from chainconsumer import ChainConsumer
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__, "/reduced_cov_free_sigma_s/")
+    pfn, dir_name, file = setup(__file__, "/reduced_cov_fixed_sigma_s/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
@@ -77,7 +77,7 @@ if __name__ == "__main__":
                         recon=dataset_xi.recon,
                         isotropic=dataset_xi.isotropic,
                         marg="full",
-                        fix_params=["om"],
+                        fix_params=["om", "sigma_s"],
                         poly_poles=dataset_xi.fit_poles,
                         correction=Correction.NONE,
                         n_poly=n_poly,
