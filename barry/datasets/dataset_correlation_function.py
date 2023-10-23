@@ -194,6 +194,7 @@ class CorrelationFunction_DESI_KP4(CorrelationFunction):
 
     def __init__(
         self,
+        isotropic=False,
         min_dist=30.0,
         max_dist=200.0,
         recon=None,
@@ -220,7 +221,7 @@ class CorrelationFunction_DESI_KP4(CorrelationFunction):
             num_mocks=num_mocks,
             fake_diag=fake_diag,
             realisation=realisation,
-            isotropic=False,
+            isotropic=isotropic,
             fit_poles=fit_poles,
             data_location=data_location,
         )

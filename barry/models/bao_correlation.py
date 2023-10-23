@@ -290,10 +290,9 @@ class CorrelationFunctionFit(Model):
         # Prefactor, roughly equal to the typical k_min/2pi, set so that the free coefficients are all of the same order
         A = 0.02 / (2.0 * np.pi)
         if self.isotropic:
-            self.poly = [(A * dist) ** ip for ip in self.n_poly]
-            # self.poly = np.zeros((len(self.n_poly), 1, len(dist)))
-            # for i, ip in enumerate(self.n_poly):
-            #    self.poly[i, :, :] = (A * dist) ** ip
+            self.poly = np.zeros((len(self.n_poly), 1, len(dist)))
+            for i, ip in enumerate(self.n_poly):
+                self.poly[i, :, :] = (A * dist) ** ip
         else:
             self.poly = np.zeros((len(self.n_poly) * len(self.poly_poles), 3, len(dist)))
             polyvec = [(A * dist) ** ip for ip in self.n_poly]
@@ -335,7 +334,10 @@ class CorrelationFunctionFit(Model):
 
         # Convolve the xi model with the binning matrix and concatenate into a single data vector
         xi_generated = [xi @ d["binmat"] for xi in xis]
-        xi_model = np.concatenate([xi_generated[l] for l in range(len(d["poles"]))])
+        if self.isotropic:
+            xi_model = xi_generated[0]
+        else:
+            xi_model = np.concatenate([xi_generated[l] for l in range(len(d["poles"]))])
 
         # Now sort out the polynomial terms in the case of analytical marginalisation
         poly_model = None

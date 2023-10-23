@@ -20,7 +20,7 @@ from chainconsumer import ChainConsumer
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__, "/reduced_cov_free_sigma_s/")
+    pfn, dir_name, file = setup(__file__, "/reduced_cov_v2/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
@@ -61,8 +61,9 @@ if __name__ == "__main__":
             for r, recon in enumerate([None, "sym"]):
                 name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_xi.pkl"
                 dataset_xi = CorrelationFunction_DESI_KP4(
+                    isotropic=True,
                     recon=recon,
-                    fit_poles=[0, 2],
+                    fit_poles=[0],
                     min_dist=50.0,
                     max_dist=150.0,
                     realisation=None,
@@ -81,9 +82,15 @@ if __name__ == "__main__":
                         correction=Correction.NONE,
                         n_poly=n_poly,
                     )
-                    model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-                    model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
-                    model.set_default("sigma_s", 0.0)
+                    model.set_default(
+                        "sigma_nl",
+                        np.sqrt((sigma_nl_par[t][i][r] ** 2 + 2.0 * sigma_nl_perp[t][i][r] ** 2) / 3.0),
+                        min=0.0,
+                        max=20.0,
+                        sigma=2.0,
+                        prior="gaussian",
+                    )
+                    model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
                     # Load in a pre-existing BAO template
                     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
