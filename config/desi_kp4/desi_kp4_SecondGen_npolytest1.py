@@ -211,12 +211,15 @@ if __name__ == "__main__":
                 # Get some useful properties of the fit, and plot the MAP model against the data if the bestfit alpha or alpha_ap are outliers compared to the mean fit
                 diff = np.c_[params["$\\alpha_\\parallel$"], params["$\\alpha_\\perp$"]] - mean_mean[2:]
                 outlier = diff @ np.linalg.inv(cov_mean[2:, 2:]) @ diff.T
-                print(outlier, sp.stats.chi2.ppf(0.9545, 2, loc=0, scale=1))
-                figname = (
-                    "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
-                    if outlier > sp.stats.chi2.ppf(0.9545, 2, loc=0, scale=1)
-                    else None
-                )
+                if outlier > sp.stats.chi2.ppf(0.9545, 2, loc=0, scale=1):
+                    figname = "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_contour.png"
+                    cc = ChainConsumer()
+                    cc.add_chain(df, weights=weight, **extra)
+                    cc.add_marker(df.iloc[max_post], **extra)
+                    cc.plotter.plot(filename=figname)
+                    figname = "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
+                else:
+                    figname = None
 
             new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
                 params_dict, display=False, figname=figname, title=extra["name"], c=colors[data_bin + 1]

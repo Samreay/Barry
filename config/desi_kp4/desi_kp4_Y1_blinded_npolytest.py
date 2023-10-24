@@ -132,9 +132,17 @@ if __name__ == "__main__":
 
             # Compute alpha_par and alpha_perp for each point in the chain
             alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
-            df["$\\alpha_\\parallel$"] = alpha_par
-            df["$\\alpha_\\perp$"] = alpha_perp
-            df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+            # df["$\\alpha_\\parallel$"] = alpha_par
+            # df["$\\alpha_\\perp$"] = alpha_perp
+            # df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+
+            df["$\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
+            df["$\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
+            df["$\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
+            df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
+            df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
+
+            print(np.corrcoef(alpha_par, alpha_perp))
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
@@ -220,14 +228,14 @@ if __name__ == "__main__":
                             "$\\alpha$",
                             "$\\alpha_{ap}$",
                         ],
-                    )
+                    )"""
 
                     print(
                         c[stats_bin].analysis.get_latex_table(
                             parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]
                         )
-                    )"""
-                    summary = c[stats_bin].analysis.get_summary(chains=f"npoly=1", parameters=["$\\alpha$", "$\\alpha_{ap}$"])
+                    )
+                    """summary = c[stats_bin].analysis.get_summary(chains=f"npoly=1", parameters=["$\\alpha$", "$\\alpha_{ap}$"])
                     print(t, i, recon_bin, np.array(stats[data_bin][recon_bin][1])[[4, 5, 10]])
                     print(
                         [
@@ -235,4 +243,4 @@ if __name__ == "__main__":
                             for k in ["$\\alpha$", "$\\alpha_{ap}$"]
                             if summary[k][0] is not None and summary[k][1] is not None and summary[k][2] is not None
                         ]
-                    )
+                    )"""

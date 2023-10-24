@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
-            # df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
+            df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)

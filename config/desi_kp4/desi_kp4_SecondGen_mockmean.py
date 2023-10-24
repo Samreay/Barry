@@ -20,7 +20,7 @@ from chainconsumer import ChainConsumer
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__, "/reduced_cov_free_sigma_s/")
+    pfn, dir_name, file = setup(__file__, "/reduced_cov_v2/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
@@ -83,7 +83,7 @@ if __name__ == "__main__":
                     )
                     model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
                     model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
-                    model.set_default("sigma_s", 0.0)
+                    model.set_default("sigma_s", sigma_nl_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
                     # Load in a pre-existing BAO template
                     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
@@ -137,8 +137,7 @@ if __name__ == "__main__":
             df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
             df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
 
-            if poly_bin == 3:
-                print(np.corrcoef(alpha_par, alpha_perp))
+            print(np.corrcoef(alpha_par, alpha_perp))
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
