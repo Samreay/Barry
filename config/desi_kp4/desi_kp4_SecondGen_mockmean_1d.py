@@ -92,7 +92,7 @@ if __name__ == "__main__":
                         sigma=2.0,
                         prior="gaussian",
                     )
-                    model.set_default("sigma_s", 0.0)
+                    model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
                     # Load in a pre-existing BAO template
                     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
