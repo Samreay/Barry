@@ -81,7 +81,8 @@ if __name__ == "__main__":
                         fix_params=["om"],
                         poly_poles=dataset_xi.fit_poles,
                         correction=Correction.NONE,
-                        broadband_type="poly",
+                        broadband_type=broadband_type,
+                        n_poly=n_poly,
                     )
                     model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
                     model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
@@ -91,7 +92,7 @@ if __name__ == "__main__":
                     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
                     model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
-                    name = dataset_xi.name + f" mock mean n_poly="
+                    name = dataset_xi.name + f" mock mean n_poly={n}"
                     fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i + 1])
                     allnames.append(name)
 

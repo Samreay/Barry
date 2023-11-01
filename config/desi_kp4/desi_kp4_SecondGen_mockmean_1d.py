@@ -82,6 +82,7 @@ if __name__ == "__main__":
                         fix_params=["om", "sigma_s"],
                         poly_poles=dataset_xi.fit_poles,
                         correction=Correction.NONE,
+                        broadband_type=broadband_type,
                         n_poly=n_poly,
                     )
                     model.set_default(
