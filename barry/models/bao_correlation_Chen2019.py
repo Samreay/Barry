@@ -24,7 +24,8 @@ class CorrChen2019(CorrelationFunctionFit):
         isotropic=False,
         poly_poles=(0, 2),
         marg=None,
-        n_poly=(0, 2),
+        broadband_type="spline",
+        **kwargs,
     ):
 
         super().__init__(
@@ -37,7 +38,8 @@ class CorrChen2019(CorrelationFunctionFit):
             poly_poles=poly_poles,
             marg=marg,
             includeb2=False,
-            n_poly=n_poly,
+            broadband_type=broadband_type,
+            **kwargs,
         )
         self.parent = PowerChen2019(
             fix_params=fix_params,
@@ -50,15 +52,12 @@ class CorrChen2019(CorrelationFunctionFit):
             broadband_type=None,
         )
 
-        self.set_marg(fix_params, poly_poles, n_poly, do_bias=False)
+        self.set_marg(fix_params, do_bias=False)
 
     def declare_parameters(self):
         super().declare_parameters()
         self.add_param("beta", r"$\beta$", 0.01, 4.0, None)  # RSD parameter f/b
         self.add_param("sigma_s", r"$\Sigma_s$", 0.0, 10.0, 5.0)  # Fingers-of-god damping
-        for pole in self.poly_poles:
-            for ip in self.n_poly:
-                self.add_param(f"a{{{pole}}}_{{{ip}}}_{{{1}}}", f"$a_{{{pole},{ip},1}}$", -10.0, 10.0, 0)
 
 
 if __name__ == "__main__":

@@ -23,7 +23,8 @@ class CorrSeo2016(CorrelationFunctionFit):
         isotropic=False,
         poly_poles=(0, 2),
         marg=None,
-        n_poly=(0, 2),
+        broadband_type="spline",
+        **kwargs,
     ):
 
         super().__init__(
@@ -37,6 +38,8 @@ class CorrSeo2016(CorrelationFunctionFit):
             marg=marg,
             includeb2=False,
             n_poly=n_poly,
+            broadband_type=broadband_type,
+            **kwargs,
         )
         self.parent = PowerSeo2016(
             fix_params=fix_params,
@@ -49,16 +52,13 @@ class CorrSeo2016(CorrelationFunctionFit):
             broadband_type=None,
         )
 
-        self.set_marg(fix_params, poly_poles, n_poly, do_bias=False)
+        self.set_marg(fix_params, do_bias=False)
 
     def declare_parameters(self):
         # Define parameters
         super().declare_parameters()
         self.add_param("beta", r"$\beta$", 0.01, 4.0, None)  # RSD parameter f/b
         self.add_param("sigma_s", r"$\Sigma_s$", 0.00, 10.0, 5.0)  # Fingers-of-god damping
-        for pole in self.poly_poles:
-            for ip in self.n_poly:
-                self.add_param(f"a{{{pole}}}_{{{ip}}}_{{{1}}}", f"$a_{{{pole},{ip},1}}$", -10.0, 10.0, 0)
 
 
 if __name__ == "__main__":

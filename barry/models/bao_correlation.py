@@ -7,6 +7,7 @@ from barry.models.model import Model, Omega_m_z, Correction
 from barry.models.bao_power import PowerSpectrumFit
 from scipy.interpolate import splev, splrep
 from scipy.integrate import simps
+from scipy.special import sici
 
 from barry.utils import break_vector_and_get_blocks
 
@@ -26,7 +27,8 @@ class CorrelationFunctionFit(Model):
         poly_poles=(0, 2),
         marg=None,
         includeb2=False,
-        n_poly=(0, 2),
+        broadband_type="spline",
+        **kwargs,
     ):
 
         """Generic correlation function model
@@ -62,13 +64,24 @@ class CorrelationFunctionFit(Model):
         self.n_data_bias = 1
         self.n_data_poly = 1
 
-        if len(n_poly) > 0 and self.isotropic:
+        self.broadband_type = None if broadband_type is None else broadband_type.lower()
+        if self.broadband_type not in [None, "poly", "spline"]:
+            raise ValueError("broadband_type not recognised, must be None, 'poly' or 'spline'")
+
+        self.n_poly = [] if self.broadband_type is None else kwargs.get("n_poly", [0, 2])
+        if self.broadband_type == "spline":
+            self.delta_fac = kwargs.get("delta", 2.0)
+            self.logger.info(f"Including low order splines in broadband with delta={self.delta_fac}*pi/r_s")
+
+        if (len(self.n_poly) > 0 or self.broadband_type == "spline") and self.isotropic:
             poly_poles = [0]
 
         self.recon = recon
-        self.n_poly = n_poly
         self.poly_poles = poly_poles
         self.data_share_poly = True
+
+        nspline = 2 if 2 in self.poly_poles and self.broadband_type == "spline" else 0
+        self.len_poly = len(self.n_poly) * len(self.poly_poles) + nspline
 
         self.includeb2 = includeb2
         self.declare_parameters()
@@ -85,7 +98,7 @@ class CorrelationFunctionFit(Model):
         self.poly = None  # Basic polynomial terms
         self.winpoly = None  # Polynomial terms convolved with the window function
 
-    def set_marg(self, fix_params, poly_poles, n_poly, do_bias=False, marg_bias=0):
+    def set_marg(self, fix_params, do_bias=False, marg_bias=0):
 
         self.marg_bias = marg_bias
 
@@ -99,8 +112,8 @@ class CorrelationFunctionFit(Model):
                         if pole != 0:
                             fix_params.extend([f"b{{{pole}}}_{{{i+1}}}"])
             for i in range(self.n_data_poly):
-                for pole in poly_poles:
-                    for ip in n_poly:
+                for pole in self.poly_poles:
+                    for ip in self.n_poly:
                         fix_params.extend([f"a{{{pole}}}_{{{ip}}}_{{{i+1}}}"])
 
         self.set_fix_params(fix_params)
@@ -115,7 +128,7 @@ class CorrelationFunctionFit(Model):
                                 self.set_default(f"b{{{pole}}}_{{{i+1}}}", 1.0)
             for i in range(self.n_data_poly):
                 for pole in self.poly_poles:
-                    for ip in n_poly:
+                    for ip in self.n_poly:
                         self.set_default(f"a{{{pole}}}_{{{ip}}}_{{{i+1}}}", 0.0)
 
     def set_data(self, data):
@@ -180,6 +193,12 @@ class CorrelationFunctionFit(Model):
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch for monopole
         if not self.isotropic:
             self.add_param("epsilon", r"$\epsilon$", -0.2, 0.2, 0.0)  # Stretch for multipoles
+        for pole in self.poly_poles:
+            for ip in self.n_poly:
+                self.add_param(f"a{{{pole}}}_{{{ip}}}_{{{1}}}", f"$a_{{{pole},{ip},1}}$", -10.0, 10.0, 0)
+        if self.broadband_type == "spline" and 2 in self.poly_poles:
+            self.add_param(f"bbspline_{{{0}}}_{{{1}}}", f"$bbspline_{{0,1}}$", -10.0, 10.0, 0)
+            self.add_param(f"bbspline_{{{1}}}_{{{1}}}", f"$bbspline_{{1,1}}$", -10.0, 10.0, 0)
 
     @lru_cache(maxsize=32)
     def get_sprimefac(self, epsilon):
@@ -289,16 +308,43 @@ class CorrelationFunctionFit(Model):
         """
         # Prefactor, roughly equal to the typical k_min/2pi, set so that the free coefficients are all of the same order
         A = 0.02 / (2.0 * np.pi)
+
         if self.isotropic:
-            self.poly = np.zeros((len(self.n_poly), 1, len(dist)))
+            self.poly = np.zeros((self.len_poly, 1, len(dist)))
             for i, ip in enumerate(self.n_poly):
                 self.poly[i, :, :] = (A * dist) ** ip
         else:
-            self.poly = np.zeros((len(self.n_poly) * len(self.poly_poles), 3, len(dist)))
+            nspline = 2 if self.broadband_type == "spline" else 0
+            self.poly = np.zeros((self.len_poly, 3, len(dist)))
             polyvec = [(A * dist) ** ip for ip in self.n_poly]
             if len(self.n_poly) > 0:
                 for i, pole in enumerate(self.poly_poles):
                     self.poly[len(self.n_poly) * i : len(self.n_poly) * (i + 1), int(pole / 2)] = polyvec
+
+            # Add on the spline broadband terms (B2m1 and B20) for the quadrupole if requested.
+            # TODO: Should also compute and code up relevant B4 terms in the event we fit the hexadecapole?
+            if self.broadband_type == "spline":
+                x = self.delta_fac * dist
+                sinx, cosx, cos2x = np.sin(x), np.cos(x), np.cos(2 * x)
+                Si_x, Si_2x = sici(x)[0], sici(2 * x)[0]
+                self.poly[-2, 1] = (16.0 - 8.0 * x**2 - 16.0 * cosx + x**2 * cosx - x * sinx + x**3 * Si_x) / (
+                    2.0 * x**3 * dist**3
+                )
+                self.poly[-1, 1] = (
+                    -2.0
+                    * (
+                        12.0
+                        - 16 * cosx
+                        + x**2 * cosx
+                        + 4.0 * cos2x
+                        - x**2 * cos2x
+                        - x * sinx
+                        + x * cosx * sinx
+                        + x**3 * Si_x
+                        - 2.0 * x**3 * Si_2x
+                    )
+                    / (x**3 * dist**3)
+                )
 
     def get_model(self, p, d, smooth=False):
         """Gets the model prediction using the data passed in and parameter location specified
@@ -331,6 +377,9 @@ class CorrelationFunctionFit(Model):
             for pole in self.poly_poles:
                 for i, ip in enumerate(self.n_poly):
                     xis[int(pole / 2)] += p[f"a{{{pole}}}_{{{ip}}}_{{{1}}}"] * self.poly[i, int(pole / 2), :]
+            if self.broadband_type == "spline":
+                xis[1] += p[f"bbspline_{{{0}}}_{{{1}}}"] * self.poly[-2, 1, :]
+                xis[1] += p[f"bbspline_{{{1}}}_{{{1}}}"] * self.poly[-1, 1, :]
 
         # Convolve the xi model with the binning matrix and concatenate into a single data vector
         xi_generated = [xi @ d["binmat"] for xi in xis]

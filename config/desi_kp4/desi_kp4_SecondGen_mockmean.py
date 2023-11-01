@@ -70,7 +70,9 @@ if __name__ == "__main__":
                     datafile=name,
                 )
 
-                for n, n_poly in enumerate([[], [-2, -1, 0], [0, 2], [-2, 0, 2]]):
+                for n, (broadband_type, n_poly) in enumerate(
+                    zip(["poly", "poly", "spline", "spline", "spline"], [[], [-2, -1, 0], [], [0, 2], [-2, 0, 2]])
+                ):
 
                     model = CorrBeutler2017(
                         recon=dataset_xi.recon,
@@ -79,17 +81,17 @@ if __name__ == "__main__":
                         fix_params=["om"],
                         poly_poles=dataset_xi.fit_poles,
                         correction=Correction.NONE,
-                        n_poly=n_poly,
+                        broadband_type="poly",
                     )
                     model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
                     model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
-                    model.set_default("sigma_s", sigma_nl_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+                    model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
                     # Load in a pre-existing BAO template
                     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
                     model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
-                    name = dataset_xi.name + f" mock mean n_poly=" + str(n)
+                    name = dataset_xi.name + f" mock mean n_poly="
                     fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i + 1])
                     allnames.append(name)
 

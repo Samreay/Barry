@@ -70,9 +70,7 @@ if __name__ == "__main__":
                     datafile=name,
                 )
 
-                for n, (broadband_type, n_poly) in enumerate(
-                    zip(["spline", "poly", "poly", "spline"], [30, [-1, 0, 1, 2, 3], [-1, 0, 1, 2, 3, 4]])
-                ):
+                for n, (broadband_type, n_poly) in enumerate(zip(["spline", "poly", "poly"], [30, [-1, 0, 1, 2, 3], [-1, 0, 1, 2, 3, 4]])):
 
                     model = PowerBeutler2017(
                         recon=dataset_pk.recon,
@@ -130,15 +128,15 @@ if __name__ == "__main__":
 
             # Compute alpha_par and alpha_perp for each point in the chain
             alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
-            # df["$\\alpha_\\parallel$"] = alpha_par
-            # df["$\\alpha_\\perp$"] = alpha_perp
-            # df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+            df["$\\alpha_\\parallel$"] = alpha_par
+            df["$\\alpha_\\perp$"] = alpha_perp
+            df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
 
-            df["$\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
-            df["$\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
-            df["$\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
-            df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
-            df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
+            # df["$\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
+            # df["$\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
+            # df["$\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
+            # df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
+            # df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
 
             if poly_bin == 3:
                 print(np.corrcoef(alpha_par, alpha_perp))
@@ -155,9 +153,7 @@ if __name__ == "__main__":
             # Get some useful properties of the fit, and plot the MAP model against the data
             plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
             figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
-            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
-                params_dict, display=False, figname=figname, title=plotname, c=colors[data_bin + 1]
-            )
+            new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname, title=plotname)
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
