@@ -112,6 +112,9 @@ class CorrelationFunctionFit(Model):
                         if pole != 0:
                             fix_params.extend([f"b{{{pole}}}_{{{i+1}}}"])
             for i in range(self.n_data_poly):
+                if self.broadband_type == "spline" and 2 in self.poly_poles:
+                    fix_params.extend([f"bbspline_{{{0}}}_{{{1}}}"])
+                    fix_params.extend([f"bbspline_{{{1}}}_{{{1}}}"])
                 for pole in self.poly_poles:
                     for ip in self.n_poly:
                         fix_params.extend([f"a{{{pole}}}_{{{ip}}}_{{{i+1}}}"])
@@ -127,6 +130,9 @@ class CorrelationFunctionFit(Model):
                             if pole != 0:
                                 self.set_default(f"b{{{pole}}}_{{{i+1}}}", 1.0)
             for i in range(self.n_data_poly):
+                if self.broadband_type == "spline" and 2 in self.poly_poles:
+                    self.set_default(f"bbspline_{{{0}}}_{{{1}}}", 0.0)
+                    self.set_default(f"bbspline_{{{1}}}_{{{1}}}", 0.0)
                 for pole in self.poly_poles:
                     for ip in self.n_poly:
                         self.set_default(f"a{{{pole}}}_{{{ip}}}_{{{i+1}}}", 0.0)
@@ -512,6 +518,7 @@ class CorrelationFunctionFit(Model):
                 num_mocks=self.data[0]["num_mocks"],
                 num_data=len(self.data[0]["xi"]),
             )
+            print(self.get_active_params(), bband)
             dof = len(self.data[0]["xi"]) - len(self.get_active_params()) - len(bband)
             print(f"Chi squared/dof is {new_chi_squared}/{dof} at these values")
 
