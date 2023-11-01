@@ -81,6 +81,7 @@ if __name__ == "__main__":
                         fix_params=["om"],
                         poly_poles=[0, 2],
                         correction=Correction.NONE,
+                        broadband_type="spline",
                         n_poly=[0, 2],
                     )
                     model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
