@@ -71,7 +71,9 @@ if __name__ == "__main__":
                     datafile=name,
                 )
 
-                for n, n_poly in enumerate([[], [-2, -1, 0], [0, 2], [-2, 0, 2]]):
+                for n, (broadband_type, n_poly) in enumerate(
+                    zip(["poly", "poly", "spline", "spline", "spline"], [[], [-2, -1, 0], [], [0, 2], [-2, 0, 2]])
+                ):
 
                     model = CorrBeutler2017(
                         recon=dataset_xi.recon,
