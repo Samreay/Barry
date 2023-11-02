@@ -17,6 +17,39 @@ import matplotlib.pyplot as plt
 import pickle
 from chainconsumer import ChainConsumer
 
+
+def plot_errors(stats, data_sig, figname):
+
+    covs = np.cov(stats, rowvar=False)
+
+    labels = [r"$\sigma_{\alpha}$", r"$\sigma_{\alpha_{ap}}$", r"$\chi^{2}$"]
+    colors = ["r", "b", "g"]
+    fig, axes = plt.subplots(figsize=(7, 2), nrows=1, ncols=3, sharey=True, squeeze=False)
+    plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.3)
+    for i, (ax, vals, avgs, stds, l, c) in enumerate(
+        zip(
+            axes.T,
+            np.array(stats[1:]).T[[4, 5, 10]],
+            np.array(stats[0]).T[[4, 5, 10]],
+            [np.sqrt(covs[0, 0]), np.sqrt(covs[1, 1]), 0.0],
+            labels,
+            colors,
+        )
+    ):
+
+        ax[0].hist(vals, 10, color=c, histtype="stepfilled", alpha=0.2, density=False, zorder=0)
+        ax[0].hist(vals, 10, color=c, histtype="step", alpha=1.0, lw=1.3, density=False, zorder=1)
+        ax[0].axvline(data_sig[i], color="k", ls="-", zorder=2)
+        if l != r"$\chi^{2}$":
+            ax[0].axvline(avgs, color="k", ls="--", zorder=2)
+            ax[0].axvline(stds, color="k", ls=":", zorder=2)
+        ax[0].set_xlabel(l)
+
+    axes[0, 0].set_ylabel(r"$N_{\mathrm{mocks}}$")
+
+    fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
+
+
 # Config file to fit the abacus cutsky mock means for sigmas
 if __name__ == "__main__":
 
@@ -269,24 +302,24 @@ if __name__ == "__main__":
             # Plot histograms of the chi squared values and uncertainties for comparison to the data
             data_sigmas_prerecon = {
                 "LRG": [
-                    [0.01914048897114662, 0.07010153295955529, 3.14631537e01],
-                    [0.024504953045061173, 0.12150022384792725, 4.49891758e01],
-                    [0.011767540688530032, 0.04823989601113721, 4.07940393e01],
+                    [1.90868081e-02, 7.85071960e-02, 3.06970387e01],
+                    [2.15386202e-02, 1.16047515e-01, 4.59027804e01],
+                    [1.21046586e-02, 4.97023862e-02, 4.05212086e01],
                 ],
                 "ELG_LOP": [
-                    [0.09043183288774481, 0.2896776382884302, 53.8712616],
-                    [0.015996649062431367, 0.055653482135353816, 3.49656306e01],
+                    [0.05509894, 0.25317434, 48.07750421],
+                    [1.65694656e-02, 5.93671728e-02, 3.64516991e01],
                 ],
-                "QSO": [[0.029377613839533523, 0.1342904227952228, 31.78156724]],
+                "QSO": [[2.63495752e-02, 1.22070853e-01, 3.03089732e01]],
             }
             data_sigmas_postrecon = {
                 "LRG": [
-                    [9.7586959e-03, 3.1017183e-02, 3.8796406e01],
-                    [0.00962757040797696, 0.03070362805708815, 3.86308320e01],
-                    [0.007935953770661752, 0.029989033380867336, 2.97028557e01],
+                    [9.78076704e-03, 3.11895915e-02, 3.67848372e01],
+                    [1.15888033e-02, 4.85028930e-02, 3.55605756e01],
+                    [8.12390032e-03, 2.95721589e-02, 2.62397238e01],
                 ],
-                "ELG_LOP": [[0.10079159, 0.36624245, 43.09215521], [0.011033510858277806, 0.03830975662578129, 5.17281058e01]],
-                "QSO": [[0.05227388284071255, 0.05267882411109576, 51.08261214]],
+                "ELG_LOP": [[0.12618907, 0.39080693, 41.34913211], [1.29036016e-02, 4.48301148e-02, 5.86454949e01]],
+                "QSO": [[4.13794984e-02, 1.69083821e-01, 4.89459133e01]],
             }
             for t in tracers:
                 for i, zs in enumerate(tracers[t]):
