@@ -518,7 +518,6 @@ class CorrelationFunctionFit(Model):
                 num_mocks=self.data[0]["num_mocks"],
                 num_data=len(self.data[0]["xi"]),
             )
-            print(self.get_active_params(), bband)
             dof = len(self.data[0]["xi"]) - len(self.get_active_params()) - len(bband)
             print(f"Chi squared/dof is {new_chi_squared}/{dof} at these values")
 

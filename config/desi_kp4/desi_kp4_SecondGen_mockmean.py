@@ -110,6 +110,8 @@ if __name__ == "__main__":
         import logging
 
         logging.info("Creating plots")
+        logger = logging.getLogger()
+        logger.setLevel(logging.WARNING)
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
         plotnames = [f"{t.lower()}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
@@ -123,7 +125,7 @@ if __name__ == "__main__":
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
             poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
             stats_bin = recon_bin * len(datanames) + data_bin
-            print(extra["name"], data_bin, recon_bin, poly_bin, stats_bin)
+            # print(extra["name"], data_bin, recon_bin, poly_bin, stats_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -140,8 +142,6 @@ if __name__ == "__main__":
             df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
             df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
 
-            print(np.corrcoef(alpha_par, alpha_perp))
-
             # Get the MAP point and set the model up at this point
             model.set_data(data)
             r_s = model.camb.get_data()["r_s"]
@@ -154,9 +154,11 @@ if __name__ == "__main__":
             # Get some useful properties of the fit, and plot the MAP model against the data
             plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
             figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
-            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
-                params_dict, display=False, figname=figname, title=plotname, c=colors[data_bin + 1]
-            )
+            if poly_bin in [0, 1, 3, 4]:
+                print(extra["name"], poly_bin, recon_bin, np.corrcoef(alpha_par, alpha_perp)[0, 1])
+                new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
+                    params_dict, display=False, figname=figname, title=plotname, c=colors[data_bin + 1]
+                )
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)

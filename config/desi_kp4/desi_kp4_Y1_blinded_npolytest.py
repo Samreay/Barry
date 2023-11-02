@@ -64,7 +64,9 @@ if __name__ == "__main__":
     for t in tracers:
         for i, zs in enumerate(tracers[t]):
             for r, recon in enumerate([None, "sym"]):
-                for n, n_poly in enumerate([[], [-2, -1, 0], [0, 2], [-2, 0, 2]]):
+                for n, (broadband_type, n_poly) in enumerate(
+                    zip(["poly", "poly", "spline", "spline", "spline"], [[], [-2, -1, 0], [], [0, 2], [-2, 0, 2]])
+                ):
 
                     model = CorrBeutler2017(
                         recon=recon,
@@ -73,6 +75,7 @@ if __name__ == "__main__":
                         fix_params=["om"],
                         poly_poles=[0, 2],
                         correction=Correction.NONE,
+                        broadband_type=broadband_type,
                         n_poly=n_poly,
                     )
                     model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
