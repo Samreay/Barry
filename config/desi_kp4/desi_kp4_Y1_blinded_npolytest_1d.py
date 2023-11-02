@@ -14,14 +14,13 @@ import pandas as pd
 from barry.models.model import Correction
 from barry.utils import weighted_avg_and_cov
 import matplotlib.pyplot as plt
-import pickle
 from chainconsumer import ChainConsumer
 
 # Config file to fit the abacus cutsky mock means for sigmas
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__, "/v2/")
+    pfn, dir_name, file = setup(__file__, "/reduced_cov_v2/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
@@ -66,6 +65,7 @@ if __name__ == "__main__":
             for r, recon in enumerate([None, "sym"]):
                 name = f"DESI_Y1_BLIND_v{version}_sm{reconsmooth[t]}_{t.lower()}_{cap}_{zs[0]}_{zs[1]}_{rp}_xi.pkl"
                 dataset = CorrelationFunction_DESI_KP4(
+                    isotropic=True,
                     recon=recon,
                     fit_poles=[0, 2],
                     min_dist=50.0,
@@ -89,8 +89,14 @@ if __name__ == "__main__":
                         broadband_type=broadband_type,
                         n_poly=n_poly,
                     )
-                    model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-                    model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
+                    model.set_default(
+                        "sigma_nl",
+                        np.sqrt((sigma_nl_par[t][i][r] ** 2 + 2.0 * sigma_nl_perp[t][i][r] ** 2) / 3.0),
+                        min=0.0,
+                        max=20.0,
+                        sigma=2.0,
+                        prior="gaussian",
+                    )
                     model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
                     # Load in a pre-existing BAO template
@@ -126,25 +132,15 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the tracer bin, sigma bin and n_poly bin
-            data_bin = datanames.index(extra["name"].split(" ")[5].lower())
+            data_bin = datanames.index(extra["name"].split(" ")[3].lower())
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
             poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
             stats_bin = recon_bin * len(datanames) + data_bin
+            print(extra["name"], data_bin, recon_bin, poly_bin, stats_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
-
-            # Compute alpha_par and alpha_perp for each point in the chain
-            alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
-            # df["$\\alpha_\\parallel$"] = alpha_par
-            # df["$\\alpha_\\perp$"] = alpha_perp
-            # df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
-
-            df["$\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
-            df["$\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
-            df["$\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
             df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
-            df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
@@ -158,8 +154,6 @@ if __name__ == "__main__":
             # Get some useful properties of the fit, and plot the MAP model against the data
             plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
             figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
-            if poly_bin in [0, 1, 3, 4]:
-                print(poly_bin, np.corrcoef(alpha_par, alpha_perp)[0, 1])
             new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
                 params_dict, display=False, figname=figname, title=plotname, c=colors[data_bin + 1]
             )
@@ -176,9 +170,8 @@ if __name__ == "__main__":
                 df[
                     [
                         "$\\alpha$",
-                        "$\\alpha_{ap}$",
-                        "$\\alpha_\\parallel$",
-                        "$\\alpha_\\perp$",
+                        "$\\Sigma_{nl}$",
+                        "$\\Sigma_s$",
                     ]
                 ],
                 weight,
@@ -188,15 +181,7 @@ if __name__ == "__main__":
             stats[data_bin][recon_bin].append(
                 [
                     mean[0],
-                    mean[1],
-                    mean[2],
-                    mean[3],
                     np.sqrt(cov[0, 0]),
-                    np.sqrt(cov[1, 1]),
-                    np.sqrt(cov[2, 2]),
-                    np.sqrt(cov[3, 3]),
-                    cov[0, 1] / np.sqrt(cov[0, 0] * cov[1, 1]),
-                    cov[2, 3] / np.sqrt(cov[2, 2] * cov[3, 3]),
                     new_chi_squared,
                 ]
             )
@@ -210,46 +195,23 @@ if __name__ == "__main__":
 
                     truth = {
                         "$\\alpha$": 1.0,
-                        "$\\alpha_{ap}$": 1.0,
-                        "$\\alpha_\\perp$": 1.0,
-                        "$\\alpha_\\parallel$": 1.0,
-                        "$\\Sigma_{nl,||}$": sigma_nl_par[t][i][recon_bin],
-                        "$\\Sigma_{nl,\\perp}$": sigma_nl_perp[t][i][recon_bin],
+                        "$\\Sigma_{nl}$": np.sqrt((sigma_nl_par[t][i][recon_bin] ** 2 + 2.0 * sigma_nl_perp[t][i][recon_bin] ** 2) / 3.0),
                         "$\\Sigma_s$": sigma_s[t][i][recon_bin],
                     }
 
                     plotname = f"{dataname}_prerecon" if recon_bin == 0 else f"{dataname}_postrecon"
                     c[stats_bin].plotter.plot(
-                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour.png"],
-                        truth=truth,
-                        parameters=[
-                            "$\\alpha_\\parallel$",
-                            "$\\alpha_\\perp$",
-                        ],
-                    )
-                    c[stats_bin].plotter.plot(
                         filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour2.png"],
                         truth=truth,
                         parameters=[
                             "$\\alpha$",
-                            "$\\alpha_{ap}$",
+                            "$\\Sigma_{nl}$",
+                            "$\\Sigma_s$",
                         ],
                     )
 
                     print(
                         data_bin,
                         recon_bin,
-                        c[stats_bin].analysis.get_latex_table(
-                            parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]
-                        ),
+                        c[stats_bin].analysis.get_latex_table(parameters=["$\\alpha$"]),
                     )
-
-                    """summary = c[stats_bin].analysis.get_summary(chains=f"npoly=1", parameters=["$\\alpha$", "$\\alpha_{ap}$"])
-                    print(t, i, recon_bin, np.array(stats[data_bin][recon_bin][1])[[4, 5, 10]])
-                    print(
-                        [
-                            [(summary[k][2] - summary[k][0]) / 2.0]
-                            for k in ["$\\alpha$", "$\\alpha_{ap}$"]
-                            if summary[k][0] is not None and summary[k][1] is not None and summary[k][2] is not None
-                        ]
-                    )"""
