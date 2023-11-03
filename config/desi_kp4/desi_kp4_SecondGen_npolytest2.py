@@ -246,6 +246,8 @@ if __name__ == "__main__":
                         cov[0, 1] / np.sqrt(cov[0, 0] * cov[1, 1]),
                         cov[2, 3] / np.sqrt(cov[2, 2] * cov[3, 3]),
                         new_chi_squared,
+                        params_dict["alpha"],
+                        params_dict["epsilon"],
                     ]
                 )
 
@@ -331,3 +333,5 @@ if __name__ == "__main__":
 
                         plotname = f"{dataname}_prerecon" if recon_bin == 0 else f"{dataname}_postrecon"
                         plot_errors(stats[data_bin][recon_bin], data_sig, "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_errors.png")
+
+                        np.save("/".join(pfn.split("/")[:-1]) + "/Summary_" + plotname + f".npy", stats[data_bin][recon_bin])

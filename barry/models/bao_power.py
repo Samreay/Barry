@@ -665,8 +665,12 @@ class PowerSpectrumFit(Model):
                         poly_generated_odd[1 * nk : 2 * nk] += poly[n, 1]
                         poly_generated_odd[3 * nk : 4 * nk] += poly[n, 3]
                         poly_generated_odd[5 * nk : 6 * nk] += poly[n, 5]
-                        self.winpoly[n] = self.adjust_model_window_effects(poly_generated, d, window=window)
-                        self.winpoly[n] += self.adjust_model_window_effects(poly_generated_odd, d, window=window, wide_angle=False)
+                        self.winpoly[n] = self.adjust_model_window_effects(
+                            poly_generated, d, window=window if self.broadband_type == "poly" else False
+                        )
+                        self.winpoly[n] += self.adjust_model_window_effects(
+                            poly_generated_odd, d, window=window if self.broadband_type == "poly" else False, wide_angle=False
+                        )
                 if self.broadband_type == "spline":
                     self.winpoly = np.where(self.winpoly > 1.0e-10, self.winpoly, 0.0)
 
@@ -790,8 +794,6 @@ class PowerSpectrumFit(Model):
             plt.subplots_adjust(left=0.1, top=ratio, bottom=0.05, right=0.85, hspace=0, wspace=0.3)
             for ax, err, mod, smooth, name, label, c in zip(axes, errs, mods, smooths, names, labels, cs):
 
-                # print(name, err, mod, smooth)
-
                 for i in range(self.data[0]["ndata"]):
 
                     mfc = c if i == 0 else "w"
@@ -816,6 +818,13 @@ class PowerSpectrumFit(Model):
                     ax[0].plot(ks, ks * mod[i], c=c, ls=ls, label="Model" if i == 0 else None)
                     ax[0].plot(ks, ks * smooth[i], c=c, ls="--", label="Smooth" if i == 0 else None)
                     ax[1].plot(ks, ks * (mod[i] - smooth[i]), c=c, ls=ls, label="Model" if i == 0 else None)
+                    # if self.broadband_type == "spline":
+                    #    for (poly, bb) in zip(self.maskpoly[self.marg_bias :], bband[self.marg_bias :]):
+                    #        print(poly[: len(ks)], np.shape(poly), bb)
+                    #        if name == f"pk{0}":
+                    #            ax[0].plot(ks, ks * bb * poly[: len(ks)])
+                    #        elif name == f"pk{2}":
+                    #            ax[0].plot(ks, ks * bb * poly[len(ks) :])
 
                     if name in [f"pk{n}" for n in self.data[0]["poles"] if n % 2 == 0]:
                         ax[0].set_ylabel("$k \\times $ " + label)
@@ -849,7 +858,7 @@ class PowerSpectrumFit(Model):
                 title = self.data[0]["name"] + " + " + self.get_name()
             fig.suptitle(title)
             if figname is not None:
-                fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
+                fig.savefig(figname, bbox_inches="tight", dpi=300)
             if display:
                 plt.show()
 
