@@ -167,6 +167,10 @@ if __name__ == "__main__":
                 df, weights=weight, name=f"npoly={poly_bin}", plot_contour=True, plot_point=False, show_as_1d_prior=False
             )
 
+            if data_bin == 0:
+                df["weight"] = weight
+                df.to_csv("/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}.dat", index=False, sep=" ")
+
         for t in tracers:
             for i, zs in enumerate(tracers[t]):
                 for recon_bin in range(2):
