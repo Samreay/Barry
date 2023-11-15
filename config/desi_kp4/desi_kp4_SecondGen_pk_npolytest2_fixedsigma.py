@@ -39,7 +39,7 @@ def plot_errors(stats, data_sig, figname):
 
         ax[0].hist(vals, 10, color=c, histtype="stepfilled", alpha=0.2, density=False, zorder=0)
         ax[0].hist(vals, 10, color=c, histtype="step", alpha=1.0, lw=1.3, density=False, zorder=1)
-        ax[0].axvline(data_sig[i], color="k", ls="-", zorder=2)
+        # ax[0].axvline(data_sig[i], color="k", ls="-", zorder=2)
         if l != r"$\chi^{2}$":
             ax[0].axvline(avgs, color="k", ls="--", zorder=2)
             ax[0].axvline(stds, color="k", ls=":", zorder=2)
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
-    tracers = {"LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]], "ELG_LOP": [[0.8, 1.1], [1.1, 1.6]], "QSO": [[0.8, 2.1]]}
+    tracers = {"LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]]}
     nmocks = {"LRG": [0, 25], "ELG_LOP": [0, 25], "QSO": [0, 25]}
     reconsmooth = {"LRG": 10, "ELG_LOP": 10, "QSO": 20}
     sigma_nl_par = {
@@ -102,15 +102,15 @@ if __name__ == "__main__":
         for i, zs in enumerate(tracers[t]):
             for r, recon in enumerate([None, "sym"]):
 
-                model = CorrBeutler2017(
+                model = PowerBeutler2017(
                     recon=recon,
                     isotropic=False,
                     marg="full",
                     fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
                     poly_poles=[0, 2],
                     correction=Correction.NONE,
-                    broadband_type="poly",
-                    n_poly=[-2, -1, 0],
+                    broadband_type="spline",
+                    n_poly=30,
                 )
                 model.set_default("sigma_nl_par", sigma_nl_par[t][i][r])
                 model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r])
@@ -118,14 +118,14 @@ if __name__ == "__main__":
 
                 # Load in a pre-existing BAO template
                 pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-                model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
+                model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
-                name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_xi.pkl"
-                dataset = CorrelationFunction_DESI_KP4(
-                    recon=model.recon,
-                    fit_poles=model.poly_poles,
-                    min_dist=50.0,
-                    max_dist=150.0,
+                name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_pk.pkl"
+                dataset = PowerSpectrum_DESI_KP4(
+                    recon=recon,
+                    fit_poles=[0, 2],
+                    min_k=0.02,
+                    max_k=0.30,
                     realisation=None,
                     reduce_cov_factor=1,
                     datafile=name,
@@ -213,19 +213,20 @@ if __name__ == "__main__":
                 # Get some useful properties of the fit, and plot the MAP model against the data if the bestfit alpha or alpha_ap are outliers compared to the mean fit
                 diff = np.c_[params["$\\alpha_\\parallel$"], params["$\\alpha_\\perp$"]] - mean_mean[2:]
                 outlier = diff @ np.linalg.inv(cov_mean[2:, 2:]) @ diff.T
-                if outlier > sp.stats.chi2.ppf(0.9545, 2, loc=0, scale=1):
-                    figname = "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_contour.png"
-                    cc = ChainConsumer()
-                    cc.add_chain(df, weights=weight, **extra)
-                    cc.add_marker(df.iloc[max_post], **extra)
-                    cc.plotter.plot(filename=figname)
-                    figname = "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
-                else:
-                    figname = None
+                # if outlier > sp.stats.chi2.ppf(0.9545, 2, loc=0, scale=1):
+                dataname = extra["name"].split(" ")[3].lower()
+                plotname = f"{dataname}_prerecon" if recon_bin == 0 else f"{dataname}_postrecon"
+                figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_contour.png"
+                extra.pop("color", None)
+                cc = ChainConsumer()
+                cc.add_chain(df, weights=weight, **extra, color=colors[data_bin + 1])
+                cc.add_marker(df.iloc[max_post], **extra)
+                cc.plotter.plot(filename=figname)
+                figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
+                # else:
+                #    figname = None
 
-            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
-                params_dict, display=False, figname=figname, title=extra["name"], c=colors[data_bin + 1]
-            )
+            new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname, title=extra["name"])
 
             stats[data_bin][recon_bin].append(
                 [
