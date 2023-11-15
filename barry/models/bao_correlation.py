@@ -651,6 +651,22 @@ class CorrelationFunctionFit(Model):
             # Add the chi_squared and dof
             string = f"$\\chi^{2}/$dof$=${new_chi_squared:.1f}$/${dof:d}\n"
             axes[0, 0].text(0.02, 0.98, string, horizontalalignment="left", verticalalignment="top", transform=axes[0, 0].transAxes)
+            axes[0, 0].text(
+                0.98,
+                0.98,
+                f"$\\alpha$=${params['alpha']:.4f}$\n",
+                horizontalalignment="right",
+                verticalalignment="top",
+                transform=axes[0, 0].transAxes,
+            )
+            axes[0, 0].text(
+                0.98,
+                0.94,
+                f"$\\alpha_{{{{ap}}}}$=${(1.0 + params['epsilon']) ** 3:.4f}$\n",
+                horizontalalignment="right",
+                verticalalignment="top",
+                transform=axes[0, 0].transAxes,
+            )
 
             if title is None:
                 title = self.data[0]["name"] + " + " + self.get_name()

@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
         logging.info("Creating plots")
         logger = logging.getLogger()
-        logger.setLevel(logging.WARNING)
+        # logger.setLevel(logging.WARNING)
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
         plotnames = [f"{t.lower()}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
@@ -132,15 +132,15 @@ if __name__ == "__main__":
 
             # Compute alpha_par and alpha_perp for each point in the chain
             alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
-            # df["$\\alpha_\\parallel$"] = alpha_par
-            # df["$\\alpha_\\perp$"] = alpha_perp
-            # df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+            df["$\\alpha_\\parallel$"] = alpha_par
+            df["$\\alpha_\\perp$"] = alpha_perp
+            df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
 
-            df["$\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
-            df["$\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
-            df["$\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
-            df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
-            df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
+            # df["$\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
+            # df["$\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
+            # df["$\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
+            # df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
+            # df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
@@ -156,9 +156,7 @@ if __name__ == "__main__":
             figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
             if poly_bin in [0, 1, 3, 4]:
                 print(extra["name"], poly_bin, recon_bin, np.corrcoef(alpha_par, alpha_perp)[0, 1])
-                new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
-                    params_dict, display=False, figname=figname, title=plotname, c=colors[data_bin + 1]
-                )
+                new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname, title=plotname)
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)

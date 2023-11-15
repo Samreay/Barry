@@ -111,15 +111,15 @@ if __name__ == "__main__":
                         recon=recon,
                         isotropic=False,
                         marg="full",
-                        fix_params=["om"],
+                        fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
                         poly_poles=[0, 2],
                         correction=Correction.NONE,
                         broadband_type="spline",
                         n_poly=[0, 2],
                     )
-                    model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-                    model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-                    model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+                    model.set_default("sigma_nl_par", sigma_nl_par[t][i][r])
+                    model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r])
+                    model.set_default("sigma_s", sigma_s[t][i][r])
 
                     # Load in a pre-existing BAO template
                     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")

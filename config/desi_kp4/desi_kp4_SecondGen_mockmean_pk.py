@@ -138,8 +138,7 @@ if __name__ == "__main__":
             # df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
             # df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
 
-            if poly_bin == 3:
-                print(np.corrcoef(alpha_par, alpha_perp))
+            print(np.corrcoef(alpha_par, alpha_perp))
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
