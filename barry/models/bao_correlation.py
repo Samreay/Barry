@@ -333,7 +333,7 @@ class CorrelationFunctionFit(Model):
             # Add on the spline broadband terms (B2m1 and B20) for the quadrupole if requested.
             # TODO: Should also compute and code up relevant B4 terms in the event we fit the hexadecapole?
             if self.broadband_type == "spline":
-                x = self.delta_fac * dist
+                x = self.delta * dist
                 sinx, cosx, cos2x = np.sin(x), np.cos(x), np.cos(2 * x)
                 Si_x, Si_2x = sici(x)[0], sici(2 * x)[0]
                 self.poly[-2, 1] = (16.0 - 8.0 * x**2 - 16.0 * cosx + x**2 * cosx - x * sinx + x**3 * Si_x) / (
