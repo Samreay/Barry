@@ -155,6 +155,9 @@ class CorrelationFunctionFit(Model):
         self.pk2xi_4 = PowerToCorrelationSphericalBessel(qs=cambpk["ks"], ell=4)
         self.set_bias(data[0])
         self.parent.set_data(data, parent=True)
+        if self.broadband_type == "spline":
+            self.delta = self.delta_fac * np.pi / self.camb.get_data(om=data[0]["cosmology"]["om"], h0=data[0]["cosmology"]["h0"])["r_s"]
+            self.logger.info(f"Broadband Delta fixed to {self.delta}")
 
     def set_bias(self, data, sval=50.0, width=0.3):
         """Sets the bias default value by comparing the data monopole and linear model
