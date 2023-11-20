@@ -50,7 +50,7 @@ class DynestySampler(Sampler):
         """
         import dynesty
 
-        log_likelihood = model.get_posterior
+        log_likelihood = model.get_posterior_noprior
         num_dim = model.get_num_dim()
         prior_transform = model.unscale
 

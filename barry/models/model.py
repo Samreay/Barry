@@ -585,6 +585,14 @@ class Model(ABC):
             posterior += self.get_likelihood(ps, d)
         return posterior
 
+    def get_posterior_noprior(self, params):
+        """Returns the posterior given a list of param values."""
+        ps = self.get_param_dict(params)
+        posterior = 0.0
+        for d in self.data:
+            posterior += self.get_likelihood(ps, d)
+        return posterior
+
     def scale(self, params):
         """Scale parameter values to the unit hypercube. If you want other dists and nested sampling, overwrite this"""
         scaled = []
