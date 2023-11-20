@@ -181,7 +181,7 @@ class PowerSpectrumFit(Model):
             kaiserfac = datapk / modelpk
             f = self.get_default("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
             b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f**2)
-            if not self.marg:
+            if not self.marg_bias:
                 min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
                 self.set_default(f"b{{{0}}}_{{{i+1}}}", b**2, min_b**2, max_b**2)
                 self.logger.info(f"Setting default bias to b{{{0}}}_{{{i+1}}}={b:0.5f} with {width:0.5f} fractional width")

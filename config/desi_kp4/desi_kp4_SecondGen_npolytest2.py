@@ -1,3 +1,4 @@
+import os
 import sys
 
 sys.path.append("..")
@@ -181,6 +182,14 @@ if __name__ == "__main__":
                 df["$\\alpha_\\parallel$"] = alpha_par
                 df["$\\alpha_\\perp$"] = alpha_perp
                 df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+                newweight = np.where(
+                    np.logical_and(
+                        np.logical_and(df["$\\alpha_\\parallel$"] >= 0.8, df["$\\alpha_\\parallel$"] <= 1.2),
+                        np.logical_and(df["$\\alpha_\\perp$"] >= 0.8, df["$\\alpha_\\perp$"] <= 1.2),
+                    ),
+                    weight,
+                    0.0,
+                )
 
                 # Get the MAP point and set the model up at this point
                 model.set_data(data)
@@ -201,7 +210,7 @@ if __name__ == "__main__":
                             "$\\alpha_\\perp$",
                         ]
                     ],
-                    weight,
+                    newweight,
                     axis=0,
                 )
 
@@ -210,7 +219,7 @@ if __name__ == "__main__":
                 if realisation == "mean":
                     extra.pop("color", None)
                     c[stats_bin].add_chain(
-                        df, weights=weight, color="k", **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False
+                        df, weights=newweight, color="k", **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False
                     )
                     figname = None
                     mean_mean, cov_mean = mean, cov
@@ -223,14 +232,15 @@ if __name__ == "__main__":
                     dataname = extra["name"].split(" ")[3].lower()
                     plotname = f"{dataname}_prerecon" if recon_bin == 0 else f"{dataname}_postrecon"
                     figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_contour.png"
-                    extra.pop("color", None)
-                    cc = ChainConsumer()
-                    cc.add_chain(df, weights=weight, **extra, color=colors[data_bin + 1])
-                    cc.add_marker(df.iloc[max_post], **extra)
-                    cc.plotter.plot(filename=figname)
-                    figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
-                    # else:
-                    #    figname = None
+                    if not os.path.isfile(figname):
+                        extra.pop("color", None)
+                        cc = ChainConsumer()
+                        cc.add_chain(df, weights=newweight, **extra, color=colors[data_bin + 1])
+                        cc.add_marker(df.iloc[max_post], **extra)
+                        cc.plotter.plot(filename=figname)
+                        figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
+                    else:
+                        figname = None
 
                 new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
                     params_dict, display=False, figname=figname, title=extra["name"], c=colors[data_bin + 1]
