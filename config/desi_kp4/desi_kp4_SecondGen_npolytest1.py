@@ -54,7 +54,7 @@ def plot_errors(stats, data_sig, figname):
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__, "/v2/")
+    pfn, dir_name, file = setup(__file__, "/v3/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
