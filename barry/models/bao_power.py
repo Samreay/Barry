@@ -156,7 +156,7 @@ class PowerSpectrumFit(Model):
                 self.logger.info(f"Broadband Delta fixed to {self.delta}")
             self.compute_poly(data[0]["ks_input"])
 
-    def set_bias(self, data, kval=0.2, width=0.4):
+    def set_bias(self, data, kval=0.2, width=0.5):
         """Sets the bias default value by comparing the data monopole and linear pk
 
         Parameters
@@ -182,9 +182,12 @@ class PowerSpectrumFit(Model):
             f = self.get_default("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
             b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f**2)
             if not self.marg_bias:
-                min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
-                self.set_default(f"b{{{0}}}_{{{i+1}}}", b**2, min_b**2, max_b**2)
-                self.logger.info(f"Setting default bias to b{{{0}}}_{{{i+1}}}={b:0.5f} with {width:0.5f} fractional width")
+                if self.get_default(f"b{{{0}}}_{{{i+1}}}") is None:
+                    min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
+                    self.set_default(f"b{{{0}}}_{{{i+1}}}", b**2, min_b**2, max_b**2)
+                    self.logger.info(f"Setting default bias to b{{{0}}}_{{{i+1}}}={b:0.5f} with {width:0.5f} fractional width")
+                else:
+                    self.logger.info(f"Using default bias parameter of b0={self.get_default(f'b{{{0}}}_{{{i+1}}}'):0.5f}")
         if self.param_dict.get("beta") is not None:
             if self.get_default("beta") is None:
                 beta, beta_min, beta_max = f / b, (1.0 - width) * f / b, (1.0 + width) * f / b

@@ -49,7 +49,7 @@ class PowerBeutler2017(PowerSpectrumFit):
             **kwargs,
         )
 
-        self.set_marg(fix_params, poly_poles, self.n_poly, do_bias=True, marg_bias=1)
+        self.set_marg(fix_params, poly_poles, self.n_poly, do_bias=False, marg_bias=0)
 
     def declare_parameters(self):
         super().declare_parameters()

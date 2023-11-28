@@ -159,7 +159,7 @@ class CorrelationFunctionFit(Model):
             self.delta = self.delta_fac * np.pi / self.camb.get_data(om=data[0]["cosmology"]["om"], h0=data[0]["cosmology"]["h0"])["r_s"]
             self.logger.info(f"Broadband Delta fixed to {self.delta}")
 
-    def set_bias(self, data, sval=50.0, width=0.3):
+    def set_bias(self, data, sval=50.0, width=0.5):
         """Sets the bias default value by comparing the data monopole and linear model
 
         Parameters
@@ -179,21 +179,23 @@ class CorrelationFunctionFit(Model):
         f = self.param_dict.get("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
         b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f**2) if kaiserfac - 4.0 / 45.0 * f**2 > 0 else 1.0
         if not self.marg_bias:
-            min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
-            self.set_default(f"b{{{0}}}_{{{1}}}", b**2, min=min_b**2, max=max_b**2)
-            self.logger.info(f"Setting default bias to b0={b:0.5f} with {width:0.5f} fractional width")
-            if self.includeb2:
-                for pole in self.poly_poles:
-                    self.set_default(f"b{{{pole}}}_{{{1}}}", b**2, min=min_b**2, max=max_b**2)
-                    self.logger.info(f"Setting default bias to b{{{pole}}}={b:0.5f} with {width:0.5f} fractional width")
+            if self.get_default(f"b{{{0}}}_{{{1}}}") is None:
+                min_b, max_b = (1.0 - width) * b, (1.0 + width) * b
+                self.set_default(f"b{{{0}}}_{{{1}}}", b**2, min=min_b**2, max=max_b**2)
+                self.logger.info(f"Setting default bias to b0={b:0.5f} with {width:0.5f} fractional width")
+                if self.includeb2:
+                    for pole in self.poly_poles:
+                        self.set_default(f"b{{{pole}}}_{{{1}}}", b**2, min=min_b**2, max=max_b**2)
+                        self.logger.info(f"Setting default bias to b{{{pole}}}={b:0.5f} with {width:0.5f} fractional width")
+            else:
+                self.logger.info(f"Using default bias parameter of b0={self.get_default(f'b{{{0}}}_{{{1}}}'):0.5f}")
         if self.param_dict.get("beta") is not None:
             if self.get_default("beta") is None:
                 beta, beta_min, beta_max = f / b, (1.0 - width) * f / b, (1.0 + width) * f / b
                 self.set_default("beta", beta, beta_min, beta_max)
                 self.logger.info(f"Setting default RSD parameter to beta={beta:0.5f} with {width:0.5f} fractional width")
             else:
-                beta = self.get_default("beta")
-                self.logger.info(f"Using default RSD parameter of beta={beta:0.5f}")
+                self.logger.info(f"Using default RSD parameter of beta={self.get_default('beta'):0.5f}")
 
     def declare_parameters(self):
         """Defines model parameters, their bounds and default value."""
