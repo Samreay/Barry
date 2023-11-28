@@ -112,6 +112,8 @@ if __name__ == "__main__":
                     broadband_type="spline",
                     n_poly=30,
                 )
+                model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=4.0)
+                model.set_default("beta", 0.4, min=0.1, max=0.7)
                 model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
                 model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
                 model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
@@ -176,13 +178,21 @@ if __name__ == "__main__":
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
             df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+            newweight = np.where(
+                np.logical_and(
+                    np.logical_and(df["$\\alpha_\\parallel$"] >= 0.8, df["$\\alpha_\\parallel$"] <= 1.2),
+                    np.logical_and(df["$\\alpha_\\perp$"] >= 0.8, df["$\\alpha_\\perp$"] <= 1.2),
+                ),
+                weight,
+                0.0,
+            )
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
             r_s = model.camb.get_data()["r_s"]
-            max_post = posterior.argmax()
-            params = df.loc[max_post]
-            params_dict = model.get_param_dict(chain[max_post])
+            max_post = posterior[newweight > 0].argmax()
+            params = df[newweight > 0].iloc[max_post]
+            params_dict = model.get_param_dict(chain[newweight > 0][max_post])
             print(params_dict)
             for name, val in params_dict.items():
                 model.set_default(name, val)
@@ -197,7 +207,7 @@ if __name__ == "__main__":
                         "$\\alpha_\\perp$",
                     ]
                 ],
-                weight,
+                newweight,
                 axis=0,
             )
 
@@ -205,7 +215,9 @@ if __name__ == "__main__":
             extra.pop("realisation", None)
             if realisation == "mean":
                 extra.pop("color", None)
-                c[stats_bin].add_chain(df, weights=weight, color="k", **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+                c[stats_bin].add_chain(
+                    df, weights=newweight, color="k", **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False
+                )
                 figname = None
                 mean_mean, cov_mean = mean, cov
             else:
@@ -219,7 +231,7 @@ if __name__ == "__main__":
                 figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_contour.png"
                 extra.pop("color", None)
                 cc = ChainConsumer()
-                cc.add_chain(df, weights=weight, **extra, color=colors[data_bin + 1])
+                cc.add_chain(df, weights=newweight, **extra, color=colors[data_bin + 1])
                 cc.add_marker(df.iloc[max_post], **extra)
                 cc.plotter.plot(filename=figname)
                 figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"

@@ -194,9 +194,9 @@ if __name__ == "__main__":
                 # Get the MAP point and set the model up at this point
                 model.set_data(data)
                 r_s = model.camb.get_data()["r_s"]
-                max_post = posterior.argmax()
-                params = df.loc[max_post]
-                params_dict = model.get_param_dict(chain[max_post])
+                max_post = posterior[newweight > 0].argmax()
+                params = df[newweight > 0].iloc[max_post]
+                params_dict = model.get_param_dict(chain[newweight > 0][max_post])
                 for name, val in params_dict.items():
                     model.set_default(name, val)
 
