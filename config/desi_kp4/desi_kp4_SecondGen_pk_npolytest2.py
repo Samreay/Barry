@@ -1,4 +1,5 @@
 import sys
+import os
 
 sys.path.append("..")
 sys.path.append("../..")
@@ -229,14 +230,15 @@ if __name__ == "__main__":
                 dataname = extra["name"].split(" ")[3].lower()
                 plotname = f"{dataname}_prerecon" if recon_bin == 0 else f"{dataname}_postrecon"
                 figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_contour.png"
-                extra.pop("color", None)
-                cc = ChainConsumer()
-                cc.add_chain(df, weights=newweight, **extra, color=colors[data_bin + 1])
-                cc.add_marker(df.iloc[max_post], **extra)
-                cc.plotter.plot(filename=figname)
-                figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
-                # else:
-                #    figname = None
+                if not os.path.isfile(figname):
+                    extra.pop("color", None)
+                    cc = ChainConsumer()
+                    cc.add_chain(df, weights=newweight, **extra, color=colors[data_bin + 1])
+                    cc.add_marker(df.iloc[max_post], **extra)
+                    cc.plotter.plot(filename=figname)
+                    figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
+                else:
+                    figname = None
 
             new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname, title=extra["name"])
 

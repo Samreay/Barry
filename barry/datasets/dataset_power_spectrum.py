@@ -325,6 +325,7 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
         recon=None,
         reduce_cov_factor=1,
         fake_diag=False,
+        isotropic=False,
         realisation=None,
         num_mocks=1000,
         fit_poles=(0,),
@@ -351,7 +352,7 @@ class PowerSpectrum_DESI_KP4(PowerSpectrum):
             postprocess=None,
             fake_diag=fake_diag,
             realisation=realisation,
-            isotropic=False,
+            isotropic=isotropic,
             fit_poles=fit_poles,
             data_location=data_location,
         )

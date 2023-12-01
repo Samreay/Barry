@@ -20,7 +20,7 @@ from chainconsumer import ChainConsumer
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__, "/reduced_cov_v2/")
+    pfn, dir_name, file = setup(__file__, "/reduced_cov_v3/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
     tracers = {"LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]], "ELG_LOP": [[0.8, 1.1], [1.1, 1.6]], "QSO": [[0.8, 2.1]]}
-    reconsmooth = {"LRG": 10, "ELG_LOP": 10, "QSO": 20}
+    reconsmooth = {"LRG": 10, "ELG_LOP": 10, "QSO": 30}
     sigma_nl_par = {
         "LRG": [
             [9.0, 6.0],
@@ -70,9 +70,7 @@ if __name__ == "__main__":
                     datafile=name,
                 )
 
-                for n, (broadband_type, n_poly) in enumerate(
-                    zip(["poly", "poly", "spline", "spline", "spline"], [[], [-2, -1, 0], [], [0, 2], [-2, 0, 2]])
-                ):
+                for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [[-2, -1, 0], [0, 2]])):
 
                     model = CorrBeutler2017(
                         recon=dataset_xi.recon,
@@ -84,6 +82,8 @@ if __name__ == "__main__":
                         broadband_type=broadband_type,
                         n_poly=n_poly,
                     )
+                    model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=4.0)
+                    model.set_default("beta", 0.4, min=0.1, max=0.7)
                     model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
                     model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
                     model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
@@ -135,12 +135,20 @@ if __name__ == "__main__":
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
             df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+            newweight = np.where(
+                np.logical_and(
+                    np.logical_and(df["$\\alpha_\\parallel$"] >= 0.8, df["$\\alpha_\\parallel$"] <= 1.2),
+                    np.logical_and(df["$\\alpha_\\perp$"] >= 0.8, df["$\\alpha_\\perp$"] <= 1.2),
+                ),
+                weight,
+                0.0,
+            )
 
-            # df["$\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
-            # df["$\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
-            # df["$\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
-            # df["$\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
-            # df["$\\epsilon$"] = 100.0 * df["$\\epsilon$"]
+            df["$d\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
+            df["$d\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
+            df["$d\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
+            df["$d\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
+            df["$d\\epsilon$"] = 100.0 * df["$\\epsilon$"]
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
@@ -154,19 +162,18 @@ if __name__ == "__main__":
             # Get some useful properties of the fit, and plot the MAP model against the data
             plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
             figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
-            if poly_bin in [0, 1, 3, 4]:
-                print(extra["name"], poly_bin, recon_bin, np.corrcoef(alpha_par, alpha_perp)[0, 1])
-                new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname, title=plotname)
+            print(extra["name"], poly_bin, recon_bin, np.corrcoef(alpha_par, alpha_perp)[0, 1])
+            new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname, title=plotname)
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
             extra.pop("name", None)
             c[stats_bin].add_chain(
-                df, weights=weight, name=f"npoly={poly_bin}", plot_contour=True, plot_point=False, show_as_1d_prior=False
+                df, weights=newweight, name=f"npoly={poly_bin}", plot_contour=True, plot_point=False, show_as_1d_prior=False
             )
 
             if data_bin == 0:
-                df["weight"] = weight
+                df["weight"] = newweight
                 df.to_csv("/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}.dat", index=False, sep=" ")
 
         for t in tracers:
@@ -208,6 +215,6 @@ if __name__ == "__main__":
                         data_bin,
                         recon_bin,
                         c[stats_bin].analysis.get_latex_table(
-                            parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]
+                            parameters=["$d\\alpha$", "$d\\alpha_{ap}$", "$d\\epsilon$", "$d\\alpha_\\parallel$", "$d\\alpha_\\perp$"]
                         ),
                     )

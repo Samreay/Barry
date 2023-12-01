@@ -59,26 +59,26 @@ if __name__ == "__main__":
     for t in tracers:
         for i, zs in enumerate(tracers[t]):
             for r, recon in enumerate([None, "sym"]):
-                name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_xi.pkl"
-                dataset_xi = CorrelationFunction_DESI_KP4(
+                name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_pk.pkl"
+                dataset_pk = PowerSpectrum_DESI_KP4(
                     isotropic=True,
                     recon=recon,
-                    fit_poles=[0],
-                    min_dist=50.0,
-                    max_dist=150.0,
+                    fit_poles=[0, 2],
+                    min_k=0.02,
+                    max_k=0.30,
                     realisation=None,
                     reduce_cov_factor=25,
                     datafile=name,
                 )
 
-                for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [[-2, -1, 0], [0, 2]])):
+                for n, (broadband_type, n_poly) in enumerate(zip(["spline", "poly"], [30, [-1, 0, 1, 2, 3]])):
 
-                    model = CorrBeutler2017(
-                        recon=dataset_xi.recon,
-                        isotropic=dataset_xi.isotropic,
+                    model = PowerBeutler2017(
+                        recon=dataset_pk.recon,
+                        isotropic=dataset_pk.isotropic,
                         marg="full",
                         fix_params=["om"],
-                        poly_poles=dataset_xi.fit_poles,
+                        poly_poles=dataset_pk.fit_poles,
                         correction=Correction.NONE,
                         broadband_type=broadband_type,
                         n_poly=n_poly,
@@ -96,10 +96,10 @@ if __name__ == "__main__":
 
                     # Load in a pre-existing BAO template
                     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-                    model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
+                    model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
-                    name = dataset_xi.name + f" mock mean n_poly=" + str(n)
-                    fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i + 1])
+                    name = dataset_pk.name + f" mock mean n_poly=" + str(n)
+                    fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[i + 1])
                     allnames.append(name)
 
     # Submit all the job. We have quite a few (42), so we'll

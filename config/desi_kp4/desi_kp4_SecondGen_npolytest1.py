@@ -158,6 +158,8 @@ if __name__ == "__main__":
         import logging
 
         logging.info("Creating plots")
+        logger = logging.getLogger()
+        logger.setLevel(logging.WARNING)
 
         # Loop over all the fitters
         c = [ChainConsumer() for i in range(2 * len(datanames))]
@@ -188,13 +190,18 @@ if __name__ == "__main__":
                 0.0,
             )
 
+            df["$d\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
+            df["$d\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
+            df["$d\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
+            df["$d\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
+            df["$d\\epsilon$"] = 100.0 * df["$\\epsilon$"]
+
             # Get the MAP point and set the model up at this point
             model.set_data(data)
             r_s = model.camb.get_data()["r_s"]
             max_post = posterior[newweight > 0].argmax()
             params = df[newweight > 0].iloc[max_post]
             params_dict = model.get_param_dict(chain[newweight > 0][max_post])
-            print(params_dict)
             for name, val in params_dict.items():
                 model.set_default(name, val)
 
@@ -218,6 +225,13 @@ if __name__ == "__main__":
                 extra.pop("color", None)
                 c[stats_bin].add_chain(
                     df, weights=newweight, color="k", **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False
+                )
+                print(
+                    data_bin,
+                    stats_bin,
+                    c[stats_bin].analysis.get_latex_table(
+                        parameters=["$d\\alpha$", "$d\\alpha_{ap}$", "$d\\epsilon$", "$d\\alpha_\\parallel$", "$d\\alpha_\\perp$"]
+                    ),
                 )
                 figname = None
                 mean_mean, cov_mean = mean, cov
@@ -243,6 +257,8 @@ if __name__ == "__main__":
             new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
                 params_dict, display=False, figname=figname, title=extra["name"], c=colors[data_bin + 1]
             )
+            if realisation == "mean":
+                print(25.0 * new_chi_squared, dof)
 
             stats[data_bin][recon_bin].append(
                 [

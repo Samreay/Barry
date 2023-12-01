@@ -484,7 +484,7 @@ class CorrelationFunctionFit(Model):
                 num_data=num_data,
             )
 
-    def get_model_summary(self, params, smooth_params=None):
+    def get_model_summary(self, params, smooth_params=None, verbose=False):
 
         ss = self.data[0]["dist"]
         mod, polymod = self.get_model(params, self.data[0])
@@ -515,7 +515,8 @@ class CorrelationFunctionFit(Model):
             mod = mod + bband @ polymod
             mod_fit = mod_fit + bband @ polymod_fit
 
-            print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
+            if verbose:
+                print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
             new_chi_squared = -2.0 * self.get_chi2_likelihood(
                 self.data[0]["xi"],
                 mod_fit,
@@ -524,7 +525,8 @@ class CorrelationFunctionFit(Model):
                 num_data=len(self.data[0]["xi"]),
             )
             dof = len(self.data[0]["xi"]) - len(self.get_active_params()) - len(bband)
-            print(f"Chi squared/dof is {new_chi_squared}/{dof} at these values")
+            if verbose:
+                print(f"Chi squared/dof is {new_chi_squared}/{dof} at these values")
 
             bband_smooth = self.get_ML_nuisance(
                 self.data[0]["xi"],
