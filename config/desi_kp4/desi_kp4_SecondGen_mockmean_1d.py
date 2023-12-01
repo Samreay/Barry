@@ -83,7 +83,7 @@ if __name__ == "__main__":
                         broadband_type=broadband_type,
                         n_poly=n_poly,
                     )
-                    model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=4.0)
+                    model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=8.0)
                     model.set_default(
                         "sigma_nl",
                         np.sqrt((sigma_nl_par[t][i][r] ** 2 + 2.0 * sigma_nl_perp[t][i][r] ** 2) / 3.0),
@@ -93,6 +93,8 @@ if __name__ == "__main__":
                         prior="gaussian",
                     )
                     model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+
+                    model.sanity_check(dataset_xi)
 
                     # Load in a pre-existing BAO template
                     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")

@@ -653,6 +653,7 @@ class CorrelationFunctionFit(Model):
                 axes[0, 0].plot(ss, ss**2 * mod, c=c, label="Model")
                 axes[0, 0].plot(ss, ss**2 * smooth, c=c, ls="--", label="Smooth")
 
+            axes[0, 0].set_xlabel("$s\,(h^{-1}\,\mathrm{Mpc})$")
             axes[0, 0].set_ylabel("$s^{2} \\times \\xi(s)$ ")
 
             # Add the chi_squared and dof
@@ -666,14 +667,15 @@ class CorrelationFunctionFit(Model):
                 verticalalignment="top",
                 transform=axes[0, 0].transAxes,
             )
-            axes[0, 0].text(
-                0.98,
-                0.94,
-                f"$\\alpha_{{{{ap}}}}$=${(1.0 + params['epsilon']) ** 3:.4f}$\n",
-                horizontalalignment="right",
-                verticalalignment="top",
-                transform=axes[0, 0].transAxes,
-            )
+            if not self.isotropic:
+                axes[0, 0].text(
+                    0.98,
+                    0.94,
+                    f"$\\alpha_{{{{ap}}}}$=${(1.0 + params['epsilon']) ** 3:.4f}$\n",
+                    horizontalalignment="right",
+                    verticalalignment="top",
+                    transform=axes[0, 0].transAxes,
+                )
 
             if title is None:
                 title = self.data[0]["name"] + " + " + self.get_name()

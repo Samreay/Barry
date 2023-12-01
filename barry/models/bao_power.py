@@ -656,7 +656,9 @@ class PowerSpectrumFit(Model):
                         poly_generated = np.concatenate([poly[n, l, :] for l in d["poles"][d["poles"] % 2 == 0]])
 
                     if self.isotropic:
-                        poly_model_long = self.adjust_model_window_effects(poly_generated, d, window=window)
+                        poly_model_long = self.adjust_model_window_effects(
+                            poly_generated, d, window=window if self.broadband_type == "poly" else False
+                        )
                         if self.postprocess is not None:
                             poly_model_long = self.postprocess(ks=d["ks_output"], pk=poly_model_long, mask=mask)
                         self.winpoly[n] = poly_model_long
@@ -684,7 +686,7 @@ class PowerSpectrumFit(Model):
 
         return pk_model, poly_model, mask
 
-    def get_model_summary(self, params, window=True, smooth_params=None):
+    def get_model_summary(self, params, window=True, smooth_params=None, verbose=False):
         """Get the model summary for the given parameters.
 
         Parameters
@@ -728,7 +730,8 @@ class PowerSpectrumFit(Model):
             mod = mod + bband_all @ polymod
             mod_fit = mod_fit + bband @ polymod_fit
 
-            print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
+            if verbose:
+                print(f"Maximum likelihood nuisance parameters at maximum a posteriori point are {bband}")
             new_chi_squared = -2.0 * self.get_chi2_likelihood(
                 self.data[0]["pk"],
                 mod_fit,
@@ -737,7 +740,8 @@ class PowerSpectrumFit(Model):
                 num_data=len(self.data[0]["pk"]),
             )
             dof = len(self.data[0]["pk"]) - len(self.get_active_params()) - len(bband)
-            print(f"Chi squared/dof is {new_chi_squared}/{dof} at these values")
+            if verbose:
+                print(f"Chi squared/dof is {new_chi_squared}/{dof} at these values")
 
             bband_smooth = self.get_ML_nuisance(
                 self.data[0]["pk"],
@@ -858,6 +862,90 @@ class PowerSpectrumFit(Model):
             if title is None:
                 title = self.data[0]["name"] + " + " + self.get_name()
             fig.suptitle(title)
+            if figname is not None:
+                fig.savefig(figname, bbox_inches="tight", dpi=300)
+            if display:
+                plt.show()
+
+        return new_chi_squared, dof, bband, mods, smooths
+
+    def simple_plot(self, params, window=True, smooth_params=None, figname=None, title=None, display=True, c="r", idata=0):
+        import matplotlib.pyplot as plt
+
+        ks = self.data[0]["ks"]
+        err = np.sqrt(np.diag(self.data[0]["cov"]))
+
+        new_chi_squared, dof, bband, mods, smooths = self.get_model_summary(params, window=window, smooth_params=smooth_params)
+
+        # Split up the different multipoles if we have them
+        if len(err) > len(ks):
+            assert len(err) % len(ks) == 0, f"Cannot split your data - have {len(err)} points and {len(ks)} modes"
+        errs = err.reshape((-1, self.data[0]["ndata"], len(ks)))[::2]
+        if self.isotropic:
+            names = [f"pk0"]
+            spacing = [0.0]
+        else:
+            names = [f"pk{n}" for n in self.data[0]["fit_poles"]]
+            spacing = [1.0, 0.0, -1.0] if 4 in self.data[0]["fit_poles"] else [0.5, -0.5]
+        num_rows = len(names)
+        ms = ["o", "o", "s"]
+        mfcs = [c, "w", c]
+        height = 2 + 1.4 * num_rows
+
+        if display is True or figname is not None:
+            self.logger.info("Create plot")
+
+            fig, axes = plt.subplots(figsize=(2 * height, height), nrows=1, ncols=2, sharex=True, squeeze=False)
+            for err, mod, smooth, name, m, mfc, space in zip(errs, mods[::2], smooths[::2], names, ms, mfcs, spacing):
+
+                # Plot ye old data
+                axes[0, 0].errorbar(ks, ks * self.data[0][name][idata], yerr=ks * err[idata], fmt=m, mfc=mfc, label="Data", c=c)
+                axes[0, 1].errorbar(
+                    ks,
+                    ks * (self.data[0][name][idata] - smooth[idata]) + 100.0 * space,
+                    yerr=ks * err[idata],
+                    fmt=m,
+                    mfc=mfc,
+                    label="Data",
+                    c=c,
+                )
+
+                # Plot ye old model
+                axes[0, 0].plot(ks, ks * mod[idata], c=c, label="Model")
+                axes[0, 0].plot(ks, ks * smooth[idata], c=c, ls="--", label="Smooth")
+                axes[0, 1].plot(ks, ks * (mod[idata] - smooth[idata]) + 100.0 * space, c=c, label="Model")
+                axes[0, 1].axhline(y=100.0 * space, c=c, ls="--", label="Smooth")
+
+            axes[0, 0].set_xlabel("$k\,(h\,\mathrm{Mpc}^{-1})$")
+            axes[0, 1].set_xlabel("$k\,(h\,\mathrm{Mpc}^{-1})$")
+            axes[0, 0].set_ylabel("$k \\times P(k)$ ")
+            axes[0, 1].set_ylabel("$k \\times (P(k) - P_{\\rm smooth}(k))$")
+
+            # Add the chi_squared and dof
+            string = f"$\\chi^{2}/$dof$=${new_chi_squared:.1f}$/${dof:d}\n"
+            axes[0, 0].text(0.02, 0.98, string, horizontalalignment="left", verticalalignment="top", transform=axes[0, 0].transAxes)
+            axes[0, 0].text(
+                0.98,
+                0.98,
+                f"$\\alpha$=${params['alpha']:.4f}$\n",
+                horizontalalignment="right",
+                verticalalignment="top",
+                transform=axes[0, 0].transAxes,
+            )
+            if not self.isotropic:
+                axes[0, 0].text(
+                    0.98,
+                    0.94,
+                    f"$\\alpha_{{{{ap}}}}$=${(1.0 + params['epsilon']) ** 3:.4f}$\n",
+                    horizontalalignment="right",
+                    verticalalignment="top",
+                    transform=axes[0, 0].transAxes,
+                )
+
+            if title is None:
+                title = self.data[0]["name"] + " + " + self.get_name()
+            fig.suptitle(title)
+            fig.tight_layout()
             if figname is not None:
                 fig.savefig(figname, bbox_inches="tight", dpi=300)
             if display:

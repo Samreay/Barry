@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
         logging.info("Creating plots")
         logger = logging.getLogger()
-        # logger.setLevel(logging.WARNING)
+        logger.setLevel(logging.WARNING)
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
         plotnames = [f"{t.lower()}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
@@ -162,8 +162,10 @@ if __name__ == "__main__":
             # Get some useful properties of the fit, and plot the MAP model against the data
             plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
             figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
-            print(extra["name"], poly_bin, recon_bin, np.corrcoef(alpha_par, alpha_perp)[0, 1])
-            new_chi_squared, dof, bband, mods, smooths = model.plot(params_dict, display=False, figname=figname, title=plotname)
+            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
+                params_dict, display=False, figname=figname, title=plotname, c=colors[data_bin + 1]
+            )
+            print(extra["name"], poly_bin, recon_bin, np.corrcoef(alpha_par, alpha_perp)[0, 1], new_chi_squared, dof)
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
