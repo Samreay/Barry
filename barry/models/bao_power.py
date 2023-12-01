@@ -390,15 +390,15 @@ class PowerSpectrumFit(Model):
 
         if self.broadband_type == "poly":
 
-            polyvec = [(10.0 * k) ** ip for ip in self.n_poly]
             if self.isotropic:
-                self.poly = polyvec
+                self.poly = np.zeros((len(self.n_poly), 1, len(k)))
+                for i, ip in enumerate(self.n_poly):
+                    self.poly[i, :, :] = (10.0 * k) ** ip
             else:
                 self.poly = np.zeros((len(self.n_poly) * len(self.poly_poles), 6, len(k)))
+                polyvec = [(10.0 * k) ** ip for ip in self.n_poly]
                 for i, pole in enumerate(self.poly_poles):
                     self.poly[len(self.n_poly) * i : len(self.n_poly) * (i + 1), pole] = polyvec
-
-            return polyvec
 
         else:
             # W3 is the Piecewise Cubic Spline (fourth-order) interpolation function
@@ -409,8 +409,6 @@ class PowerSpectrumFit(Model):
             self.poly = np.zeros((len(self.n_poly) * len(self.poly_poles), 6, len(k)))
             for i, pole in enumerate(self.poly_poles):
                 self.poly[len(self.n_poly) * i : len(self.n_poly) * (i + 1), pole] = W3
-
-            return W3
 
     def adjust_model_window_effects(self, pk_generated, data, window=True, wide_angle=True):
         """Take the window effects into account.
