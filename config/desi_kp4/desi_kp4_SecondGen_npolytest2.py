@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     tracers = {"LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]], "ELG_LOP": [[0.8, 1.1], [1.1, 1.6]], "QSO": [[0.8, 2.1]]}
     nmocks = {"LRG": [0, 25], "ELG_LOP": [0, 25], "QSO": [0, 25]}
-    reconsmooth = {"LRG": 10, "ELG_LOP": 10, "QSO": 20}
+    reconsmooth = {"LRG": 10, "ELG_LOP": 10, "QSO": 30}
     sigma_nl_par = {
         "LRG": [
             [9.0, 6.0],
