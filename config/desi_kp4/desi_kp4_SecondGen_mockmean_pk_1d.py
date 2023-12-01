@@ -63,7 +63,7 @@ if __name__ == "__main__":
                 dataset_pk = PowerSpectrum_DESI_KP4(
                     isotropic=True,
                     recon=recon,
-                    fit_poles=[0, 2],
+                    fit_poles=[0],
                     min_k=0.02,
                     max_k=0.30,
                     realisation=None,
