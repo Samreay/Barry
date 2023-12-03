@@ -119,7 +119,7 @@ if __name__ == "__main__":
                         n_poly=[0, 2],
                     )
                     model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-                    model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+                    model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
                     model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
                     # Load in a pre-existing BAO template
@@ -245,6 +245,14 @@ if __name__ == "__main__":
                 new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
                     params_dict, display=False, figname=figname, title=extra["name"], c=colors[data_bin + 1]
                 )
+
+                if data_bin == 0 and (realisation == "2" or realisation == "21" or realisation == "22"):
+                    df["weight"] = newweight
+                    df.to_csv(
+                        "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + f"_newspline.dat",
+                        index=False,
+                        sep=" ",
+                    )
 
                 stats[data_bin][recon_bin].append(
                     [

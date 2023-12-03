@@ -190,12 +190,6 @@ if __name__ == "__main__":
                 0.0,
             )
 
-            df["$d\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
-            df["$d\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
-            df["$d\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
-            df["$d\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
-            df["$d\\epsilon$"] = 100.0 * df["$\\epsilon$"]
-
             # Get the MAP point and set the model up at this point
             model.set_data(data)
             r_s = model.camb.get_data()["r_s"]
@@ -226,13 +220,6 @@ if __name__ == "__main__":
                 c[stats_bin].add_chain(
                     df, weights=newweight, color="k", **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False
                 )
-                print(
-                    data_bin,
-                    stats_bin,
-                    c[stats_bin].analysis.get_latex_table(
-                        parameters=["$d\\alpha$", "$d\\alpha_{ap}$", "$d\\epsilon$", "$d\\alpha_\\parallel$", "$d\\alpha_\\perp$"]
-                    ),
-                )
                 figname = None
                 mean_mean, cov_mean = mean, cov
             else:
@@ -259,6 +246,10 @@ if __name__ == "__main__":
             )
             if realisation == "mean":
                 print(25.0 * new_chi_squared, dof)
+
+            if data_bin == 0 and (realisation == 2 or realisation == 21):
+                df["weight"] = newweight
+                df.to_csv("/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_BOSSpoly.dat", index=False, sep=" ")
 
             stats[data_bin][recon_bin].append(
                 [
