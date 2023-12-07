@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
                 model = PowerBeutler2017(
                     recon=recon,
-                    isotropic=False,
+                    isotropic=True,
                     marg="full",
                     fix_params=["om"],
                     poly_poles=[0],
@@ -141,8 +141,9 @@ if __name__ == "__main__":
 
                 name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_pk.pkl"
                 dataset = PowerSpectrum_DESI_KP4(
-                    recon=recon,
-                    fit_poles=[0, 2],
+                    recon=model.recon,
+                    isotropic=model.isotropic,
+                    fit_poles=model.poly_poles,
                     min_k=0.02,
                     max_k=0.30,
                     realisation=None,

@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
                 model = CorrBeutler2017(
                     recon=recon,
-                    isotropic=False,
+                    isotropic=True,
                     marg="full",
                     fix_params=["om"],
                     poly_poles=[0],
@@ -142,6 +142,7 @@ if __name__ == "__main__":
                 name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_xi.pkl"
                 dataset = CorrelationFunction_DESI_KP4(
                     recon=model.recon,
+                    isotropic=model.isotropic,
                     fit_poles=model.poly_poles,
                     min_dist=50.0,
                     max_dist=150.0,
