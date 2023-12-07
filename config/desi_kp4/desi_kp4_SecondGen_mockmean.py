@@ -32,9 +32,9 @@ if __name__ == "__main__":
         "LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]],
         "ELG_LOP": [[0.8, 1.1], [1.1, 1.6]],
         "QSO": [[0.8, 2.1]],
-        "BGS_BRIGHT": [[0.1, 0.4]],
+        "BGS_BRIGHT-21.5": [[0.1, 0.4]],
     }
-    reconsmooth = {"LRG": 10, "ELG_LOP": 10, "QSO": 30, "BGS_BRIGHT": 15}
+    reconsmooth = {"LRG": 10, "ELG_LOP": 10, "QSO": 30, "BGS_BRIGHT-21.5": 15}
     sigma_nl_par = {
         "LRG": [
             [9.0, 6.0],
@@ -43,7 +43,7 @@ if __name__ == "__main__":
         ],
         "ELG_LOP": [[8.5, 6.0], [8.5, 6.0]],
         "QSO": [[9.0, 6.0]],
-        "BGS_BRIGHT": [[10.0, 6.0]],
+        "BGS_BRIGHT-21.5": [[10.0, 6.0]],
     }
     sigma_nl_perp = {
         "LRG": [
@@ -53,13 +53,13 @@ if __name__ == "__main__":
         ],
         "ELG_LOP": [[4.5, 3.0], [4.5, 3.0]],
         "QSO": [[3.5, 3.0]],
-        "BGS_BRIGHT": [[5.0, 3.0]],
+        "BGS_BRIGHT-21.5": [[5.0, 3.0]],
     }
     sigma_s = {
         "LRG": [[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]],
         "ELG_LOP": [[2.0, 2.0], [2.0, 2.0]],
         "QSO": [[2.0, 2.0]],
-        "BGS_BRIGHT": [[2.0, 2.0]],
+        "BGS_BRIGHT-21.5": [[2.0, 2.0]],
     }
 
     allnames = []
