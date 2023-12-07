@@ -106,8 +106,6 @@ if __name__ == "__main__":
                     )
                     model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
-                    model.sanity_check(dataset_xi)
-
                     # Load in a pre-existing BAO template
                     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
                     model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
