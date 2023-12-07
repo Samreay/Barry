@@ -63,9 +63,8 @@ if __name__ == "__main__":
 
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
-    tracers = {"LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]], "ELG_LOP": [[0.8, 1.1], [1.1, 1.6]], "QSO": [[0.8, 2.1]]}
-    nmocks = {"LRG": [0, 25], "ELG_LOP": [0, 25], "QSO": [0, 25]}
-    reconsmooth = {"LRG": 10, "ELG_LOP": 10, "QSO": 30}
+    tracers = {"LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]], "ELG_LOP": [[0.8, 1.1], [1.1, 1.6]], "QSO": [[0.8, 2.1]], "BGS": [[0.1, 0.4]]}
+    reconsmooth = {"LRG": 10, "ELG_LOP": 10, "QSO": 30, "BGS": 15}
     sigma_nl_par = {
         "LRG": [
             [9.0, 6.0],
@@ -74,6 +73,7 @@ if __name__ == "__main__":
         ],
         "ELG_LOP": [[8.5, 6.0], [8.5, 6.0]],
         "QSO": [[9.0, 6.0]],
+        "BGS": [[10.0, 6.0]],
     }
     sigma_nl_perp = {
         "LRG": [
@@ -83,8 +83,9 @@ if __name__ == "__main__":
         ],
         "ELG_LOP": [[4.5, 3.0], [4.5, 3.0]],
         "QSO": [[3.5, 3.0]],
+        "BGS": [[5.0, 3.0]],
     }
-    sigma_s = {"LRG": [[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]], "ELG_LOP": [[2.0, 2.0], [2.0, 2.0]], "QSO": [[2.0, 2.0]]}
+    sigma_s = {"LRG": [[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]], "ELG_LOP": [[2.0, 2.0], [2.0, 2.0]], "QSO": [[2.0, 2.0]], "BGS": [[2.0, 2.0]]}
 
     cap = "gccomb"
     ffa = "ffa"  # Flavour of fibre assignment. Can be "ffa" for fast fiber assign, or "complete"
