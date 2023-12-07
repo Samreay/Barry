@@ -123,9 +123,7 @@ if __name__ == "__main__":
             # Get some useful properties of the fit, and plot the MAP model against the data if it's the mock mean
             plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
             figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
-            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
-                params_dict, display=False, figname=figname, c=colors[data_bin + 1]
-            )
+            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(params_dict, display=False, figname=figname, c=colors[data_bin])
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
