@@ -26,7 +26,7 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name, remove_output=False)
     sampler = NautilusSampler(temp_dir=dir_name)
 
-    colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
+    colors = ["#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B", "#CAF270"]
 
     tracers = {
         "LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]],
@@ -111,7 +111,7 @@ if __name__ == "__main__":
                     model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
                     name = dataset_xi.name + f" mock mean n_poly=" + str(n)
-                    fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i + 1])
+                    fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i])
                     allnames.append(name)
 
     # Submit all the job. We have quite a few (42), so we'll
@@ -160,7 +160,7 @@ if __name__ == "__main__":
             plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
             figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
             new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
-                params_dict, display=False, figname=figname, title=plotname, c=colors[data_bin + 1]
+                params_dict, display=False, figname=figname, title=plotname, c=colors[data_bin]
             )
 
             # Add the chain or MAP to the Chainconsumer plots
