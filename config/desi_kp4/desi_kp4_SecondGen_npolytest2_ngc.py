@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 sys.path.append("..")
 sys.path.append("../..")
@@ -41,7 +41,7 @@ def plot_errors(stats, data_sig, figname):
 
         ax[0].hist(vals, 10, color=c, histtype="stepfilled", alpha=0.2, density=False, zorder=0)
         ax[0].hist(vals, 10, color=c, histtype="step", alpha=1.0, lw=1.3, density=False, zorder=1)
-        # ax[0].axvline(data_sig[i], color="k", ls="-", zorder=2)
+        ax[0].axvline(data_sig[i], color="k", ls="-", zorder=2)
         if l != r"$\chi^{2}$":
             ax[0].axvline(avgs, color="k", ls="--", zorder=2)
             ax[0].axvline(stds, color="k", ls=":", zorder=2)
@@ -98,7 +98,7 @@ if __name__ == "__main__":
         "BGS_BRIGHT-21.5": [[2.0, 2.0]],
     }
 
-    cap = "gccomb"
+    cap = "ngc"
     ffa = "ffa"  # Flavour of fibre assignment. Can be "ffa" for fast fiber assign, or "complete"
     rpcut = False  # Whether or not to include the rpcut
     imaging = (
@@ -116,32 +116,30 @@ if __name__ == "__main__":
         for i, zs in enumerate(tracers[t]):
             for r, recon in enumerate([None, "sym"]):
 
-                model = PowerBeutler2017(
+                model = CorrBeutler2017(
                     recon=recon,
                     isotropic=False,
                     marg="full",
                     fix_params=["om"],
                     poly_poles=[0, 2],
                     correction=Correction.NONE,
-                    broadband_type="poly",
-                    n_poly=[-1, 0, 1, 2, 3],
+                    broadband_type="spline",
+                    n_poly=[0, 2],
                 )
-                model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=4.0)
-                model.set_default("beta", 0.4, min=0.1, max=0.7)
                 model.set_default("sigma_nl_par", sigma_nl_par[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
                 model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
                 model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
                 # Load in a pre-existing BAO template
                 pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-                model.kvals, model.pksmooth, model.pkratio = pktemplate.T
+                model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
-                name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_pk.pkl"
-                dataset = PowerSpectrum_DESI_KP4(
-                    recon=recon,
-                    fit_poles=[0, 2],
-                    min_k=0.02,
-                    max_k=0.30,
+                name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_xi.pkl"
+                dataset = CorrelationFunction_DESI_KP4(
+                    recon=model.recon,
+                    fit_poles=model.poly_poles,
+                    min_dist=50.0,
+                    max_dist=150.0,
                     realisation=None,
                     reduce_cov_factor=1,
                     datafile=name,

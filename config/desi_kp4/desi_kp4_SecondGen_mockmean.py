@@ -105,7 +105,7 @@ if __name__ == "__main__":
                     model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
                     name = dataset_xi.name + f" mock mean n_poly={n}"
-                    fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i + 1])
+                    fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i])
                     allnames.append(name)
 
     # Submit all the job. We have quite a few (42), so we'll
@@ -175,7 +175,7 @@ if __name__ == "__main__":
             plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
             figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
             new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
-                params_dict, display=False, figname=figname, title=plotname, c=colors[data_bin + 1]
+                params_dict, display=False, figname=figname, title=plotname, c=colors[data_bin]
             )
             print(extra["name"], poly_bin, recon_bin, np.corrcoef(alpha_par, alpha_perp)[0, 1], new_chi_squared, dof)
 

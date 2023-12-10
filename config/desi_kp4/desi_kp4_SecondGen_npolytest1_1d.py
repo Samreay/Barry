@@ -14,6 +14,7 @@ import scipy as sp
 import pandas as pd
 from barry.models.model import Correction
 from barry.utils import weighted_avg_and_cov
+import matplotlib.colors as mplc
 import matplotlib.pyplot as plt
 import pickle
 from chainconsumer import ChainConsumer
@@ -61,7 +62,7 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name, remove_output=False)
     sampler = NautilusSampler(temp_dir=dir_name)
 
-    colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
+    colors = [mplc.cnames[color] for color in ["orange", "orangered", "firebrick", "lightskyblue", "steelblue", "seagreen", "black"]]
 
     tracers = {
         "LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]],
@@ -109,6 +110,7 @@ if __name__ == "__main__":
     plotnames = [f"{t}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
     datanames = [f"{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
 
+    count = 0
     allnames = []
     for t in tracers:
         for i, zs in enumerate(tracers[t]):
@@ -152,14 +154,15 @@ if __name__ == "__main__":
                 )
 
                 name = dataset.name + f" mock mean"
-                fitter.add_model_and_dataset(model, dataset, name=name, color=colors[i + 1])
+                fitter.add_model_and_dataset(model, dataset, name=name, color=colors[count])
                 allnames.append(name)
 
                 for j in range(len(dataset.mock_data)):
                     dataset.set_realisation(j)
                     name = dataset.name + f" realisation {j}"
-                    fitter.add_model_and_dataset(model, dataset, name=name, color=colors[i + 1])
+                    fitter.add_model_and_dataset(model, dataset, name=name, color=colors[count])
                     allnames.append(name)
+            count += 1
 
     # Submit all the job. We have quite a few (42), so we'll
     # only assign 1 walker (processor) to each. Note that this will only run if the
@@ -177,6 +180,16 @@ if __name__ == "__main__":
         logging.info("Creating plots")
         logger = logging.getLogger()
         logger.setLevel(logging.WARNING)
+
+        for dataname in datanames:
+            for recon in ["prerecon", "postrecon"]:
+                plotname = f"{dataname}_{recon}"
+                dir_name = "/".join(pfn.split("/")[:-1]) + "/" + plotname
+                try:
+                    if not os.path.exists(dir_name):
+                        os.makedirs(dir_name, exist_ok=True)
+                except Exception:
+                    pass
 
         # Loop over all the fitters
         c = [ChainConsumer() for i in range(2 * len(datanames))]
@@ -207,11 +220,14 @@ if __name__ == "__main__":
                 df[
                     [
                         "$\\alpha$",
+                        "$\\Sigma_{nl}$",
+                        "$\\Sigma_s$",
                     ]
                 ],
                 weight,
                 axis=0,
             )
+            print(mean, cov)
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
@@ -222,17 +238,13 @@ if __name__ == "__main__":
                 mean_mean, cov_mean = mean, cov
             else:
                 c[stats_bin].add_marker(params, **extra)
-                # Get some useful properties of the fit, and plot the MAP model against the data if the bestfit alpha or alpha_ap are outliers compared to the mean fit
-                diff = np.c_[params["$\\alpha_\\parallel$"], params["$\\alpha_\\perp$"]] - mean_mean[2:]
-                outlier = diff @ np.linalg.inv(cov_mean[2:, 2:]) @ diff.T
-                # if outlier > sp.stats.chi2.ppf(0.9545, 2, loc=0, scale=1):
                 dataname = extra["name"].split(" ")[3].lower()
                 plotname = f"{dataname}_prerecon" if recon_bin == 0 else f"{dataname}_postrecon"
                 figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_contour.png"
                 if not os.path.isfile(figname):
                     extra.pop("color", None)
                     cc = ChainConsumer()
-                    cc.add_chain(df, weights=weight, **extra, color=colors[data_bin + 1])
+                    cc.add_chain(df, weights=weight, **extra, color=colors[data_bin])
                     cc.add_marker(df.iloc[max_post], **extra)
                     cc.plotter.plot(filename=figname)
                     figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
@@ -240,7 +252,7 @@ if __name__ == "__main__":
                     figname = None
 
             new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
-                params_dict, display=False, figname=figname, title=extra["name"], c=colors[data_bin + 1]
+                params_dict, display=False, figname=figname, title=extra["name"], c=colors[data_bin]
             )
             if realisation == "mean":
                 print(25.0 * new_chi_squared, dof)
@@ -252,7 +264,11 @@ if __name__ == "__main__":
             stats[data_bin][recon_bin].append(
                 [
                     mean[0],
+                    mean[1],
+                    mean[2],
                     np.sqrt(cov[0, 0]),
+                    np.sqrt(cov[1, 1]),
+                    np.sqrt(cov[2, 2]),
                     new_chi_squared,
                     params_dict["alpha"],
                 ]
@@ -269,14 +285,14 @@ if __name__ == "__main__":
                     cov = np.cov(stats[data_bin][recon_bin][1:], rowvar=False)
 
                     c[stats_bin].add_covariance(
-                        mean[:4],
-                        cov[:4, :4],
+                        mean[:3],
+                        cov[:3, :3],
                         parameters=[
                             "$\\alpha$",
                             "$\\Sigma_{nl}$",
                             "$\\Sigma_s$",
                         ],
-                        color=colors[data_bin + 1],
+                        color=colors[data_bin],
                         plot_contour=True,
                         plot_point=False,
                         show_as_1d_prior=False,
@@ -299,13 +315,5 @@ if __name__ == "__main__":
                         ],
                         legend=False,
                     )
-                    c[stats_bin].plotter.plot(
-                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour2.png"],
-                        truth=truth,
-                        parameters=[
-                            "$\\alpha$",
-                            "$\\Sigma_{nl}$",
-                            "$\\Sigma_s$",
-                        ],
-                        legend=False,
-                    )
+
+                    np.save("/".join(pfn.split("/")[:-1]) + "/Summary_" + plotname + f".npy", stats[data_bin][recon_bin])
