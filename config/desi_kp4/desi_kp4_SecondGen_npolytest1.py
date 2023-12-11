@@ -271,7 +271,7 @@ if __name__ == "__main__":
             if realisation == "mean":
                 print(25.0 * new_chi_squared, dof)
 
-            if data_bin == 0 and (realisation == 2 or realisation == 21):
+            if data_bin == 0 and (realisation == "2" or realisation == "21" or realisation == "22"):
                 df["weight"] = newweight
                 df.to_csv("/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_BOSSpoly.dat", index=False, sep=" ")
 

@@ -212,6 +212,7 @@ if __name__ == "__main__":
                         filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour.png"],
                         truth=truth,
                         parameters=[
+                            "$b{0}_{1}$",
                             "$\\alpha_\\parallel$",
                             "$\\alpha_\\perp$",
                         ],
@@ -220,6 +221,7 @@ if __name__ == "__main__":
                         filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour2.png"],
                         truth=truth,
                         parameters=[
+                            "$b{0}_{1}$",
                             "$\\alpha$",
                             "$\\alpha_{ap}$",
                         ],
