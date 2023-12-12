@@ -22,7 +22,7 @@ from chainconsumer import ChainConsumer
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__, "/v2/")
+    pfn, dir_name, file = setup(__file__)
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
@@ -108,7 +108,7 @@ if __name__ == "__main__":
                 allnames.append(name)
 
                 name = f"DESI_Y1_BLIND_v1_sm{reconsmooth[t]}_{t.lower()}_{cap}_z{zs[0]}-{zs[1]}_pk.pkl"
-                dataset_pk = PowerSpectrum_DESI_KP4(
+                dataset = PowerSpectrum_DESI_KP4(
                     recon=recon,
                     fit_poles=[0, 2],
                     min_k=0.02,
@@ -118,11 +118,11 @@ if __name__ == "__main__":
                     datafile=name,
                 )
                 model = PowerBeutler2017(
-                    recon=dataset_pk.recon,
-                    isotropic=dataset_pk.isotropic,
+                    recon=dataset.recon,
+                    isotropic=dataset.isotropic,
                     marg="full",
                     fix_params=["om"],
-                    poly_poles=dataset_pk.fit_poles,
+                    poly_poles=dataset.fit_poles,
                     correction=Correction.NONE,
                     broadband_type="spline",
                     n_poly=30,
