@@ -49,7 +49,7 @@ if __name__ == "__main__":
             datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
         )
 
-        for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [30, [-1, 0, 1, 2, 3]])):
+        for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [[-1, 0, 1, 2, 3], 30])):
 
             model = PowerBeutler2017(
                 recon=dataset_pk.recon,
