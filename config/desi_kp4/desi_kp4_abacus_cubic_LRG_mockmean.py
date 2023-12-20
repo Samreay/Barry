@@ -49,7 +49,7 @@ if __name__ == "__main__":
             datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
         )
 
-        for n, (broadband_type, n_poly) in enumerate(zip(["spline", "poly"], [30, [-1, 0, 1, 2, 3]])):
+        for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [30, [-1, 0, 1, 2, 3]])):
 
             model = PowerBeutler2017(
                 recon=dataset_pk.recon,
@@ -62,7 +62,7 @@ if __name__ == "__main__":
                 n_poly=n_poly,
             )
             model.set_default("sigma_nl_par", sigma[recon][0], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-            model.set_default("sigma_nl_perp", sigma[recon][1], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+            model.set_default("sigma_nl_perp", sigma[recon][1], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
             model.set_default("sigma_s", sigma[recon][2], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
             # Load in a pre-existing BAO template
@@ -84,7 +84,7 @@ if __name__ == "__main__":
             datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
         )
 
-        for n, (broadband_type, n_poly) in enumerate(zip(["poly", "poly", "spline"], [[-2, -1, 0], [0, 2], [0, 2]])):
+        for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [[-2, -1, 0], [0, 2]])):
 
             model = CorrBeutler2017(
                 recon=dataset_xi.recon,
@@ -97,7 +97,7 @@ if __name__ == "__main__":
                 n_poly=n_poly,
             )
             model.set_default("sigma_nl_par", sigma[recon][0], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-            model.set_default("sigma_nl_perp", sigma[recon][1], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+            model.set_default("sigma_nl_perp", sigma[recon][1], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
             model.set_default("sigma_s", sigma[recon][2], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
             # Load in a pre-existing BAO template
