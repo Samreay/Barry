@@ -58,7 +58,7 @@ if __name__ == "__main__":
             datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
         )
 
-        for n_poly in range(1, 8):
+        for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [[-1, 0, 1, 2, 3], 30])):
 
             model = PowerBeutler2017(
                 recon=dataset_pk.recon,
@@ -67,6 +67,7 @@ if __name__ == "__main__":
                 marg="full",
                 poly_poles=dataset_pk.fit_poles,
                 correction=Correction.NONE,
+                broadband_type=broadband_type,
                 n_poly=n_poly,
             )
 
@@ -74,9 +75,11 @@ if __name__ == "__main__":
             pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
             model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
-            name = dataset_pk.name + " mock mean n_poly=" + str(n_poly)
-            fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[n_poly - 1])
+            name = dataset_pk.name + " mock mean n_poly=" + str(n)
+            fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[n])
             allnames.append(name)
+
+        for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [[-2, -1, 0], [0, 2]])):
 
             model = CorrBeutler2017(
                 recon=dataset_xi.recon,
@@ -92,8 +95,8 @@ if __name__ == "__main__":
             pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
             model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
-            name = dataset_xi.name + " mock mean n_poly=" + str(n_poly)
-            fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[n_poly - 1])
+            name = dataset_xi.name + " mock mean n_poly=" + str(n)
+            fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[n])
             allnames.append(name)
 
     # Submit all the job. We have quite a few (42), so we'll

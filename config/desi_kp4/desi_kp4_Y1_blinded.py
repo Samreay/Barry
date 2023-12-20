@@ -28,7 +28,7 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name, remove_output=False)
     sampler = NautilusSampler(temp_dir=dir_name)
 
-    colors = [mplc.cnames[color] for color in ["black", "orange", "orangered", "firebrick", "lightskyblue", "steelblue", "seagreen"]]
+    colors = [mplc.cnames[color] for color in ["orange", "orangered", "firebrick", "lightskyblue", "steelblue", "seagreen", "black"]]
 
     tracers = {
         "LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]],
@@ -160,16 +160,17 @@ if __name__ == "__main__":
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
         plotnames = [f"{t.lower()}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
-        datanames = [f"{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
+        datanames = [f"{t.lower()}_{cap}_z{zs[0]}-{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
         print(datanames)
         c = [ChainConsumer() for i in range(len(datanames) * 2)]
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the tracer bin, sigma bin and n_poly bin
-            data_bin = datanames.index(extra["name"].split(" ")[3].lower())
+            data_bin = datanames.index(extra["name"].split(" ")[5].lower())
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
             poly_bin = 0 if "xi_spline" in extra["name"] else 1
             stats_bin = recon_bin * len(datanames) + data_bin
+            pname = "xi" if poly_bin == 0 else "pk"
             # print(extra["name"], data_bin, recon_bin, poly_bin, stats_bin)
 
             # Store the chain in a dictionary with parameter names
@@ -206,7 +207,7 @@ if __name__ == "__main__":
 
             # Get some useful properties of the fit, and plot the MAP model against the data
             plotname = f"{plotnames[data_bin]}_prerecon" if recon_bin == 0 else f"{plotnames[data_bin]}_postrecon"
-            figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}_bestfit.png"
+            figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_{pname}_bestfit.png"
             new_chi_squared, dof, bband, mods, smooths = model.simple_plot(
                 params_dict, display=False, figname=figname, title=plotname, c=colors[data_bin]
             )
@@ -215,18 +216,15 @@ if __name__ == "__main__":
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
             extra.pop("name", None)
-            c[stats_bin].add_chain(
-                df, weights=newweight, name=f"npoly={poly_bin}", plot_contour=True, plot_point=False, show_as_1d_prior=False
-            )
+            c[stats_bin].add_chain(df, weights=newweight, name=f"{pname}", plot_contour=True, plot_point=False, show_as_1d_prior=False)
 
-            if data_bin == 0:
-                df["weight"] = newweight
-                df.to_csv("/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_npoly={poly_bin}.dat", index=False, sep=" ")
+            df["weight"] = newweight
+            df.to_csv("/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_{pname}.dat", index=False, sep=" ")
 
         for t in tracers:
             for i, zs in enumerate(tracers[t]):
                 for recon_bin in range(2):
-                    dataname = f"{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}"
+                    dataname = f"{t.lower()}_{cap}_z{zs[0]}-{zs[1]}"
                     data_bin = datanames.index(dataname.lower())
                     stats_bin = recon_bin * len(datanames) + data_bin
 
@@ -245,18 +243,22 @@ if __name__ == "__main__":
                         filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour.png"],
                         truth=truth,
                         parameters=[
-                            "$b{0}_{1}$",
                             "$\\alpha_\\parallel$",
                             "$\\alpha_\\perp$",
+                            "$\\Sigma_{nl,||}$",
+                            "$\\Sigma_{nl,\\perp}$",
+                            "$\\Sigma_s$",
                         ],
                     )
                     c[stats_bin].plotter.plot(
                         filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour2.png"],
                         truth=truth,
                         parameters=[
-                            "$b{0}_{1}$",
                             "$\\alpha$",
                             "$\\alpha_{ap}$",
+                            "$\\Sigma_{nl,||}$",
+                            "$\\Sigma_{nl,\\perp}$",
+                            "$\\Sigma_s$",
                         ],
                     )
 
@@ -264,6 +266,6 @@ if __name__ == "__main__":
                         data_bin,
                         recon_bin,
                         c[stats_bin].analysis.get_latex_table(
-                            parameters=["$d\\alpha$", "$d\\alpha_{ap}$", "$d\\epsilon$", "$d\\alpha_\\parallel$", "$d\\alpha_\\perp$"]
+                            parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]
                         ),
                     )
