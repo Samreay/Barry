@@ -146,7 +146,7 @@ if __name__ == "__main__":
     sampler = NautilusSampler(temp_dir=dir_name)
 
     sigma_nl_perp = 2.0
-    sigma_nl_par = 4.0
+    sigma_nl_par = 5.0
     sigma_s = [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
 
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
@@ -181,27 +181,31 @@ if __name__ == "__main__":
     # Loop over pre- and post-recon measurements
     for sig in range(len(sigma_s)):
 
-        model = PowerBeutler2017(
-            recon=dataset_pk.recon,
-            isotropic=dataset_pk.isotropic,
-            fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
-            marg="full",
-            poly_poles=dataset_pk.fit_poles,
-            correction=Correction.HARTLAP,
-        )
-        model.set_default("sigma_nl_par", sigma_nl_par)
-        model.set_default("sigma_nl_perp", sigma_nl_perp)
-        model.set_default("sigma_s", sigma_s[sig])
+        for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [[-1, 0, 1, 2, 3], 30])):
 
-        # Load in a pre-existing BAO template
-        pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-        model.kvals, model.pksmooth, model.pkratio = pktemplate.T
+            model = PowerBeutler2017(
+                recon=dataset_pk.recon,
+                isotropic=dataset_pk.isotropic,
+                fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
+                marg="full",
+                poly_poles=dataset_pk.fit_poles,
+                correction=Correction.HARTLAP,
+                broadband_type=broadband_type,
+                n_poly=n_poly,
+            )
+            model.set_default("sigma_nl_par", sigma_nl_par)
+            model.set_default("sigma_nl_perp", sigma_nl_perp)
+            model.set_default("sigma_s", sigma_s[sig])
 
-        name = dataset_pk.name + f" mock mean fixed_type {sig}"
-        fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[0])
-        allnames.append(name)
+            # Load in a pre-existing BAO template
+            pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+            model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
-        for n_poly in [[0], [0, 2], [0, 2, 4], [0, 2, 4, 6]]:
+            name = dataset_pk.name + f" mock mean fixed_type {sig}"
+            fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[0])
+            allnames.append(name)
+
+        for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [[-2, -1, 0], [0, 2]])):
 
             model = CorrBeutler2017(
                 recon=dataset_xi.recon,
@@ -210,6 +214,7 @@ if __name__ == "__main__":
                 fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
                 poly_poles=dataset_xi.fit_poles,
                 correction=Correction.NONE,
+                broadband_type=broadband_type,
                 n_poly=n_poly,
             )
             model.set_default("sigma_nl_par", sigma_nl_par)

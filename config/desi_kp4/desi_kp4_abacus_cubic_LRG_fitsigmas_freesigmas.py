@@ -118,12 +118,8 @@ if __name__ == "__main__":
         c = [
             ChainConsumer(),
             ChainConsumer(),
-            ChainConsumer(),
-            ChainConsumer(),
         ]
         fitname = [None for i in range(len(c))]
-
-        datanames = ["Xi_CV", "Pk_CV"]
 
         # Loop over all the chains
         stats = {}
@@ -132,9 +128,9 @@ if __name__ == "__main__":
 
             # Get the realisation number and redshift bin
             recon_bin = 0 if "Prerecon" in extra["name"] else 1
+            poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
             data_bin = 0 if "Xi" in extra["name"] else 1
-            redshift_bin = int(2.0 * data_bin + recon_bin)
-            print(extra["name"], recon_bin, data_bin, redshift_bin)
+            print(extra["name"], recon_bin, data_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -154,55 +150,24 @@ if __name__ == "__main__":
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
-            if "n_poly=1" in extra["name"]:
-                fitname[redshift_bin] = data[0]["name"].replace(" ", "_")
-                stats[fitname[redshift_bin]] = []
-                output[fitname[redshift_bin]] = []
-
-            if data_bin == 1 and ("n_poly=1" in extra["name"] or "n_poly=2" in extra["name"] or "n_poly=7" in extra["name"]):
-                continue
-
-            if data_bin == 0 and ("n_poly=5" in extra["name"] or "n_poly=6" in extra["name"] or "n_poly=7" in extra["name"]):
-                continue
-
-            chainname = f'N={extra["name"].split("n_poly=")[1].split(" ")[0]}'
-            extra["name"] = f'N={extra["name"].split("n_poly=")[1].split(" ")[0]}'
-            c[redshift_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+            if data_bin == 0 and poly_bin == 0:
+                fitname[recon_bin] = data[0]["name"].replace(" ", "_")
+            chainname = [r"$\xi(s)$" if data_bin == 0 else r"$P(k)$", "Polynomial" if poly_bin == 0 else r"Spline"]
+            extra["name"] = chainname[0] + " " + chainname[1]
+            c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
             mean, cov = weighted_avg_and_cov(
                 df[["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"]],
                 weight,
                 axis=0,
             )
-            print(redshift_bin, fitname[redshift_bin], mean, np.sqrt(np.diag(cov)), new_chi_squared, dof)
 
-            corr0 = cov[0, 1] / np.sqrt(cov[0, 0] * cov[1, 1])
-            corr1 = cov[0, 2] / np.sqrt(cov[0, 0] * cov[2, 2])
-            corr2 = cov[1, 2] / np.sqrt(cov[1, 1] * cov[2, 2])
-            stats[fitname[redshift_bin]].append(
-                [
-                    mean[0],
-                    mean[1],
-                    mean[2],
-                    np.sqrt(cov[0, 0]),
-                    np.sqrt(cov[1, 1]),
-                    np.sqrt(cov[2, 2]),
-                    corr0,
-                    corr1,
-                    corr2,
-                    new_chi_squared,
-                ]
-            )
-            output[fitname[redshift_bin]].append(
-                f"{model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {np.sqrt(cov[2, 2]):6.4f}, {corr0:7.3f}, {corr1:7.3f}, {corr2:7.3f}, {r_s:7.3f}, {new_chi_squared:7.3f}, {dof:4d}"
-            )
-
-        for redshift_bin in range(len(c)):
-            if "Pre" in fitname[redshift_bin]:
+        for recon_bin in range(len(c)):
+            if "Pre" in fitname[recon_bin]:
                 truth = {"$\\Sigma_{nl,||}$": 9.6, "$\\Sigma_{nl,\\perp}$": 4.8, "$\\Sigma_s$": 2.0}
             else:
                 truth = {"$\\Sigma_{nl,||}$": 5.1, "$\\Sigma_{nl,\\perp}$": 1.6, "$\\Sigma_s$": 0.0}
-            c[redshift_bin].configure(bins=20, sigmas=[0, 1])
-            fig = c[redshift_bin].plotter.plot(
+            c[recon_bin].configure(bins=20, sigmas=[0, 1])
+            fig = c[recon_bin].plotter.plot(
                 parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
                 legend=True,
                 truth=truth,
@@ -210,18 +175,8 @@ if __name__ == "__main__":
             xvals = np.linspace(0.0, 20.0, 100)
             fig.get_axes()[3].plot(xvals, xvals / (1.0 + 0.8), color="k", linestyle=":", linewidth=1.3)
             fig.savefig(
-                fname="/".join(pfn.split("/")[:-1]) + "/" + fitname[redshift_bin] + "_contour.png",
+                fname="/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour.png",
                 bbox_inches="tight",
                 dpi=300,
                 pad_inches=0.05,
             )
-
-            # Save all the numbers to a file
-            with open(dir_name + "/Barry_fit_" + fitname[redshift_bin] + ".txt", "w") as f:
-                f.write(
-                    "# N_poly, Sigma_nl_par, Sigma_nl_perp, Sigma_s, sigma_Sigma_nl__par, sigma_Sigma_nl_perp, sigma_Sigma_s, corr_Sigma_nl, corr_Sigma_nl_par_s, corr_Sigma_nl_perp_s, rd_of_template, bf_chi2, dof\n"
-                )
-                for l in output[fitname[redshift_bin]]:
-                    f.write(l + "\n")
-
-            # print(fitname[recon_bin], c[recon_bin].analysis.get_summary())

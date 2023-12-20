@@ -26,7 +26,7 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name, remove_output=False)
     sampler = NautilusSampler(temp_dir=dir_name)
 
-    sigma = {None: [9.6, 4.8, 2.0], "sym": [5.1, 1.6, 0.0]}
+    sigma = {None: [9.5, 5.0, 2.0], "sym": [5.0, 2.0, 2.0]}
 
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
