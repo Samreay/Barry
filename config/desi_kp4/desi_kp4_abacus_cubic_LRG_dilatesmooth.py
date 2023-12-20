@@ -26,13 +26,16 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name, remove_output=False)
     sampler = NautilusSampler(temp_dir=dir_name)
 
-    colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
+    sigma = {None: [9.5, 5.0, 2.0], "sym": [5.0, 2.0, 2.0]}
+
+    # colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
     # Loop over the mocktypes
     allnames = []
 
     # Loop over pre- and post-recon power spectrum measurements
-    for recon in [None, "sym"]:
+    recon = "sym"
+    for dilate_smooth in [True, False]:
 
         # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
         # First load up mock mean and add it to the fitting list.
@@ -47,6 +50,33 @@ if __name__ == "__main__":
             datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
         )
 
+        for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [[-1, 0, 1, 2, 3], 30])):
+
+            model = PowerBeutler2017(
+                recon=dataset_pk.recon,
+                isotropic=dataset_pk.isotropic,
+                fix_params=["om"],
+                marg="full",
+                poly_poles=dataset_pk.fit_poles,
+                correction=Correction.HARTLAP,
+                dilate_smooth=dilate_smooth,
+                broadband_type=broadband_type,
+                n_poly=n_poly,
+            )
+            model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=4.0)
+            model.set_default("beta", 0.4, min=0.1, max=0.7)
+            model.set_default("sigma_nl_par", sigma[recon][0], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+            model.set_default("sigma_nl_perp", sigma[recon][1], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
+            model.set_default("sigma_s", sigma[recon][2], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+
+            # Load in a pre-existing BAO template
+            pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+            model.kvals, model.pksmooth, model.pkratio = pktemplate.T
+
+            name = dataset_pk.name + f" mock mean n_poly=" + str(n)
+            fitter.add_model_and_dataset(model, dataset_pk, name=name)
+            allnames.append(name)
+
         dataset_xi = CorrelationFunction_DESI_KP4(
             recon=recon,
             fit_poles=[0, 2],
@@ -58,45 +88,31 @@ if __name__ == "__main__":
             datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
         )
 
-        for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [[-1, 0, 1, 2, 3], 30])):
-
-            model = PowerBeutler2017(
-                recon=dataset_pk.recon,
-                isotropic=dataset_pk.isotropic,
-                fix_params=["om", "alpha", "epsilon"],
-                marg="full",
-                poly_poles=dataset_pk.fit_poles,
-                correction=Correction.NONE,
-                broadband_type=broadband_type,
-                n_poly=n_poly,
-            )
-
-            # Load in a pre-existing BAO template
-            pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-            model.kvals, model.pksmooth, model.pkratio = pktemplate.T
-
-            name = dataset_pk.name + " mock mean n_poly=" + str(n)
-            fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[n])
-            allnames.append(name)
-
         for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [[-2, -1, 0], [0, 2]])):
 
             model = CorrBeutler2017(
                 recon=dataset_xi.recon,
                 isotropic=dataset_xi.isotropic,
                 marg="full",
-                fix_params=["om", "alpha", "epsilon"],
+                fix_params=["om"],
                 poly_poles=dataset_xi.fit_poles,
-                correction=Correction.NONE,
+                correction=Correction.HARTLAP,
+                dilate_smooth=dilate_smooth,
+                broadband_type=broadband_type,
                 n_poly=n_poly,
             )
+            model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=4.0)
+            model.set_default("beta", 0.4, min=0.1, max=0.7)
+            model.set_default("sigma_nl_par", sigma[recon][0], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+            model.set_default("sigma_nl_perp", sigma[recon][1], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
+            model.set_default("sigma_s", sigma[recon][2], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
             # Load in a pre-existing BAO template
             pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
             model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
             name = dataset_xi.name + " mock mean n_poly=" + str(n)
-            fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[n])
+            fitter.add_model_and_dataset(model, dataset_xi, name=name)
             allnames.append(name)
 
     # Submit all the job. We have quite a few (42), so we'll
@@ -121,6 +137,8 @@ if __name__ == "__main__":
         ]
         fitname = [None for i in range(len(c))]
 
+        datanames = ["Xi_CV", "Pk_CV"]
+
         # Loop over all the chains
         stats = {}
         output = {}
@@ -134,6 +152,16 @@ if __name__ == "__main__":
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
+            alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
+            df["$\\alpha_\\parallel$"] = alpha_par
+            df["$\\alpha_\\perp$"] = alpha_perp
+            df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+
+            df["$d\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
+            df["$d\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
+            df["$d\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
+            df["$d\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
+            df["$d\\epsilon$"] = 100.0 * df["$\\epsilon$"]
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
@@ -155,28 +183,44 @@ if __name__ == "__main__":
             chainname = [r"$\xi(s)$" if data_bin == 0 else r"$P(k)$", "Polynomial" if poly_bin == 0 else r"Spline"]
             extra["name"] = chainname[0] + " " + chainname[1]
             c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
-            mean, cov = weighted_avg_and_cov(
-                df[["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"]],
-                weight,
-                axis=0,
-            )
+
+        print(fitname)
 
         for recon_bin in range(len(c)):
-            if "Pre" in fitname[recon_bin]:
-                truth = {"$\\Sigma_{nl,||}$": 9.6, "$\\Sigma_{nl,\\perp}$": 4.8, "$\\Sigma_s$": 2.0}
-            else:
-                truth = {"$\\Sigma_{nl,||}$": 5.1, "$\\Sigma_{nl,\\perp}$": 1.6, "$\\Sigma_s$": 0.0}
-            c[recon_bin].configure(bins=20, sigmas=[0, 1])
-            fig = c[recon_bin].plotter.plot(
-                parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
+            truth = {
+                "$\\alpha$": 1.0,
+                "$\\alpha_{ap}$": 1.0,
+                "$\\alpha_\\perp$": 1.0,
+                "$\\alpha_\\parallel$": 1.0,
+                "$\\Sigma_{nl,||}$": sigma[None if "Pre" in fitname[recon_bin] else "sym"][0],
+                "$\\Sigma_{nl,\\perp}$": sigma[None if "Pre" in fitname[recon_bin] else "sym"][1],
+                "$\\Sigma_s$": sigma[None if "Pre" in fitname[recon_bin] else "sym"][2],
+            }
+            c[recon_bin].plotter.plot(
+                parameters=[
+                    "$\\alpha$",
+                    "$\\alpha_{ap}$",
+                    "$\\alpha_\\perp$",
+                    "$\\alpha_\\parallel$",
+                    "$\\Sigma_{nl,||}$",
+                    "$\\Sigma_{nl,\\perp}$",
+                    "$\\Sigma_s$",
+                ],
                 legend=True,
                 truth=truth,
+                filename="/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour.png",
             )
-            xvals = np.linspace(0.0, 20.0, 100)
-            fig.get_axes()[3].plot(xvals, xvals / (1.0 + 0.8), color="k", linestyle=":", linewidth=1.3)
-            fig.savefig(
-                fname="/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour.png",
-                bbox_inches="tight",
-                dpi=300,
-                pad_inches=0.05,
+            c[recon_bin].plotter.plot(
+                parameters=[
+                    "$\\alpha$",
+                    "$\\alpha_{ap}$",
+                ],
+                legend=True,
+                truth=truth,
+                filename="/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour2.png",
+            )
+            print(
+                c[recon_bin].analysis.get_latex_table(
+                    parameters=["$d\\alpha$", "$d\\alpha_{ap}$", "$d\\alpha_\\parallel$", "$d\\alpha_\\perp$"]
+                ),
             )
