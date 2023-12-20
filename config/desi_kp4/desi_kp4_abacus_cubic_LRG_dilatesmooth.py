@@ -77,6 +77,11 @@ if __name__ == "__main__":
             fitter.add_model_and_dataset(model, dataset_pk, name=name)
             allnames.append(name)
 
+            for j in range(len(dataset_pk.mock_data)):
+                dataset_pk.set_realisation(j)
+                name = dataset_pk.name + f" realisation {j} n_poly" + str(n)
+                fitter.add_model_and_dataset(model, dataset_pk, name=name)
+
         dataset_xi = CorrelationFunction_DESI_KP4(
             recon=recon,
             fit_poles=[0, 2],
@@ -114,6 +119,11 @@ if __name__ == "__main__":
             name = dataset_xi.name + " mock mean n_poly=" + str(n)
             fitter.add_model_and_dataset(model, dataset_xi, name=name)
             allnames.append(name)
+
+            for j in range(len(dataset_xi.mock_data)):
+                dataset_xi.set_realisation(j)
+                name = dataset_xi.name + f" realisation {j} n_poly" + str(n)
+                fitter.add_model_and_dataset(model, dataset_xi, name=name)
 
     # Submit all the job. We have quite a few (42), so we'll
     # only assign 1 walker (processor) to each. Note that this will only run if the
