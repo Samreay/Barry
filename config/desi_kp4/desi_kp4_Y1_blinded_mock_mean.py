@@ -190,11 +190,11 @@ if __name__ == "__main__":
                 0.0,
             )
 
-            df["$d\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
-            df["$d\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
-            df["$d\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
-            df["$d\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
-            df["$d\\epsilon$"] = 100.0 * df["$\\epsilon$"]
+            df["$\\Delta\\alpha_\\parallel\,(\\%)$"] = 100.0 * (alpha_par - 1.0)
+            df["$\\Delta\\alpha_\\perp\,(\\%)$"] = 100.0 * (alpha_perp - 1.0)
+            df["$\\Delta\\alpha_{ap}\,(\\%)$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
+            df["$\\Delta\\alpha\,(\\%)$"] = 100.0 * (df["$\\alpha$"] - 1.0)
+            df["$\\Delta\\epsilon\,(\\%)$"] = 100.0 * df["$\\epsilon$"]
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
@@ -229,6 +229,10 @@ if __name__ == "__main__":
                     stats_bin = recon_bin * len(datanames) + data_bin
 
                     truth = {
+                        "$\\Delta\\alpha\,(\\%)$": 0.0,
+                        "$\\Delta\\alpha_{ap}\,(\\%)$": 0.0,
+                        "$\\Delta\\alpha_\\perp\,(\\%)$": 0.0,
+                        "$\\Delta\\alpha_\\parallel\,(\\%)$": 0.0,
                         "$\\alpha$": 1.0,
                         "$\\alpha_{ap}$": 1.0,
                         "$\\alpha_\\perp$": 1.0,
@@ -243,22 +247,16 @@ if __name__ == "__main__":
                         filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour.png"],
                         truth=truth,
                         parameters=[
-                            "$\\alpha_\\parallel$",
-                            "$\\alpha_\\perp$",
-                            "$\\Sigma_{nl,||}$",
-                            "$\\Sigma_{nl,\\perp}$",
-                            "$\\Sigma_s$",
+                            "$\\Delta\\alpha_\\parallel\,(\\%)$",
+                            "$\\Delta\\alpha_\\perp\,(\\%)$",
                         ],
                     )
                     c[stats_bin].plotter.plot(
                         filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour2.png"],
                         truth=truth,
                         parameters=[
-                            "$\\alpha$",
-                            "$\\alpha_{ap}$",
-                            "$\\Sigma_{nl,||}$",
-                            "$\\Sigma_{nl,\\perp}$",
-                            "$\\Sigma_s$",
+                            "$\\Delta\\alpha\,(\\%)$",
+                            "$\\Delta\\alpha_{ap}\,(\\%)$",
                         ],
                     )
 
@@ -266,6 +264,12 @@ if __name__ == "__main__":
                         data_bin,
                         recon_bin,
                         c[stats_bin].analysis.get_latex_table(
-                            parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\epsilon$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"]
+                            parameters=[
+                                "$\\Delta\\alpha\,(\\%)$",
+                                "$\\Delta\\alpha_{ap}\,(\\%)$",
+                                "$\\Delta\\epsilon\,(\\%)$",
+                                "$\\Delta\\alpha_\\parallel\,(\\%)$",
+                                "$\\Delta\\alpha_\\perp\,(\\%)$",
+                            ]
                         ),
                     )

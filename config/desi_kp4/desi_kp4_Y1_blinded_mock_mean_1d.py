@@ -21,7 +21,7 @@ from chainconsumer import ChainConsumer
 if __name__ == "__main__":
 
     # Get the relative file paths and names
-    pfn, dir_name, file = setup(__file__, "/reduced_cov/")
+    pfn, dir_name, file = setup(__file__, "/v1/")
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
@@ -80,7 +80,7 @@ if __name__ == "__main__":
                     min_dist=50.0,
                     max_dist=150.0,
                     realisation=None,
-                    reduce_cov_factor=-1,
+                    reduce_cov_factor=1,
                     datafile=name,
                 )
                 model = CorrBeutler2017(
@@ -120,7 +120,7 @@ if __name__ == "__main__":
                     min_k=0.02,
                     max_k=0.30,
                     realisation=None,
-                    reduce_cov_factor=-1,
+                    reduce_cov_factor=1,
                     datafile=name,
                 )
                 model = PowerBeutler2017(
@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
-            df["$d\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
+            df["$\\Delta\\alpha\,(\\%)$"] = 100.0 * (df["$\\alpha$"] - 1.0)
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
@@ -215,6 +215,7 @@ if __name__ == "__main__":
                 df[
                     [
                         "$\\alpha$",
+                        "$\\Delta\\alpha\,(\\%)$",
                         "$\\Sigma_{nl}$",
                         "$\\Sigma_s$",
                     ]
@@ -240,16 +241,17 @@ if __name__ == "__main__":
 
                     truth = {
                         "$\\alpha$": 1.0,
+                        "$\\Delta\\alpha\,(\\%)$": 0.0,
                         "$\\Sigma_{nl}$": np.sqrt((sigma_nl_par[t][i][recon_bin] ** 2 + 2.0 * sigma_nl_perp[t][i][recon_bin] ** 2) / 3.0),
                         "$\\Sigma_s$": sigma_s[t][i][recon_bin],
                     }
 
                     plotname = f"{dataname}_prerecon" if recon_bin == 0 else f"{dataname}_postrecon"
                     c[stats_bin].plotter.plot(
-                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour2.png"],
+                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour.png"],
                         truth=truth,
                         parameters=[
-                            "$\\alpha$",
+                            "$\\Delta\\alpha\,(\\%)$",
                             "$\\Sigma_{nl}$",
                             "$\\Sigma_s$",
                         ],
@@ -258,5 +260,5 @@ if __name__ == "__main__":
                     print(
                         data_bin,
                         recon_bin,
-                        c[stats_bin].analysis.get_latex_table(parameters=["$\\alpha$"]),
+                        c[stats_bin].analysis.get_latex_table(parameters=["$\\Delta\\alpha\,(\\%)$"]),
                     )
