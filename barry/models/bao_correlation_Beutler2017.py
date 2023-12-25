@@ -21,6 +21,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
         poly_poles=(0, 2),
         marg=None,
         dilate_smooth=False,
+        fog_wiggles=False,
         broadband_type="spline",
         **kwargs,
     ):
@@ -49,6 +50,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
             isotropic=isotropic,
             marg=marg,
             dilate_smooth=dilate_smooth,
+            fog_wiggles=fog_wiggles,
             broadband_type=None,
         )
 

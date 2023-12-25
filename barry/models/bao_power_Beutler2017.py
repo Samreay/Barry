@@ -26,12 +26,14 @@ class PowerBeutler2017(PowerSpectrumFit):
         poly_poles=(0, 2),
         marg=None,
         dilate_smooth=False,
+        fog_wiggles=False,
         broadband_type="spline",
         n_data=1,
         **kwargs,
     ):
 
         self.dilate_smooth = dilate_smooth
+        self.fog_wiggles = fog_wiggles
 
         super().__init__(
             name=name,
@@ -128,7 +130,10 @@ class PowerBeutler2017(PowerSpectrumFit):
             else:
                 # Compute the propagator
                 C = np.exp(-0.5 * kprime**2 * p["sigma_nl"] ** 2)
-                pk0 = pk_smooth * (fog + splev(kprime, splrep(ks, pk_ratio)) * C)
+                if self.fog_wiggles:
+                    pk0 = pk_smooth * fog * (1.0 + splev(kprime, splrep(ks, pk_ratio)) * C)
+                else:
+                    pk0 = pk_smooth * (fog + splev(kprime, splrep(ks, pk_ratio)) * C)
 
             pk = [pk0]
 
@@ -160,7 +165,10 @@ class PowerBeutler2017(PowerSpectrumFit):
                 pk2d = pk_smooth * fog
             else:
                 C = np.exp(-0.5 * kprime**2 * (muprime**2 * p["sigma_nl_par"] ** 2 + (1.0 - muprime**2) * p["sigma_nl_perp"] ** 2))
-                pk2d = pk_smooth * (fog + splev(kprime, splrep(ks, pk_ratio)) * C)
+                if self.fog_wiggles:
+                    pk2d = pk_smooth * fog * (1.0 + splev(kprime, splrep(ks, pk_ratio)) * C)
+                else:
+                    pk2d = pk_smooth * (fog + splev(kprime, splrep(ks, pk_ratio)) * C)
 
             pk0, pk2, pk4 = self.integrate_mu(pk2d)
 
