@@ -46,7 +46,7 @@ if __name__ == "__main__":
             max_k=0.30,
             realisation=None,
             num_mocks=1000,
-            reduce_cov_factor=25,
+            reduce_cov_factor=1,
             datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
         )
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
             max_dist=150.0,
             realisation=None,
             num_mocks=1000,
-            reduce_cov_factor=25,
+            reduce_cov_factor=1,
             datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
         )
 

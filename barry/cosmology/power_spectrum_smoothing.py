@@ -4,7 +4,7 @@ import numpy as np
 from scipy import integrate, interpolate, optimize
 from scipy.fftpack import dst, idst
 from scipy.ndimage import gaussian_filter
-from scipy.signal import argrelmin, argrelmax
+from scipy.signal import argrelmin, argrelmax, savgol_filter
 
 
 def get_smooth_methods_dict():
@@ -103,6 +103,16 @@ def smooth_hinton2017(ks, pk, degree=13, sigma=1, weight=0.5, **kwargs):
     return pk_smoothed
 
 
+def smooth_savgol(ks, pk):
+
+    nfilter = int(np.ceil(np.log(7) / np.log(ks[-1] / ks[-2])) // 2 * 2 + 1)  # filter length ~ log span of one oscillation from k = 0.01
+    pk_smoothed = (np.exp(savgol_filter(np.log(ks * pk), nfilter, polyorder=4, axis=-1)) / ks).T
+    hnfilter = nfilter // 2
+    pk_smoothed[-hnfilter:] = pk[-hnfilter:]
+
+    return pk_smoothed
+
+
 def smooth_eh1998(ks, pk, om=0.3121, ob=0.0491, h0=0.6751, ns=0.9653, sigma8=0.8150, rs=None, **kwargs):
     """Smooth power spectrum based on Eisenstein and Hu 1998 fitting formulae for the transfer function
     with shape of matter power spectrum fit using 5th order polynomial
@@ -116,6 +126,13 @@ def smooth_eh1998(ks, pk, om=0.3121, ob=0.0491, h0=0.6751, ns=0.9653, sigma8=0.8
         integrate.quad(__sigma8_integrand, ks[0], ks[-1], args=(ks[0], ks[-1], pk_EH98_spline))[0] / (2.0 * math.pi * math.pi)
     )
     pk_EH98 *= (sigma8 / pk_EH98_norm) ** 2
+
+    plt.plot(ks, pk_EH98)
+    plt.plot(ks, pk)
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.show()
+    exit()
 
     nll = lambda *args: __EH98_lnlike(*args)
     start = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -186,17 +203,6 @@ def __sigma8_integrand(ks, kmin, kmax, pkspline):
 # Compute the Eisenstein and Hu 1998 value for the sound horizon
 def __EH98_rs(om, ob, h0):
 
-    # Fitting parameters
-    b1 = 0.313
-    b2 = -0.419
-    b3 = 0.607
-    b4 = 0.674
-    b5 = 0.238
-    b6 = 0.223
-    a1 = 1291.0
-    a2 = 0.251
-    a3 = 0.659
-    a4 = 0.828
     theta = 2.725 / 2.7  # Normalised CMB temperature
 
     obh2 = ob * h0 * h0
@@ -205,9 +211,9 @@ def __EH98_rs(om, ob, h0):
     z_eq = 2.5e4 * omh2 / (theta**4)
     k_eq = 7.46e-2 * omh2 / (theta**2)
 
-    zd1 = b1 * omh2**b2 * (1.0 + b3 * omh2**b4)
-    zd2 = b5 * omh2**b6
-    z_d = a1 * (omh2**a2 / (1.0 + a3 * omh2**a4)) * (1.0 + zd1 * obh2**zd2)
+    zd1 = 0.313 * omh2 ** (-0.419) * (1.0 + 0.607 * omh2**0.674)
+    zd2 = 0.238 * omh2**0.223
+    z_d = 1291.0 * (omh2**0.251 / (1.0 + 0.659 * omh2**0.828)) * (1.0 + zd1 * obh2**zd2)
 
     R_eq = 3.15e4 * obh2 / (z_eq * theta**4)
     R_d = 3.15e4 * obh2 / (z_d * theta**4)
@@ -253,24 +259,12 @@ if __name__ == "__main__":
 
         smooth_types = [
             {"method": "eh1998", "om": 0.31, "ob": c.omega_b, "h0": c.h0, "ns": c.ns, "rs": c.get_data()["r_s"]},
-            {"method": "hinton2017", "degree": 10, "sigma": 1, "weight": 0.5},
             {"method": "hinton2017", "degree": 13, "sigma": 1, "weight": 0.5},
-            {"method": "hinton2017", "degree": 15, "sigma": 1, "weight": 0.5},
-            {"method": "hinton2017", "degree": 13, "sigma": 0, "weight": 0.5},
-            {"method": "hinton2017", "degree": 13, "sigma": 2, "weight": 0.5},
-            {"method": "hinton2017", "degree": 13, "sigma": 1, "weight": 0.0},
-            {"method": "hinton2017", "degree": 13, "sigma": 1, "weight": 1.0},
             {"method": "wallisch2018"},
         ]
         labels = [
             r"$\mathrm{EH1998}$",
-            r"$\mathrm{Hinton2017} - (n, \sigma, \alpha) = (10, 1, 0.5)$",
-            r"$\mathrm{Hinton2017} - (n, \sigma, \alpha) = (13, 1, 0.5)$",
-            r"$\mathrm{Hinton2017} - (n, \sigma, \alpha) = (15, 1, 0.5)$",
-            r"$\mathrm{Hinton2017} - (n, \sigma, \alpha) = (13, 0, 0.5)$",
-            r"$\mathrm{Hinton2017} - (n, \sigma, \alpha) = (13, 2, 0.5)$",
-            r"$\mathrm{Hinton2017} - (n, \sigma, \alpha) = (13, 1, 0.0)$",
-            r"$\mathrm{Hinton2017} - (n, \sigma, \alpha) = (13, 1, 1.0)$",
+            r"$\mathrm{Hinton2017}$",
             r"$\mathrm{Wallisch2018}$",
         ]
 
