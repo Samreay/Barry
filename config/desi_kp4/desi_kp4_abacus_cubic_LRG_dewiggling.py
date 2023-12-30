@@ -80,8 +80,6 @@ if __name__ == "__main__":
         model.set_default("sigma_nl_perp", sigma[recon][1], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
         model.set_default("sigma_s", sigma[recon][2], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
-        model.sanity_check(dataset_pk)
-
         name = dataset_pk.name + f" mock mean dewiggle=" + str(dewiggle)
         fitter.add_model_and_dataset(model, dataset_pk, name=name)
         allnames.append(name)
@@ -106,8 +104,6 @@ if __name__ == "__main__":
         model.set_default("sigma_nl_par", sigma[recon][0], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
         model.set_default("sigma_nl_perp", sigma[recon][1], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
         model.set_default("sigma_s", sigma[recon][2], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-
-        model.sanity_check(dataset_xi)
 
         name = dataset_xi.name + " mock mean dewiggle=" + str(dewiggle)
         fitter.add_model_and_dataset(model, dataset_xi, name=name)

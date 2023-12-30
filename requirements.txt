@@ -12,3 +12,4 @@ pyyaml
 pytest
 nautilus-sampler
 zeus-mcmc
+git+https://github.com/cosmodesi/cosmoprimo#egg=cosmoprimo[class,camb,astropy,extras]
