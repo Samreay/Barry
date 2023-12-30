@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
             for j in range(len(dataset_pk.mock_data)):
                 dataset_pk.set_realisation(j)
-                name = dataset_pk.name + f" realisation {j} n_poly" + str(n)
+                name = dataset_pk.name + f" realisation {j} n_poly=" + str(n)
                 fitter.add_model_and_dataset(model, dataset_pk, name=name)
 
         dataset_xi = CorrelationFunction_DESI_KP4(
@@ -107,7 +107,7 @@ if __name__ == "__main__":
                 broadband_type=broadband_type,
                 n_poly=n_poly,
             )
-            model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=4.0)
+            model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
             model.set_default("beta", 0.4, min=0.1, max=0.7)
             model.set_default("sigma_nl_par", sigma[recon][0], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
             model.set_default("sigma_nl_perp", sigma[recon][1], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
             for j in range(len(dataset_xi.mock_data)):
                 dataset_xi.set_realisation(j)
-                name = dataset_xi.name + f" realisation {j} n_poly" + str(n)
+                name = dataset_xi.name + f" realisation {j} n_poly=" + str(n)
                 fitter.add_model_and_dataset(model, dataset_xi, name=name)
 
     # Submit all the job. We have quite a few (42), so we'll
@@ -167,9 +167,8 @@ if __name__ == "__main__":
             data_bin = 0 if "Xi" in extra["name"] else 1
             poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
             dilate_bin = 0 if model.dilate_smooth else 1
-            stats_bin = (2.0 * poly_bin + data_bin) * len(datanames) + dilate_bin
             realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
-            print(extra["name"], data_bin, poly_bin, dilate_bin, stats_bin, realisation)
+            print(extra["name"], data_bin, poly_bin, dilate_bin, realisation)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -222,19 +221,15 @@ if __name__ == "__main__":
                 mean_mean, cov_mean = mean, cov
             else:
                 c[data_bin][poly_bin][dilate_bin].add_marker(params, **extra)
-                # Get some useful properties of the fit, and plot the MAP model against the data if the bestfit alpha or alpha_ap are outliers compared to the mean fit
-                diff = np.c_[params["$\\alpha_\\parallel$"], params["$\\alpha_\\perp$"]] - mean_mean[2:]
-                outlier = diff @ np.linalg.inv(cov_mean[2:, 2:]) @ diff.T
-                # if outlier > sp.stats.chi2.ppf(0.9545, 2, loc=0, scale=1):
                 dataname = extra["name"].split(" ")[3].lower()
                 plotname = f"{datanames[dilate_bin]}_{broadband_names[poly_bin]}_{d_names[data_bin]}"
                 figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_contour.png"
                 if not os.path.isfile(figname):
                     extra.pop("color", None)
-                    cc = ChainConsumer()
-                    cc.add_chain(df, weights=newweight, **extra)
-                    cc.add_marker(df.iloc[max_post], **extra)
-                    cc.plotter.plot(filename=figname)
+                    # cc = ChainConsumer()
+                    # cc.add_chain(df, weights=newweight, **extra)
+                    # cc.add_marker(df.iloc[max_post], **extra)
+                    # cc.plotter.plot(filename=figname)
                     figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
                 else:
                     figname = None
@@ -242,10 +237,6 @@ if __name__ == "__main__":
             new_chi_squared, dof, bband, mods, smooths = model.simple_plot(params_dict, display=False, figname=figname, title=extra["name"])
             if realisation == "mean":
                 print(25.0 * new_chi_squared, dof)
-
-            if data_bin == 0 and (realisation == "2" or realisation == "21" or realisation == "22"):
-                df["weight"] = newweight
-                df.to_csv("/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_BOSSpoly.dat", index=False, sep=" ")
 
             stats[data_bin][poly_bin][dilate_bin].append(
                 [

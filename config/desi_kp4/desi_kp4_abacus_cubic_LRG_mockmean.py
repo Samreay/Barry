@@ -61,7 +61,7 @@ if __name__ == "__main__":
                 broadband_type=broadband_type,
                 n_poly=n_poly,
             )
-            model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=4.0)
+            model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
             model.set_default("beta", 0.4, min=0.1, max=0.7)
             model.set_default("sigma_nl_par", sigma[recon][0], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
             model.set_default("sigma_nl_perp", sigma[recon][1], min=0.0, max=20.0, sigma=1.0, prior="gaussian")

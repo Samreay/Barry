@@ -27,6 +27,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
     ):
 
         self.dilate_smooth = dilate_smooth
+        self.fog_wiggles = fog_wiggles
 
         super().__init__(
             name=name,

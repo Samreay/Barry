@@ -61,7 +61,7 @@ class PowerDing2018(PowerSpectrumFit):
 
         if ks is None or pk_lin is None:
             ks = self.camb.ks
-            pk_lin = self.camb.get_data()["pk_lin"]
+            pk_lin = self.camb.get_data()["pk_lin_z"]
         if r_drag is None:
             r_drag = self.camb.get_data()["r_s"]
         if s is None:

@@ -177,7 +177,7 @@ class PowerSpectrumFit(Model):
         for i in range(self.n_data_bias):
             datapk = splev(kval, splrep(data["ks"], data["pk0"][i]))
             cambpk = self.camb.get_data(om=c["om"], h0=c["h0"])
-            modelpk = splev(kval, splrep(cambpk["ks"], cambpk["pk_lin"]))
+            modelpk = splev(kval, splrep(cambpk["ks"], cambpk["pk_lin_z"]))
             kaiserfac = datapk / modelpk
             f = self.get_default("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
             b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f**2)
@@ -228,15 +228,14 @@ class PowerSpectrumFit(Model):
 
         pk_smooth_lin = smooth_func(
             self.camb.ks,
-            res["pk_lin"],
+            res["pk_lin_z"],
             om=om,
             h0=self.camb.h0,
             ob=self.camb.omega_b,
             ns=self.camb.ns,
-            rs=res["r_s"],
-            **self.smooth_type,
+            mnu=self.camb.mnu,
         )  # Get the smoothed power spectrum
-        pk_ratio = res["pk_lin"] / pk_smooth_lin - 1.0  # Get the ratio
+        pk_ratio = res["pk_lin_z"] / pk_smooth_lin - 1.0  # Get the ratio
         return pk_smooth_lin, pk_ratio
 
     @lru_cache(maxsize=32)

@@ -74,7 +74,7 @@ class PowerNoda2019(PowerSpectrumFit):
             om = c["om"]
             h0 = c["h0"]
             ks = c["ks"]
-            pk_lin = c["pk_lin"]
+            pk_lin = c["pk_lin_z"]
             pk_nonlin_0 = c["pk_nl_0"]
             pk_nonlin_z = c["pk_nl_z"]
         if r_drag is None:

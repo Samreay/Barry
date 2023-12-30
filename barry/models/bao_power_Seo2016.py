@@ -58,7 +58,7 @@ class PowerSeo2016(PowerSpectrumFit):
 
         if ks is None or pk_lin is None:
             ks = self.camb.ks
-            pk_lin = self.camb.get_data()["pk_lin"]
+            pk_lin = self.camb.get_data()["pk_lin_z"]
         if s is None:
             s = self.camb.smoothing_kernel
 

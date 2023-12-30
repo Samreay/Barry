@@ -1,3 +1,4 @@
+import os
 import sys
 
 sys.path.append("..")
@@ -79,7 +80,7 @@ if __name__ == "__main__":
 
             for j in range(len(dataset_pk.mock_data)):
                 dataset_pk.set_realisation(j)
-                name = dataset_pk.name + f" realisation {j} n_poly" + str(n)
+                name = dataset_pk.name + f" realisation {j} n_poly=" + str(n)
                 fitter.add_model_and_dataset(model, dataset_pk, name=name)
 
         dataset_xi = CorrelationFunction_DESI_KP4(
@@ -106,7 +107,7 @@ if __name__ == "__main__":
                 broadband_type=broadband_type,
                 n_poly=n_poly,
             )
-            model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=4.0)
+            model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
             model.set_default("beta", 0.4, min=0.1, max=0.7)
             model.set_default("sigma_nl_par", sigma[recon][0], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
             model.set_default("sigma_nl_perp", sigma[recon][1], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
@@ -122,7 +123,7 @@ if __name__ == "__main__":
 
             for j in range(len(dataset_xi.mock_data)):
                 dataset_xi.set_realisation(j)
-                name = dataset_xi.name + f" realisation {j} n_poly" + str(n)
+                name = dataset_xi.name + f" realisation {j} n_poly=" + str(n)
                 fitter.add_model_and_dataset(model, dataset_xi, name=name)
 
     # Submit all the job. We have quite a few (42), so we'll
@@ -139,98 +140,163 @@ if __name__ == "__main__":
         import logging
 
         logging.info("Creating plots")
+        logger = logging.getLogger()
+        logger.setLevel(logging.WARNING)
 
-        # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
-        c = [
-            ChainConsumer(),
-            ChainConsumer(),
-        ]
-        fitname = [None for i in range(len(c))]
+        datanames = ["fog_wiggles"]
+        broadband_names = ["poly", "spline"]
+        d_names = ["xi", "pk"]
 
-        datanames = ["Xi_CV", "Pk_CV"]
+        for dataname in datanames:
+            for broadband in broadband_names:
+                for d in d_names:
+                    plotname = f"{dataname}_{broadband}_{d}"
+                    dir_name = "/".join(pfn.split("/")[:-1]) + "/" + plotname
+                    try:
+                        if not os.path.exists(dir_name):
+                            os.makedirs(dir_name, exist_ok=True)
+                    except Exception:
+                        pass
 
-        # Loop over all the chains
-        stats = {}
-        output = {}
+        # Loop over all the fitters
+        c = [[[ChainConsumer() for _ in range(len(datanames))] for _ in range(len(broadband_names))] for d in range(len(d_names))]
+        stats = [[[[] for _ in range(len(datanames))] for _ in range(len(broadband_names))] for d in range(len(d_names))]
+
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
-            # Get the realisation number and redshift bin
-            recon_bin = 0 if "Prerecon" in extra["name"] else 1
-            poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
             data_bin = 0 if "Xi" in extra["name"] else 1
-            print(extra["name"], recon_bin, data_bin)
+            poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
+            dilate_bin = 0 if model.fog_wiggles else 1
+            realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
+            print(extra["name"], data_bin, poly_bin, dilate_bin, realisation)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
+
+            # Compute alpha_par and alpha_perp for each point in the chain
             alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
             df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
-
-            df["$d\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
-            df["$d\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
-            df["$d\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
-            df["$d\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
-            df["$d\\epsilon$"] = 100.0 * df["$\\epsilon$"]
+            newweight = np.where(
+                np.logical_and(
+                    np.logical_and(df["$\\alpha_\\parallel$"] >= 0.8, df["$\\alpha_\\parallel$"] <= 1.2),
+                    np.logical_and(df["$\\alpha_\\perp$"] >= 0.8, df["$\\alpha_\\perp$"] <= 1.2),
+                ),
+                weight,
+                0.0,
+            )
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
             r_s = model.camb.get_data()["r_s"]
-            max_post = posterior.argmax()
-            params = df.loc[max_post]
-            params_dict = model.get_param_dict(chain[max_post])
+            max_post = posterior[newweight > 0].argmax()
+            params = df[newweight > 0].iloc[max_post]
+            params_dict = model.get_param_dict(chain[newweight > 0][max_post])
             for name, val in params_dict.items():
                 model.set_default(name, val)
 
-            # Get some useful properties of the fit, and plot the MAP model against the data if it's the mock mean
-            figname = "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
-            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(params_dict, display=False, figname=figname)
+            # Compute some summary statistics and add them to a dictionary
+            mean, cov = weighted_avg_and_cov(
+                df[
+                    [
+                        "$\\alpha$",
+                        "$\\alpha_{ap}$",
+                        "$\\alpha_\\parallel$",
+                        "$\\alpha_\\perp$",
+                    ]
+                ],
+                newweight,
+                axis=0,
+            )
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
-            if data_bin == 0 and poly_bin == 0:
-                fitname[recon_bin] = data[0]["name"].replace(" ", "_")
-            chainname = [r"$\xi(s)$" if data_bin == 0 else r"$P(k)$", "Polynomial" if poly_bin == 0 else r"Spline"]
-            extra["name"] = chainname[0] + " " + chainname[1]
-            c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+            if realisation == "mean":
+                extra.pop("color", None)
+                c[data_bin][poly_bin][dilate_bin].add_chain(
+                    df, weights=newweight, color="k", **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False
+                )
+                figname = None
+                mean_mean, cov_mean = mean, cov
+            else:
+                c[data_bin][poly_bin][dilate_bin].add_marker(params, **extra)
+                dataname = extra["name"].split(" ")[3].lower()
+                plotname = f"{datanames[dilate_bin]}_{broadband_names[poly_bin]}_{d_names[data_bin]}"
+                figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_contour.png"
+                if not os.path.isfile(figname):
+                    extra.pop("color", None)
+                    # cc = ChainConsumer()
+                    # cc.add_chain(df, weights=newweight, **extra)
+                    # cc.add_marker(df.iloc[max_post], **extra)
+                    # cc.plotter.plot(filename=figname)
+                    figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
+                else:
+                    figname = None
 
-        print(fitname)
+            new_chi_squared, dof, bband, mods, smooths = model.simple_plot(params_dict, display=False, figname=figname, title=extra["name"])
+            if realisation == "mean":
+                print(25.0 * new_chi_squared, dof)
 
-        for recon_bin in range(len(c)):
-            truth = {
-                "$\\alpha$": 1.0,
-                "$\\alpha_{ap}$": 1.0,
-                "$\\alpha_\\perp$": 1.0,
-                "$\\alpha_\\parallel$": 1.0,
-                "$\\Sigma_{nl,||}$": sigma[None if "Pre" in fitname[recon_bin] else "sym"][0],
-                "$\\Sigma_{nl,\\perp}$": sigma[None if "Pre" in fitname[recon_bin] else "sym"][1],
-                "$\\Sigma_s$": sigma[None if "Pre" in fitname[recon_bin] else "sym"][2],
-            }
-            c[recon_bin].plotter.plot(
-                parameters=[
-                    "$\\alpha$",
-                    "$\\alpha_{ap}$",
-                    "$\\alpha_\\perp$",
-                    "$\\alpha_\\parallel$",
-                    "$\\Sigma_{nl,||}$",
-                    "$\\Sigma_{nl,\\perp}$",
-                    "$\\Sigma_s$",
-                ],
-                legend=True,
-                truth=truth,
-                filename="/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour.png",
+            stats[data_bin][poly_bin][dilate_bin].append(
+                [
+                    mean[0],
+                    mean[1],
+                    mean[2],
+                    mean[3],
+                    np.sqrt(cov[0, 0]),
+                    np.sqrt(cov[1, 1]),
+                    np.sqrt(cov[2, 2]),
+                    np.sqrt(cov[3, 3]),
+                    cov[0, 1] / np.sqrt(cov[0, 0] * cov[1, 1]),
+                    cov[2, 3] / np.sqrt(cov[2, 2] * cov[3, 3]),
+                    new_chi_squared,
+                    params_dict["alpha"],
+                    params_dict["epsilon"],
+                ]
             )
-            c[recon_bin].plotter.plot(
-                parameters=[
-                    "$\\alpha$",
-                    "$\\alpha_{ap}$",
-                ],
-                legend=True,
-                truth=truth,
-                filename="/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour2.png",
-            )
-            print(
-                c[recon_bin].analysis.get_latex_table(
-                    parameters=["$d\\alpha$", "$d\\alpha_{ap}$", "$d\\alpha_\\parallel$", "$d\\alpha_\\perp$"]
-                ),
-            )
+
+        for data_bin in range(len(d_names)):
+            for poly_bin in range(len(broadband_names)):
+                for dilate_bin in range(len(datanames)):
+                    plotname = f"{datanames[dilate_bin]}_{broadband_names[poly_bin]}_{d_names[data_bin]}"
+
+                    mean = np.mean(stats[data_bin][poly_bin][dilate_bin][1:], axis=0)
+                    cov = np.cov(stats[data_bin][poly_bin][dilate_bin][1:], rowvar=False)
+
+                    c[data_bin][poly_bin][dilate_bin].add_covariance(
+                        mean[:4],
+                        cov[:4, :4],
+                        parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+                        plot_contour=True,
+                        plot_point=False,
+                        show_as_1d_prior=False,
+                    )
+
+                    truth = {
+                        "$\\alpha$": 1.0,
+                        "$\\alpha_{ap}$": 1.0,
+                        "$\\alpha_\\perp$": 1.0,
+                        "$\\alpha_\\parallel$": 1.0,
+                    }
+
+                    c[data_bin][poly_bin][dilate_bin].plotter.plot(
+                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour.png"],
+                        truth=truth,
+                        parameters=[
+                            "$\\alpha_\\parallel$",
+                            "$\\alpha_\\perp$",
+                        ],
+                        legend=False,
+                    )
+                    c[data_bin][poly_bin][dilate_bin].plotter.plot(
+                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour2.png"],
+                        truth=truth,
+                        parameters=[
+                            "$\\alpha$",
+                            "$\\alpha_{ap}$",
+                        ],
+                        legend=False,
+                    )
+
+                    np.save("/".join(pfn.split("/")[:-1]) + "/Summary_" + plotname + f".npy", stats[data_bin][poly_bin][dilate_bin])

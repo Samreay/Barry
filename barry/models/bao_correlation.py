@@ -1,9 +1,9 @@
 from functools import lru_cache
 import numpy as np
 
-from barry.cosmology.pk2xi import PowerToCorrelationFFTLog, PowerToCorrelationGauss, PowerToCorrelationSphericalBessel
-from barry.cosmology.power_spectrum_smoothing import validate_smooth_method, smooth_func
-from barry.models.model import Model, Omega_m_z, Correction
+from barry.cosmology.pk2xi import PowerToCorrelationSphericalBessel
+from barry.cosmology.power_spectrum_smoothing import validate_smooth_method
+from barry.models.model import Model, Omega_m_z
 from barry.models.bao_power import PowerSpectrumFit
 from scipy.interpolate import splev, splrep
 from scipy.integrate import simps
@@ -56,9 +56,7 @@ class CorrelationFunctionFit(Model):
             marg=marg,
             broadband_type=None,
         )
-        if smooth_type is None:
-            self.smooth_type = {"method": "hinton2017"}
-        if not validate_smooth_method(self.smooth_type):
+        if not validate_smooth_method(self.parent.smooth_type):
             exit(0)
 
         self.n_data_bias = 1
@@ -174,7 +172,7 @@ class CorrelationFunctionFit(Model):
         c = data["cosmology"]
         dataxi = splev(sval, splrep(data["dist"], data["xi0"]))
         cambpk = self.camb.get_data(om=c["om"], h0=c["h0"])
-        modelxi = self.pk2xi_0.__call__(cambpk["ks"], cambpk["pk_lin"], np.array([sval]))[0]
+        modelxi = self.pk2xi_0.__call__(cambpk["ks"], cambpk["pk_lin_z"], np.array([sval]))[0]
         kaiserfac = dataxi / modelxi
         f = self.param_dict.get("f") if self.param_dict.get("f") is not None else Omega_m_z(c["om"], c["z"]) ** 0.55
         b = -1.0 / 3.0 * f + np.sqrt(kaiserfac - 4.0 / 45.0 * f**2) if kaiserfac - 4.0 / 45.0 * f**2 > 0 else 1.0

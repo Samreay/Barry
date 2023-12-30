@@ -437,7 +437,7 @@ if __name__ == "__main__":
     om = 0.31
     c = getCambGenerator()
     ks = c.ks
-    pklin = c.get_data(om=om)["pk_lin"]
+    pklin = c.get_data(om=om)["pk_lin_z"]
     growth = Omega_m_z(0.31, c.redshift) ** 0.55
 
     ss = np.linspace(30, 200, 85)
