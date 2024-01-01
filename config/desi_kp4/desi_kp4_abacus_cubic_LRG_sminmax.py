@@ -192,17 +192,12 @@ if __name__ == "__main__":
     # Loop over pre- and post-recon measurements
     for r, recon in enumerate(["sym"]):
 
-        model = CorrBeutler2017(
-            recon=recon,
-            fix_params=["om"],
-            marg="full",
-            poly_poles=[0, 2],
-            correction=Correction.NONE,
-            n_poly=3,
-        )
-        model.set_default("sigma_nl_par", 4.0, min=0.0, max=20.0, sigma=1.5, prior="gaussian")
-        model.set_default("sigma_nl_perp", 2.0, min=0.0, max=20.0, sigma=1.5, prior="gaussian")
-        model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=1.5, prior="gaussian")
+        model = CorrBeutler2017(recon=recon, fix_params=["om"], marg="full", poly_poles=[0, 2], correction=Correction.NONE, n_poly=[0, 2])
+        model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
+        model.set_default("beta", 0.4, min=0.1, max=0.7)
+        model.set_default("sigma_nl_par", 5.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+        model.set_default("sigma_nl_perp", 2.0, min=0.0, max=20.0, sigma=1.0, prior="gaussian")
+        model.set_default("sigma_s", 2.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
         # Load in a pre-existing BAO template
         pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
