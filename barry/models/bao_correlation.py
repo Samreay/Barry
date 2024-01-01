@@ -197,7 +197,7 @@ class CorrelationFunctionFit(Model):
 
     def declare_parameters(self):
         """Defines model parameters, their bounds and default value."""
-        self.add_param(f"b{{{0}}}_{{{1}}}", f"$b{{{0}}}_{{{1}}}$", 0.01, 10.0, 1.0)  # Linear galaxy bias for each multipole
+        self.add_param(f"b{{{0}}}_{{{1}}}", f"$b_{{{0},{1}}}$", 0.01, 10.0, 1.0)  # Linear galaxy bias for each multipole
         self.add_param("om", r"$\Omega_m$", 0.1, 0.5, 0.31)  # Cosmology
         self.add_param("alpha", r"$\alpha$", 0.8, 1.2, 1.0)  # Stretch for monopole
         if not self.isotropic:

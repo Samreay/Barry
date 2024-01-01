@@ -131,32 +131,30 @@ if __name__ == "__main__":
         logger = logging.getLogger()
         logger.setLevel(logging.WARNING)
 
-        datanames = ["dilate_smooth", "dilate_wiggle"]
-        broadband_names = ["poly", "spline"]
+        datanames = get_smooth_methods_list()
         d_names = ["xi", "pk"]
 
         for dataname in datanames:
-            for broadband in broadband_names:
-                for d in d_names:
-                    plotname = f"{dataname}_{broadband}_{d}"
-                    dir_name = "/".join(pfn.split("/")[:-1]) + "/" + plotname
-                    try:
-                        if not os.path.exists(dir_name):
-                            os.makedirs(dir_name, exist_ok=True)
-                    except Exception:
-                        pass
+            for d in d_names:
+                plotname = f"{dataname}_{d}"
+                dir_name = "/".join(pfn.split("/")[:-1]) + "/" + plotname
+                try:
+                    if not os.path.exists(dir_name):
+                        os.makedirs(dir_name, exist_ok=True)
+                except Exception:
+                    pass
 
         # Loop over all the fitters
-        c = [[[ChainConsumer() for _ in range(len(datanames))] for _ in range(len(broadband_names))] for d in range(len(d_names))]
-        stats = [[[[] for _ in range(len(datanames))] for _ in range(len(broadband_names))] for d in range(len(d_names))]
+        c = [[ChainConsumer() for _ in range(len(datanames))] for d in range(len(d_names))]
+        stats = [[[] for _ in range(len(datanames))] for d in range(len(d_names))]
 
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             data_bin = 0 if "Xi" in extra["name"] else 1
-            poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
-            dilate_bin = 0 if model.dilate_smooth else 1
+            dewiggle = extra["name"].split("dewiggle=")[1].split(" ")[0]
+            dewiggle_bin = datanames.index(dewiggle)
             realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
-            print(extra["name"], data_bin, poly_bin, dilate_bin, realisation)
+            print(extra["name"], data_bin, dewiggle_bin, realisation)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -202,15 +200,15 @@ if __name__ == "__main__":
             extra.pop("realisation", None)
             if realisation == "mean":
                 extra.pop("color", None)
-                c[data_bin][poly_bin][dilate_bin].add_chain(
+                c[data_bin][dewiggle_bin].add_chain(
                     df, weights=newweight, color="k", **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False
                 )
                 figname = None
                 mean_mean, cov_mean = mean, cov
             else:
-                c[data_bin][poly_bin][dilate_bin].add_marker(params, **extra)
+                c[data_bin][dewiggle_bin].add_marker(params, **extra)
                 dataname = extra["name"].split(" ")[3].lower()
-                plotname = f"{datanames[dilate_bin]}_{broadband_names[poly_bin]}_{d_names[data_bin]}"
+                plotname = f"{datanames[dewiggle_bin]}_{d_names[data_bin]}"
                 figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_contour.png"
                 if not os.path.isfile(figname):
                     extra.pop("color", None)
@@ -226,7 +224,7 @@ if __name__ == "__main__":
             if realisation == "mean":
                 print(25.0 * new_chi_squared, dof)
 
-            stats[data_bin][poly_bin][dilate_bin].append(
+            stats[data_bin][dewiggle_bin].append(
                 [
                     mean[0],
                     mean[1],
@@ -244,47 +242,46 @@ if __name__ == "__main__":
                 ]
             )
 
-        for data_bin in range(len(datanames)):
-            for poly_bin in range(len(broadband_names)):
-                for dilate_bin in range(len(datanames)):
-                    plotname = f"{datanames[dilate_bin]}_{broadband_names[poly_bin]}_{d_names[data_bin]}"
+        for data_bin in range(len(d_names)):
+            for dewiggle_bin in range(len(datanames)):
+                plotname = f"{datanames[dewiggle_bin]}_{d_names[data_bin]}"
 
-                    mean = np.mean(stats[data_bin][poly_bin][dilate_bin][1:], axis=0)
-                    cov = np.cov(stats[data_bin][poly_bin][dilate_bin][1:], rowvar=False)
+                mean = np.mean(stats[data_bin][dewiggle_bin][1:], axis=0)
+                cov = np.cov(stats[data_bin][dewiggle_bin][1:], rowvar=False)
 
-                    c[data_bin][poly_bin][dilate_bin].add_covariance(
-                        mean[:4],
-                        cov[:4, :4],
-                        parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
-                        plot_contour=True,
-                        plot_point=False,
-                        show_as_1d_prior=False,
-                    )
+                c[data_bin][dewiggle_bin].add_covariance(
+                    mean[:4],
+                    cov[:4, :4],
+                    parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
+                    plot_contour=True,
+                    plot_point=False,
+                    show_as_1d_prior=False,
+                )
 
-                    truth = {
-                        "$\\alpha$": 1.0,
-                        "$\\alpha_{ap}$": 1.0,
-                        "$\\alpha_\\perp$": 1.0,
-                        "$\\alpha_\\parallel$": 1.0,
-                    }
+                truth = {
+                    "$\\alpha$": 1.0,
+                    "$\\alpha_{ap}$": 1.0,
+                    "$\\alpha_\\perp$": 1.0,
+                    "$\\alpha_\\parallel$": 1.0,
+                }
 
-                    c[data_bin][poly_bin][dilate_bin].plotter.plot(
-                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour.png"],
-                        truth=truth,
-                        parameters=[
-                            "$\\alpha_\\parallel$",
-                            "$\\alpha_\\perp$",
-                        ],
-                        legend=False,
-                    )
-                    c[data_bin][poly_bin][dilate_bin].plotter.plot(
-                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour2.png"],
-                        truth=truth,
-                        parameters=[
-                            "$\\alpha$",
-                            "$\\alpha_{ap}$",
-                        ],
-                        legend=False,
-                    )
+                c[data_bin][dewiggle_bin].plotter.plot(
+                    filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour.png"],
+                    truth=truth,
+                    parameters=[
+                        "$\\alpha_\\parallel$",
+                        "$\\alpha_\\perp$",
+                    ],
+                    legend=False,
+                )
+                c[data_bin][dewiggle_bin].plotter.plot(
+                    filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour2.png"],
+                    truth=truth,
+                    parameters=[
+                        "$\\alpha$",
+                        "$\\alpha_{ap}$",
+                    ],
+                    legend=False,
+                )
 
-                    np.save("/".join(pfn.split("/")[:-1]) + "/Summary_" + plotname + f".npy", stats[data_bin][poly_bin][dilate_bin])
+                np.save("/".join(pfn.split("/")[:-1]) + "/Summary_" + plotname + f".npy", stats[data_bin][dewiggle_bin])

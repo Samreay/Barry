@@ -194,15 +194,6 @@ if __name__ == "__main__":
                 "$\\Sigma_s$": sigma[None if "Pre" in fitname[recon_bin] else "sym"][2],
             }
             c[recon_bin].plotter.plot(
-                parameters=[
-                    "$\\alpha$",
-                    "$\\alpha_{ap}$",
-                    "$\\alpha_\\perp$",
-                    "$\\alpha_\\parallel$",
-                    "$\\Sigma_{nl,||}$",
-                    "$\\Sigma_{nl,\\perp}$",
-                    "$\\Sigma_s$",
-                ],
                 legend=True,
                 truth=truth,
                 filename="/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour.png",
