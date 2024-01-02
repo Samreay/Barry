@@ -22,14 +22,15 @@ def plot_grids_bias(statsmean, kmins, kmaxs, figname):
     dkmin = kmins[1] - kmins[0]
     dkmax = kmaxs[1] - kmaxs[0]
 
-    bestmean = np.argmin(np.sqrt(statsmean[2] ** 2 + statsmean[3] ** 2))
+    # bestmean = np.argmin(np.sqrt(statsmean[12] ** 2 + statsmean[13] ** 2))
+    bestmean = np.where((statsmean[0] == 0.02) & (statsmean[1] == 0.30))[0][0]
     print(bestmean, statsmean[:, bestmean])
 
     fig, axes = plt.subplots(figsize=(5, 3), nrows=1, ncols=2, sharex=True, sharey=True, squeeze=False)
     plt.subplots_adjust(left=0.15, top=0.97, bottom=0.17, right=0.8, hspace=0.0, wspace=0.10)
 
     axes[0, 0].imshow(
-        100.0 * (statsmean[2]).reshape(len(kmins), len(kmaxs)).T,
+        100.0 * (statsmean[12]).reshape(len(kmins), len(kmaxs)).T,
         extent=(kmins[0] - 0.005, kmins[-1] + 0.005, kmaxs[0] - 0.01, kmaxs[-1] + 0.01),
         origin="lower",
         aspect="auto",
@@ -38,7 +39,7 @@ def plot_grids_bias(statsmean, kmins, kmaxs, figname):
         vmax=0.25,
     )
     cax = axes[0, 1].imshow(
-        100.0 * (statsmean[3]).reshape(len(kmins), len(kmaxs)).T,
+        100.0 * (statsmean[13]).reshape(len(kmins), len(kmaxs)).T,
         extent=(kmins[0] - 0.005, kmins[-1] + 0.005, kmaxs[0] - 0.01, kmaxs[-1] + 0.01),
         origin="lower",
         aspect="auto",
@@ -46,21 +47,21 @@ def plot_grids_bias(statsmean, kmins, kmaxs, figname):
         vmin=-0.25,
         vmax=0.25,
     )
-    lines = contour_rect(100.0 * (statsmean[2]).reshape(len(kmins), len(kmaxs)).T)
+    lines = contour_rect(100.0 * (statsmean[12]).reshape(len(kmins), len(kmaxs)).T, 0.1)
     for line in lines:
         axes[0, 0].plot(np.array(line[1]) * dkmin + kmins[0], np.array(line[0]) * dkmax + kmaxs[0], color="k", alpha=0.5, ls="--")
-    lines = contour_rect(100.0 * (statsmean[3]).reshape(len(kmins), len(kmaxs)).T)
+    lines = contour_rect(100.0 * (statsmean[13]).reshape(len(kmins), len(kmaxs)).T, 0.2)
     for line in lines:
         axes[0, 1].plot(np.array(line[1]) * dkmin + kmins[0], np.array(line[0]) * dkmax + kmaxs[0], color="k", alpha=0.5, ls="--")
     axes[0, 0].errorbar(statsmean[0, bestmean], statsmean[1, bestmean], marker="x", color="g", markersize=14, ls="None")
     axes[0, 1].errorbar(statsmean[0, bestmean], statsmean[1, bestmean], marker="x", color="g", markersize=14, ls="None")
     fig.supxlabel(r"$k_{\mathrm{min}}\,(h\,\mathrm{Mpc}^{-1})$", x=0.45)
     fig.supylabel(r"$k_{\mathrm{max}}\,(h\,\mathrm{Mpc}^{-1})$", y=0.55)
-    fig.colorbar(cax, ax=axes.ravel().tolist(), label=r"$\Delta \alpha_{||,\perp}$")
+    fig.colorbar(cax, ax=axes.ravel().tolist(), label=r"$\Delta \alpha_{\mathrm{iso},\mathrm{ap}}\,(\%)$")
     axes[0, 0].text(
         0.95,
         0.95,
-        r"$\alpha_{||}$",
+        r"$\alpha_{\mathrm{iso}}$",
         transform=axes[0, 0].transAxes,
         ha="right",
         va="top",
@@ -69,7 +70,7 @@ def plot_grids_bias(statsmean, kmins, kmaxs, figname):
     axes[0, 1].text(
         0.95,
         0.95,
-        r"$\alpha_{\perp}$",
+        r"$\alpha_{\mathrm{ap}}$",
         transform=axes[0, 1].transAxes,
         ha="right",
         va="top",
@@ -88,7 +89,8 @@ def plot_grids_errs(stats, kmins, kmaxs, figname):
     dkmin = kmins[1] - kmins[0]
     dkmax = kmaxs[1] - kmaxs[0]
 
-    bestmean = np.argmin(np.sqrt(stats[2] ** 2 + stats[3] ** 2))
+    # bestmean = np.argmin(np.sqrt(stats[2] ** 2 + stats[3] ** 2))
+    bestmean = np.where((stats[0] == 0.02) & (stats[1] == 0.30))[0][0]
 
     statsmean = np.copy(stats)
     stats /= stats[:, bestmean][:, None]
@@ -102,8 +104,8 @@ def plot_grids_errs(stats, kmins, kmaxs, figname):
         origin="lower",
         aspect="auto",
         cmap="RdBu",
-        vmin=0.60,
-        vmax=1.40,
+        vmin=0.50,
+        vmax=1.50,
     )
     cax = axes[0, 1].imshow(
         stats[8].reshape(len(kmins), len(kmaxs)).T,
@@ -111,24 +113,24 @@ def plot_grids_errs(stats, kmins, kmaxs, figname):
         origin="lower",
         aspect="auto",
         cmap="RdBu",
-        vmin=0.60,
-        vmax=1.40,
+        vmin=0.50,
+        vmax=1.50,
     )
-    lines = contour_rect(100.0 * (statsmean[2]).reshape(len(kmins), len(kmaxs)).T)
+    lines = contour_rect(100.0 * (statsmean[12]).reshape(len(kmins), len(kmaxs)).T, 0.1)
     for line in lines:
         axes[0, 0].plot(np.array(line[1]) * dkmin + kmins[0], np.array(line[0]) * dkmax + kmaxs[0], color="k", alpha=0.5, ls="--")
-    lines = contour_rect(100.0 * (statsmean[3]).reshape(len(kmins), len(kmaxs)).T)
+    lines = contour_rect(100.0 * (statsmean[13]).reshape(len(kmins), len(kmaxs)).T, 0.2)
     for line in lines:
         axes[0, 1].plot(np.array(line[1]) * dkmin + kmins[0], np.array(line[0]) * dkmax + kmaxs[0], color="k", alpha=0.5, ls="--")
     axes[0, 0].errorbar(statsmean[0, bestmean], statsmean[1, bestmean], marker="x", color="g", markersize=14, ls="None")
     axes[0, 1].errorbar(statsmean[0, bestmean], statsmean[1, bestmean], marker="x", color="g", markersize=14, ls="None")
     fig.supxlabel(r"$k_{\mathrm{min}}\,(h\,\mathrm{Mpc}^{-1})$", x=0.45)
     fig.supylabel(r"$k_{\mathrm{max}}\,(h\,\mathrm{Mpc}^{-1})$", y=0.55)
-    fig.colorbar(cax, ax=axes.ravel().tolist(), label=r"$\mathrm{Relative}\,\,\sigma_{\alpha_{||,\perp}}$")
+    fig.colorbar(cax, ax=axes.ravel().tolist(), label=r"$\mathrm{Relative}\,\,\sigma_{\alpha_{\mathrm{iso},\mathrm{ap}}}$")
     axes[0, 0].text(
         0.95,
         0.95,
-        r"$\alpha_{||}$",
+        r"$\alpha_{\mathrm{iso}}$",
         transform=axes[0, 0].transAxes,
         ha="right",
         va="top",
@@ -137,7 +139,7 @@ def plot_grids_errs(stats, kmins, kmaxs, figname):
     axes[0, 1].text(
         0.95,
         0.95,
-        r"$\alpha_{\perp}$",
+        r"$\alpha_{\mathrm{ap}}$",
         transform=axes[0, 1].transAxes,
         ha="right",
         va="top",
@@ -151,9 +153,9 @@ def plot_grids_errs(stats, kmins, kmaxs, figname):
     fig.savefig(figname, bbox_inches="tight", transparent=False, dpi=300)
 
 
-def contour_rect(data):
+def contour_rect(data, edgeval):
 
-    im = np.where(np.fabs(data) <= 0.1, 1, 0)
+    im = np.where(np.fabs(data) <= edgeval, 1, 0)
 
     pad = np.pad(im, [(1, 1), (1, 1)])  # zero padding
 
@@ -244,7 +246,6 @@ if __name__ == "__main__":
 
         # Loop over all the chains
         stats = []
-        output = []
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number and redshift bin
@@ -263,12 +264,32 @@ if __name__ == "__main__":
             alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
-            mean, cov = weighted_avg_and_cov(
-                df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"]],
+            df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+            newweight = np.where(
+                np.logical_and(
+                    np.logical_and(df["$\\alpha_\\parallel$"] >= 0.8, df["$\\alpha_\\parallel$"] <= 1.2),
+                    np.logical_and(df["$\\alpha_\\perp$"] >= 0.8, df["$\\alpha_\\perp$"] <= 1.2),
+                ),
                 weight,
-                axis=0,
+                0.0,
             )
 
+            # Get the MAP point
+            max_post = posterior[newweight > 0].argmax()
+            params = df[newweight > 0].iloc[max_post]
+
+            mean, cov = weighted_avg_and_cov(
+                df[
+                    [
+                        "$\\alpha$",
+                        "$\\alpha_{ap}$",
+                        "$\\alpha_\\parallel$",
+                        "$\\alpha_\\perp$",
+                    ]
+                ],
+                newweight,
+                axis=0,
+            )
             print(extra["name"], kminbin, kmaxbin, kmins[kminbin], kmaxs[kmaxbin])
 
             stats.append(
@@ -277,30 +298,20 @@ if __name__ == "__main__":
                     kmaxs[kmaxbin],
                     mean[0] - 1.0,
                     mean[1] - 1.0,
-                    mean[2] - 4.0,
-                    mean[3] - 2.0,
-                    mean[4],
+                    mean[2] - 1.0,
+                    mean[3] - 1.0,
                     np.sqrt(cov[0, 0]),
                     np.sqrt(cov[1, 1]),
                     np.sqrt(cov[2, 2]),
                     np.sqrt(cov[3, 3]),
-                    np.sqrt(cov[4, 4]),
+                    cov[0, 1] / np.sqrt(cov[0, 0] * cov[1, 1]),
+                    cov[2, 3] / np.sqrt(cov[2, 2] * cov[3, 3]),
+                    params["$\\alpha$"] - 1.0,
+                    (1.0 + params["$\\epsilon$"]) ** 3 - 1.0,
                 ]
             )
-            output.append(
-                f"{kmins[kminbin]:6.4f}, {kmaxs[kmaxbin]:6.4f}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {mean[3]:6.4f}, {mean[4]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {np.sqrt(cov[2, 2]):6.4f}, {np.sqrt(cov[3, 3]):6.4f}, {np.sqrt(cov[4, 4]):6.4f}"
-            )
-
         print(stats)
 
         # Plot grids of alpha bias and alpha error as a function of smin and smax
         plot_grids_bias(np.array(stats).T, kmins, kmaxs, "/".join(pfn.split("/")[:-1]) + "/kminmax_bias_postrecon.png")
         plot_grids_errs(np.array(stats).T, kmins, kmaxs, "/".join(pfn.split("/")[:-1]) + "/kminmax_errs_postrecon.png")
-
-        # Save all the numbers to a file
-        with open(dir_name + "/Barry_fit_kminmax_postrecon.txt", "w") as f:
-            f.write(
-                "# smin,  smax,  alpha_par, alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
-            )
-            for l in output:
-                f.write(l + "\n")
