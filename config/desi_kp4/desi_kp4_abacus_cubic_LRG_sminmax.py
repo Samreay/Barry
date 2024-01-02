@@ -17,20 +17,20 @@ from chainconsumer import ChainConsumer
 # Config file to fit the abacus cutsky mock means and individual realisations using Dynesty.
 
 # Convenience function to plot histograms of the errors and cross-correlation coefficients
-def plot_grids_bias(statsmean, kmins, kmaxs, figname):
+def plot_grids_bias(statsmean, kmins, kmaxs, figname, inds, edgevals):
 
     dkmin = kmins[1] - kmins[0]
     dkmax = kmaxs[1] - kmaxs[0]
 
     # bestmean = np.argmin(np.sqrt(statsmean[12] ** 2 + statsmean[13] ** 2))
-    bestmean = np.where((stats[0] == 50.0) & (stats[1] == 150.0))[0][0]
+    bestmean = np.where((statsmean[0] == 50.0) & (statsmean[1] == 150.0))[0][0]
     print(bestmean, statsmean[:, bestmean])
 
-    fig, axes = plt.subplots(figsize=(5, 3), nrows=1, ncols=2, sharex=True, sharey=True, squeeze=False)
-    plt.subplots_adjust(left=0.15, top=0.97, bottom=0.17, right=0.8, hspace=0.0, wspace=0.10)
+    fig, axes = plt.subplots(figsize=(7.5, 2.5), nrows=1, ncols=2, sharex=True, sharey=True, squeeze=False)
+    plt.subplots_adjust(left=0.10, top=0.97, bottom=0.18, right=0.8, hspace=0.0, wspace=0.10)
 
     axes[0, 0].imshow(
-        100.0 * (statsmean[12]).reshape(len(kmins), len(kmaxs)).T,
+        100.0 * (statsmean[inds[0]]).reshape(len(kmins), len(kmaxs)).T,
         extent=(kmins[0] - 2.0, kmins[-1] + 2.0, kmaxs[0] - 2.0, kmaxs[-1] + 2.0),
         origin="lower",
         aspect="auto",
@@ -39,7 +39,7 @@ def plot_grids_bias(statsmean, kmins, kmaxs, figname):
         vmax=0.25,
     )
     cax = axes[0, 1].imshow(
-        100.0 * (statsmean[13]).reshape(len(kmins), len(kmaxs)).T,
+        100.0 * (statsmean[inds[1]]).reshape(len(kmins), len(kmaxs)).T,
         extent=(kmins[0] - 2.0, kmins[-1] + 2.0, kmaxs[0] - 2.0, kmaxs[-1] + 2.0),
         origin="lower",
         aspect="auto",
@@ -47,21 +47,25 @@ def plot_grids_bias(statsmean, kmins, kmaxs, figname):
         vmin=-0.25,
         vmax=0.25,
     )
-    lines = contour_rect(100.0 * (statsmean[12]).reshape(len(kmins), len(kmaxs)).T, 0.1)
+    lines = contour_rect(100.0 * (statsmean[inds[0]]).reshape(len(kmins), len(kmaxs)).T, edgevals[0])
     for line in lines:
         axes[0, 0].plot(np.array(line[1]) * dkmin + kmins[0], np.array(line[0]) * dkmax + kmaxs[0], color="k", alpha=0.5, ls="--")
-    lines = contour_rect(100.0 * (statsmean[13]).reshape(len(kmins), len(kmaxs)).T, 0.2)
+    lines = contour_rect(100.0 * (statsmean[inds[1]]).reshape(len(kmins), len(kmaxs)).T, edgevals[1])
     for line in lines:
         axes[0, 1].plot(np.array(line[1]) * dkmin + kmins[0], np.array(line[0]) * dkmax + kmaxs[0], color="k", alpha=0.5, ls="--")
-    axes[0, 0].errorbar(statsmean[0, bestmean], statsmean[1, bestmean], marker="x", color="g", markersize=14, ls="None")
-    axes[0, 1].errorbar(statsmean[0, bestmean], statsmean[1, bestmean], marker="x", color="g", markersize=14, ls="None")
-    fig.supxlabel(r"$s_{\mathrm{min}}\,(h^{-1}\,\mathrm{Mpc})$", x=0.45)
+    axes[0, 0].errorbar(statsmean[0, bestmean], statsmean[1, bestmean], marker="x", color="g", markersize=8, ls="None")
+    axes[0, 1].errorbar(statsmean[0, bestmean], statsmean[1, bestmean], marker="x", color="g", markersize=8, ls="None")
+    fig.supxlabel(r"$s_{\mathrm{min}}\,(h^{-1}\,\mathrm{Mpc})$", x=0.35)
     fig.supylabel(r"$s_{\mathrm{max}}\,(h^{-1}\,\mathrm{Mpc})$", y=0.55)
-    fig.colorbar(cax, ax=axes.ravel().tolist(), label=r"$\Delta \alpha_{\mathrm{iso},\mathrm{ap}}\,(\%)$")
+    fig.colorbar(
+        cax,
+        ax=axes.ravel().tolist(),
+        label=r"$\Delta \alpha_{\mathrm{iso},\mathrm{ap}}\,(\%)$" if inds[0] == 12 else r"$\Delta \alpha_{||,\perp}\,(\%)$",
+    )
     axes[0, 0].text(
         0.95,
         0.95,
-        r"$\alpha_{\mathrm{iso}}$",
+        r"$\alpha_{\mathrm{iso}}$" if inds[0] == 12 else r"$\alpha_{||}$",
         transform=axes[0, 0].transAxes,
         ha="right",
         va="top",
@@ -70,21 +74,21 @@ def plot_grids_bias(statsmean, kmins, kmaxs, figname):
     axes[0, 1].text(
         0.95,
         0.95,
-        r"$\alpha_{\mathrm{ap}}$",
+        r"$\alpha_{\mathrm{ap}}$" if inds[1] == 13 else r"$\alpha_{\perp}$",
         transform=axes[0, 1].transAxes,
         ha="right",
         va="top",
         color="k",
     )
-    axes[0, 0].set_xlim(kmins[0] - 0.1, kmins[-1] + 0.1)
-    axes[0, 0].set_ylim(kmaxs[0] - 0.1, kmaxs[-1] + 0.1)
-    axes[0, 1].set_xlim(kmins[0] - 0.1, kmins[-1] + 0.1)
-    axes[0, 1].set_ylim(kmaxs[0] - 0.1, kmaxs[-1] + 0.1)
+    axes[0, 0].set_xlim(kmins[0] - 2.4, kmins[-1] + 2.4)
+    axes[0, 0].set_ylim(kmaxs[0] - 2.2, kmaxs[-1] + 2.4)
+    axes[0, 1].set_xlim(kmins[0] - 2.4, kmins[-1] + 2.2)
+    axes[0, 1].set_ylim(kmaxs[0] - 2.4, kmaxs[-1] + 2.4)
 
     fig.savefig(figname, bbox_inches="tight", transparent=False, dpi=300)
 
 
-def plot_grids_errs(stats, kmins, kmaxs, figname):
+def plot_grids_errs(stats, kmins, kmaxs, figname, inds, edgevals):
 
     dkmin = kmins[1] - kmins[0]
     dkmax = kmaxs[1] - kmaxs[0]
@@ -95,11 +99,11 @@ def plot_grids_errs(stats, kmins, kmaxs, figname):
     statsmean = np.copy(stats)
     stats /= stats[:, bestmean][:, None]
 
-    fig, axes = plt.subplots(figsize=(5, 3), nrows=1, ncols=2, sharex=True, sharey=True, squeeze=False)
-    plt.subplots_adjust(left=0.15, top=0.97, bottom=0.17, right=0.8, hspace=0.0, wspace=0.10)
+    fig, axes = plt.subplots(figsize=(7.5, 2.5), nrows=1, ncols=2, sharex=True, sharey=True, squeeze=False)
+    plt.subplots_adjust(left=0.10, top=0.97, bottom=0.18, right=0.8, hspace=0.0, wspace=0.10)
 
     axes[0, 0].imshow(
-        stats[7].reshape(len(kmins), len(kmaxs)).T,
+        stats[inds[2]].reshape(len(kmins), len(kmaxs)).T,
         extent=(kmins[0] - 2.0, kmins[-1] + 2.0, kmaxs[0] - 2.0, kmaxs[-1] + 2.0),
         origin="lower",
         aspect="auto",
@@ -108,7 +112,7 @@ def plot_grids_errs(stats, kmins, kmaxs, figname):
         vmax=1.50,
     )
     cax = axes[0, 1].imshow(
-        stats[8].reshape(len(kmins), len(kmaxs)).T,
+        stats[inds[3]].reshape(len(kmins), len(kmaxs)).T,
         extent=(kmins[0] - 2.0, kmins[-1] + 2.0, kmaxs[0] - 2.0, kmaxs[-1] + 2.0),
         origin="lower",
         aspect="auto",
@@ -116,21 +120,27 @@ def plot_grids_errs(stats, kmins, kmaxs, figname):
         vmin=0.50,
         vmax=1.50,
     )
-    lines = contour_rect(100.0 * (statsmean[12]).reshape(len(kmins), len(kmaxs)).T, 0.1)
+    lines = contour_rect(100.0 * (statsmean[inds[0]]).reshape(len(kmins), len(kmaxs)).T, edgevals[0])
     for line in lines:
         axes[0, 0].plot(np.array(line[1]) * dkmin + kmins[0], np.array(line[0]) * dkmax + kmaxs[0], color="k", alpha=0.5, ls="--")
-    lines = contour_rect(100.0 * (statsmean[13]).reshape(len(kmins), len(kmaxs)).T, 0.2)
+    lines = contour_rect(100.0 * (statsmean[inds[1]]).reshape(len(kmins), len(kmaxs)).T, edgevals[1])
     for line in lines:
         axes[0, 1].plot(np.array(line[1]) * dkmin + kmins[0], np.array(line[0]) * dkmax + kmaxs[0], color="k", alpha=0.5, ls="--")
-    axes[0, 0].errorbar(statsmean[0, bestmean], statsmean[1, bestmean], marker="x", color="g", markersize=14, ls="None")
-    axes[0, 1].errorbar(statsmean[0, bestmean], statsmean[1, bestmean], marker="x", color="g", markersize=14, ls="None")
-    fig.supxlabel(r"$s_{\mathrm{min}}\,(h^{-1}\,\mathrm{Mpc})$", x=0.45)
+    axes[0, 0].errorbar(statsmean[0, bestmean], statsmean[1, bestmean], marker="x", color="g", markersize=8, ls="None")
+    axes[0, 1].errorbar(statsmean[0, bestmean], statsmean[1, bestmean], marker="x", color="g", markersize=8, ls="None")
+    fig.supxlabel(r"$s_{\mathrm{min}}\,(h^{-1}\,\mathrm{Mpc})$", x=0.35)
     fig.supylabel(r"$s_{\mathrm{max}}\,(h^{-1}\,\mathrm{Mpc})$", y=0.55)
-    fig.colorbar(cax, ax=axes.ravel().tolist(), label=r"$\mathrm{Relative}\,\,\sigma_{\alpha_{\mathrm{iso},\mathrm{ap}}}$")
+    fig.colorbar(
+        cax,
+        ax=axes.ravel().tolist(),
+        label=r"$\mathrm{Relative}\,\,\sigma_{\alpha_{\mathrm{iso},\mathrm{ap}}}$"
+        if inds[0] == 12
+        else r"$\mathrm{Relative}\,\,\sigma_{\alpha_{||,\perp}}$",
+    )
     axes[0, 0].text(
         0.95,
         0.95,
-        r"$\alpha_{\mathrm{iso}}$",
+        r"$\alpha_{\mathrm{iso}}$" if inds[0] == 12 else r"$\alpha_{||}$",
         transform=axes[0, 0].transAxes,
         ha="right",
         va="top",
@@ -139,16 +149,16 @@ def plot_grids_errs(stats, kmins, kmaxs, figname):
     axes[0, 1].text(
         0.95,
         0.95,
-        r"$\alpha_{\mathrm{ap}}$",
+        r"$\alpha_{\mathrm{ap}}$" if inds[1] == 13 else r"$\alpha_{\perp}$",
         transform=axes[0, 1].transAxes,
         ha="right",
         va="top",
         color="k",
     )
-    axes[0, 0].set_xlim(kmins[0] - 0.1, kmins[-1] + 0.1)
-    axes[0, 0].set_ylim(kmaxs[0] - 0.1, kmaxs[-1] + 0.1)
-    axes[0, 1].set_xlim(kmins[0] - 0.1, kmins[-1] + 0.1)
-    axes[0, 1].set_ylim(kmaxs[0] - 0.1, kmaxs[-1] + 0.1)
+    axes[0, 0].set_xlim(kmins[0] - 2.2, kmins[-1] + 2.2)
+    axes[0, 0].set_ylim(kmaxs[0] - 2.2, kmaxs[-1] + 2.2)
+    axes[0, 1].set_xlim(kmins[0] - 2.2, kmins[-1] + 2.2)
+    axes[0, 1].set_ylim(kmaxs[0] - 2.2, kmaxs[-1] + 2.2)
 
     fig.savefig(figname, bbox_inches="tight", transparent=False, dpi=300)
 
@@ -303,10 +313,23 @@ if __name__ == "__main__":
                     cov[2, 3] / np.sqrt(cov[2, 2] * cov[3, 3]),
                     params["$\\alpha$"] - 1.0,
                     (1.0 + params["$\\epsilon$"]) ** 3 - 1.0,
+                    model.get_alphas(params["$\\alpha$"], params["$\\epsilon$"])[0] - 1.0,
+                    model.get_alphas(params["$\\alpha$"], params["$\\epsilon$"])[1] - 1.0,
                 ]
             )
         print(stats)
 
         # Plot grids of alpha bias and alpha error as a function of smin and smax
-        plot_grids_bias(np.array(stats).T, smins, smaxs, "/".join(pfn.split("/")[:-1]) + "/kminmax_bias_postrecon.png")
-        plot_grids_errs(np.array(stats).T, smins, smaxs, "/".join(pfn.split("/")[:-1]) + "/kminmax_errs_postrecon.png")
+        plot_grids_bias(
+            np.array(stats).T, smins, smaxs, "/".join(pfn.split("/")[:-1]) + "/sminmax_bias_postrecon.png", [12, 13, 6, 7], [0.1, 0.2]
+        )
+        plot_grids_errs(
+            np.array(stats).T, smins, smaxs, "/".join(pfn.split("/")[:-1]) + "/sminmax_errs_postrecon.png", [12, 13, 6, 7], [0.1, 0.2]
+        )
+
+        plot_grids_bias(
+            np.array(stats).T, smins, smaxs, "/".join(pfn.split("/")[:-1]) + "/sminmax_bias_postrecon2.png", [14, 15, 8, 9], [0.1, 0.1]
+        )
+        plot_grids_errs(
+            np.array(stats).T, smins, smaxs, "/".join(pfn.split("/")[:-1]) + "/sminmax_errs_postrecon2.png", [14, 15, 8, 9], [0.1, 0.1]
+        )

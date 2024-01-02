@@ -70,12 +70,13 @@ if __name__ == "__main__":
         fix_params=["om"],
         marg="full",
         poly_poles=dataset_pk.fit_poles,
-        correction=Correction.NONE,
-        n_poly=6,
+        correction=Correction.HARTLAP,
     )
-    model_pk.set_default("sigma_nl_par", 5.1, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-    model_pk.set_default("sigma_nl_perp", 1.6, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-    model_pk.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model_pk.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
+    model_pk.set_default("beta", 0.4, min=0.1, max=0.7)
+    model_pk.set_default("sigma_nl_par", 5.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model_pk.set_default("sigma_nl_perp", 2.0, min=0.0, max=20.0, sigma=1.0, prior="gaussian")
+    model_pk.set_default("sigma_s", 2.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
     # Load in a pre-existing BAO template
     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
@@ -87,12 +88,14 @@ if __name__ == "__main__":
         marg="full",
         fix_params=["om"],
         poly_poles=dataset_xi.fit_poles,
-        correction=Correction.NONE,
-        n_poly=4,
+        correction=Correction.HARTLAP,
+        n_poly=[0, 2],
     )
-    model_xi.set_default("sigma_nl_par", 5.1, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-    model_xi.set_default("sigma_nl_perp", 1.6, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-    model_xi.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model_xi.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
+    model_xi.set_default("beta", 0.4, min=0.1, max=0.7)
+    model_xi.set_default("sigma_nl_par", 5.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model_xi.set_default("sigma_nl_perp", 2.0, min=0.0, max=20.0, sigma=1.0, prior="gaussian")
+    model_xi.set_default("sigma_s", 2.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
     # Load in a pre-existing BAO template
     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
