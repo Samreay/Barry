@@ -83,8 +83,6 @@ if __name__ == "__main__":
         fitter.add_model_and_dataset(model, dataset_xi, name=name)
         allnames.append(name)
 
-        model.sanity_check(dataset_xi)
-
         for j in range(len(dataset_xi.mock_data)):
             dataset_xi.set_realisation(j)
             name = dataset_xi.name + f" realisation {j} " + model.name
