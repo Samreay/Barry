@@ -113,9 +113,10 @@ if __name__ == "__main__":
     fitter.set_num_walkers(1)
 
     # Submit all the jobs
-    sampler_index = 0
-    fitter.set_sampler(samplers[sampler_index])
-    fitter.fit(file)
+    for sampler_bin, (sampler, sampler_name) in enumerate(zip(samplers, sampler_names)):
+        print(sampler_bin, sampler, sampler_name)
+        fitter.set_sampler(samplers[sampler_bin])
+        fitter.fit(file)
 
     # Everything below here is for plotting the chains once they have been run. The should_plot()
     # function will check for the presence of chains and plot if it finds them on your laptop. On the HPC you can
@@ -257,4 +258,62 @@ if __name__ == "__main__":
         )
         plt.setp(axes, xticks=[0, 1, 2, 3], xticklabels=sampler_names[1:])
         plt.xticks(rotation=30)
-        fig.savefig("/".join(pfn.split("/")[:-1]) + "/bias.png", bbox_inches="tight", transparent=True, dpi=300)
+        fig.savefig("/".join(pfn.split("/")[:-1]) + "/DESI_FirstGen_samplers_test.png", bbox_inches="tight", transparent=True, dpi=300)
+
+        bplist = []
+        fig, axes = plt.subplots(figsize=(4, 5), nrows=6, ncols=1, sharex=True, squeeze=False)
+        plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
+        for panel in range(6):
+            axes[panel, 0].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
+
+            boxprops_pk = {"lw": 1.3, "color": "b"}
+            boxprops_xi = {"lw": 1.3, "color": "orange"}
+            medianprops = {"lw": 1.5, "color": "r"}
+            whiskerprops = {"lw": 1.3, "color": "k"}
+            bp1 = axes[panel, 0].boxplot(
+                stats[:, 0, :, panel + 1] - stats[0, 0, :, panel + 1].T,
+                positions=np.arange(4) - 0.2,
+                widths=0.2,
+                whis=(0, 100),
+                showfliers=False,
+                boxprops=boxprops_pk,
+                whiskerprops=whiskerprops,
+                medianprops=medianprops,
+                capprops=whiskerprops,
+            )
+            bp2 = axes[panel, 0].boxplot(
+                stats[:, 1, :, panel + 1] - stats[0, 1, :, panel + 1].T,
+                positions=np.arange(4) + 0.2,
+                widths=0.2,
+                whis=(0, 100),
+                showfliers=False,
+                boxprops=boxprops_xi,
+                whiskerprops=whiskerprops,
+                medianprops=medianprops,
+                capprops=whiskerprops,
+            )
+            if panel == 5:
+                bplist.append(bp1["boxes"][0])
+                bplist.append(bp2["boxes"][0])
+
+        axes[0, 0].set_ylabel("$\\Delta \\alpha_{\mathrm{iso}} (\\%)$")
+        axes[1, 0].set_ylabel("$\\Delta \\alpha_{\mathrm{ap}} (\\%)$")
+        axes[2, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{\mathrm{iso}}} (\\%)$")
+        axes[3, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{\mathrm{ap}}} (\\%)$")
+        axes[4, 0].set_ylabel("$\\Delta \\sigma^{95\\%}_{\\alpha_{\mathrm{iso}}} (\\%)$")
+        axes[5, 0].set_ylabel("$\\Delta \\sigma^{95\\%}_{\\alpha_{\mathrm{ap}}} (\\%)$")
+        axes[0, 0].set_ylim(-0.07, 0.07)
+        axes[1, 0].set_ylim(-0.06, 0.06)
+        axes[2, 0].set_ylim(-0.015, 0.015)
+        axes[3, 0].set_ylim(-0.015, 0.015)
+        axes[4, 0].set_ylim(-0.04, 0.04)
+        axes[5, 0].set_ylim(-0.018, 0.018)
+        axes[5, 0].legend(
+            bplist,
+            [r"$P(k)$", r"$\xi(s)$"],
+            ncol=2,
+            fontsize=12,
+        )
+        plt.setp(axes, xticks=[0, 1, 2, 3], xticklabels=sampler_names[1:])
+        plt.xticks(rotation=30)
+        fig.savefig("/".join(pfn.split("/")[:-1]) + "/DESI_FirstGen_samplers_test2.png", bbox_inches="tight", transparent=True, dpi=300)
