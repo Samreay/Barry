@@ -105,32 +105,14 @@ if __name__ == "__main__":
         logger = logging.getLogger()
         logger.setLevel(logging.WARNING)
 
-        datanames = ["dilate_smooth", "dilate_wiggle"]
-        broadband_names = ["poly", "spline"]
-        d_names = ["xi", "pk"]
-
-        for dataname in datanames:
-            for broadband in broadband_names:
-                for d in d_names:
-                    plotname = f"{dataname}_{broadband}_{d}"
-                    dir_name = "/".join(pfn.split("/")[:-1]) + "/" + plotname
-                    try:
-                        if not os.path.exists(dir_name):
-                            os.makedirs(dir_name, exist_ok=True)
-                    except Exception:
-                        pass
-
         # Loop over all the fitters
-        c = [[[ChainConsumer() for _ in range(len(datanames))] for _ in range(len(broadband_names))] for d in range(len(d_names))]
-        stats = [[[[] for _ in range(len(datanames))] for _ in range(len(broadband_names))] for d in range(len(d_names))]
-
+        c = [ChainConsumer() for _ in range(26)]
+        stats = [[] for _ in range(2)]
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
-            data_bin = 0 if "Xi" in extra["name"] else 1
-            poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
-            dilate_bin = 0 if model.dilate_smooth else 1
-            realisation = str(extra["name"].split()[-1]) if "realisation" in extra["name"] else "mean"
-            print(extra["name"], data_bin, poly_bin, dilate_bin, realisation)
+            poly_bin = 0 if extra["name"].split(" ")[-2] == "Beutler" else 1
+            realisation = int(extra["name"].split()[-4]) if "realisation" in extra["name"] else 25
+            print(extra["name"], poly_bin, realisation)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -172,93 +154,77 @@ if __name__ == "__main__":
                 axis=0,
             )
 
-            # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
-            if realisation == "mean":
-                extra.pop("color", None)
-                c[data_bin][poly_bin][dilate_bin].add_chain(
-                    df, weights=newweight, color="k", **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False
-                )
-                figname = None
-                mean_mean, cov_mean = mean, cov
-            else:
-                c[data_bin][poly_bin][dilate_bin].add_marker(params, **extra)
-                dataname = extra["name"].split(" ")[3].lower()
-                plotname = f"{datanames[dilate_bin]}_{broadband_names[poly_bin]}_{d_names[data_bin]}"
-                figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_contour.png"
-                if not os.path.isfile(figname):
-                    extra.pop("color", None)
-                    # cc = ChainConsumer()
-                    # cc.add_chain(df, weights=newweight, **extra)
-                    # cc.add_marker(df.iloc[max_post], **extra)
-                    # cc.plotter.plot(filename=figname)
-                    figname = "/".join(pfn.split("/")[:-1]) + "/" + plotname + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
-                else:
-                    figname = None
-
+            figname = "/".join(pfn.split("/")[:-1]) + "/" + extra["name"].replace(" ", "_") + "_bestfit.png"
             new_chi_squared, dof, bband, mods, smooths = model.simple_plot(params_dict, display=False, figname=figname, title=extra["name"])
-            if realisation == "mean":
-                print(25.0 * new_chi_squared, dof)
 
-            stats[data_bin][poly_bin][dilate_bin].append(
+            c[realisation].add_chain(
+                df,
+                weights=newweight,
+                name="_".join(extra["name"].split(" ")[-3:]),
+            )
+
+            stats[poly_bin].append(
                 [
-                    mean[0],
-                    mean[1],
-                    mean[2],
-                    mean[3],
+                    mean[0] - 1.0,
+                    mean[1] - 1.0,
+                    mean[2] - 1.0,
+                    mean[3] - 1.0,
                     np.sqrt(cov[0, 0]),
                     np.sqrt(cov[1, 1]),
                     np.sqrt(cov[2, 2]),
                     np.sqrt(cov[3, 3]),
                     cov[0, 1] / np.sqrt(cov[0, 0] * cov[1, 1]),
                     cov[2, 3] / np.sqrt(cov[2, 2] * cov[3, 3]),
-                    new_chi_squared,
                     params_dict["alpha"],
                     params_dict["epsilon"],
                 ]
             )
 
-        for data_bin in range(len(datanames)):
-            for poly_bin in range(len(broadband_names)):
-                for dilate_bin in range(len(datanames)):
-                    plotname = f"{datanames[dilate_bin]}_{broadband_names[poly_bin]}_{d_names[data_bin]}"
+        stats = np.array(stats)
 
-                    mean = np.mean(stats[data_bin][poly_bin][dilate_bin][1:], axis=0)
-                    cov = np.cov(stats[data_bin][poly_bin][dilate_bin][1:], rowvar=False)
+        truth = {
+            "$\\alpha$": 1.0,
+            "$\\alpha_{ap}$": 1.0,
+            "$\\alpha_\\perp$": 1.0,
+            "$\\alpha_\\parallel$": 1.0,
+        }
+        for realisation in range(26):
+            plotname = "Realisation_" + str(realisation) if realisation < 26 else "mean"
+            c[realisation].plotter.plot(
+                filename=["/".join(pfn.split("/")[:-1]) + f"/" + plotname + f"_contour.png"],
+                truth=truth,
+            )
 
-                    c[data_bin][poly_bin][dilate_bin].add_covariance(
-                        mean[:4],
-                        cov[:4, :4],
-                        parameters=["$\\alpha$", "$\\alpha_{ap}$", "$\\alpha_\\parallel$", "$\\alpha_\\perp$"],
-                        plot_contour=True,
-                        plot_point=False,
-                        show_as_1d_prior=False,
-                    )
+        fig, axes = plt.subplots(figsize=(6, 3), nrows=1, ncols=1, sharex=True, squeeze=False)
+        plt.subplots_adjust(left=0.1, top=0.95, bottom=0.08, right=0.95, hspace=0.0, wspace=0.0)
 
-                    truth = {
-                        "$\\alpha$": 1.0,
-                        "$\\alpha_{ap}$": 1.0,
-                        "$\\alpha_\\perp$": 1.0,
-                        "$\\alpha_\\parallel$": 1.0,
-                    }
+        boxprops = {"lw": 1.3, "color": "b"}
+        medianprops = {"lw": 1.5, "color": "r"}
+        whiskerprops = {"lw": 1.3, "color": "k"}
+        axes[0, 0].boxplot(
+            100.0 * (stats[1, 1:, [0, 1, 4, 5]] - stats[0, 1:, [0, 1, 4, 5]]).T,
+            positions=np.arange(4),
+            widths=0.4,
+            whis=(0, 100),
+            showfliers=False,
+            boxprops=boxprops,
+            whiskerprops=whiskerprops,
+            medianprops=medianprops,
+            capprops=whiskerprops,
+        )
 
-                    c[data_bin][poly_bin][dilate_bin].plotter.plot(
-                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour.png"],
-                        truth=truth,
-                        parameters=[
-                            "$\\alpha_\\parallel$",
-                            "$\\alpha_\\perp$",
-                        ],
-                        legend=False,
-                    )
-                    c[data_bin][poly_bin][dilate_bin].plotter.plot(
-                        filename=["/".join(pfn.split("/")[:-1]) + "/" + plotname + f"_contour2.png"],
-                        truth=truth,
-                        parameters=[
-                            "$\\alpha$",
-                            "$\\alpha_{ap}$",
-                        ],
-                        legend=False,
-                    )
-
-                    np.save("/".join(pfn.split("/")[:-1]) + "/Summary_" + plotname + f".npy", stats[data_bin][poly_bin][dilate_bin])
+        axes[0, 0].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
+        axes[0, 0].set_ylabel("$\mathrm{Ross2017\,-\,Beutler2017}$")
+        plt.setp(
+            axes,
+            xticks=np.arange(4),
+            xticklabels=[
+                "$\\Delta\\alpha_{\mathrm{iso}} (\\%)$",
+                "$\\Delta\\alpha_{\mathrm{ap}} (\\%)$",
+                "$\\Delta\\alpha_{\mathrm{iso}} / \\sigma_{\\alpha_{\mathrm{iso}}}$",
+                "$\\Delta\\alpha_{\mathrm{ap}} / \\sigma_{\\alpha_{\mathrm{ap}}}$",
+            ],
+        )
+        plt.xticks(rotation=30)
+        fig.savefig("/".join(pfn.split("/")[:-1]) + "/DESI_FirstGen_testross2017.png", bbox_inches="tight", transparent=True, dpi=300)
