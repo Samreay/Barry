@@ -27,6 +27,7 @@ class CorrelationFunctionFit(Model):
         poly_poles=(0, 2),
         marg=None,
         includeb2=False,
+        include_binmat=True,
         broadband_type="spline",
         **kwargs,
     ):
@@ -83,6 +84,8 @@ class CorrelationFunctionFit(Model):
 
         self.includeb2 = includeb2
         self.declare_parameters()
+
+        self.include_binmat = include_binmat
 
         # Set up data structures for model fitting
         self.smooth = smooth
@@ -377,12 +380,12 @@ class CorrelationFunctionFit(Model):
             k values correspond to d['dist']
         """
 
-        dist, xis = self.compute_correlation_function(d["dist_input"], p, smooth=smooth)
+        dist, xis = self.compute_correlation_function(d["dist_input"] if self.include_binmat else d["dist"], p, smooth=smooth)
 
         # If we are not analytically marginalising, we now add the polynomial terms on to the correlation function
         if not self.marg:
             if self.poly is None:
-                self.compute_poly(d["dist_input"])
+                self.compute_poly(d["dist_input"] if self.include_binmat else d["dist"])
             for pole in self.poly_poles:
                 for i, ip in enumerate(self.n_poly):
                     xis[int(pole / 2)] += p[f"a{{{pole}}}_{{{ip}}}_{{{1}}}"] * self.poly[i, int(pole / 2), :]
@@ -391,7 +394,7 @@ class CorrelationFunctionFit(Model):
                 xis[1] += p[f"bbspline_{{{1}}}_{{{1}}}"] * self.poly[-1, 1, :]
 
         # Convolve the xi model with the binning matrix and concatenate into a single data vector
-        xi_generated = [xi @ d["binmat"] for xi in xis]
+        xi_generated = [xi @ d["binmat"] if self.include_binmat else xi for xi in xis]
         if self.isotropic:
             xi_model = xi_generated[0]
         else:
@@ -404,13 +407,13 @@ class CorrelationFunctionFit(Model):
             # Load the polynomial terms if computed already, or compute them for the first time.
             if self.winpoly is None:
                 if self.poly is None:
-                    self.compute_poly(d["dist_input"])
+                    self.compute_poly(d["dist_input"] if self.include_binmat else d["dist"])
 
                 nmarg, nell = np.shape(self.poly)[:2]
                 len_poly = len(d["dist"]) if self.isotropic else len(d["dist"]) * nell
                 self.winpoly = np.zeros((nmarg, len_poly))
                 for n in range(nmarg):
-                    self.winpoly[n] = np.concatenate([pol @ d["binmat"] for ip, pol in enumerate(self.poly[n])])
+                    self.winpoly[n] = np.concatenate([pol @ d["binmat"] if self.include_binmat else pol for pol in self.poly[n]])
 
             if self.marg_bias > 0:
                 # We need to update/include the poly terms corresponding to the galaxy bias

@@ -24,6 +24,7 @@ class CorrDing2018(CorrelationFunctionFit):
         isotropic=False,
         poly_poles=(0, 2),
         marg=None,
+        include_binmat=True,
         broadband_type="spline",
         **kwargs,
     ):
@@ -38,6 +39,7 @@ class CorrDing2018(CorrelationFunctionFit):
             poly_poles=poly_poles,
             marg=marg,
             includeb2=False,
+            include_binmat=include_binmat,
             broadband_type=broadband_type,
             **kwargs,
         )

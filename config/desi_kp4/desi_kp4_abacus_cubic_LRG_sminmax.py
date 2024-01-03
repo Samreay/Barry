@@ -60,12 +60,12 @@ def plot_grids_bias(statsmean, kmins, kmaxs, figname, inds, edgevals):
     fig.colorbar(
         cax,
         ax=axes.ravel().tolist(),
-        label=r"$\Delta \alpha_{\mathrm{iso},\mathrm{ap}}\,(\%)$" if inds[0] == 12 else r"$\Delta \alpha_{||,\perp}\,(\%)$",
+        label=r"$\Delta \alpha_{\mathrm{iso},\mathrm{ap}}\,(\%)$" if inds[0] == 2 else r"$\Delta \alpha_{||,\perp}\,(\%)$",
     )
     axes[0, 0].text(
         0.95,
         0.95,
-        r"$\alpha_{\mathrm{iso}}$" if inds[0] == 12 else r"$\alpha_{||}$",
+        r"$\alpha_{\mathrm{iso}}$" if inds[0] == 2 else r"$\alpha_{||}$",
         transform=axes[0, 0].transAxes,
         ha="right",
         va="top",
@@ -74,7 +74,7 @@ def plot_grids_bias(statsmean, kmins, kmaxs, figname, inds, edgevals):
     axes[0, 1].text(
         0.95,
         0.95,
-        r"$\alpha_{\mathrm{ap}}$" if inds[1] == 13 else r"$\alpha_{\perp}$",
+        r"$\alpha_{\mathrm{ap}}$" if inds[1] == 3 else r"$\alpha_{\perp}$",
         transform=axes[0, 1].transAxes,
         ha="right",
         va="top",
@@ -134,13 +134,13 @@ def plot_grids_errs(stats, kmins, kmaxs, figname, inds, edgevals):
         cax,
         ax=axes.ravel().tolist(),
         label=r"$\mathrm{Relative}\,\,\sigma_{\alpha_{\mathrm{iso},\mathrm{ap}}}$"
-        if inds[0] == 12
+        if inds[0] == 2
         else r"$\mathrm{Relative}\,\,\sigma_{\alpha_{||,\perp}}$",
     )
     axes[0, 0].text(
         0.95,
         0.95,
-        r"$\alpha_{\mathrm{iso}}$" if inds[0] == 12 else r"$\alpha_{||}$",
+        r"$\alpha_{\mathrm{iso}}$" if inds[0] == 2 else r"$\alpha_{||}$",
         transform=axes[0, 0].transAxes,
         ha="right",
         va="top",
@@ -149,7 +149,7 @@ def plot_grids_errs(stats, kmins, kmaxs, figname, inds, edgevals):
     axes[0, 1].text(
         0.95,
         0.95,
-        r"$\alpha_{\mathrm{ap}}$" if inds[1] == 13 else r"$\alpha_{\perp}$",
+        r"$\alpha_{\mathrm{ap}}$" if inds[1] == 3 else r"$\alpha_{\perp}$",
         transform=axes[0, 1].transAxes,
         ha="right",
         va="top",
@@ -321,15 +321,15 @@ if __name__ == "__main__":
 
         # Plot grids of alpha bias and alpha error as a function of smin and smax
         plot_grids_bias(
-            np.array(stats).T, smins, smaxs, "/".join(pfn.split("/")[:-1]) + "/sminmax_bias_postrecon.png", [12, 13, 6, 7], [0.1, 0.2]
+            np.array(stats).T, smins, smaxs, "/".join(pfn.split("/")[:-1]) + "/sminmax_bias_postrecon.png", [2, 3, 6, 7], [0.1, 0.2]
         )
         plot_grids_errs(
-            np.array(stats).T, smins, smaxs, "/".join(pfn.split("/")[:-1]) + "/sminmax_errs_postrecon.png", [12, 13, 6, 7], [0.1, 0.2]
+            np.array(stats).T, smins, smaxs, "/".join(pfn.split("/")[:-1]) + "/sminmax_errs_postrecon.png", [2, 3, 6, 7], [0.1, 0.2]
         )
 
         plot_grids_bias(
-            np.array(stats).T, smins, smaxs, "/".join(pfn.split("/")[:-1]) + "/sminmax_bias_postrecon2.png", [14, 15, 8, 9], [0.1, 0.1]
+            np.array(stats).T, smins, smaxs, "/".join(pfn.split("/")[:-1]) + "/sminmax_bias_postrecon2.png", [4, 5, 8, 9], [0.1, 0.1]
         )
         plot_grids_errs(
-            np.array(stats).T, smins, smaxs, "/".join(pfn.split("/")[:-1]) + "/sminmax_errs_postrecon2.png", [14, 15, 8, 9], [0.1, 0.1]
+            np.array(stats).T, smins, smaxs, "/".join(pfn.split("/")[:-1]) + "/sminmax_errs_postrecon2.png", [4, 5, 8, 9], [0.1, 0.1]
         )

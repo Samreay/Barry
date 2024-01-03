@@ -22,6 +22,7 @@ class CorrRoss2017(CorrelationFunctionFit):
         poly_poles=(0, 2),
         marg=None,
         includeb2=True,
+        include_binmat=True,
         broadband_type="spline",
         **kwargs,
     ):
@@ -36,6 +37,7 @@ class CorrRoss2017(CorrelationFunctionFit):
             poly_poles=poly_poles,
             marg=marg,
             includeb2=includeb2,
+            include_binmat=include_binmat,
             broadband_type=broadband_type,
             **kwargs,
         )
@@ -318,21 +320,21 @@ if __name__ == "__main__":
         num_mocks=1000,
         reduce_cov_factor=25,
     )
-    data = dataset.get_data()
 
     model = CorrRoss2017(
         recon=dataset.recon,
         isotropic=dataset.isotropic,
         marg="full",
-        fix_params=["om"],
+        fix_params=["om", "beta"],
         poly_poles=dataset.fit_poles,
-        correction=Correction.NONE,
-        includeb2=False,
+        correction=Correction.HARTLAP,
+        includeb2=True,
         n_poly=[0, 2],
     )
-    model.set_default("sigma_nl_par", 5.4, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-    model.set_default("sigma_nl_perp", 1.6, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-    model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model.set_default("beta", 0.4)
+    model.set_default("sigma_nl_par", 5.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model.set_default("sigma_nl_perp", 2.0, min=0.0, max=20.0, sigma=1.0, prior="gaussian")
+    model.set_default("sigma_s", 2.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
     # Load in a pre-existing BAO template
     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")

@@ -148,9 +148,25 @@ if __name__ == "__main__":
                 alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
                 df["$\\alpha_\\parallel$"] = alpha_par
                 df["$\\alpha_\\perp$"] = alpha_perp
-                mean, cov = weighted_avg_and_cov(
-                    df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"]],
+                df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+                newweight = np.where(
+                    np.logical_and(
+                        np.logical_and(df["$\\alpha_\\parallel$"] >= 0.8, df["$\\alpha_\\parallel$"] <= 1.2),
+                        np.logical_and(df["$\\alpha_\\perp$"] >= 0.8, df["$\\alpha_\\perp$"] <= 1.2),
+                    ),
                     weight,
+                    0.0,
+                )
+                mean, cov = weighted_avg_and_cov(
+                    df[
+                        [
+                            "$\\alpha$",
+                            "$\\alpha_{ap}$",
+                            "$\\alpha_\\parallel$",
+                            "$\\alpha_\\perp$",
+                        ]
+                    ],
+                    newweight,
                     axis=0,
                 )
 
@@ -173,12 +189,12 @@ if __name__ == "__main__":
                     stats[sampler_bin][data_bin].append(
                         [
                             extra["realisation"],
-                            onesigma["$\\alpha_\\parallel$"][1],
-                            onesigma["$\\alpha_\\perp$"][1],
-                            onesigma["$\\alpha_\\parallel$"][2] - onesigma["$\\alpha_\\parallel$"][0],
-                            onesigma["$\\alpha_\\perp$"][2] - onesigma["$\\alpha_\\perp$"][0],
-                            twosigma["$\\alpha_\\parallel$"][2] - twosigma["$\\alpha_\\parallel$"][0],
-                            twosigma["$\\alpha_\\perp$"][2] - twosigma["$\\alpha_\\perp$"][0],
+                            onesigma["$\\alpha$"][1],
+                            onesigma["$\\alpha_{ap}$"][1],
+                            onesigma["$\\alpha$"][2] - onesigma["$\\alpha$"][0],
+                            onesigma["$\\alpha_{ap}$"][2] - onesigma["$\\alpha_{ap}$"][0],
+                            twosigma["$\\alpha$"][2] - twosigma["$\\alpha$"][0],
+                            twosigma["$\\alpha_{ap}$"][2] - twosigma["$\\alpha_{ap}$"][0],
                         ]
                     )
 
@@ -222,12 +238,12 @@ if __name__ == "__main__":
                     label=label if panel == 3 else None,
                 )
 
-        axes[0, 0].set_ylabel("$\\Delta \\alpha_{\\perp} (\\%)$")
-        axes[1, 0].set_ylabel("$\\Delta \\alpha_{||} (\\%)$")
-        axes[2, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{||}} (\\%)$")
-        axes[3, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{\\perp}} (\\%)$")
-        axes[4, 0].set_ylabel("$\\Delta \\sigma^{95\\%}_{\\alpha_{||}} (\\%)$")
-        axes[5, 0].set_ylabel("$\\Delta \\sigma^{95\\%}_{\\alpha_{\\perp}} (\\%)$")
+        axes[0, 0].set_ylabel("$\\Delta \\alpha_{\mathrm{iso}} (\\%)$")
+        axes[1, 0].set_ylabel("$\\Delta \\alpha_{\mathrm{ap}} (\\%)$")
+        axes[2, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{\mathrm{iso}}} (\\%)$")
+        axes[3, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{\mathrm{ap}}} (\\%)$")
+        axes[4, 0].set_ylabel("$\\Delta \\sigma^{95\\%}_{\\alpha_{\mathrm{iso}}} (\\%)$")
+        axes[5, 0].set_ylabel("$\\Delta \\sigma^{95\\%}_{\\alpha_{\mathrm{ap}}} (\\%)$")
         axes[0, 0].set_ylim(-0.07, 0.07)
         axes[1, 0].set_ylim(-0.06, 0.06)
         axes[2, 0].set_ylim(-0.015, 0.015)

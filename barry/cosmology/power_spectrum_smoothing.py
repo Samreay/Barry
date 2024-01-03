@@ -130,3 +130,4 @@ if __name__ == "__main__":
         ax1.set_ylabel(r"$P(k)/P_{\mathrm{smooth}}(k)$", fontsize=14)
         ax1.legend()
         plt.show()
+        fig.savefig(f"./BAO_wiggles_comp.png", bbox_inches="tight", dpi=300)

@@ -61,18 +61,19 @@ def plot_alphas(stats, figname):
             )
             ax1.set_xlim(1.3, 6.7)
             ax2.set_xlim(1.3, 6.7)
-            ax1.set_ylim(-0.2, 0.2)
+            ax1.set_ylim(-0.25, 0.25)
             ax2.set_ylim(-0.65, 0.65)
             ax2.set_xlabel(r"$\Sigma_{nl,||}$")
             if n_poly == 0:
-                ax1.set_ylabel(r"$\alpha - 1\,(\%)$")
-                ax2.set_ylabel(r"$\alpha_{ap} - 1\,(\%)$")
+                ax1.set_ylabel(r"$\Delta \alpha_{\mathrm{iso}}\,(\%)$")
+                ax2.set_ylabel(r"$\Delta \alpha_{\mathrm{ap}}\,(\%)$")
             else:
                 ax1.set_yticklabels([])
                 ax2.set_yticklabels([])
             ax1.set_xticklabels([])
             for val, ls in zip([-0.1, 0.0, 0.1], [":", "--", ":"]):
                 ax1.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
+            for val, ls in zip([-0.2, 0.0, 0.2], [":", "--", ":"]):
                 ax2.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
             ax1.axvline(5.0, color="k", ls=":", zorder=0, lw=0.8)
             ax2.axvline(5.0, color="k", ls=":", zorder=0, lw=0.8)
@@ -219,6 +220,14 @@ if __name__ == "__main__":
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
             df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+            newweight = np.where(
+                np.logical_and(
+                    np.logical_and(df["$\\alpha_\\parallel$"] >= 0.8, df["$\\alpha_\\parallel$"] <= 1.2),
+                    np.logical_and(df["$\\alpha_\\perp$"] >= 0.8, df["$\\alpha_\\perp$"] <= 1.2),
+                ),
+                weight,
+                0.0,
+            )
             mean, cov = weighted_avg_and_cov(
                 df[
                     [
@@ -228,7 +237,7 @@ if __name__ == "__main__":
                         "$\\alpha_\\perp$",
                     ]
                 ],
-                weight,
+                newweight,
                 axis=0,
             )
 
@@ -253,4 +262,4 @@ if __name__ == "__main__":
                     f.write(l + "\n")
 
         # Plot histograms of the errors and r_off
-        plot_alphas(stats, "/".join(pfn.split("/")[:-1]) + "/alphas.png")
+        plot_alphas(stats, "/".join(pfn.split("/")[:-1]) + "/LRG_mockmean_sigma_par_vs_alpha.png")

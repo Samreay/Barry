@@ -22,6 +22,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
         marg=None,
         dilate_smooth=False,
         fog_wiggles=False,
+        include_binmat=True,
         broadband_type="spline",
         **kwargs,
     ):
@@ -39,6 +40,7 @@ class CorrBeutler2017(CorrelationFunctionFit):
             isotropic=isotropic,
             poly_poles=poly_poles,
             marg=marg,
+            include_binmat=include_binmat,
             broadband_type=broadband_type,
             **kwargs,
         )
@@ -82,14 +84,13 @@ if __name__ == "__main__":
 
     dataset = CorrelationFunction_DESI_KP4(
         recon="sym",
-        fit_poles=[0, 2, 4],
+        fit_poles=[0, 2],
         min_dist=52.0,
         max_dist=150.0,
         realisation=None,
         num_mocks=1000,
         reduce_cov_factor=25,
     )
-    data = dataset.get_data()
 
     model = CorrBeutler2017(
         recon=dataset.recon,
@@ -97,12 +98,12 @@ if __name__ == "__main__":
         marg="full",
         fix_params=["om"],
         poly_poles=dataset.fit_poles,
-        correction=Correction.NONE,
+        correction=Correction.HARTLAP,
         n_poly=[0, 2],
     )
-    model.set_default("sigma_nl_par", 5.4, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-    model.set_default("sigma_nl_perp", 1.6, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-    model.set_default("sigma_s", 0.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model.set_default("sigma_nl_par", 5.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+    model.set_default("sigma_nl_perp", 2.0, min=0.0, max=20.0, sigma=1.0, prior="gaussian")
+    model.set_default("sigma_s", 2.0, min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
     # Load in a pre-existing BAO template
     pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
