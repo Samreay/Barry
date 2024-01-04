@@ -85,9 +85,7 @@ class CorrRoss2017(CorrelationFunctionFit):
         for pole in self.poly_poles:
             if self.includeb2:
                 if pole != 0:
-                    self.add_param(
-                        f"b{{{pole}}}_{{{1}}}", f"$b{{{pole}}}_{{{1}}}$", 0.01, 10.0, 1.0
-                    )  # Linear galaxy bias for each multipole
+                    self.add_param(f"b{{{pole}}}_{{{1}}}", f"$b_{{{pole}_{1}}}$", 0.01, 10.0, 1.0)  # Linear galaxy bias for each multipole
 
     def compute_correlation_function(self, dist, p, smooth=False):
         """Computes the correlation function model using the Beutler et. al., 2017 power spectrum
@@ -210,27 +208,28 @@ class CorrRoss2017(CorrelationFunctionFit):
 
         # For this model, the xis returned are the model components as functions of mu
         # that needs multiplying together in the appropriate way to give the multipoles
-        dist, xi_comp = self.compute_correlation_function(d["dist_input"], p, smooth=smooth)
+        dist, xi_comp = self.compute_correlation_function(d["dist_input"] if self.include_binmat else d["dist"], p, smooth=smooth)
 
         # If we are not analytically marginalising, we multiply by the galaxy bia terms and add the polynomials, then convolve with the binning matrix
         # Otherwise, we convolve the components with the binnin matrix, then build up the analytically marginalised parts
         if self.marg:
 
-            # Convolve the xi model with the binning matrix and concatenate into a single data vector
-            xi_generated = [xi @ d["binmat"] for xi in xi_comp]
-
             # Load the polynomial terms if computed already, or compute them for the first time.
             if self.winpoly is None:
                 if self.poly is None:
-                    self.compute_poly(d["dist_input"])
+                    self.compute_poly(d["dist_input"] if self.include_binmat else d["dist"])
 
                 nmarg, nell = np.shape(self.poly)[:2]
                 len_poly = len(d["dist"]) if self.isotropic else len(d["dist"]) * nell
                 self.winpoly = np.zeros((nmarg, len_poly))
                 for n in range(nmarg):
-                    self.winpoly[n] = np.concatenate([pol @ d["binmat"] for ip, pol in enumerate(self.poly[n])])
+                    self.winpoly[n] = np.concatenate([pol @ d["binmat"] if self.include_binmat else pol for pol in self.poly[n]])
 
             if self.marg_bias:
+
+                # Convolve the xi model with the binning matrix and concatenate into a single data vector
+                xi_generated = [xi @ d["binmat"] if self.include_binmat else xi for xi in xi_comp]
+
                 # We need to update/include the poly terms corresponding to the galaxy bias
                 if self.includeb2:
                     poly_b = [
@@ -250,6 +249,20 @@ class CorrRoss2017(CorrelationFunctionFit):
                 poly_model = np.vstack([poly_b, self.winpoly])
                 xi_model = np.zeros(np.shape(self.winpoly)[1])
             else:
+                xis = [np.zeros(len(dist)), np.zeros(len(dist)), np.zeros(len(dist))]
+                xis[0] = p["b{0}_{1}"] * xi_comp[0]
+                if self.includeb2:
+                    xis[1] = 2.5 * (p["b{2}_{1}"] * xi_comp[1] - xis[0])
+                    if 4 in self.poly_poles:
+                        xis[2] = 1.125 * (p["b{4}_{1}"] * xi_comp[2] - 10.0 * p["b{2}_{1}"] * xi_comp[1] + 3.0 * xis[0])
+                    else:
+                        xis[2] = 1.125 * (xi_comp[2] - 10.0 * p["b{2}_{1}"] * xi_comp[1] + 3.0 * xis[0])
+                else:
+                    xis[1] = 2.5 * p["b{0}_{1}"] * (xi_comp[1] - xi_comp[0])
+                    xis[2] = 1.125 * p["b{0}_{1}"] * (xi_comp[2] - 10.0 * xi_comp[1] + 3.0 * xi_comp[0])
+
+                xi_generated = [xi @ d["binmat"] if self.include_binmat else xi for xi in xis]
+
                 poly_model = self.winpoly
                 xi_model = np.concatenate([xi_generated[l] for l in range(len(d["poles"]))])
 
@@ -267,13 +280,13 @@ class CorrRoss2017(CorrelationFunctionFit):
                 xis[2] = 1.125 * p["b{0}_{1}"] * (xi_comp[2] - 10.0 * xi_comp[1] + 3.0 * xi_comp[0])
 
             if self.poly is None:
-                self.compute_poly(d["dist_input"])
+                self.compute_poly(d["dist_input"] if self.include_binmat else d["dist"])
             for pole in self.poly_poles:
                 for i, ip in enumerate(self.n_poly):
                     xis[int(pole / 2)] += p[f"a{{{pole}}}_{{{ip}}}_{{{1}}}"] * self.poly[ip, int(pole / 2), :]
 
             # Convolve the xi model with the binning matrix and concatenate into a single data vector
-            xi_generated = [xi @ d["binmat"] for xi in xis]
+            xi_generated = [xi @ d["binmat"] if self.include_binmat else xi for xi in xis]
             xi_model = np.concatenate([xi_generated[l] for l in range(len(d["poles"]))])
 
             poly_model = None
