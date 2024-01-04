@@ -337,16 +337,14 @@ class CorrelationFunctionFit(Model):
             # TODO: Should also compute and code up relevant B4 terms in the event we fit the hexadecapole?
             if self.broadband_type == "spline":
                 x = self.delta * dist
-                sinx, cosx, cos2x = np.sin(x), np.cos(x), np.cos(2 * x)
-                Si_x, Si_2x = sici(x)[0], sici(2 * x)[0]
-                self.poly[-2, 1] = (16.0 - 8.0 * x**2 - 16.0 * cosx + x**2 * cosx - x * sinx + x**3 * Si_x) / (
-                    2.0 * x**3 * dist**3
-                )
-                self.poly[-1, 1] = (
+                sinx, sin2x, sin3x = np.sin(x), np.sin(2.0 * x), np.sin(3.0 * x)
+                cosx, cos2x, cos3x = np.cos(x), np.cos(2.0 * x), np.cos(3.0 * x)
+                Si_x, Si_2x, Si_3x = sici(x)[0], sici(2.0 * x)[0], sici(3.0 * x)[0]
+                self.poly[-2, 1] = (
                     -2.0
                     * (
                         12.0
-                        - 16 * cosx
+                        - 16.0 * cosx
                         + x**2 * cosx
                         + 4.0 * cos2x
                         - x**2 * cos2x
@@ -354,6 +352,26 @@ class CorrelationFunctionFit(Model):
                         + x * cosx * sinx
                         + x**3 * Si_x
                         - 2.0 * x**3 * Si_2x
+                    )
+                    / (x**3 * dist**3)
+                )
+                self.poly[-1, 1] = (
+                    0.5
+                    * (
+                        48.0
+                        + 8.0 * x**2
+                        - 96.0 * cosx
+                        + 6.0 * x**2 * cosx
+                        + 64.0 * cos2x
+                        - 16.0 * x**2 * cos2x
+                        - 16.0 * cos3x
+                        + 9.0 * x**2 * cos3x
+                        - 6.0 * x * sinx
+                        + 8.0 * x * sin2x
+                        - 3.0 * x * sin3x
+                        + 6.0 * x**3 * Si_x
+                        - 32.0 * x**3 * Si_2x
+                        + 27.0 * x**3 * Si_3x
                     )
                     / (x**3 * dist**3)
                 )

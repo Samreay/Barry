@@ -207,13 +207,13 @@ if __name__ == "__main__":
             "$\\Sigma_s$": 0.0,
         }
 
-        c.configure(bins=20, bar_shade=True)
-        c.plotter.plot_summary(
-            filename=["/".join(pfn.split("/")[:-1]) + "/summary.png"],
-            truth=truth,
-            parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
-            extents=[(0.98, 1.02), (0.98, 1.02)],
-        )
+        # c.configure(bins=20, bar_shade=True)
+        # c.plotter.plot_summary(
+        #    filename=["/".join(pfn.split("/")[:-1]) + "/summary.png"],
+        #    truth=truth,
+        #    parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
+        #    extents=[(0.98, 1.02), (0.98, 1.02)],
+        # )
 
         # Plot the summary statistics
         print(stats)
@@ -245,12 +245,12 @@ if __name__ == "__main__":
         axes[3, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{\mathrm{ap}}} (\\%)$")
         axes[4, 0].set_ylabel("$\\Delta \\sigma^{95\\%}_{\\alpha_{\mathrm{iso}}} (\\%)$")
         axes[5, 0].set_ylabel("$\\Delta \\sigma^{95\\%}_{\\alpha_{\mathrm{ap}}} (\\%)$")
-        axes[0, 0].set_ylim(-0.07, 0.07)
-        axes[1, 0].set_ylim(-0.06, 0.06)
-        axes[2, 0].set_ylim(-0.015, 0.015)
-        axes[3, 0].set_ylim(-0.015, 0.015)
-        axes[4, 0].set_ylim(-0.04, 0.04)
-        axes[5, 0].set_ylim(-0.018, 0.018)
+        # axes[0, 0].set_ylim(-0.07, 0.07)
+        # axes[1, 0].set_ylim(-0.06, 0.06)
+        # axes[2, 0].set_ylim(-0.015, 0.015)
+        # axes[3, 0].set_ylim(-0.015, 0.015)
+        # axes[4, 0].set_ylim(-0.04, 0.04)
+        # axes[5, 0].set_ylim(-0.018, 0.018)
         axes[3, 0].legend(
             loc="center right",
             bbox_to_anchor=(1.25, 1.0),
@@ -260,18 +260,20 @@ if __name__ == "__main__":
         plt.xticks(rotation=30)
         fig.savefig("/".join(pfn.split("/")[:-1]) + "/DESI_FirstGen_samplers_test.png", bbox_inches="tight", transparent=True, dpi=300)
 
+        print(np.shape(stats[:, 0, :, 1]))
+
         bplist = []
-        fig, axes = plt.subplots(figsize=(4, 5), nrows=6, ncols=1, sharex=True, squeeze=False)
-        plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
+        fig, axes = plt.subplots(figsize=(6, 10), nrows=6, ncols=1, sharex=True, squeeze=False)
+        plt.subplots_adjust(left=0.05, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
         for panel in range(6):
-            axes[panel, 0].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
+            axes[panel, 0].axhline(0.0, color="k", ls="-", zorder=0, lw=0.75)
 
             boxprops_pk = {"lw": 1.3, "color": "b"}
             boxprops_xi = {"lw": 1.3, "color": "orange"}
             medianprops = {"lw": 1.5, "color": "r"}
             whiskerprops = {"lw": 1.3, "color": "k"}
             bp1 = axes[panel, 0].boxplot(
-                stats[:, 0, :, panel + 1] - stats[0, 0, :, panel + 1].T,
+                100.0 * (stats[1:, 0, :, panel + 1] - stats[0, 0, :, panel + 1]).T,
                 positions=np.arange(4) - 0.2,
                 widths=0.2,
                 whis=(0, 100),
@@ -282,7 +284,7 @@ if __name__ == "__main__":
                 capprops=whiskerprops,
             )
             bp2 = axes[panel, 0].boxplot(
-                stats[:, 1, :, panel + 1] - stats[0, 1, :, panel + 1].T,
+                100.0 * (stats[1:, 1, :, panel + 1] - stats[0, 1, :, panel + 1]).T,
                 positions=np.arange(4) + 0.2,
                 widths=0.2,
                 whis=(0, 100),
@@ -296,24 +298,32 @@ if __name__ == "__main__":
                 bplist.append(bp1["boxes"][0])
                 bplist.append(bp2["boxes"][0])
 
-        axes[0, 0].set_ylabel("$\\Delta \\alpha_{\mathrm{iso}} (\\%)$")
-        axes[1, 0].set_ylabel("$\\Delta \\alpha_{\mathrm{ap}} (\\%)$")
-        axes[2, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{\mathrm{iso}}} (\\%)$")
-        axes[3, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{\mathrm{ap}}} (\\%)$")
-        axes[4, 0].set_ylabel("$\\Delta \\sigma^{95\\%}_{\\alpha_{\mathrm{iso}}} (\\%)$")
-        axes[5, 0].set_ylabel("$\\Delta \\sigma^{95\\%}_{\\alpha_{\mathrm{ap}}} (\\%)$")
-        axes[0, 0].set_ylim(-0.07, 0.07)
-        axes[1, 0].set_ylim(-0.06, 0.06)
-        axes[2, 0].set_ylim(-0.015, 0.015)
-        axes[3, 0].set_ylim(-0.015, 0.015)
-        axes[4, 0].set_ylim(-0.04, 0.04)
-        axes[5, 0].set_ylim(-0.018, 0.018)
-        axes[5, 0].legend(
+        axes[0, 0].set_ylabel("$\\Delta \\alpha_{\mathrm{iso}} (\\%)$", fontsize=16)
+        axes[1, 0].set_ylabel("$\\Delta \\alpha_{\mathrm{ap}} (\\%)$", fontsize=16)
+        axes[2, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{\mathrm{iso}}} (\\%)$", fontsize=16)
+        axes[3, 0].set_ylabel("$\\Delta \\sigma^{68\\%}_{\\alpha_{\mathrm{ap}}} (\\%)$", fontsize=16)
+        axes[4, 0].set_ylabel("$\\Delta \\sigma^{95\\%}_{\\alpha_{\mathrm{iso}}} (\\%)$", fontsize=16)
+        axes[5, 0].set_ylabel("$\\Delta \\sigma^{95\\%}_{\\alpha_{\mathrm{ap}}} (\\%)$", fontsize=16)
+        axes[5, 0].set_xlabel("$\mathrm{Sampler}$", fontsize=16)
+        axes[0, 0].axhline(y=-0.1, color="k", ls="--", zorder=0, lw=1.2, alpha=0.75)
+        axes[0, 0].axhline(y=0.1, color="k", ls="--", zorder=0, lw=1.2, alpha=0.75)
+        axes[1, 0].axhline(y=-0.2, color="k", ls="--", zorder=0, lw=1.2, alpha=0.75)
+        axes[1, 0].axhline(y=0.2, color="k", ls="--", zorder=0, lw=1.2, alpha=0.75)
+        axes[5, 0].axhline(y=0.2, color="k", ls="--", zorder=0, lw=1.2, alpha=0.75)
+        # axes[0, 0].set_ylim(-0.07, 0.07)
+        # axes[1, 0].set_ylim(-0.06, 0.06)
+        # axes[2, 0].set_ylim(-0.015, 0.015)
+        # axes[3, 0].set_ylim(-0.015, 0.015)
+        # axes[4, 0].set_ylim(-0.04, 0.04)
+        # axes[5, 0].set_ylim(-0.018, 0.018)
+        axes[3, 0].legend(
             bplist,
             [r"$P(k)$", r"$\xi(s)$"],
-            ncol=2,
-            fontsize=12,
+            loc="center right",
+            bbox_to_anchor=(1.25, 1.0),
+            frameon=False,
+            fontsize=14,
         )
         plt.setp(axes, xticks=[0, 1, 2, 3], xticklabels=sampler_names[1:])
         plt.xticks(rotation=30)
-        fig.savefig("/".join(pfn.split("/")[:-1]) + "/DESI_FirstGen_samplers_test2.png", bbox_inches="tight", transparent=True, dpi=300)
+        fig.savefig("/".join(pfn.split("/")[:-1]) + "/DESI_FirstGen_samplers_test2.png", bbox_inches="tight", dpi=300)
