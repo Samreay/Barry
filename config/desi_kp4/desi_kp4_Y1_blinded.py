@@ -74,6 +74,7 @@ if __name__ == "__main__":
         for i, zs in enumerate(tracers[t]):
             for r, recon in enumerate([None, "sym"]):
                 name = f"DESI_Y1_BLIND_v1_sm{reconsmooth[t]}_{t.lower()}_{cap}_z{zs[0]}-{zs[1]}_default_FKP_xi.pkl"
+                print(name)
                 dataset = CorrelationFunction_DESI_KP4(
                     recon=recon,
                     fit_poles=[0, 2],
@@ -108,6 +109,7 @@ if __name__ == "__main__":
                 allnames.append(name)
 
                 name = f"DESI_Y1_BLIND_v1_sm{reconsmooth[t]}_{t.lower()}_{cap}_z{zs[0]}-{zs[1]}_pk.pkl"
+                print(name)
                 dataset = PowerSpectrum_DESI_KP4(
                     recon=recon,
                     fit_poles=[0, 2],
