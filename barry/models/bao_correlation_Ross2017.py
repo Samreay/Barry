@@ -59,7 +59,7 @@ class CorrRoss2017(CorrelationFunctionFit):
                 marg_bias = 2
         else:
             marg_bias = 1
-        self.set_marg(fix_params, do_bias=False, marg_bias=marg_bias)
+        self.set_marg(fix_params, do_bias=False, marg_bias=0)
 
         self.fixed_xi = False
         self.store_xi = [None, None, None]
