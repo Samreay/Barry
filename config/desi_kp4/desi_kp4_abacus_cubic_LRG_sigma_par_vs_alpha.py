@@ -91,6 +91,74 @@ def plot_alphas(stats, figname):
     fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
 
 
+def plot_alphas_spline(stats, figname):
+
+    colors = ["#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
+
+    # Split up Pk and Xi
+    fig = plt.figure(figsize=(4, 2))
+    axes = gridspec.GridSpec(2, 2, figure=fig, left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
+    for ind in range(2):
+        dat = np.array(stats[ind])
+        tracer = r"$\xi(s)$" if ind == 0 else r"$P(k)$"
+        ax1 = fig.add_subplot(axes[0, ind])
+        ax2 = fig.add_subplot(axes[1, ind])
+
+        index = np.where(dat[:, 1] == 1)[0]
+
+        c = "#1f77b4" if ind == 0 else "#ff7f0e"
+        ax1.plot(dat[index, 0], dat[index, 2] * 100.0, color=c, zorder=1, alpha=0.75, lw=0.8)
+        ax2.plot(dat[index, 0], dat[index, 3] * 100.0, color=c, zorder=1, alpha=0.75, lw=0.8)
+        ax1.fill_between(
+            dat[index, 0],
+            (dat[index, 2] - dat[index, 4]) * 100.0,
+            (dat[index, 2] + dat[index, 4]) * 100.0,
+            color=c,
+            zorder=1,
+            alpha=0.5,
+            lw=0.8,
+        )
+        ax2.fill_between(
+            dat[index, 0],
+            (dat[index, 3] - dat[index, 5]) * 100.0,
+            (dat[index, 3] + dat[index, 5]) * 100.0,
+            color=c,
+            zorder=1,
+            alpha=0.5,
+            lw=0.8,
+        )
+        ax1.set_xlim(1.3, 6.7)
+        ax2.set_xlim(1.3, 6.7)
+        ax1.set_ylim(-0.25, 0.25)
+        ax2.set_ylim(-0.65, 0.65)
+        ax2.set_xlabel(r"$\Sigma_{nl,||}$")
+        if ind == 0:
+            ax1.set_ylabel(r"$\Delta \alpha_{\mathrm{iso}}\,(\%)$")
+            ax2.set_ylabel(r"$\Delta \alpha_{\mathrm{ap}}\,(\%)$")
+        else:
+            ax1.set_yticklabels([])
+            ax2.set_yticklabels([])
+        ax1.set_xticklabels([])
+        for val, ls in zip([-0.1, 0.0, 0.1], [":", "--", ":"]):
+            ax1.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
+        for val, ls in zip([-0.2, 0.0, 0.2], [":", "--", ":"]):
+            ax2.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
+        ax1.axvline(5.0, color="k", ls=":", zorder=0, lw=0.8)
+        ax2.axvline(5.0, color="k", ls=":", zorder=0, lw=0.8)
+        ax1.text(
+            0.05,
+            0.95,
+            tracer,
+            transform=ax1.transAxes,
+            ha="left",
+            va="top",
+            fontsize=8,
+            color=c,
+        )
+
+    fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
+
+
 if __name__ == "__main__":
 
     # Get the relative file paths and names
@@ -263,3 +331,4 @@ if __name__ == "__main__":
 
         # Plot histograms of the errors and r_off
         plot_alphas(stats, "/".join(pfn.split("/")[:-1]) + "/LRG_mockmean_sigma_par_vs_alpha.png")
+        plot_alphas_spline(stats, "/".join(pfn.split("/")[:-1]) + "/LRG_mockmean_sigma_par_vs_alpha_splineonly.png")
