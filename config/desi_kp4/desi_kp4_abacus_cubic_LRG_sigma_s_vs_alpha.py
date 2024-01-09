@@ -170,7 +170,7 @@ if __name__ == "__main__":
 
     sigma_nl_perp = 2.0
     sigma_nl_par = 5.0
-    sigma_s = [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
+    sigma_s = [0.0, 0.5, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0]
 
     colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     # Loop over pre- and post-recon measurements
     for sig in range(len(sigma_s)):
 
-        for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [[-1, 0, 1, 2, 3], 30])):
+        for n, (broadband_type, n_poly) in enumerate(zip(["spline"], [30])):
 
             model = PowerBeutler2017(
                 recon=dataset_pk.recon,
@@ -228,7 +228,7 @@ if __name__ == "__main__":
             fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[n])
             allnames.append(name)
 
-        for n, (broadband_type, n_poly) in enumerate(zip(["poly", "spline"], [[-2, -1, 0], [0, 2]])):
+        for n, (broadband_type, n_poly) in enumerate(zip(["spline"], [[0, 2]])):
 
             model = CorrBeutler2017(
                 recon=dataset_xi.recon,
