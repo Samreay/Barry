@@ -104,7 +104,7 @@ def plot_alphas_spline(stats, figname):
         ax1 = fig.add_subplot(axes[0, ind])
         ax2 = fig.add_subplot(axes[1, ind])
 
-        index = np.where(dat[:, 1] == 1)[0]
+        index = np.where(dat[:, 1] == 0)[0]
 
         c = "#1f77b4" if ind == 0 else "#ff7f0e"
         ax1.plot(dat[index, 0], dat[index, 2] * 100.0, color=c, zorder=1, alpha=0.75, lw=0.8)
@@ -127,10 +127,10 @@ def plot_alphas_spline(stats, figname):
             alpha=0.5,
             lw=0.8,
         )
-        ax1.set_xlim(1.3, 6.7)
-        ax2.set_xlim(1.3, 6.7)
-        ax1.set_ylim(-0.25, 0.25)
-        ax2.set_ylim(-0.65, 0.65)
+        ax1.set_xlim(0.0, 9.2)
+        ax2.set_xlim(0.0, 9.2)
+        ax1.set_ylim(-0.35, 0.35)
+        ax2.set_ylim(-0.95, 0.95)
         ax2.set_xlabel(r"$\Sigma_{nl,||}$")
         if ind == 0:
             ax1.set_ylabel(r"$\Delta \alpha_{\mathrm{iso}}\,(\%)$")
@@ -279,6 +279,8 @@ if __name__ == "__main__":
             poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
             data_bin = 0 if "Xi" in extra["name"] else 1
             sigma_bin = int(extra["name"].split("fixed_type ")[1].split(" ")[0])
+            if sigma_bin > 17:
+                continue
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -330,5 +332,4 @@ if __name__ == "__main__":
                     f.write(l + "\n")
 
         # Plot histograms of the errors and r_off
-        plot_alphas(stats, "/".join(pfn.split("/")[:-1]) + "/LRG_mockmean_sigma_par_vs_alpha.png")
         plot_alphas_spline(stats, "/".join(pfn.split("/")[:-1]) + "/LRG_mockmean_sigma_par_vs_alpha_splineonly.png")

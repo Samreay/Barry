@@ -98,7 +98,7 @@ if __name__ == "__main__":
         max_k=0.30,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=0.2,
+        reduce_cov_factor=1.0 / 25.0,
         datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
     )
 
@@ -109,7 +109,7 @@ if __name__ == "__main__":
         max_dist=150.0,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=0.2,
+        reduce_cov_factor=1.0 / 25.0,
         datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
     )
 
@@ -252,7 +252,7 @@ if __name__ == "__main__":
                 axis=0,
             )
 
-            if realisation == 1:
+            if realisation != -1:
                 if sigma_bin == 0:
                     all_samples[data_bin][sigma_bin].extend(
                         np.c_[
@@ -280,7 +280,6 @@ if __name__ == "__main__":
                             np.ones(len(newweight)) * evidence,
                         ]
                     )
-                print(newweight, evidence)
 
             stats[data_bin][sigma_bin].append(
                 [
@@ -312,6 +311,7 @@ if __name__ == "__main__":
             c = ChainConsumer()
             for j, pname in enumerate(prior):
                 samples = np.array(all_samples[i][j])
+                print(i, j, np.amin(samples[:, -1]))
 
                 if j == 0:
                     params = [
@@ -334,7 +334,7 @@ if __name__ == "__main__":
                     ]
                 c.add_chain(
                     samples[:, :-2],
-                    weights=samples[:, -2] * np.exp((samples[:, -1] + np.amin(samples[:, -1]))),
+                    weights=samples[:, -2] * np.exp((samples[:, -1] - np.amax(samples[:, -1]))),
                     name=pname,
                     parameters=params,
                 )
