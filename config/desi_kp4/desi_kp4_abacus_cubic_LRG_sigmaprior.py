@@ -13,69 +13,63 @@ import pandas as pd
 from barry.models.model import Correction
 from barry.utils import weighted_avg_and_cov
 import matplotlib.pyplot as plt
+from scipy.stats import gaussian_kde
 from chainconsumer import ChainConsumer
 
 # Config file to fit the abacus cutsky mock means and individual realisations using Dynesty.
 
 # Convenience function to plot histograms of the errors and cross-correlation coefficients
-def plot_errors(stats, figname, type="xi"):
+def plot_errors(stats, figname):
 
-    colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
+    print(stats)
 
-    if type == "xi":
-        colmin = 1
-        colmax = 6
-    else:
-        colmin = 3
-        colmax = 7
+    fig, axes = plt.subplots(figsize=(6, 4), nrows=2, ncols=2, squeeze=True)
+    plt.subplots_adjust(left=0.15, top=0.97, bottom=0.17, right=0.8, hspace=0.10, wspace=0.10)
 
-    fig, axes = plt.subplots(figsize=(4, 5), nrows=4, ncols=colmax - colmin, sharex=True, sharey="row", squeeze=False)
-    plt.subplots_adjust(left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
-    for n_poly in range(colmax - colmin):
-        index = np.where(stats[:, 1] == n_poly + colmin)[0]
-        print(stats[index, 0], stats[index, 2], stats[index, 3])
+    ax1 = fig.add_subplot(axes[0, 0])
+    ax2 = fig.add_subplot(axes[0, 1])
+    ax3 = fig.add_subplot(axes[1, 0])
+    ax4 = fig.add_subplot(axes[1, 1])
 
-        for param in range(2):
-            axes[param, n_poly].plot(
-                stats[index, 0], stats[index, param + 2] * 100.0, color=colors[n_poly + colmin - 1], zorder=1, alpha=0.75, lw=0.8
-            )
-            axes[param, n_poly].fill_between(
-                stats[index, 0],
-                (stats[index, param + 2] - stats[index, param + 7]) * 100.0,
-                (stats[index, param + 2] + stats[index, param + 7]) * 100.0,
-                color=colors[n_poly + colmin - 1],
-                zorder=1,
-                alpha=0.5,
-                lw=0.8,
-            )
-            axes[param, n_poly].axhline(0.0, color="k", ls="--", zorder=0, lw=0.8)
-            axes[param + 2, n_poly].plot(
-                stats[index, 0], stats[index, param + 7] * 100.0, color=colors[n_poly + colmin - 1], zorder=1, alpha=0.75, lw=0.8
-            )
+    for j in range(3):
+        bias1, bias2 = 100.0 * stats[j, :, 1], 100.0 * stats[j, :, 2]
+        err1, err2 = 100.0 * stats[j, :, 5], 100.0 * stats[j, :, 6]
 
-        axes[0, n_poly].set_ylim(-0.5 * 5.0, 0.5 * 5.0)
-        axes[1, n_poly].set_ylim(-0.35 * 5.0, 0.35 * 5.0)
-        axes[2, n_poly].set_ylim(0.133 * 5.0, 0.150 * 5.0)
-        axes[3, n_poly].set_ylim(0.081 * 5.0, 0.091 * 5.0)
-        if n_poly == int(np.floor(colmax - colmin) / 2.0):
-            axes[3, n_poly].set_xlabel(r"$\sigma_{\Sigma}\,(h^{-1}\mathrm{Mpc})$", fontsize=12)
-        if n_poly == 0:
-            axes[0, n_poly].set_ylabel(r"$\alpha_{||} - 1\,(\%)$")
-            axes[1, n_poly].set_ylabel(r"$\alpha_{\perp} - 1\,(\%)$")
-            axes[2, n_poly].set_ylabel(r"$\sigma_{\alpha_{||}}\,(\%)$")
-            axes[3, n_poly].set_ylabel(r"$\sigma_{\alpha_{\perp}}\,(\%)$")
-        axes[0, n_poly].text(
-            0.05,
-            0.95,
-            f"$N_{{poly}} = {{{n_poly+colmin}}}$",
-            transform=axes[0, n_poly].transAxes,
-            ha="left",
-            va="top",
-            fontsize=8,
-            color=colors[n_poly + colmin - 1],
-        )
+        ax1.plot(np.linspace(-0.5, 0.5, 500), gaussian_kde(bias1)(np.linspace(-0.5, 0.5, 500)))
+        ax3.plot(np.linspace(-1.0, 1.0, 500), gaussian_kde(bias1)(np.linspace(-1.0, 1.0, 500)))
+        ax2.plot(np.linspace(0.2, 0.6, 500), gaussian_kde(bias1)(np.linspace(0.2, 0.6, 500)))
+        ax4.plot(np.linspace(0.6, 1.2, 500), gaussian_kde(bias1)(np.linspace(0.6, 1.2, 500)))
 
-    fig.savefig(figname, bbox_inches="tight", dpi=300)
+    ax1.set_xlabel(r"$\Delta\alpha_{\mathrm{iso}}$")
+    ax3.set_xlabel(r"$\Delta\alpha_{\mathrm{ap}}$")
+    ax2.set_xlabel(r"$\sigma_{\alpha_{\mathrm{iso}}}$")
+    ax4.set_xlabel(r"$\sigma_{\alpha_{\mathrm{ap}}}$")
+    ax1.set_ylabel(r"$N_{\mathrm{mocks}}$")
+    ax2.set_yticklabels([])
+    ax3.set_ylabel(r"$N_{\mathrm{mocks}}$")
+    ax4.set_yticklabels([])
+
+    ax1.axhline(0.0, color="k", ls="-", zorder=0, lw=0.8)
+    ax1.text(
+        0.95,
+        0.95,
+        r"$\alpha_{\mathrm{iso}}$" if ind == 0 else r"$\alpha_{\mathrm{ap}}$",
+        transform=ax1.transAxes,
+        ha="right",
+        va="top",
+        color="k",
+    )
+    ax2.text(
+        0.95,
+        0.95,
+        r"$\alpha_{\mathrm{iso}}$" if ind == 0 else r"$\alpha_{\mathrm{ap}}$",
+        transform=ax2.transAxes,
+        ha="right",
+        va="top",
+        color="k",
+    )
+
+    fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
 
 
 if __name__ == "__main__":
@@ -104,7 +98,7 @@ if __name__ == "__main__":
         max_k=0.30,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=1,
+        reduce_cov_factor=0.2,
         datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
     )
 
@@ -115,7 +109,7 @@ if __name__ == "__main__":
         max_dist=150.0,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=1,
+        reduce_cov_factor=0.2,
         datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
     )
 
@@ -149,13 +143,13 @@ if __name__ == "__main__":
         pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
         model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
-        name = dataset_pk.name + f" mock mean sigma prior =" + str(p)
+        name = dataset_pk.name + f" mock mean sigma prior = " + str(p)
         fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[i])
         allnames.append(name)
 
         for j in range(len(dataset_pk.mock_data)):
             dataset_pk.set_realisation(j)
-            name = dataset_pk.name + f" realisation {j} sigma prior =" + str(p)
+            name = dataset_pk.name + f" realisation {j} sigma prior = " + str(p)
             fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[i])
             allnames.append(name)
 
@@ -186,13 +180,13 @@ if __name__ == "__main__":
         pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
         model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
-        name = dataset_xi.name + f" mock mean sigma prior =" + str(p)
+        name = dataset_xi.name + f" mock mean sigma prior = " + str(p)
         fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i])
         allnames.append(name)
 
         for j in range(len(dataset_xi.mock_data)):
             dataset_xi.set_realisation(j)
-            name = dataset_xi.name + f" realisation {j} sigma prior =" + str(p)
+            name = dataset_xi.name + f" realisation {j} sigma prior = " + str(p)
             fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i])
             allnames.append(name)
 
@@ -214,14 +208,9 @@ if __name__ == "__main__":
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
         datanames = ["Xi_CV", "Pk_CV"]
 
-        c = [
-            ChainConsumer(),
-            ChainConsumer(),
-        ]
-
         # Loop over all the chains
-        stats = [[] for _ in range(len(datanames))]
-        output = {k: [] for k in datanames}
+        stats = [[[] for _ in range(len(prior))] for _ in range(len(datanames))]
+        all_samples = [[[] for _ in range(len(prior))] for _ in range(len(datanames))]
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             if "Prerecon" in extra["name"]:
@@ -229,73 +218,139 @@ if __name__ == "__main__":
 
             # Get the realisation number and redshift bin
             data_bin = 0 if "Xi" in extra["name"] else 1
-            sigma_bin = int(extra["name"].split("fixed_type ")[1].split(" ")[0])
+            sigma_bin = prior.index(extra["name"].split("sigma prior = ")[1])
+            realisation = int(extra["name"].split("realisation ")[1].split(" ")[0]) if "realisation" in extra["name"] else -1
+            print(data_bin, sigma_bin, realisation)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
+            print(df.keys())
 
             # Compute alpha_par and alpha_perp for each point in the chain
             alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
-            mean, cov = weighted_avg_and_cov(
-                df[["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"]],
+            df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+            newweight = np.where(
+                np.logical_and(
+                    np.logical_and(df["$\\alpha_\\parallel$"] >= 0.8, df["$\\alpha_\\parallel$"] <= 1.2),
+                    np.logical_and(df["$\\alpha_\\perp$"] >= 0.8, df["$\\alpha_\\perp$"] <= 1.2),
+                ),
                 weight,
+                0.0,
+            )
+            mean, cov = weighted_avg_and_cov(
+                df[
+                    [
+                        "$\\alpha$",
+                        "$\\alpha_{ap}$",
+                        "$\\alpha_\\parallel$",
+                        "$\\alpha_\\perp$",
+                    ]
+                ],
+                newweight,
                 axis=0,
             )
-            extra.pop("realisation", None)
-            if "n_poly=5" in extra["name"]:
-                extra["name"] = datanames[data_bin] + f" fixed_type {sigma_bin}"
-                c[data_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
 
-            stats[data_bin].append(
+            if realisation == 1:
+                if sigma_bin == 0:
+                    all_samples[data_bin][sigma_bin].extend(
+                        np.c_[
+                            df["$\\alpha$"].to_numpy(),
+                            df["$\\alpha_{ap}$"].to_numpy(),
+                            df["$\\alpha_\\parallel$"].to_numpy(),
+                            df["$\\alpha_\\perp$"].to_numpy(),
+                            df["$\\beta$"].to_numpy(),
+                            newweight,
+                            np.ones(len(newweight)) * evidence,
+                        ]
+                    )
+                else:
+                    all_samples[data_bin][sigma_bin].extend(
+                        np.c_[
+                            df["$\\alpha$"].to_numpy(),
+                            df["$\\alpha_{ap}$"].to_numpy(),
+                            df["$\\alpha_\\parallel$"].to_numpy(),
+                            df["$\\alpha_\\perp$"].to_numpy(),
+                            df["$\\beta$"].to_numpy(),
+                            df["$\\Sigma_{nl,||}$"].to_numpy(),
+                            df["$\\Sigma_{nl,\\perp}$"].to_numpy(),
+                            df["$\\Sigma_s$"].to_numpy(),
+                            newweight,
+                            np.ones(len(newweight)) * evidence,
+                        ]
+                    )
+                print(newweight, evidence)
+
+            stats[data_bin][sigma_bin].append(
                 [
-                    sigma_sigma[sigma_bin],
-                    model.n_poly,
+                    realisation,
                     mean[0] - 1.0,
                     mean[1] - 1.0,
-                    mean[2] - 5.1,
-                    mean[3] - 1.6,
-                    mean[4],
+                    mean[2] - 1.0,
+                    mean[3] - 1.0,
                     np.sqrt(cov[0, 0]),
                     np.sqrt(cov[1, 1]),
                     np.sqrt(cov[2, 2]),
                     np.sqrt(cov[3, 3]),
-                    np.sqrt(cov[4, 4]),
+                    cov[0, 1] / np.sqrt(cov[0, 0] * cov[1, 1]),
+                    cov[2, 3] / np.sqrt(cov[2, 2] * cov[3, 3]),
                 ]
             )
-            output[datanames[data_bin]].append(
-                f"{sigma_sigma[sigma_bin]:6.4f}, {model.n_poly:3d}, {mean[0]:6.4f}, {mean[1]:6.4f}, {mean[2]:6.4f}, {mean[3]:6.4f}, {mean[4]:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}, {np.sqrt(cov[2, 2]):6.4f}, {np.sqrt(cov[3, 3]):6.4f}, {np.sqrt(cov[4, 4]):6.4f}"
-            )
 
-        print(stats)
+        truth = {
+            "$\\alpha$": 1.0,
+            "$\\alpha_{ap}$": 1.0,
+            "$\\alpha_\\perp$": 1.0,
+            "$\\alpha_\\parallel$": 1.0,
+            "$\\Sigma_{nl,||}$": sigma["sym"][0],
+            "$\\Sigma_{nl,\\perp}$": sigma["sym"][1],
+            "$\\Sigma_{s}$": sigma["sym"][2],
+        }
 
-        for data_bin in range(2):
-            truth = {
-                "$\\alpha_\\perp$": 1.0,
-                "$\\alpha_\\parallel$": 1.0,
-                "$\\Sigma_{nl,||}$": 5.1,
-                "$\\Sigma_{nl,\\perp}$": 1.6,
-                "$\\Sigma_s$": None,
-            }
+        for i, dname in enumerate(datanames):
+            c = ChainConsumer()
+            for j, pname in enumerate(prior):
+                samples = np.array(all_samples[i][j])
 
-            c[data_bin].configure(bins=20, sigmas=[0, 1])
-            c[data_bin].plotter.plot(
-                filename=["/".join(pfn.split("/")[:-1]) + "/" + datanames[data_bin] + "_contour.png"],
-                truth=truth,
-                parameters=["$\\alpha_\\parallel$", "$\\alpha_\\perp$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
-                legend=True,
-                extents=[(0.98, 1.02), (0.98, 1.02)],
-            )
-
-            # Save all the numbers to a file
-            with open(dir_name + "/Barry_fit_" + datanames[data_bin] + ".txt", "w") as f:
-                f.write(
-                    "# N_poly, alpha_par, alpha_perp, sigma_alpha_par, sigma_alpha_perp, corr_alpha_par_perp, rd_of_template, bf_chi2, dof\n"
+                if j == 0:
+                    params = [
+                        "$\\alpha$",
+                        "$\\alpha_{ap}$",
+                        "$\\alpha_\\parallel$",
+                        "$\\alpha_\\perp$",
+                        "$\\beta$",
+                    ]
+                else:
+                    params = [
+                        "$\\alpha$",
+                        "$\\alpha_{ap}$",
+                        "$\\alpha_\\parallel$",
+                        "$\\alpha_\\perp$",
+                        "$\\beta$",
+                        "$\\Sigma_{nl,||}$",
+                        "$\\Sigma_{nl,\\perp}$",
+                        "$\\Sigma_{s}$",
+                    ]
+                c.add_chain(
+                    samples[:, :-2],
+                    weights=samples[:, -2] * np.exp((samples[:, -1] + np.amin(samples[:, -1]))),
+                    name=pname,
+                    parameters=params,
                 )
-                for l in output[datanames[data_bin]]:
-                    f.write(l + "\n")
 
-        # Plot the error on the alpha parameters as a function of the width of the sigma prior
-        plot_errors(np.array(stats[0]), "/".join(pfn.split("/")[:-1]) + "/" + datanames[0] + "_alphas.png", type="xi")
-        plot_errors(np.array(stats[1]), "/".join(pfn.split("/")[:-1]) + "/" + datanames[1] + "_alphas.png", type="pk")
+            c.plotter.plot(
+                filename=["/".join(pfn.split("/")[:-1]) + "/" + dname + f"_contour.png"],
+                truth=truth,
+                parameters=[
+                    "$\\alpha$",
+                    "$\\alpha_{ap}$",
+                    "$\\Sigma_{nl,||}$",
+                    "$\\Sigma_{nl,\\perp}$",
+                    "$\\Sigma_{s}$",
+                ],
+                legend=False,
+            )
+
+            # Plot the bias and error on the alpha parameters as a function of the choice of the sigma prior
+            # plot_errors(np.array(stats[i]), "/".join(pfn.split("/")[:-1]) + "/" + dname + "_alphas.png")
