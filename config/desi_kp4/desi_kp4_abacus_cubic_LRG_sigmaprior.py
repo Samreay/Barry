@@ -21,8 +21,6 @@ from chainconsumer import ChainConsumer
 # Convenience function to plot histograms of the errors and cross-correlation coefficients
 def plot_errors(stats, figname):
 
-    print(stats)
-
     fig, axes = plt.subplots(figsize=(6, 4), nrows=2, ncols=2, squeeze=True)
     plt.subplots_adjust(left=0.15, top=0.97, bottom=0.17, right=0.8, hspace=0.10, wspace=0.10)
 
@@ -31,14 +29,19 @@ def plot_errors(stats, figname):
     ax3 = fig.add_subplot(axes[1, 0])
     ax4 = fig.add_subplot(axes[1, 1])
 
+    print(stats[2])
+
+    print(100.0 * stats[2, :, 1], 100.0 * stats[2, :, 2])
+    print(100.0 * stats[2, :, 5], 100.0 * stats[2, :, 6])
+
     for j in range(3):
         bias1, bias2 = 100.0 * stats[j, :, 1], 100.0 * stats[j, :, 2]
         err1, err2 = 100.0 * stats[j, :, 5], 100.0 * stats[j, :, 6]
 
         ax1.plot(np.linspace(-0.5, 0.5, 500), gaussian_kde(bias1)(np.linspace(-0.5, 0.5, 500)))
         ax3.plot(np.linspace(-1.0, 1.0, 500), gaussian_kde(bias1)(np.linspace(-1.0, 1.0, 500)))
-        ax2.plot(np.linspace(0.2, 0.6, 500), gaussian_kde(bias1)(np.linspace(0.2, 0.6, 500)))
-        ax4.plot(np.linspace(0.6, 1.2, 500), gaussian_kde(bias1)(np.linspace(0.6, 1.2, 500)))
+        ax2.plot(np.linspace(0.2, 0.6, 500), gaussian_kde(err1)(np.linspace(0.2, 0.6, 500)))
+        ax4.plot(np.linspace(0.6, 1.2, 500), gaussian_kde(err2)(np.linspace(0.6, 1.2, 500)))
 
     ax1.set_xlabel(r"$\Delta\alpha_{\mathrm{iso}}$")
     ax3.set_xlabel(r"$\Delta\alpha_{\mathrm{ap}}$")
@@ -49,25 +52,8 @@ def plot_errors(stats, figname):
     ax3.set_ylabel(r"$N_{\mathrm{mocks}}$")
     ax4.set_yticklabels([])
 
-    ax1.axhline(0.0, color="k", ls="-", zorder=0, lw=0.8)
-    ax1.text(
-        0.95,
-        0.95,
-        r"$\alpha_{\mathrm{iso}}$" if ind == 0 else r"$\alpha_{\mathrm{ap}}$",
-        transform=ax1.transAxes,
-        ha="right",
-        va="top",
-        color="k",
-    )
-    ax2.text(
-        0.95,
-        0.95,
-        r"$\alpha_{\mathrm{iso}}$" if ind == 0 else r"$\alpha_{\mathrm{ap}}$",
-        transform=ax2.transAxes,
-        ha="right",
-        va="top",
-        color="k",
-    )
+    ax1.axvline(0.0, color="k", ls="-", zorder=0, lw=0.8)
+    ax3.axvline(0.0, color="k", ls="-", zorder=0, lw=0.8)
 
     fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
 
@@ -98,7 +84,7 @@ if __name__ == "__main__":
         max_k=0.30,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=1.0 / 25.0,
+        reduce_cov_factor=1.0 / 4.0,
         datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
     )
 
@@ -109,7 +95,7 @@ if __name__ == "__main__":
         max_dist=150.0,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=1.0 / 25.0,
+        reduce_cov_factor=1.0 / 4.0,
         datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
     )
 
@@ -252,7 +238,7 @@ if __name__ == "__main__":
                 axis=0,
             )
 
-            if realisation != -1:
+            if realisation == 1:
                 if sigma_bin == 0:
                     all_samples[data_bin][sigma_bin].extend(
                         np.c_[
@@ -345,6 +331,9 @@ if __name__ == "__main__":
                 parameters=[
                     "$\\alpha$",
                     "$\\alpha_{ap}$",
+                    "$\\alpha_\\parallel$",
+                    "$\\alpha_\\perp$",
+                    "$\\beta$",
                     "$\\Sigma_{nl,||}$",
                     "$\\Sigma_{nl,\\perp}$",
                     "$\\Sigma_{s}$",
@@ -353,4 +342,4 @@ if __name__ == "__main__":
             )
 
             # Plot the bias and error on the alpha parameters as a function of the choice of the sigma prior
-            # plot_errors(np.array(stats[i]), "/".join(pfn.split("/")[:-1]) + "/" + dname + "_alphas.png")
+            plot_errors(np.array(stats[i]), "/".join(pfn.split("/")[:-1]) + "/" + dname + "_alphas.png")
