@@ -1,16 +1,12 @@
 import logging
-import math
 import numpy as np
-from scipy import integrate, interpolate, optimize
-from scipy.fftpack import dst, idst
-from scipy.ndimage import gaussian_filter
-from scipy.signal import argrelmin, argrelmax, savgol_filter
-from cosmoprimo import Cosmology, PowerSpectrumInterpolator1D, PowerSpectrumBAOFilter
+from cosmoprimo import PowerSpectrumInterpolator1D, PowerSpectrumBAOFilter
 from cosmoprimo.fiducial import DESI
+from barry.cosmology.pk2xi import PowerToCorrelationSphericalBessel
 
 
 def get_smooth_methods_list():
-    fns = ["hinton2017", "wallish2018", "ehpoly", "savgol", "brieden2022", "peakaverage"]
+    fns = ["ehpoly", "hinton2017", "wallish2018", "brieden2022", "savgol", "peakaverage"]
     return fns
 
 
@@ -99,12 +95,11 @@ if __name__ == "__main__":
         import matplotlib.pyplot as plt
 
         labels = [
-            r"$\mathrm{Hinton2017}$",
-            r"$\mathrm{Wallisch2018}$",
-            r"$\mathrm{EH1998}$",
-            r"$\mathrm{Savitsky-Golay}$",
-            r"$\mathrm{Brieden2022}$",
-            r"$\mathrm{Peak-average}$",
+            r"$\mathrm{Eisenstein\,&\,Hu\,1998}$",
+            r"$\mathrm{Hinton\,et.\,al.\,2017}$",
+            r"$\mathrm{Wallisch\,et.\,al.\,2018}$",
+            r"$\mathrm{Brieden\,et.\,al.\,2022}$",
+            r"$\mathrm{Savitsky-Golay\,Filter}$",
         ]
 
         fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
@@ -113,21 +108,38 @@ if __name__ == "__main__":
         ax1.set_yscale("log")
 
         for i, smooth_type in enumerate(get_smooth_methods_list()):
-            print(i, smooth_type)
-            pk_smoothed = smooth_func(ks, pk_lin, method=smooth_type)
-            ax1.plot(ks, pk_smoothed, "-", ms=2, label=labels[i])
-            ax2.plot(ks, pk_lin / pk_smoothed, "-")
+            if smooth_type != "peakaverage":
+                print(i, smooth_type)
+                pk_smoothed = smooth_func(ks, pk_lin, method=smooth_type)
+                ax1.plot(ks, pk_smoothed, "-", ms=2, label=labels[i])
+                ax2.plot(ks, pk_lin / pk_smoothed, "-")
         ax1.legend()
         plt.show()
 
-        fig, (ax1) = plt.subplots(1, 1)
+        fig, ax1 = plt.subplots(1, 1, figsize=(8, 4))
         for i, smooth_type in enumerate(get_smooth_methods_list()):
-            print(i, smooth_type)
-            pk_smoothed = smooth_func(ks, pk_lin, method=smooth_type)
-            ax1.plot(ks, pk_lin / pk_smoothed, "-", label=labels[i])
+            if smooth_type != "peakaverage":
+                print(i, smooth_type)
+                pk_smoothed = smooth_func(ks, pk_lin, method=smooth_type)
+                ax1.plot(ks, pk_lin / pk_smoothed, "-", label=labels[i])
         ax1.set_xlim(0.0, 0.4)
         ax1.set_xlabel(r"$k\,(h\,\mathrm{Mpc}^{-1})$", fontsize=14)
         ax1.set_ylabel(r"$P(k)/P_{\mathrm{smooth}}(k)$", fontsize=14)
-        ax1.legend()
-        plt.show()
-        fig.savefig(f"./BAO_wiggles_comp.png", bbox_inches="tight", dpi=300)
+        fig.savefig(f"./BAO_wiggles_comp_pk.png", bbox_inches="tight", dpi=300)
+
+        svals = np.linspace(30.0, 180.0)
+        pk2xi_0 = PowerToCorrelationSphericalBessel(qs=ks, ell=0)
+        xi_lin = pk2xi_0(ks, pk_lin, svals)
+
+        fig, ax1 = plt.subplots(1, 1, figsize=(8, 4))
+        for i, smooth_type in enumerate(get_smooth_methods_list()):
+            if smooth_type != "peakaverage":
+                print(i, smooth_type)
+                pk_smoothed = smooth_func(ks, pk_lin, method=smooth_type)
+                xi_smoothed = pk2xi_0(ks, pk_smoothed, svals)
+                ax1.plot(svals, svals**2 * (xi_lin - xi_smoothed), "-", label=labels[i])
+        ax1.set_xlim(30.0, 180.0)
+        ax1.set_xlabel(r"$s\,(h^{-1}\,\mathrm{Mpc})$", fontsize=14)
+        ax1.set_ylabel(r"$s^{2}[\xi(s) - \xi_{\mathrm{smooth}}(s)]\,(h^{-2}Mpc^{2})$", fontsize=14)
+        ax1.legend(fontsize=12)
+        fig.savefig(f"./BAO_wiggles_comp_xi.png", bbox_inches="tight", dpi=300)

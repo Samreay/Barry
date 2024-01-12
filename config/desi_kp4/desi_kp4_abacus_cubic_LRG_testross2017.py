@@ -189,15 +189,17 @@ if __name__ == "__main__":
             "$\\alpha_\\perp$": 1.0,
             "$\\alpha_\\parallel$": 1.0,
         }
-        for realisation in range(26):
-            plotname = "Realisation_" + str(realisation) if realisation < 26 else "mean"
-            c[realisation].plotter.plot(
-                filename=["/".join(pfn.split("/")[:-1]) + f"/" + plotname + f"_contour.png"],
-                truth=truth,
-            )
+        # for realisation in range(26):
+        #    plotname = "Realisation_" + str(realisation) if realisation < 26 else "mean"
+        #    c[realisation].plotter.plot(
+        #        filename=["/".join(pfn.split("/")[:-1]) + f"/" + plotname + f"_contour.png"],
+        #        truth=truth,
+        #    )
 
         fig, axes = plt.subplots(figsize=(6, 3), nrows=1, ncols=1, sharex=True, squeeze=False)
         plt.subplots_adjust(left=0.1, top=0.95, bottom=0.08, right=0.95, hspace=0.0, wspace=0.0)
+
+        print(100.0 * np.mean(stats[1, 1:, [0, 1, 4, 5]], axis=1), 100.0 * np.mean(stats[0, 1:, [0, 1, 4, 5]], axis=1))
 
         boxprops = {"lw": 1.3, "color": "b"}
         medianprops = {"lw": 1.5, "color": "r"}

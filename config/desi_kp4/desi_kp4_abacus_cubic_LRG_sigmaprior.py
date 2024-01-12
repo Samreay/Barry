@@ -22,14 +22,12 @@ from chainconsumer import ChainConsumer
 def plot_errors(stats, figname):
 
     fig, axes = plt.subplots(figsize=(6, 4), nrows=2, ncols=2, squeeze=True)
-    plt.subplots_adjust(left=0.15, top=0.97, bottom=0.17, right=0.8, hspace=0.10, wspace=0.10)
+    plt.subplots_adjust(left=0.15, top=0.97, bottom=0.17, right=0.8, hspace=0.40, wspace=0.10)
 
     ax1 = fig.add_subplot(axes[0, 0])
     ax2 = fig.add_subplot(axes[0, 1])
     ax3 = fig.add_subplot(axes[1, 0])
     ax4 = fig.add_subplot(axes[1, 1])
-
-    print(stats[2])
 
     print(100.0 * stats[2, :, 1], 100.0 * stats[2, :, 2])
     print(100.0 * stats[2, :, 5], 100.0 * stats[2, :, 6])
@@ -40,13 +38,13 @@ def plot_errors(stats, figname):
 
         ax1.plot(np.linspace(-0.5, 0.5, 500), gaussian_kde(bias1)(np.linspace(-0.5, 0.5, 500)))
         ax3.plot(np.linspace(-1.0, 1.0, 500), gaussian_kde(bias1)(np.linspace(-1.0, 1.0, 500)))
-        ax2.plot(np.linspace(0.2, 0.6, 500), gaussian_kde(err1)(np.linspace(0.2, 0.6, 500)))
-        ax4.plot(np.linspace(0.6, 1.2, 500), gaussian_kde(err2)(np.linspace(0.6, 1.2, 500)))
+        ax2.plot(np.linspace(0.6, 0.7, 500), gaussian_kde(err1)(np.linspace(0.6, 0.9, 500)))
+        ax4.plot(np.linspace(2.0, 2.5, 500), gaussian_kde(err2)(np.linspace(2.0, 2.5, 500)))
 
-    ax1.set_xlabel(r"$\Delta\alpha_{\mathrm{iso}}$")
-    ax3.set_xlabel(r"$\Delta\alpha_{\mathrm{ap}}$")
-    ax2.set_xlabel(r"$\sigma_{\alpha_{\mathrm{iso}}}$")
-    ax4.set_xlabel(r"$\sigma_{\alpha_{\mathrm{ap}}}$")
+    ax1.set_xlabel(r"$\Delta\alpha_{\mathrm{iso}}\,(\%)$")
+    ax3.set_xlabel(r"$\Delta\alpha_{\mathrm{ap}}\,(\%)$")
+    ax2.set_xlabel(r"$\sigma_{\alpha_{\mathrm{iso}}}\,(\%)$")
+    ax4.set_xlabel(r"$\sigma_{\alpha_{\mathrm{ap}}}\,(\%)$")
     ax1.set_ylabel(r"$N_{\mathrm{mocks}}$")
     ax2.set_yticklabels([])
     ax3.set_ylabel(r"$N_{\mathrm{mocks}}$")
@@ -84,7 +82,7 @@ if __name__ == "__main__":
         max_k=0.30,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=1.0 / 4.0,
+        reduce_cov_factor=1.0 / 16.0,
         datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
     )
 
@@ -95,7 +93,7 @@ if __name__ == "__main__":
         max_dist=150.0,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=1.0 / 4.0,
+        reduce_cov_factor=1.0 / 16.0,
         datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
     )
 
