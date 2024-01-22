@@ -685,14 +685,14 @@ class PowerSpectrumFit(Model):
 
         return pk_model, poly_model, mask
 
-    def get_model_summary(self, params, window=True, smooth_params=None, verbose=False):
+    def get_model_summary(self, params, window=True, smooth_params=None, masked=True, verbose=False):
         """Get the model summary for the given parameters.
 
         Parameters
         ----------
-        params : array
+        params : dict
             The parameter vector.
-        smooth_params : array, optional
+        smooth_params : dict, optional
             The parameter vector for the smooth model.
 
         Returns
@@ -762,11 +762,17 @@ class PowerSpectrumFit(Model):
             bband = None
 
         # Mask the model to match the data points
-        mod = mod[self.data[0]["w_mask"]]
-        smooth = smooth[self.data[0]["w_mask"]]
+        if masked:
+            mod = mod[self.data[0]["w_mask"]]
+            smooth = smooth[self.data[0]["w_mask"]]
 
-        mods = mod.reshape((-1, self.data[0]["ndata"], len(self.data[0]["ks"])))
-        smooths = smooth.reshape((-1, self.data[0]["ndata"], len(self.data[0]["ks"])))
+            mods = mod.reshape((-1, self.data[0]["ndata"], len(self.data[0]["ks"])))
+            smooths = smooth.reshape((-1, self.data[0]["ndata"], len(self.data[0]["ks"])))
+
+        else:
+
+            mods = mod.reshape((-1, self.data[0]["ndata"], len(self.data[0]["ks_output"])))
+            smooths = smooth.reshape((-1, self.data[0]["ndata"], len(self.data[0]["ks_output"])))
 
         return new_chi_squared, dof, bband, mods, smooths
 

@@ -340,7 +340,7 @@ class CorrelationFunctionFit(Model):
                 sinx, sin2x, sin3x = np.sin(x), np.sin(2.0 * x), np.sin(3.0 * x)
                 cosx, cos2x, cos3x = np.cos(x), np.cos(2.0 * x), np.cos(3.0 * x)
                 Si_x, Si_2x, Si_3x = sici(x)[0], sici(2.0 * x)[0], sici(3.0 * x)[0]
-                self.poly[-2, 1] = (
+                self.poly[-2, 1] = self.delta**3 * (
                     -2.0
                     * (
                         12.0
@@ -353,9 +353,9 @@ class CorrelationFunctionFit(Model):
                         + x**3 * Si_x
                         - 2.0 * x**3 * Si_2x
                     )
-                    / (x**3 * dist**3)
+                    / x**6
                 )
-                self.poly[-1, 1] = (
+                self.poly[-1, 1] = self.delta**3 * (
                     0.5
                     * (
                         48.0
@@ -373,7 +373,7 @@ class CorrelationFunctionFit(Model):
                         - 32.0 * x**3 * Si_2x
                         + 27.0 * x**3 * Si_3x
                     )
-                    / (x**3 * dist**3)
+                    / x**3
                 )
 
     def get_model(self, p, d, smooth=False):

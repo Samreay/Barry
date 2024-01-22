@@ -192,10 +192,10 @@ if __name__ == "__main__":
                             extra["realisation"],
                             onesigma["$\\alpha$"][1],
                             onesigma["$\\alpha_{ap}$"][1],
-                            onesigma["$\\alpha$"][2] - onesigma["$\\alpha$"][0],
-                            onesigma["$\\alpha_{ap}$"][2] - onesigma["$\\alpha_{ap}$"][0],
-                            twosigma["$\\alpha$"][2] - twosigma["$\\alpha$"][0],
-                            twosigma["$\\alpha_{ap}$"][2] - twosigma["$\\alpha_{ap}$"][0],
+                            (onesigma["$\\alpha$"][2] - onesigma["$\\alpha$"][0]) / 2.0,
+                            (onesigma["$\\alpha_{ap}$"][2] - onesigma["$\\alpha_{ap}$"][0]) / 2.0,
+                            (twosigma["$\\alpha$"][2] - twosigma["$\\alpha$"][0]) / 2.0,
+                            (twosigma["$\\alpha_{ap}$"][2] - twosigma["$\\alpha_{ap}$"][0]) / 2.0,
                         ]
                     )
 
@@ -268,8 +268,8 @@ if __name__ == "__main__":
         for panel in range(6):
             axes[panel, 0].axhline(0.0, color="k", ls="-", zorder=0, lw=0.75)
 
-            boxprops_pk = {"lw": 1.3, "color": "b"}
-            boxprops_xi = {"lw": 1.3, "color": "orange"}
+            boxprops_pk = {"lw": 1.3, "color": "#1f77b4"}
+            boxprops_xi = {"lw": 1.3, "color": "#ff7f0e"}
             medianprops = {"lw": 1.5, "color": "r"}
             whiskerprops = {"lw": 1.3, "color": "k"}
             bp1 = axes[panel, 0].boxplot(
@@ -309,7 +309,7 @@ if __name__ == "__main__":
         axes[0, 0].axhline(y=0.1, color="k", ls="--", zorder=0, lw=1.2, alpha=0.75)
         axes[1, 0].axhline(y=-0.2, color="k", ls="--", zorder=0, lw=1.2, alpha=0.75)
         axes[1, 0].axhline(y=0.2, color="k", ls="--", zorder=0, lw=1.2, alpha=0.75)
-        axes[5, 0].axhline(y=0.2, color="k", ls="--", zorder=0, lw=1.2, alpha=0.75)
+        # axes[5, 0].axhline(y=0.2, color="k", ls="--", zorder=0, lw=1.2, alpha=0.75)
         # axes[0, 0].set_ylim(-0.07, 0.07)
         # axes[1, 0].set_ylim(-0.06, 0.06)
         # axes[2, 0].set_ylim(-0.015, 0.015)

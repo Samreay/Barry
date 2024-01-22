@@ -200,6 +200,12 @@ if __name__ == "__main__":
         plt.subplots_adjust(left=0.1, top=0.95, bottom=0.08, right=0.95, hspace=0.0, wspace=0.0)
 
         print(100.0 * np.mean(stats[1, 1:, [0, 1, 4, 5]], axis=1), 100.0 * np.mean(stats[0, 1:, [0, 1, 4, 5]], axis=1))
+        print(
+            100.0 * np.mean(stats[1, 1:, [0, 1]] - stats[0, 1:, [0, 1]], axis=1),
+            100.0 * np.std(stats[1, 1:, [0, 1]] - stats[0, 1:, [0, 1]], axis=1) / 5.0,
+        )
+        print(100.0 * np.max(np.fabs(stats[1, 1:, [0, 1]] - stats[0, 1:, [0, 1]]), axis=1))
+        print(np.max(np.fabs(stats[1, 1:, [0, 1]] - stats[0, 1:, [0, 1]]), axis=1) / np.mean(stats[0, 1:, [4, 5]], axis=1))
 
         boxprops = {"lw": 1.3, "color": "b"}
         medianprops = {"lw": 1.5, "color": "r"}

@@ -106,7 +106,7 @@ def plot_alphas_spline(stats, figname):
 
         index = np.where(dat[:, 1] == 0)[0]
 
-        c = "#1f77b4" if ind == 0 else "#ff7f0e"
+        c = "#ff7f0e" if ind == 0 else "#1f77b4"
         ax1.plot(dat[index, 0], dat[index, 2] * 100.0, color=c, zorder=1, alpha=0.75, lw=0.8)
         ax2.plot(dat[index, 0], dat[index, 3] * 100.0, color=c, zorder=1, alpha=0.75, lw=0.8)
         ax1.fill_between(
