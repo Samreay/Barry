@@ -35,8 +35,8 @@ def plot_grids_bias(statsmean, kmins, kmaxs, figname, inds, edgevals):
         origin="lower",
         aspect="auto",
         cmap="RdBu",
-        vmin=-0.25,
-        vmax=0.25,
+        vmin=-0.2,
+        vmax=0.2,
     )
     cax = axes[0, 1].imshow(
         100.0 * (statsmean[inds[1]]).reshape(len(kmins), len(kmaxs)).T,
@@ -44,8 +44,8 @@ def plot_grids_bias(statsmean, kmins, kmaxs, figname, inds, edgevals):
         origin="lower",
         aspect="auto",
         cmap="RdBu",
-        vmin=-0.25,
-        vmax=0.25,
+        vmin=-0.2,
+        vmax=0.2,
     )
     lines = contour_rect(100.0 * (statsmean[inds[0]]).reshape(len(kmins), len(kmaxs)).T, edgevals[0])
     for line in lines:
@@ -108,8 +108,8 @@ def plot_grids_errs(stats, kmins, kmaxs, figname, inds, edgevals):
         origin="lower",
         aspect="auto",
         cmap="RdBu",
-        vmin=0.50,
-        vmax=1.50,
+        vmin=0.85,
+        vmax=1.15,
     )
     cax = axes[0, 1].imshow(
         stats[inds[3]].reshape(len(kmins), len(kmaxs)).T,
@@ -117,8 +117,8 @@ def plot_grids_errs(stats, kmins, kmaxs, figname, inds, edgevals):
         origin="lower",
         aspect="auto",
         cmap="RdBu",
-        vmin=0.50,
-        vmax=1.50,
+        vmin=0.85,
+        vmax=1.15,
     )
     lines = contour_rect(100.0 * (statsmean[inds[0]]).reshape(len(kmins), len(kmaxs)).T, edgevals[0])
     for line in lines:
