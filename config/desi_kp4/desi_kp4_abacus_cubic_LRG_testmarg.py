@@ -89,24 +89,15 @@ if __name__ == "__main__":
         logging.info("Creating plots")
 
         # Set up a ChainConsumer instance. Plot the MAP for individual realisations and a contour for the mock average
-        c = [
-            ChainConsumer(),
-            ChainConsumer(),
-        ]
-        fitname = [None for i in range(len(c))]
-
-        datanames = ["Xi_CV", "Pk_CV"]
+        c = ChainConsumer()
+        marg_names = ["No\,Analytic\,Marginalisation", "Partial\,Analytic\,Marginalisation", "Full\,Analytic\,Marginalisation"]
 
         # Loop over all the chains
-        stats = {}
-        output = {}
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number and redshift bin
-            recon_bin = 0 if "Prerecon" in extra["name"] else 1
-            poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
-            data_bin = 0 if "Xi" in extra["name"] else 1
-            print(extra["name"], recon_bin, data_bin)
+            marg_bin = int(extra["name"].split("marg=")[1].split(" ")[0])
+            print(extra["name"], marg_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -120,6 +111,7 @@ if __name__ == "__main__":
             df["$d\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
             df["$d\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
             df["$d\\epsilon$"] = 100.0 * df["$\\epsilon$"]
+            print(df.keys())
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
@@ -136,40 +128,37 @@ if __name__ == "__main__":
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
-            if data_bin == 0 and poly_bin == 0:
-                fitname[recon_bin] = data[0]["name"].replace(" ", "_")
-            chainname = [r"$\xi(s)$" if data_bin == 0 else r"$P(k)$", "Polynomial" if poly_bin == 0 else r"Spline"]
-            extra["name"] = chainname[0] + " " + chainname[1]
-            c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+            extra["name"] = marg_names[marg_bin]
+            c.add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
 
-        print(fitname)
-
-        for recon_bin in range(len(c)):
-            truth = {
-                "$\\alpha$": 1.0,
-                "$\\alpha_{ap}$": 1.0,
-                "$\\alpha_\\perp$": 1.0,
-                "$\\alpha_\\parallel$": 1.0,
-                "$\\Sigma_{nl,||}$": sigma[None if "Pre" in fitname[recon_bin] else "sym"][0],
-                "$\\Sigma_{nl,\\perp}$": sigma[None if "Pre" in fitname[recon_bin] else "sym"][1],
-                "$\\Sigma_s$": sigma[None if "Pre" in fitname[recon_bin] else "sym"][2],
-            }
-            c[recon_bin].plotter.plot(
-                legend=True,
-                truth=truth,
-                filename="/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour.png",
-            )
-            c[recon_bin].plotter.plot(
-                parameters=[
-                    "$\\alpha$",
-                    "$\\alpha_{ap}$",
-                ],
-                legend=True,
-                truth=truth,
-                filename="/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour2.png",
-            )
-            print(
-                c[recon_bin].analysis.get_latex_table(
-                    parameters=["$d\\alpha$", "$d\\alpha_{ap}$", "$d\\alpha_\\parallel$", "$d\\alpha_\\perp$"]
-                ),
-            )
+        truth = {
+            "$\\alpha$": 1.0,
+            "$\\alpha_{ap}$": 1.0,
+            "$\\alpha_\\perp$": 1.0,
+            "$\\alpha_\\parallel$": 1.0,
+            "$\\Sigma_{nl,||}$": sigma["sym"][0],
+            "$\\Sigma_{nl,\\perp}$": sigma["sym"][1],
+            "$\\Sigma_s$": sigma["sym"][2],
+        }
+        c.plotter.plot(
+            legend=True,
+            truth=truth,
+            filename="/".join(pfn.split("/")[:-1]) + "/marg_contour.png",
+        )
+        c.plotter.plot(
+            parameters=[
+                "$\\alpha$",
+                "$\\alpha_{ap}$",
+                "$\\b_{0,1}$",
+                "$\\beta$",
+                "$\\Sigma_{nl,||}$",
+                "$\\Sigma_{nl,\\perp}$",
+                "$\\Sigma_s$",
+            ],
+            legend=True,
+            truth=truth,
+            filename="/".join(pfn.split("/")[:-1]) + "/marg_contour2.png",
+        )
+        print(
+            c.analysis.get_latex_table(parameters=["$d\\alpha$", "$d\\alpha_{ap}$", "$d\\alpha_\\parallel$", "$d\\alpha_\\perp$"]),
+        )
