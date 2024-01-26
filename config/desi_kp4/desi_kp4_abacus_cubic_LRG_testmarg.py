@@ -55,7 +55,7 @@ if __name__ == "__main__":
                 recon=dataset_pk.recon,
                 isotropic=dataset_pk.isotropic,
                 fix_params=["om"],
-                marg="full",
+                marg=marg,
                 poly_poles=dataset_pk.fit_poles,
                 correction=Correction.HARTLAP,
             )
@@ -149,7 +149,7 @@ if __name__ == "__main__":
             parameters=[
                 "$\\alpha$",
                 "$\\alpha_{ap}$",
-                "$\\b_{0,1}$",
+                "$b_{0,1}$",
                 "$\\beta$",
                 "$\\Sigma_{nl,||}$",
                 "$\\Sigma_{nl,\\perp}$",
