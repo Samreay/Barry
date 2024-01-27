@@ -58,6 +58,7 @@ if __name__ == "__main__":
                 marg=marg,
                 poly_poles=dataset_pk.fit_poles,
                 correction=Correction.HARTLAP,
+                n_poly=7,
             )
             model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
             model.set_default("beta", 0.4, min=0.1, max=0.7)
@@ -100,17 +101,13 @@ if __name__ == "__main__":
             print(extra["name"], marg_bin)
 
             # Store the chain in a dictionary with parameter names
+            print(np.shape(chain), model.get_labels(), model.marg)
+            print(model.get_active_params())
             df = pd.DataFrame(chain, columns=model.get_labels())
             alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
             df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
-
-            df["$d\\alpha_\\parallel$"] = 100.0 * (alpha_par - 1.0)
-            df["$d\\alpha_\\perp$"] = 100.0 * (alpha_perp - 1.0)
-            df["$d\\alpha_{ap}$"] = 100.0 * ((1.0 + df["$\\epsilon$"].to_numpy()) ** 3 - 1.0)
-            df["$d\\alpha$"] = 100.0 * (df["$\\alpha$"] - 1.0)
-            df["$d\\epsilon$"] = 100.0 * df["$\\epsilon$"]
             print(df.keys())
 
             # Get the MAP point and set the model up at this point
@@ -158,7 +155,4 @@ if __name__ == "__main__":
             legend=True,
             truth=truth,
             filename="/".join(pfn.split("/")[:-1]) + "/marg_contour2.png",
-        )
-        print(
-            c.analysis.get_latex_table(parameters=["$d\\alpha$", "$d\\alpha_{ap}$", "$d\\alpha_\\parallel$", "$d\\alpha_\\perp$"]),
         )
