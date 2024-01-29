@@ -58,7 +58,7 @@ if __name__ == "__main__":
                 marg=marg,
                 poly_poles=dataset_pk.fit_poles,
                 correction=Correction.HARTLAP,
-                n_poly=7,
+                n_poly=8,
             )
             model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
             model.set_default("beta", 0.4, min=0.1, max=0.7)
