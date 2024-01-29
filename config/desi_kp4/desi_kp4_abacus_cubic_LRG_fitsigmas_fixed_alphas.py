@@ -75,7 +75,7 @@ if __name__ == "__main__":
                 model.kvals, model.pksmooth, model.pkratio = pktemplate.T
 
                 name = dataset_pk.name + " mock mean"
-                fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[n])
+                fitter.add_model_and_dataset(model, dataset_pk, name=name)
                 allnames.append(name)
 
                 model = CorrBeutler2017(
