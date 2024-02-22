@@ -220,6 +220,13 @@ if __name__ == "__main__":
 
             count += 1
 
+    # Submit all the jobs to NERSC. We have quite a few (231), so we'll
+    # only assign 1 walker (processor) to each. Note that this will only run if the
+    # directory is empty (i.e., it won't overwrite existing chains)
+    fitter.set_sampler(sampler)
+    fitter.set_num_walkers(1)
+    fitter.fit(file)
+
     # Everything below here is for plotting the chains once they have been run. The should_plot()
     # function will check for the presence of chains and plot if it finds them on your laptop. On the HPC you can
     # also force this by passing in "plot" as the second argument when calling this code from the command line.
