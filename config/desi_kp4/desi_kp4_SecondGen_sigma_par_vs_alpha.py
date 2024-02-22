@@ -13,6 +13,7 @@ import pandas as pd
 from barry.models.model import Correction
 from barry.utils import weighted_avg_and_cov
 import matplotlib.pyplot as plt
+import matplotlib.colors as mplc
 import matplotlib.gridspec as gridspec
 from chainconsumer import ChainConsumer
 
@@ -66,14 +67,14 @@ def plot_alphas(data, figname, plotnames):
         # ax1.set_ylim(-0.75, 0.75)
         # ax2.set_ylim(-0.35, 0.35)
         ax2.set_xlabel(r"$\Sigma_{nl,||}$")
-        if n_poly == 0:
-            ax1.set_ylabel(r"$\alpha_{||} - 1\,(\%)$")
-            ax2.set_ylabel(r"$\alpha_{\perp} - 1\,(\%)$")
+        if index == 0:
+            ax1.set_ylabel(r"$\alpha_{\mathrm{iso}} - 1\,(\%)$")
+            ax2.set_ylabel(r"$\alpha_{\mathrm{ap}} - 1\,(\%)$")
         else:
             ax1.set_yticklabels([])
             ax2.set_yticklabels([])
         ax1.set_xticklabels([])
-        for val, ls in zip([-0.1, 0.0, 0.1], [":", "--", ":"]):
+        for val, ls in zip([-0.3, 0.0, 0.3], [":", "--", ":"]):
             ax1.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
             ax2.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
         ax1.axvline(4.75, color="k", ls=":", zorder=0, lw=0.8)
@@ -97,73 +98,128 @@ if __name__ == "__main__":
     # Get the relative file paths and names
     pfn, dir_name, file = setup(__file__, "/reduced_cov/")
 
-    # Set up the Fitting class and Dynesty sampler with 250 live points.
+    # Set up the Fitting class and sampler
     fitter = Fitter(dir_name, remove_output=False)
     sampler = NautilusSampler(temp_dir=dir_name)
 
+    colors = [mplc.cnames[color] for color in ["orange", "orangered", "firebrick", "lightskyblue", "steelblue", "seagreen", "black"]]
+
+    tracers = {
+        "LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]],
+        "ELG_LOP": [[0.8, 1.1], [1.1, 1.6]],
+        "QSO": [[0.8, 2.1]],
+        "BGS_BRIGHT-21.5": [[0.1, 0.4]],
+    }
+    reconsmooth = {"LRG": 10, "ELG_LOP": 10, "QSO": 30, "BGS_BRIGHT-21.5": 15}
     sigma_nl_par = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0]
-
-    colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
-
-    tracers = {"LRG": [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1]], "ELG_LOP": [[0.8, 1.1], [1.1, 1.6]], "QSO": [[0.8, 2.1]]}
-    nmocks = {"LRG": [0, 25], "ELG_LOP": [0, 10], "QSO": [7, 25]}
     sigma_nl_perp = {
         "LRG": [
-            [3.0, 2.5],
-            [4.0, 2.0],
-            [5.0, 4.0],
+            [4.5, 3.0],
+            [4.5, 3.0],
+            [4.5, 3.0],
         ],
-        "ELG_LOP": [[6.0, 6.0], [3.0, 2.5]],
-        "QSO": [[3.0, 0.0]],
+        "ELG_LOP": [[4.5, 3.0], [4.5, 3.0]],
+        "QSO": [[3.5, 3.0]],
+        "BGS_BRIGHT-21.5": [[6.5, 3.0]],
     }
-    sigma_s = {"LRG": [[2.0, 2.0], [2.0, 1.0], [2.0, 2.0]], "ELG_LOP": [[4.0, 7.0], [4.0, 3.0]], "QSO": [[4.0, 0.0]]}
+    sigma_s = {
+        "LRG": [[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]],
+        "ELG_LOP": [[2.0, 2.0], [2.0, 2.0]],
+        "QSO": [[2.0, 2.0]],
+        "BGS_BRIGHT-21.5": [[2.0, 2.0]],
+    }
 
-    allnames = []
     cap = "gccomb"
     ffa = "ffa"  # Flavour of fibre assignment. Can be "ffa" for fast fiber assign, or "complete"
     rpcut = False  # Whether or not to include the rpcut
-    imaging = "default_FKP"  # What form of imaging systematics to use. Can be "default_FKP", "default_FKP_addSN", or "default_FKP_addRF"
+    imaging = (
+        "default_FKP"
+        # What form of imaging systematics to use. Can be "default_FKP", "default_FKP_addSN", or "default_FKP_addRF"
+    )
     rp = f"{imaging}_rpcut2.5" if rpcut else f"{imaging}"
+
+    count = 0
+    plotnames = [f"{t}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
+    datanames = [f"{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}" for t in tracers for i, zs in enumerate(tracers[t])]
     for t in tracers:
         for i, zs in enumerate(tracers[t]):
-            rec = [None] if t == "QSO" else [None, "sym"]
-            for r, recon in enumerate(rec):
-                name = f"DESI_SecondGen_sm10_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_xi.pkl"
+            for r, recon in enumerate(["sym"]):
+
+                # Correlation function data
+                name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_xi.pkl"
                 dataset_xi = CorrelationFunction_DESI_KP4(
                     recon=recon,
                     fit_poles=[0, 2],
                     min_dist=50.0,
                     max_dist=150.0,
                     realisation=None,
-                    reduce_cov_factor=len(range(nmocks[t][0], nmocks[t][1])),
+                    reduce_cov_factor=25,
                     datafile=name,
                 )
 
-                # Loop over pre- and post-recon measurements
+                # Power spectrum data
+                name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_pk.pkl"
+                dataset_pk = PowerSpectrum_DESI_KP4(
+                    recon=recon,
+                    fit_poles=[0, 2],
+                    min_k=0.02,
+                    max_k=0.30,
+                    realisation=None,
+                    reduce_cov_factor=25,
+                    datafile=name,
+                )
+
                 for sig in range(len(sigma_nl_par)):
 
-                    for n, n_poly in enumerate([[-2, 0, 2]]):
+                    # Correlation Function model
+                    model = CorrBeutler2017(
+                        recon=recon,
+                        isotropic=False,
+                        marg="full",
+                        fix_params=["om"],
+                        poly_poles=dataset_xi.fit_poles,
+                        correction=Correction.NONE,
+                        broadband_type="spline",
+                        n_poly=[0, 2],
+                    )
+                    model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=4.0)
+                    model.set_default("beta", 0.4, min=0.1, max=0.7)
+                    model.set_default("sigma_nl_par", sigma_nl_par[sig], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+                    model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
+                    model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
 
-                        model = CorrBeutler2017(
-                            recon=dataset_xi.recon,
-                            isotropic=dataset_xi.isotropic,
-                            marg="full",
-                            fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"],
-                            poly_poles=dataset_xi.fit_poles,
-                            correction=Correction.NONE,
-                            n_poly=n_poly,
-                        )
-                        model.set_default("sigma_nl_par", sigma_nl_par[sig])
-                        model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r])
-                        model.set_default("sigma_s", sigma_s[t][i][r])
+                    # Load in a pre-existing BAO template
+                    pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+                    model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
-                        # Load in a pre-existing BAO template
-                        pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-                        model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
+                    name = dataset_xi.name + f" mock mean fixed_type {sig}"
+                    fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[count])
 
-                        name = dataset_xi.name + f" mock mean fixed_type {sig} n_poly=" + str(n)
-                        fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i - 1])
-                        allnames.append(name)
+                    # Power spectrum model
+                    model = PowerBeutler2017(
+                        recon=recon,
+                        isotropic=False,
+                        marg="full",
+                        fix_params=["om"],
+                        poly_poles=dataset_pk.fit_poles,
+                        correction=Correction.NONE,
+                        broadband_type="spline",
+                        n_poly=30,
+                    )
+                    model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=4.0)
+                    model.set_default("beta", 0.4, min=0.1, max=0.7)
+                    model.set_default("sigma_nl_par", sigma_nl_par[sig], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+                    model.set_default("sigma_nl_perp", sigma_nl_perp[t][i][r], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
+                    model.set_default("sigma_s", sigma_s[t][i][r], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
+
+                    # Load in a pre-existing BAO template
+                    pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+                    model.kvals, model.pksmooth, model.pkratio = pktemplate.T
+
+                    name = dataset_pk.name + f" mock mean fixed_type {sig}"
+                    fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[count])
+
+            count += 1
 
     # Submit all the jobs to NERSC. We have quite a few (231), so we'll
     # only assign 1 walker (processor) to each. Note that this will only run if the
@@ -206,14 +262,23 @@ if __name__ == "__main__":
             alpha_par, alpha_perp = model.get_alphas(df["$\\alpha$"].to_numpy(), df["$\\epsilon$"].to_numpy())
             df["$\\alpha_\\parallel$"] = alpha_par
             df["$\\alpha_\\perp$"] = alpha_perp
+            df["$\\alpha_{ap}$"] = (1.0 + df["$\\epsilon$"].to_numpy()) ** 3
+            newweight = np.where(
+                np.logical_and(
+                    np.logical_and(df["$\\alpha_\\parallel$"] >= 0.8, df["$\\alpha_\\parallel$"] <= 1.2),
+                    np.logical_and(df["$\\alpha_\\perp$"] >= 0.8, df["$\\alpha_\\perp$"] <= 1.2),
+                ),
+                weight,
+                0.0,
+            )
             mean, cov = weighted_avg_and_cov(
                 df[
                     [
-                        "$\\alpha_\\parallel$",
-                        "$\\alpha_\\perp$",
+                        "$\\alpha$",
+                        "$\\alpha_{ap}$",
                     ]
                 ],
-                weight,
+                newweight,
                 axis=0,
             )
 

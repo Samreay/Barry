@@ -146,6 +146,8 @@ if __name__ == "__main__":
                     reduce_cov_factor=1,
                     datafile=name,
                 )
+                print(dataset.get_data()[0]["ks"])
+                exit()
 
                 name = dataset.name + f" mock mean"
                 fitter.add_model_and_dataset(model, dataset, name=name, color=colors[count])

@@ -79,7 +79,7 @@ if __name__ == "__main__":
                     recon=recon,
                     fit_poles=[0, 2],
                     min_dist=50.0,
-                    max_dist=150.0,
+                    max_dist=151.0,
                     realisation="data",
                     reduce_cov_factor=1,
                     datafile=name,
@@ -119,6 +119,8 @@ if __name__ == "__main__":
                     reduce_cov_factor=1,
                     datafile=name,
                 )
+                print(dataset.get_data()[0]["ks"])
+                exit()
                 model = PowerBeutler2017(
                     recon=dataset.recon,
                     isotropic=dataset.isotropic,

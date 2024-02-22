@@ -262,6 +262,79 @@ if __name__ == "__main__":
 
         print(np.shape(stats[:, 0, :, 1]))
 
+        np.savetxt(
+            "../../investigations/ChenHowlettPaperPlots/Figure18_zeus.txt",
+            np.c_[
+                100.0 * (stats[1, 0, :, 1] - stats[0, 0, :, 1]),
+                100.0 * (stats[1, 0, :, 2] - stats[0, 0, :, 2]),
+                100.0 * (stats[1, 0, :, 3] - stats[0, 0, :, 3]),
+                100.0 * (stats[1, 0, :, 4] - stats[0, 0, :, 4]),
+                100.0 * (stats[1, 0, :, 5] - stats[0, 0, :, 5]),
+                100.0 * (stats[1, 0, :, 6] - stats[0, 0, :, 6]),
+                100.0 * (stats[1, 1, :, 1] - stats[0, 1, :, 1]),
+                100.0 * (stats[1, 1, :, 2] - stats[0, 1, :, 2]),
+                100.0 * (stats[1, 1, :, 3] - stats[0, 1, :, 3]),
+                100.0 * (stats[1, 1, :, 4] - stats[0, 1, :, 4]),
+                100.0 * (stats[1, 1, :, 5] - stats[0, 1, :, 5]),
+                100.0 * (stats[1, 1, :, 6] - stats[0, 1, :, 6]),
+            ],
+            header="Delta alpha_iso_pk, Delta alpha_ap_pk, Delta sigma_68%_alpha_iso_pk, Delta sigma_68%_alpha_ap_pk, Delta sigma_95%_alpha_iso_pk, Delta sigma_95%_alpha_ap_pk, Delta alpha_iso_xi, Delta alpha_ap_xi, Delta sigma_68%_alpha_iso_xi, Delta sigma_68%_alpha_ap_xi, Delta sigma_95%_alpha_iso_xi, Delta sigma_95%_alpha_ap_xi",
+        )
+        np.savetxt(
+            "../../investigations/ChenHowlettPaperPlots/Figure18_emcee.txt",
+            np.c_[
+                100.0 * (stats[2, 0, :, 1] - stats[0, 0, :, 1]),
+                100.0 * (stats[2, 0, :, 2] - stats[0, 0, :, 2]),
+                100.0 * (stats[2, 0, :, 3] - stats[0, 0, :, 3]),
+                100.0 * (stats[2, 0, :, 4] - stats[0, 0, :, 4]),
+                100.0 * (stats[2, 0, :, 5] - stats[0, 0, :, 5]),
+                100.0 * (stats[2, 0, :, 6] - stats[0, 0, :, 6]),
+                100.0 * (stats[2, 1, :, 1] - stats[0, 1, :, 1]),
+                100.0 * (stats[2, 1, :, 2] - stats[0, 1, :, 2]),
+                100.0 * (stats[2, 1, :, 3] - stats[0, 1, :, 3]),
+                100.0 * (stats[2, 1, :, 4] - stats[0, 1, :, 4]),
+                100.0 * (stats[2, 1, :, 5] - stats[0, 1, :, 5]),
+                100.0 * (stats[2, 1, :, 6] - stats[0, 1, :, 6]),
+            ],
+            header="Delta alpha_iso_pk, Delta alpha_ap_pk, Delta sigma_68%_alpha_iso_pk, Delta sigma_68%_alpha_ap_pk, Delta sigma_95%_alpha_iso_pk, Delta sigma_95%_alpha_ap_pk, Delta alpha_iso_xi, Delta alpha_ap_xi, Delta sigma_68%_alpha_iso_xi, Delta sigma_68%_alpha_ap_xi, Delta sigma_95%_alpha_iso_xi, Delta sigma_95%_alpha_ap_xi",
+        )
+        np.savetxt(
+            "../../investigations/ChenHowlettPaperPlots/Figure18_dynesty_static.txt",
+            np.c_[
+                100.0 * (stats[3, 0, :, 1] - stats[0, 0, :, 1]),
+                100.0 * (stats[3, 0, :, 2] - stats[0, 0, :, 2]),
+                100.0 * (stats[3, 0, :, 3] - stats[0, 0, :, 3]),
+                100.0 * (stats[3, 0, :, 4] - stats[0, 0, :, 4]),
+                100.0 * (stats[3, 0, :, 5] - stats[0, 0, :, 5]),
+                100.0 * (stats[3, 0, :, 6] - stats[0, 0, :, 6]),
+                100.0 * (stats[3, 1, :, 1] - stats[0, 1, :, 1]),
+                100.0 * (stats[3, 1, :, 2] - stats[0, 1, :, 2]),
+                100.0 * (stats[3, 1, :, 3] - stats[0, 1, :, 3]),
+                100.0 * (stats[3, 1, :, 4] - stats[0, 1, :, 4]),
+                100.0 * (stats[3, 1, :, 5] - stats[0, 1, :, 5]),
+                100.0 * (stats[3, 1, :, 6] - stats[0, 1, :, 6]),
+            ],
+            header="Delta alpha_iso_pk, Delta alpha_ap_pk, Delta sigma_68%_alpha_iso_pk, Delta sigma_68%_alpha_ap_pk, Delta sigma_95%_alpha_iso_pk, Delta sigma_95%_alpha_ap_pk, Delta alpha_iso_xi, Delta alpha_ap_xi, Delta sigma_68%_alpha_iso_xi, Delta sigma_68%_alpha_ap_xi, Delta sigma_95%_alpha_iso_xi, Delta sigma_95%_alpha_ap_xi",
+        )
+        np.savetxt(
+            "../../investigations/ChenHowlettPaperPlots/Figure18_dynesty_dynamic.txt",
+            np.c_[
+                100.0 * (stats[4, 0, :, 1] - stats[0, 0, :, 1]),
+                100.0 * (stats[4, 0, :, 2] - stats[0, 0, :, 2]),
+                100.0 * (stats[4, 0, :, 3] - stats[0, 0, :, 3]),
+                100.0 * (stats[4, 0, :, 4] - stats[0, 0, :, 4]),
+                100.0 * (stats[4, 0, :, 5] - stats[0, 0, :, 5]),
+                100.0 * (stats[4, 0, :, 6] - stats[0, 0, :, 6]),
+                100.0 * (stats[4, 1, :, 1] - stats[0, 1, :, 1]),
+                100.0 * (stats[4, 1, :, 2] - stats[0, 1, :, 2]),
+                100.0 * (stats[4, 1, :, 3] - stats[0, 1, :, 3]),
+                100.0 * (stats[4, 1, :, 4] - stats[0, 1, :, 4]),
+                100.0 * (stats[4, 1, :, 5] - stats[0, 1, :, 5]),
+                100.0 * (stats[4, 1, :, 6] - stats[0, 1, :, 6]),
+            ],
+            header="Delta alpha_iso_pk, Delta alpha_ap_pk, Delta sigma_68%_alpha_iso_pk, Delta sigma_68%_alpha_ap_pk, Delta sigma_95%_alpha_iso_pk, Delta sigma_95%_alpha_ap_pk, Delta alpha_iso_xi, Delta alpha_ap_xi, Delta sigma_68%_alpha_iso_xi, Delta sigma_68%_alpha_ap_xi, Delta sigma_95%_alpha_iso_xi, Delta sigma_95%_alpha_ap_xi",
+        )
+
         bplist = []
         fig, axes = plt.subplots(figsize=(6, 10), nrows=6, ncols=1, sharex=True, squeeze=False)
         plt.subplots_adjust(left=0.05, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)

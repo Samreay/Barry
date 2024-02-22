@@ -16,6 +16,7 @@ from chainconsumer import ChainConsumer
 
 # Config file to fit the abacus cutsky mock means and individual realisations using Dynesty.
 
+
 # Convenience function to plot histograms of the errors and cross-correlation coefficients
 def plot_grids_bias(statsmean, kmins, kmaxs, figname, inds, edgevals):
 
@@ -133,9 +134,11 @@ def plot_grids_errs(stats, kmins, kmaxs, figname, inds, edgevals):
     fig.colorbar(
         cax,
         ax=axes.ravel().tolist(),
-        label=r"$\mathrm{Relative}\,\,\sigma_{\alpha_{\mathrm{iso},\mathrm{ap}}}$"
-        if inds[0] == 2
-        else r"$\mathrm{Relative}\,\,\sigma_{\alpha_{||,\perp}}$",
+        label=(
+            r"$\mathrm{Relative}\,\,\sigma_{\alpha_{\mathrm{iso},\mathrm{ap}}}$"
+            if inds[0] == 2
+            else r"$\mathrm{Relative}\,\,\sigma_{\alpha_{||,\perp}}$"
+        ),
     )
     axes[0, 0].text(
         0.95,
@@ -306,14 +309,14 @@ if __name__ == "__main__":
                 [
                     kmins[kminbin],
                     kmaxs[kmaxbin],
-                    mean[0] - 1.0,
-                    mean[1] - 1.0,
-                    mean[2] - 1.0,
-                    mean[3] - 1.0,
-                    np.sqrt(cov[0, 0]),
-                    np.sqrt(cov[1, 1]),
-                    np.sqrt(cov[2, 2]),
-                    np.sqrt(cov[3, 3]),
+                    100.0 * (mean[0] - 1.0),
+                    100.0 * (mean[1] - 1.0),
+                    100.0 * (mean[2] - 1.0),
+                    100.0 * (mean[3] - 1.0),
+                    100.0 * np.sqrt(cov[0, 0]),
+                    100.0 * np.sqrt(cov[1, 1]),
+                    100.0 * np.sqrt(cov[2, 2]),
+                    100.0 * np.sqrt(cov[3, 3]),
                     cov[0, 1] / np.sqrt(cov[0, 0] * cov[1, 1]),
                     cov[2, 3] / np.sqrt(cov[2, 2] * cov[3, 3]),
                     params["$\\alpha$"] - 1.0,
@@ -322,7 +325,14 @@ if __name__ == "__main__":
                     model.get_alphas(params["$\\alpha$"], params["$\\epsilon$"])[1] - 1.0,
                 ]
             )
-        print(stats)
+
+        stats = np.array(stats)
+        np.savetxt(
+            "../../investigations/ChenHowlettPaperPlots/Figure14.txt",
+            np.c_[stats[:, 0], stats[:, 1], stats[:, 2], stats[:, 3], stats[:, 6], stats[:, 7]],
+            header="kmin kmax delta_alpha_iso delta_alpha_ap sigma_alpha_iso sigma_alpha_ap",
+        )
+        exit()
 
         # Plot grids of alpha bias and alpha error as a function of smin and smax
         plot_grids_bias(

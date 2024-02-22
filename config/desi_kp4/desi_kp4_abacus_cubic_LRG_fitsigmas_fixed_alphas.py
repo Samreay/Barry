@@ -128,13 +128,13 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number and redshift bin
-            recon_bin = 0 if "Prerecon" in extra["name"] else 1
-            poly_bin = int(extra["name"].split("n_poly=")[1].split(" ")[0])
             data_bin = 0 if "Xi" in extra["name"] else 1
-            print(extra["name"], recon_bin, data_bin)
+            print(extra["name"], data_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
+            df["$\\Sigma_{||}$"] = df["$\\Sigma_{nl,||}$"]
+            df["$\\Sigma_{\\perp}$"] = df["$\\Sigma_{nl,\\perp}$"]
 
             # Get the MAP point and set the model up at this point
             model.set_data(data)
@@ -151,33 +151,50 @@ if __name__ == "__main__":
 
             # Add the chain or MAP to the Chainconsumer plots
             extra.pop("realisation", None)
-            if data_bin == 0 and poly_bin == 0:
-                fitname[recon_bin] = data[0]["name"].replace(" ", "_")
-            chainname = [r"$\xi(s)$" if data_bin == 0 else r"$P(k)$", "Polynomial" if poly_bin == 0 else r"Spline"]
-            extra["name"] = chainname[0] + " " + chainname[1]
-            c[recon_bin].add_chain(df, weights=weight, **extra, plot_contour=True, plot_point=False, show_as_1d_prior=False)
+            chainname = [
+                r"$\xi(s)$" if data_bin == 0 else r"$P(k)$",
+                " Dilate Smooth" if model.dilate_smooth else r"",
+                " FoG Wiggles" if model.fog_wiggles else r" FoG Smooth",
+            ]
+            extra["name"] = chainname[0] + chainname[1] + chainname[2]
+            c[data_bin].add_chain(df, weights=weight, **extra, shade=True, kde=True, zorder=1 if model.fog_wiggles else 5)
             mean, cov = weighted_avg_and_cov(
                 df[["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"]],
                 weight,
                 axis=0,
             )
 
-        for recon_bin in range(len(c)):
-            if "Pre" in fitname[recon_bin]:
-                truth = {"$\\Sigma_{nl,||}$": 9.6, "$\\Sigma_{nl,\\perp}$": 4.8, "$\\Sigma_s$": 2.0}
-            else:
-                truth = {"$\\Sigma_{nl,||}$": 5.1, "$\\Sigma_{nl,\\perp}$": 1.6, "$\\Sigma_s$": 0.0}
-            c[recon_bin].configure(bins=20, sigmas=[0, 1])
-            fig = c[recon_bin].plotter.plot(
-                parameters=["$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"],
+            # Store the chains
+            if data_bin == 0:
+                print(data_bin, f'../../investigations/ChenHowlettPaperPlots/Figure12_{"_".join(chainname[2].split(" "))}.txt')
+                np.savetxt(
+                    f'../../investigations/ChenHowlettPaperPlots/Figure12{"_".join(chainname[2].split(" "))}.txt',
+                    np.c_[df["$\\Sigma_{||}$"].to_numpy(), df["$\\Sigma_{\\perp}$"].to_numpy(), df["$\\Sigma_s$"].to_numpy(), weight],
+                    header="sigma_par sigma_perp sigma_s weight",
+                )
+
+        for data_bin in range(len(c)):
+            truth = {
+                "$\\Sigma_{||}$": 5.0,
+                "$\\Sigma_{\\perp}$": 2.0,
+                "$\\Sigma_s$": 2.0,
+            }
+            extents = {
+                "$\\Sigma_{||}$": [2.0, 6.0],
+                "$\\Sigma_{\\perp}$": [0.0, 3.0],
+                "$\\Sigma_s$": [0.0, 4.0],
+            }
+            plotname = "xi" if data_bin == 0 else "pk"
+            chainname = r"$\xi(s)$" if data_bin == 0 else r"$P(k)$"
+            c[data_bin].plotter.plot(
                 legend=True,
                 truth=truth,
-            )
-            xvals = np.linspace(0.0, 20.0, 100)
-            fig.get_axes()[3].plot(xvals, xvals / (1.0 + 0.8), color="k", linestyle=":", linewidth=1.3)
-            fig.savefig(
-                fname="/".join(pfn.split("/")[:-1]) + "/" + fitname[recon_bin] + "_contour.png",
-                bbox_inches="tight",
-                dpi=300,
-                pad_inches=0.05,
+                filename="/".join(pfn.split("/")[:-1]) + "/" + plotname + "_contour.png",
+                parameters=[
+                    "$\\Sigma_{nl,||}$",
+                    "$\\Sigma_{nl,\\perp}$",
+                    "$\\Sigma_s$",
+                ],
+                extents=extents,
+                chains=[chainname + " FoG Smooth", chainname + " FoG Wiggles"],
             )

@@ -1,3 +1,6 @@
+import sys
+
+sys.path.append("../..")
 import logging
 import numpy as np
 from cosmoprimo import PowerSpectrumInterpolator1D, PowerSpectrumBAOFilter
@@ -116,30 +119,48 @@ if __name__ == "__main__":
         ax1.legend()
         plt.show()
 
+        pksmooths = []
+        pksmooths.append(ks)
         fig, ax1 = plt.subplots(1, 1, figsize=(8, 4))
         for i, smooth_type in enumerate(get_smooth_methods_list()):
             if smooth_type != "peakaverage":
                 print(i, smooth_type)
                 pk_smoothed = smooth_func(ks, pk_lin, method=smooth_type)
-                ax1.plot(ks, pk_lin / pk_smoothed, "-", label=labels[i])
+                pksmooths.append(pk_lin - pk_smoothed)
+                ax1.plot(ks, ks * (pk_lin - pk_smoothed), "-", label=labels[i])
         ax1.set_xlim(0.0, 0.4)
         ax1.set_xlabel(r"$k\,(h\,\mathrm{Mpc}^{-1})$", fontsize=14)
-        ax1.set_ylabel(r"$P(k)/P_{\mathrm{smooth}}(k)$", fontsize=14)
+        ax1.set_ylabel(r"$k\,P_{\mathrm{w}}(k)\quad[h^{-2}\,\mathrm{Mpc}^{2}]$", fontsize=14)
         fig.savefig(f"./BAO_wiggles_comp_pk.png", bbox_inches="tight", dpi=300)
+
+        np.savetxt(
+            "../../investigations/ChenHowlettPaperPlots/Figure16_pk.txt",
+            np.array(pksmooths).T,
+            header="k pk_w_EH pk_w_hinton pk_w_wallish pk_w_brieden pk_w_savgol",
+        )
 
         svals = np.linspace(30.0, 180.0)
         pk2xi_0 = PowerToCorrelationSphericalBessel(qs=ks, ell=0)
         xi_lin = pk2xi_0(ks, pk_lin, svals)
 
+        xismooths = []
+        xismooths.append(svals)
         fig, ax1 = plt.subplots(1, 1, figsize=(8, 4))
         for i, smooth_type in enumerate(get_smooth_methods_list()):
             if smooth_type != "peakaverage":
                 print(i, smooth_type)
                 pk_smoothed = smooth_func(ks, pk_lin, method=smooth_type)
                 xi_smoothed = pk2xi_0(ks, pk_smoothed, svals)
+                xismooths.append(xi_lin - xi_smoothed)
                 ax1.plot(svals, svals**2 * (xi_lin - xi_smoothed), "-", label=labels[i])
         ax1.set_xlim(30.0, 180.0)
         ax1.set_xlabel(r"$s\,(h^{-1}\,\mathrm{Mpc})$", fontsize=14)
-        ax1.set_ylabel(r"$s^{2}[\xi(s) - \xi_{\mathrm{smooth}}(s)]\,(h^{-2}Mpc^{2})$", fontsize=14)
+        ax1.set_ylabel(r"$s^{2}\xi_{\mathrm{w}}(s)\quad[h^{-2}Mpc^{2}]$", fontsize=14)
         ax1.legend(fontsize=12)
         fig.savefig(f"./BAO_wiggles_comp_xi.png", bbox_inches="tight", dpi=300)
+
+        np.savetxt(
+            "../../investigations/ChenHowlettPaperPlots/Figure16_xi.txt",
+            np.array(xismooths).T,
+            header="s xi_w_EH xi_w_hinton xi_w_wallish xi_w_brieden xi_w_savgol",
+        )

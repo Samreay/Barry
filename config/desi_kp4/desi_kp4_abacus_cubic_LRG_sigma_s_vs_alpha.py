@@ -104,24 +104,22 @@ def plot_alphas_spline(stats, figname):
         ax1 = fig.add_subplot(axes[0, ind])
         ax2 = fig.add_subplot(axes[1, ind])
 
-        index = np.where(dat[:, 1] == 0)[0]
-
         c = "#ff7f0e" if ind == 0 else "#1f77b4"
-        ax1.plot(dat[index, 0], dat[index, 2] * 100.0, color=c, zorder=1, alpha=0.75, lw=0.8)
-        ax2.plot(dat[index, 0], dat[index, 3] * 100.0, color=c, zorder=1, alpha=0.75, lw=0.8)
+        ax1.plot(dat[:, 0], dat[:, 1], color=c, zorder=1, alpha=0.75, lw=0.8)
+        ax2.plot(dat[:, 0], dat[:, 2], color=c, zorder=1, alpha=0.75, lw=0.8)
         ax1.fill_between(
-            dat[index, 0],
-            (dat[index, 2] - dat[index, 4]) * 100.0,
-            (dat[index, 2] + dat[index, 4]) * 100.0,
+            dat[:, 0],
+            (dat[:, 1] - dat[:, 3]),
+            (dat[:, 1] + dat[:, 3]),
             color=c,
             zorder=1,
             alpha=0.5,
             lw=0.8,
         )
         ax2.fill_between(
-            dat[index, 0],
-            (dat[index, 3] - dat[index, 5]) * 100.0,
-            (dat[index, 3] + dat[index, 5]) * 100.0,
+            dat[:, 0],
+            (dat[:, 2] - dat[:, 4]),
+            (dat[:, 2] + dat[:, 4]),
             color=c,
             zorder=1,
             alpha=0.5,
@@ -143,8 +141,8 @@ def plot_alphas_spline(stats, figname):
             ax1.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
         for val, ls in zip([-0.2, 0.0, 0.2], [":", "--", ":"]):
             ax2.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
-        ax1.axvline(2.0, color="k", ls=":", zorder=0, lw=0.8)
-        ax2.axvline(2.0, color="k", ls=":", zorder=0, lw=0.8)
+        ax1.axvline(5.0, color="k", ls=":", zorder=0, lw=0.8)
+        ax2.axvline(5.0, color="k", ls=":", zorder=0, lw=0.8)
         ax1.text(
             0.05,
             0.95,
@@ -310,7 +308,15 @@ if __name__ == "__main__":
                 axis=0,
             )
 
-            stats[data_bin].append([sigma_s[sigma_bin], poly_bin, mean[0] - 1.0, mean[1] - 1.0, np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])])
+            stats[data_bin].append(
+                [
+                    sigma_s[sigma_bin],
+                    100.0 * (mean[0] - 1.0),
+                    100.0 * (mean[1] - 1.0),
+                    100.0 * np.sqrt(cov[0, 0]),
+                    100.0 * np.sqrt(cov[1, 1]),
+                ]
+            )
             output[datanames[data_bin]].append(
                 f"{sigma_s[sigma_bin]:6.4f}, {poly_bin:3d}, {mean[0] - 1.0:6.4f}, {mean[1] - 1.0:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
             )
@@ -329,4 +335,14 @@ if __name__ == "__main__":
                     f.write(l + "\n")
 
         # Plot histograms of the errors and r_off
+        np.savetxt(
+            "../../investigations/ChenHowlettPaperPlots/Figure11_sigma_s_xi.txt",
+            np.array(stats[0]),
+            header="sigma_s  delta_alpha_iso  delta_alpha_ap  sigma_alpha_iso  sigma_alpha_ap",
+        )
+        np.savetxt(
+            "../../investigations/ChenHowlettPaperPlots/Figure11_sigma_s_pk.txt",
+            np.array(stats[1]),
+            header="sigma_s  delta_alpha_iso  delta_alpha_ap  sigma_alpha_iso  sigma_alpha_ap",
+        )
         plot_alphas_spline(stats, "/".join(pfn.split("/")[:-1]) + "/LRG_mockmean_sigma_s_vs_alpha_splineonly.png")
