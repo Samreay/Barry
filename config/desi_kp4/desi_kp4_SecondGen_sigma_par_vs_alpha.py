@@ -22,73 +22,121 @@ from chainconsumer import ChainConsumer
 # Convenience function to plot histograms of the errors and cross-correlation coefficients
 def plot_alphas(data, figname, plotnames):
 
-    colors = ["#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
+    colors = [mplc.cnames[color] for color in ["orange", "orangered", "firebrick", "lightskyblue", "steelblue", "seagreen", "black"]]
 
-    # Split up Pk and Xi
-    fig = plt.figure(figsize=(10, 3))
-    axes = gridspec.GridSpec(2, 1, figure=fig, left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.0, wspace=0.0)
-    axes1 = axes[0, 0].subgridspec(1, np.shape(data)[0], hspace=0.0, wspace=0.0)
-    axes2 = axes[1, 0].subgridspec(1, np.shape(data)[0], hspace=0.0, wspace=0.0)
-
-    print(np.shape(data))
+    # Split up Pk and Xi. Further split these up across the different tracers
+    fig = plt.figure(figsize=(12, 6))
+    axes = gridspec.GridSpec(2, 1, figure=fig, left=0.1, top=0.95, bottom=0.05, right=0.95, hspace=0.2, wspace=0.0)
+    axes1 = axes[0, 0].subgridspec(2, np.shape(data)[0], hspace=0.0, wspace=0.0)  # Xi
+    axes2 = axes[1, 0].subgridspec(2, np.shape(data)[0], hspace=0.0, wspace=0.0)  # Pk
 
     # Further split up Xi into different polynomial types
     for index in range(np.shape(data)[0]):
-        print(data[index], plotnames[index])
-        ax1 = fig.add_subplot(axes1[index])
-        ax2 = fig.add_subplot(axes2[index])
+        print(plotnames[index])
+        ax1_iso = fig.add_subplot(axes1[0, index])
+        ax1_ap = fig.add_subplot(axes1[1, index])
+        ax2_iso = fig.add_subplot(axes2[0, index])
+        ax2_ap = fig.add_subplot(axes2[1, index])
 
-        xis = data[index]
+        ax1_iso.plot(data[index, 0, :, 0], data[index, 0, :, 1], color=colors[index], zorder=1, alpha=0.75, lw=0.8)
+        ax1_ap.plot(data[index, 0, :, 0], data[index, 0, :, 2], color=colors[index], zorder=1, alpha=0.75, lw=0.8)
+        ax2_iso.plot(data[index, 1, :, 0], data[index, 1, :, 1], color=colors[index], zorder=1, alpha=0.75, lw=0.8)
+        ax2_ap.plot(data[index, 1, :, 0], data[index, 1, :, 2], color=colors[index], zorder=1, alpha=0.75, lw=0.8)
 
-        print(xis[:, 0], xis[:, 2] * 100.0)
-
-        ax1.plot(xis[:, 0], xis[:, 1] * 100.0, color=colors[index], zorder=1, alpha=0.75, lw=0.8)
-        ax2.plot(xis[:, 0], xis[:, 2] * 100.0, color=colors[index], zorder=1, alpha=0.75, lw=0.8)
-        ax1.fill_between(
-            xis[:, 0],
-            (xis[:, 1] - xis[:, 3]) * 100.0,
-            (xis[:, 1] + xis[:, 3]) * 100.0,
+        ax1_iso.fill_between(
+            data[index, 0, :, 0],
+            (data[index, 0, :, 1] - data[index, 0, :, 3]),
+            (data[index, 0, :, 1] + data[index, 0, :, 3]),
             color=colors[index],
             zorder=1,
             alpha=0.5,
             lw=0.8,
         )
-        ax2.fill_between(
-            xis[:, 0],
-            (xis[:, 2] - xis[:, 4]) * 100.0,
-            (xis[:, 2] + xis[:, 4]) * 100.0,
+        ax1_ap.fill_between(
+            data[index, 0, :, 0],
+            (data[index, 0, :, 2] - data[index, 0, :, 4]),
+            (data[index, 0, :, 2] + data[index, 0, :, 4]),
             color=colors[index],
             zorder=1,
             alpha=0.5,
             lw=0.8,
         )
-        # ax1.set_xlim(1.3, 6.7)
-        # ax2.set_xlim(1.3, 6.7)
-        # ax1.set_ylim(-0.75, 0.75)
-        # ax2.set_ylim(-0.35, 0.35)
-        ax2.set_xlabel(r"$\Sigma_{nl,||}$")
+        ax2_iso.fill_between(
+            data[index, 1, :, 0],
+            (data[index, 1, :, 1] - data[index, 1, :, 3]),
+            (data[index, 1, :, 1] + data[index, 1, :, 3]),
+            color=colors[index],
+            zorder=1,
+            alpha=0.5,
+            lw=0.8,
+        )
+        ax2_ap.fill_between(
+            data[index, 1, :, 0],
+            (data[index, 1, :, 2] - data[index, 1, :, 4]),
+            (data[index, 1, :, 2] + data[index, 1, :, 4]),
+            color=colors[index],
+            zorder=1,
+            alpha=0.5,
+            lw=0.8,
+        )
+        ax1_iso.set_ylim(-1.0, 1.0)
+        ax1_ap.set_ylim(-4.0, 4.0)
+        ax2_iso.set_ylim(-1.0, 1.0)
+        ax2_ap.set_ylim(-4.0, 4.0)
+        ax2_ap.set_xlabel(r"$\Sigma_{||}$")
         if index == 0:
-            ax1.set_ylabel(r"$\alpha_{\mathrm{iso}} - 1\,(\%)$")
-            ax2.set_ylabel(r"$\alpha_{\mathrm{ap}} - 1\,(\%)$")
+            ax1_iso.set_ylabel(r"$\alpha_{\mathrm{iso}} - 1\,(\%)$")
+            ax1_ap.set_ylabel(r"$\alpha_{\mathrm{ap}} - 1\,(\%)$")
+            ax2_iso.set_ylabel(r"$\alpha_{\mathrm{iso}} - 1\,(\%)$")
+            ax2_ap.set_ylabel(r"$\alpha_{\mathrm{ap}} - 1\,(\%)$")
         else:
-            ax1.set_yticklabels([])
-            ax2.set_yticklabels([])
-        ax1.set_xticklabels([])
+            ax1_iso.set_yticklabels([])
+            ax1_ap.set_yticklabels([])
+            ax2_iso.set_yticklabels([])
+            ax2_ap.set_yticklabels([])
+        ax1_iso.set_xticklabels([])
+        ax1_ap.set_xticklabels([])
+        ax2_iso.set_xticklabels([])
         for val, ls in zip([-0.3, 0.0, 0.3], [":", "--", ":"]):
-            ax1.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
-            ax2.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
-        ax1.axvline(4.75, color="k", ls=":", zorder=0, lw=0.8)
-        ax2.axvline(4.75, color="k", ls=":", zorder=0, lw=0.8)
-        ax1.text(
+            ax1_iso.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
+            ax1_ap.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
+            ax2_iso.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
+            ax2_ap.axhline(val, color="k", ls=ls, zorder=0, lw=0.8)
+        ax1_iso.axvline(8.0 if index == 6 else 6.0, color="k", ls=":", zorder=0, lw=0.8)
+        ax1_ap.axvline(8.0 if index == 6 else 6.0, color="k", ls=":", zorder=0, lw=0.8)
+        ax2_iso.axvline(8.0 if index == 6 else 6.0, color="k", ls=":", zorder=0, lw=0.8)
+        ax2_ap.axvline(8.0 if index == 6 else 6.0, color="k", ls=":", zorder=0, lw=0.8)
+        ax1_iso.text(
             0.05,
             0.95,
             f"{plotnames[index]}",
-            transform=ax1.transAxes,
+            transform=ax1_iso.transAxes,
             ha="left",
             va="top",
             fontsize=8,
             color=colors[index],
         )
+        if index == 6:
+            ax1_iso.text(
+                0.95,
+                0.15,
+                f"$\\xi(s)$",
+                transform=ax1_iso.transAxes,
+                ha="right",
+                va="top",
+                fontsize=8,
+                color="k",
+            )
+            ax2_iso.text(
+                0.95,
+                0.15,
+                f"$P(k)$",
+                transform=ax2_iso.transAxes,
+                ha="right",
+                va="top",
+                fontsize=8,
+                color="k",
+            )
 
     fig.savefig(figname, bbox_inches="tight", transparent=True, dpi=300)
 
@@ -242,18 +290,14 @@ if __name__ == "__main__":
         print(datanames)
 
         # Loop over all the chains
-        stats = [[] for _ in range(len(datanames) * 2 - 1)]
-        output_pre = {k: [] for k in datanames}
-        output_post = {k: [] for k in datanames}
+        stats = [[[] for _ in range(2)] for _ in range(len(datanames))]
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the tracer bin, sigma bin and n_poly bin
-            print(extra["name"].split(" ")[3].lower())
             data_bin = datanames.index(extra["name"].split(" ")[3].lower())
-            recon_bin = 0 if "Prerecon" in extra["name"] else 1
+            xi_bin = 0 if "Corr" in model.name else 1
             sigma_bin = int(extra["name"].split("fixed_type ")[1].split(" ")[0])
-            stats_bin = recon_bin * len(datanames) + data_bin
-            print(extra["name"], data_bin, recon_bin, sigma_bin, stats_bin)
+            print(extra["name"], data_bin, xi_bin, sigma_bin)
 
             # Store the chain in a dictionary with parameter names
             df = pd.DataFrame(chain, columns=model.get_labels())
@@ -282,18 +326,18 @@ if __name__ == "__main__":
                 axis=0,
             )
 
-            stats[stats_bin].append([sigma_nl_par[sigma_bin], mean[0] - 1.0, mean[1] - 1.0, np.sqrt(cov[0, 0]), np.sqrt(cov[1, 1])])
-            if recon_bin == 0:
-                output_pre[datanames[data_bin]].append(
-                    f"{sigma_nl_par[sigma_bin]:6.4f}, {mean[0]-1.0:6.4f}, {mean[1]-1.0:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
-                )
-            else:
-                output_post[datanames[data_bin]].append(
-                    f"{sigma_nl_par[sigma_bin]:6.4f}, {mean[0]-1.0:6.4f}, {mean[1]-1.0:6.4f}, {np.sqrt(cov[0, 0]):6.4f}, {np.sqrt(cov[1, 1]):6.4f}"
-                )
+            stats[data_bin][xi_bin].append(
+                [
+                    sigma_nl_par[sigma_bin],
+                    100.0 * (mean[0] - 1.0),
+                    100.0 * (mean[1] - 1.0),
+                    100.0 * np.sqrt(cov[0, 0]),
+                    100.0 * np.sqrt(cov[1, 1]),
+                ]
+            )
+
+        stats = np.array(stats)
 
         # Plot histograms of the errors and r_off
-        figname = "/".join(pfn.split("/")[:-1]) + f"/Prerecon_alphas.png"
-        plot_alphas(np.array(stats[: len(datanames)]), figname, plotnames)
-        figname = "/".join(pfn.split("/")[:-1]) + f"/Postrecon_alphas.png"
-        plot_alphas(np.array(stats[len(datanames) :]), figname, plotnames)
+        figname = "/".join(pfn.split("/")[:-1]) + f"/Postrecon_SecondGen_alphas_vs_sigma_par.png"
+        plot_alphas(stats, figname, plotnames)
