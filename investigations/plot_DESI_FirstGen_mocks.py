@@ -17,7 +17,7 @@ if __name__ == "__main__":
         realisation=None,
         num_mocks=1000,
         reduce_cov_factor=25,
-        datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
+        datafile="desi_kp4_abacus_cubicbox_cv_pk_elg.pkl",
     )
     data_pk = dataset_pk.get_data()
     kth = data_pk[0]["ks"]
@@ -30,7 +30,7 @@ if __name__ == "__main__":
         realisation=None,
         num_mocks=1000,
         reduce_cov_factor=25,
-        datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
+        datafile="desi_kp4_abacus_cubicbox_cv_xi_elg.pkl",
     )
     data_xi = dataset_xi.get_data()
     sth = data_xi[0]["dist"]
@@ -72,7 +72,9 @@ if __name__ == "__main__":
     pktemplate = np.loadtxt("../barry/data/desi_kp4/DESI_Pk_template.dat")
     model_xi.parent.kvals, model_xi.parent.pksmooth, model_xi.parent.pkratio = pktemplate.T
 
-    params_pk = {
+    params_pk = False
+    params_xi = False
+    """params_pk = {
         "b{0}_{1}": 1.9215056051818582,
         "alpha": 0.999690639650866,
         "epsilon": 0.0008001023628552706,
@@ -91,7 +93,7 @@ if __name__ == "__main__":
         "sigma_nl_par": 4.943782363130673,
         "sigma_nl_perp": 1.9100773871359968,
     }
-    params_xi.update({(p.name, p.default) for p in model_xi.get_inactive_params()})
+    params_xi.update({(p.name, p.default) for p in model_xi.get_inactive_params()})"""
     if not params_pk:
         model_pk.sanity_check(dataset_pk)
     else:
@@ -239,7 +241,7 @@ if __name__ == "__main__":
     plt.show()
 
     # Output the data for plotting purposes
-    np.savetxt(
+    """np.savetxt(
         "./ChenHowlettPaperPlots/Figure7_pk.txt",
         np.c_[
             data_pk[0]["ks"],
@@ -268,4 +270,4 @@ if __name__ == "__main__":
             errs_xi[1],
         ],
         header="s, xi_0, xi_2, model_xi_0, model_xi_2, smoothmodel_xi_0, smoothmodel_xi_2, err_xi_0, err_xi_2",
-    )
+    )"""
