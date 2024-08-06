@@ -2,7 +2,7 @@ import sys
 
 sys.path.append("..")
 sys.path.append("../../")
-from barry.samplers import Optimiser
+from barry.samplers import NautilusSampler
 from barry.config import setup
 from barry.models import PowerBeutler2017, CorrBeutler2017
 from barry.datasets.dataset_power_spectrum import PowerSpectrum_DESI_KP4
@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from chainconsumer import ChainConsumer
 
 # Config file to fit the abacus cutsky mock means and individual realisations using Dynesty.
+
 
 # Convenience function to plot histograms of the errors and cross-correlation coefficients
 def plot_errors(stats, figname, type="xi"):
@@ -88,105 +89,81 @@ if __name__ == "__main__":
 
     # Set up the Fitting class and Dynesty sampler with 250 live points.
     fitter = Fitter(dir_name, remove_output=False)
-    sampler = Optimiser(temp_dir=dir_name)
+    sampler = NautilusSampler(temp_dir=dir_name)
 
-    sigma = {None: [9.6, 4.8, 2.0], "sym": [5.1, 1.6, 0.0]}
-    sigma_sigma = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
+    sigma = {"sym_correct": [5.0, 2.0, 2.0], "sym_wrong": [7.0, 3.0, 3.0]}
+    sigma_prior_factor = [0.25, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
 
-    colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
+    # colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
     # Loop over the mocktypes
     allnames = []
 
-    # Loop over pre- and post-recon measurements
-    for r, recon in enumerate([None, "sym"]):
+    # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
+    # First load up mock mean and add it to the fitting list.
+    dataset_pk = PowerSpectrum_DESI_KP4(
+        recon="sym",
+        fit_poles=[0, 2],
+        min_k=0.02,
+        max_k=0.30,
+        realisation=None,
+        num_mocks=1000,
+        reduce_cov_factor=1,
+        datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
+    )
 
-        # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
-        # First load up mock mean and add it to the fitting list.
-        dataset_pk = PowerSpectrum_DESI_KP4(
-            recon=recon,
-            fit_poles=[0, 2],
-            min_k=0.02,
-            max_k=0.30,
-            realisation=None,
-            num_mocks=1000,
-            reduce_cov_factor=1,
-            datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
-        )
+    dataset_xi = CorrelationFunction_DESI_KP4(
+        recon="sym",
+        fit_poles=[0, 2],
+        min_dist=52.0,
+        max_dist=150.0,
+        realisation=None,
+        num_mocks=1000,
+        reduce_cov_factor=1,
+        datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
+    )
 
-        dataset_xi = CorrelationFunction_DESI_KP4(
-            recon=recon,
-            fit_poles=[0, 2],
-            min_dist=52.0,
-            max_dist=150.0,
-            realisation=None,
-            num_mocks=1000,
-            reduce_cov_factor=1,
-            datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
-        )
+    for s, sig in enumerate(["sym_correct", "sym_wrong"]):
+        for i, factor in enumerate(sigma_prior_factor):
 
-        # Loop over pre- and post-recon measurements
-        for sig in range(len(sigma_sigma)):
+            model = PowerBeutler2017(
+                recon=dataset_pk.recon,
+                isotropic=dataset_pk.isotropic,
+                fix_params=["om"],
+                marg="full",
+                poly_poles=dataset_pk.fit_poles,
+                correction=Correction.HARTLAP,
+                broadband_type="spline",
+            )
+            model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
+            model.set_default("beta", 0.4, min=0.1, max=0.7)
+            model.set_default("sigma_nl_par", sigma[sig][0], min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
+            model.set_default("sigma_nl_perp", sigma[sig][1], min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
+            model.set_default("sigma_s", sigma[sig][2], min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
 
-            for n_poly in range(3, 7):
+            for j in range(len(dataset_pk.mock_data)):
+                dataset_pk.set_realisation(j)
+                name = dataset_pk.name + f" realisation {j} {s} prior=" + str(i)
+                fitter.add_model_and_dataset(model, dataset_pk, name=name)
 
-                model = PowerBeutler2017(
-                    recon=dataset_pk.recon,
-                    isotropic=dataset_pk.isotropic,
-                    fix_params=["om"],
-                    marg="full",
-                    poly_poles=dataset_pk.fit_poles,
-                    correction=Correction.NONE,
-                    n_poly=n_poly,
-                )
-                model.set_default("sigma_nl_par", sigma[recon][0], min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
-                model.set_default("sigma_nl_perp", sigma[recon][1], min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
-                model.set_default("sigma_s", sigma[recon][2], min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
+            model = CorrBeutler2017(
+                recon=dataset_xi.recon,
+                isotropic=dataset_xi.isotropic,
+                marg="full",
+                fix_params=["om"],
+                poly_poles=dataset_xi.fit_poles,
+                correction=Correction.HARTLAP,
+            )
+            model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
+            model.set_default("beta", 0.4, min=0.1, max=0.7)
+            model.set_default("sigma_nl_par", sigma[sig][0], min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
+            model.set_default("sigma_nl_perp", sigma[sig][1], min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
+            model.set_default("sigma_s", sigma[sig][2], min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
 
-                # Load in a pre-existing BAO template
-                pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-                model.kvals, model.pksmooth, model.pkratio = pktemplate.T
-
-                dataset_pk.set_realisation(None)
-                name = dataset_pk.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
-                fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[sig])
-                allnames.append(name)
-
-                for j in range(len(dataset_pk.mock_data)):
-                    dataset_pk.set_realisation(j)
-                    name = dataset_pk.name + f" realisation {j} fixed_type {sig} n_poly=" + str(n_poly)
-                    fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[sig])
-                    allnames.append(name)
-
-            for n_poly in range(1, 6):
-
-                model = CorrBeutler2017(
-                    recon=dataset_xi.recon,
-                    isotropic=dataset_xi.isotropic,
-                    marg="full",
-                    fix_params=["om"],
-                    poly_poles=dataset_xi.fit_poles,
-                    correction=Correction.NONE,
-                    n_poly=n_poly,
-                )
-                model.set_default("sigma_nl_par", sigma[recon][0], min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
-                model.set_default("sigma_nl_perp", sigma[recon][1], min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
-                model.set_default("sigma_s", sigma[recon][2], min=0.0, max=20.0, sigma=sigma_sigma[sig], prior="gaussian")
-
-                # Load in a pre-existing BAO template
-                pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-                model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
-
-                dataset_xi.set_realisation(None)
-                name = dataset_xi.name + f" mock mean fixed_type {sig} n_poly=" + str(n_poly)
-                fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[sig])
-                allnames.append(name)
-
-                for j in range(len(dataset_xi.mock_data)):
-                    dataset_xi.set_realisation(j)
-                    name = dataset_xi.name + f" realisation {j} fixed_type {sig} n_poly=" + str(n_poly)
-                    fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[sig])
-                    allnames.append(name)
+            for j in range(len(dataset_xi.mock_data)):
+                dataset_xi.set_realisation(j)
+                name = dataset_xi.name + f" realisation {j} {s} prior=" + str(i)
+                fitter.add_model_and_dataset(model, dataset_xi, name=name)
 
     # Submit all the jobs to NERSC. We have quite a few (72), so we'll
     # only assign 1 walker (processor) to each. Note that this will only run if the

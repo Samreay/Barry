@@ -6,7 +6,7 @@ import sys
 import numpy as np
 import numpy.fft as fft
 from scipy.special import spherical_jn, gamma, loggamma
-from scipy.integrate import trapz
+from scipy.integrate import trapezoid
 from scipy.interpolate import interp1d, splev, splrep
 from scipy.interpolate import InterpolatedUnivariateSpline as interpolate
 from scipy.misc import derivative
@@ -71,7 +71,7 @@ class PowerToCorrelationGauss(PowerToCorrelation):
             else:
                 bessel = spherical_jn(self.ell, z)
             integrand = kkpks * bessel
-            xis[i] = trapz(integrand, self.ks2)
+            xis[i] = trapezoid(integrand, x=self.ks2)
 
         return xis
 

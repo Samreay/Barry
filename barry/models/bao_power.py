@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.interpolate import splev, splrep
 from scipy.linalg import block_diag
 
@@ -278,13 +278,13 @@ class PowerSpectrumFit(Model):
         return muprime
 
     def integrate_mu(self, pk2d, isotropic=False):
-        pk0 = simps(pk2d, self.mu, axis=1)
+        pk0 = simpson(pk2d, x=self.mu, axis=1)
         if isotropic:
             pk2 = None
             pk4 = None
         else:
-            pk2 = 3.0 * simps(pk2d * self.mu**2, self.mu)
-            pk4 = 1.125 * (35.0 * simps(pk2d * self.mu**4, self.mu, axis=1) - 10.0 * pk2 + 3.0 * pk0)
+            pk2 = 3.0 * simpson(pk2d * self.mu**2, x=self.mu)
+            pk4 = 1.125 * (35.0 * simpson(pk2d * self.mu**4, x=self.mu, axis=1) - 10.0 * pk2 + 3.0 * pk0)
             pk2 = 2.5 * (pk2 - pk0)
         return pk0, pk2, pk4
 

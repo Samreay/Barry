@@ -18,6 +18,7 @@ from chainconsumer import ChainConsumer
 
 # Config file to fit the abacus cutsky mock means and individual realisations using Dynesty.
 
+
 # Convenience function to plot histograms of the errors and cross-correlation coefficients
 def plot_errors(stats, figname):
 
@@ -65,10 +66,10 @@ if __name__ == "__main__":
     fitter = Fitter(dir_name, remove_output=False)
     sampler = NautilusSampler(temp_dir=dir_name)
 
-    sigma = {None: [9.5, 5.0, 2.0], "sym": [5.0, 2.0, 2.0]}
-    prior = ["fixed", "gaussian", "flat"]
+    sigma = {"sym_correct": [5.0, 2.0, 2.0], "sym_wrong": [7.0, 3.0, 3.0]}
+    sigma_prior_factor = [0.25, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
 
-    colors = ["#ABD465", "#1C8275", "#232C3B"]
+    # colors = ["#CAF270", "#84D57B", "#4AB482", "#219180", "#1A6E73", "#234B5B", "#232C3B"]
 
     # Loop over the mocktypes
     allnames = []
@@ -82,7 +83,7 @@ if __name__ == "__main__":
         max_k=0.30,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=1.0 / 16.0,
+        reduce_cov_factor=25,
         datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
     )
 
@@ -93,85 +94,48 @@ if __name__ == "__main__":
         max_dist=150.0,
         realisation=None,
         num_mocks=1000,
-        reduce_cov_factor=1.0 / 16.0,
+        reduce_cov_factor=25,
         datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
     )
 
-    # Loop over pre- and post-recon measurements
-    for i, p in enumerate(prior):
+    for s, sig in enumerate(["sym_correct", "sym_wrong"]):
+        for i, factor in enumerate(sigma_prior_factor):
 
-        model = PowerBeutler2017(
-            recon=dataset_pk.recon,
-            isotropic=dataset_pk.isotropic,
-            fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"] if p == "fixed" else ["om"],
-            marg="full",
-            poly_poles=dataset_pk.fit_poles,
-            correction=Correction.HARTLAP,
-        )
-        model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
-        model.set_default("beta", 0.4, min=0.1, max=0.7)
-        if p == "fixed":
-            model.set_default("sigma_nl_par", sigma["sym"][0])
-            model.set_default("sigma_nl_perp", sigma["sym"][1])
-            model.set_default("sigma_s", sigma["sym"][2])
-        if p == "gaussian":
-            model.set_default("sigma_nl_par", sigma["sym"][0], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-            model.set_default("sigma_nl_perp", sigma["sym"][1], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
-            model.set_default("sigma_s", sigma["sym"][2], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-        if p == "flat":
-            model.set_default("sigma_nl_par", sigma["sym"][0], min=0.0, max=20.0)
-            model.set_default("sigma_nl_perp", sigma["sym"][1], min=0.0, max=20.0)
-            model.set_default("sigma_s", sigma["sym"][2], min=0.0, max=20.0)
+            model = PowerBeutler2017(
+                recon=dataset_pk.recon,
+                isotropic=dataset_pk.isotropic,
+                fix_params=["om"],
+                marg="full",
+                poly_poles=dataset_pk.fit_poles,
+                correction=Correction.HARTLAP,
+                broadband_type="spline",
+            )
+            model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
+            model.set_default("beta", 0.4, min=0.1, max=0.7)
+            model.set_default("sigma_nl_par", sigma[sig][0], min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
+            model.set_default("sigma_nl_perp", sigma[sig][1], min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
+            model.set_default("sigma_s", sigma[sig][2], min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
 
-        # Load in a pre-existing BAO template
-        pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-        model.kvals, model.pksmooth, model.pkratio = pktemplate.T
-
-        name = dataset_pk.name + f" mock mean sigma prior = " + str(p)
-        fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[i])
-        allnames.append(name)
-
-        for j in range(len(dataset_pk.mock_data)):
-            dataset_pk.set_realisation(j)
-            name = dataset_pk.name + f" realisation {j} sigma prior = " + str(p)
-            fitter.add_model_and_dataset(model, dataset_pk, name=name, color=colors[i])
+            name = dataset_pk.name + f" mock mean {s} prior=" + str(i)
+            fitter.add_model_and_dataset(model, dataset_pk, name=name)
             allnames.append(name)
 
-        model = CorrBeutler2017(
-            recon=dataset_xi.recon,
-            isotropic=dataset_xi.isotropic,
-            fix_params=["om", "sigma_nl_par", "sigma_nl_perp", "sigma_s"] if p == "fixed" else ["om"],
-            marg="full",
-            poly_poles=dataset_xi.fit_poles,
-            correction=Correction.HARTLAP,
-        )
-        model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
-        model.set_default("beta", 0.4, min=0.1, max=0.7)
-        if p == "fixed":
-            model.set_default("sigma_nl_par", sigma["sym"][0])
-            model.set_default("sigma_nl_perp", sigma["sym"][1])
-            model.set_default("sigma_s", sigma["sym"][2])
-        if p == "gaussian":
-            model.set_default("sigma_nl_par", sigma["sym"][0], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-            model.set_default("sigma_nl_perp", sigma["sym"][1], min=0.0, max=20.0, sigma=1.0, prior="gaussian")
-            model.set_default("sigma_s", sigma["sym"][2], min=0.0, max=20.0, sigma=2.0, prior="gaussian")
-        if p == "flat":
-            model.set_default("sigma_nl_par", sigma["sym"][0], min=0.0, max=20.0)
-            model.set_default("sigma_nl_perp", sigma["sym"][1], min=0.0, max=20.0)
-            model.set_default("sigma_s", sigma["sym"][2], min=0.0, max=20.0)
+            model = CorrBeutler2017(
+                recon=dataset_xi.recon,
+                isotropic=dataset_xi.isotropic,
+                marg="full",
+                fix_params=["om"],
+                poly_poles=dataset_xi.fit_poles,
+                correction=Correction.HARTLAP,
+            )
+            model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
+            model.set_default("beta", 0.4, min=0.1, max=0.7)
+            model.set_default("sigma_nl_par", sigma[sig][0], min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
+            model.set_default("sigma_nl_perp", sigma[sig][1], min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
+            model.set_default("sigma_s", sigma[sig][2], min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
 
-        # Load in a pre-existing BAO template
-        pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
-        model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
-
-        name = dataset_xi.name + f" mock mean sigma prior = " + str(p)
-        fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i])
-        allnames.append(name)
-
-        for j in range(len(dataset_xi.mock_data)):
-            dataset_xi.set_realisation(j)
-            name = dataset_xi.name + f" realisation {j} sigma prior = " + str(p)
-            fitter.add_model_and_dataset(model, dataset_xi, name=name, color=colors[i])
+            name = dataset_xi.name + f" mock mean {s} prior=" + str(i)
+            fitter.add_model_and_dataset(model, dataset_xi, name=name)
             allnames.append(name)
 
     # Submit all the jobs to NERSC. We have quite a few (156), so we'll

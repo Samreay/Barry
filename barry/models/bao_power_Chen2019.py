@@ -71,13 +71,13 @@ class PowerChen2019(PowerSpectrumFit):
         j0 = spherical_jn(0, r_drag * ks)
 
         return {
-            "sigma_nl": integrate.simps(pk_lin * (1.0 - j0), ks) / (6.0 * np.pi**2),
-            "sigma_dd_nl": integrate.simps(pk_lin * (1.0 - s) ** 2 * (1.0 - j0), ks) / (6.0 * np.pi**2),
-            "sigma_sd_nl": integrate.simps(pk_lin * (0.5 * (s**2 + (1.0 - s) ** 2) + j0 * s * (1.0 - s)), ks) / (6.0 * np.pi**2),
-            "sigma_ss_nl": integrate.simps(pk_lin * s**2 * (1.0 - j0), ks) / (6.0 * np.pi**2),
-            "sigma_sd_dd": integrate.simps(pk_lin * 0.5 * (1.0 - s) ** 2, ks) / (6.0 * np.pi**2),
-            "sigma_sd_sd": integrate.simps(pk_lin * j0 * s * (1.0 - s), ks) / (6.0 * np.pi**2),
-            "sigma_sd_ss": integrate.simps(pk_lin * 0.5 * s**2, ks) / (6.0 * np.pi**2),
+            "sigma_nl": integrate.simpson(pk_lin * (1.0 - j0), ks) / (6.0 * np.pi**2),
+            "sigma_dd_nl": integrate.simpson(pk_lin * (1.0 - s) ** 2 * (1.0 - j0), ks) / (6.0 * np.pi**2),
+            "sigma_sd_nl": integrate.simpson(pk_lin * (0.5 * (s**2 + (1.0 - s) ** 2) + j0 * s * (1.0 - s)), ks) / (6.0 * np.pi**2),
+            "sigma_ss_nl": integrate.simpson(pk_lin * s**2 * (1.0 - j0), ks) / (6.0 * np.pi**2),
+            "sigma_sd_dd": integrate.simpson(pk_lin * 0.5 * (1.0 - s) ** 2, ks) / (6.0 * np.pi**2),
+            "sigma_sd_sd": integrate.simpson(pk_lin * j0 * s * (1.0 - s), ks) / (6.0 * np.pi**2),
+            "sigma_sd_ss": integrate.simpson(pk_lin * 0.5 * s**2, ks) / (6.0 * np.pi**2),
         }
 
     @lru_cache(maxsize=4)
@@ -306,7 +306,7 @@ class PowerChen2019(PowerSpectrumFit):
                     kaiser_prefac = 1.0 + np.tile(p["beta"] * self.mu**2, (len(ks), 1)).T
                     propagator = kaiser_prefac**2 * damping
 
-            pk1d = integrate.simps(pk_smooth * (fog + pk_ratio * propagator), self.mu, axis=0)
+            pk1d = integrate.simpson(pk_smooth * (fog + pk_ratio * propagator), x=self.mu, axis=0)
             pk = [splev(kprime, splrep(ks, pk1d))]
 
         else:

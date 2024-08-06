@@ -14,7 +14,7 @@ import pandas as pd
 from barry.models.model import Correction
 from barry.utils import weighted_avg_and_cov
 import matplotlib.pyplot as plt
-from chainconsumer import ChainConsumer
+from chainconsumer import ChainConsumer, Chain, Truth, PlotConfig
 
 # Config file to fit the abacus cutsky mock means for sigmas
 if __name__ == "__main__":
@@ -43,8 +43,6 @@ if __name__ == "__main__":
             reduce_cov_factor=25,
             datafile="desi_kp4_abacus_cubicbox_cv_pk_lrg.pkl",
         )
-        print(dataset_pk.get_data()[0]["ks"])
-        exit()
         dataset_xi = CorrelationFunction_DESI_KP4(
             recon=recon,
             fit_poles=[0, 2],
@@ -169,7 +167,7 @@ if __name__ == "__main__":
                 " FoG Wiggles" if model.fog_wiggles else r" FoG Smooth",
             ]
             extra["name"] = chainname[0] + chainname[1] + chainname[2]
-            c[data_bin].add_chain(df, weights=weight, **extra, shade=True, kde=True, zorder=1 if model.fog_wiggles else 5)
+            c[data_bin].add_chain(Chain(samples=df, weights=weight, **extra, shade=True, kde=True, zorder=1 if model.fog_wiggles else 5))
             mean, cov = weighted_avg_and_cov(
                 df[["$\\alpha_{\\mathrm{iso}}$", "$\\alpha_{\\mathrm{ap}}$", "$\\Sigma_{nl,||}$", "$\\Sigma_{nl,\\perp}$", "$\\Sigma_s$"]],
                 weight,
@@ -177,33 +175,40 @@ if __name__ == "__main__":
             )
 
         for data_bin in range(len(c)):
-            truth = {
-                "$\\alpha_{\\mathrm{iso}}$": 1.0,
-                "$\\alpha_{\\mathrm{ap}}$": 1.0,
-                "$\\alpha_\\perp$": 1.0,
-                "$\\alpha_\\parallel$": 1.0,
-                "$\\Sigma_{nl,||}$": 5.0,
-                "$\\Sigma_{nl,\\perp}$": 2.0,
-                "$\\Sigma_s$": 2.0,
-            }
-            extents = {
-                "$\\Sigma_{nl,||}$": [2.0, 6.0],
-                "$\\Sigma_{nl,\\perp}$": [0.0, 3.0],
-                "$\\Sigma_s$": [0.0, 4.0],
-            }
+            c[data_bin].add_truth(
+                Truth(
+                    location={
+                        "$\\alpha_{\\mathrm{iso}}$": 1.0,
+                        "$\\alpha_{\\mathrm{ap}}$": 1.0,
+                        "$\\alpha_\\perp$": 1.0,
+                        "$\\alpha_\\parallel$": 1.0,
+                        "$\\Sigma_{nl,||}$": 5.0,
+                        "$\\Sigma_{nl,\\perp}$": 2.0,
+                        "$\\Sigma_s$": 2.0,
+                    }
+                )
+            )
             plotname = "xi" if data_bin == 0 else "pk"
             chainname = r"$\xi(s)$" if data_bin == 0 else r"$P(k)$"
             c[data_bin].plotter.plot(
-                legend=True,
-                truth=truth,
                 filename="/".join(pfn.split("/")[:-1]) + "/" + plotname + "_contour.png",
-                parameters=[
+                columns=[
                     "$\\alpha_{\\mathrm{iso}}$",
                     "$\\alpha_{\\mathrm{ap}}$",
                     "$\\Sigma_{nl,||}$",
                     "$\\Sigma_{nl,\\perp}$",
                     "$\\Sigma_s$",
                 ],
-                extents=extents,
+                chains=[chainname + " FoG Smooth", chainname + " FoG Wiggles"],
+            )
+            c[data_bin].plotter.plot(
+                filename="/".join(pfn.split("/")[:-1]) + "/" + plotname + "_contour2.png",
+                columns=[
+                    "$\\alpha_\\parallel$",
+                    "$\\alpha_\\perp$",
+                    "$\\Sigma_{nl,||}$",
+                    "$\\Sigma_{nl,\\perp}$",
+                    "$\\Sigma_s$",
+                ],
                 chains=[chainname + " FoG Smooth", chainname + " FoG Wiggles"],
             )

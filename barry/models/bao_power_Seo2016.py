@@ -65,13 +65,13 @@ class PowerSeo2016(PowerSpectrumFit):
         r1, r2 = self.get_Rs(ks)
 
         # R_1/P_lin, R_2/P_lin
-        R1 = ks**2 * integrate.simps(pk_lin * r1, x=ks, axis=1) / (4.0 * np.pi**2)
-        R2 = ks**2 * integrate.simps(pk_lin * r2, x=ks, axis=1) / (4.0 * np.pi**2)
+        R1 = ks**2 * integrate.simpson(pk_lin * r1, x=ks, axis=1) / (4.0 * np.pi**2)
+        R2 = ks**2 * integrate.simpson(pk_lin * r2, x=ks, axis=1) / (4.0 * np.pi**2)
 
         return {
-            "sigma": integrate.simps(pk_lin, x=ks) / (6.0 * np.pi**2),
-            "sigma_dd": integrate.simps(pk_lin * (1.0 - s) ** 2, x=ks) / (6.0 * np.pi**2),
-            "sigma_ss": integrate.simps(pk_lin * s**2, x=ks) / (6.0 * np.pi**2),
+            "sigma": integrate.simpson(pk_lin, x=ks) / (6.0 * np.pi**2),
+            "sigma_dd": integrate.simpson(pk_lin * (1.0 - s) ** 2, x=ks) / (6.0 * np.pi**2),
+            "sigma_ss": integrate.simpson(pk_lin * s**2, x=ks) / (6.0 * np.pi**2),
             "R1": R1,
             "R2": R2,
         }
@@ -251,7 +251,7 @@ class PowerSeo2016(PowerSpectrumFit):
                     )
                     propagator = ((prefac_k + prefac_mu) * damping) ** 2
 
-            pk1d = integrate.simps(pk_smooth * (fog + pk_ratio * propagator), self.mu, axis=0)
+            pk1d = integrate.simpson(pk_smooth * (fog + pk_ratio * propagator), x=self.mu, axis=0)
             pk = [splev(kprime, splrep(ks, pk1d))]
 
         else:

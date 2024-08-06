@@ -6,7 +6,7 @@ from barry.cosmology.power_spectrum_smoothing import validate_smooth_method
 from barry.models.model import Model, Omega_m_z
 from barry.models.bao_power import PowerSpectrumFit
 from scipy.interpolate import splev, splrep
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.special import sici
 
 from barry.utils import break_vector_and_get_blocks
@@ -254,13 +254,13 @@ class CorrelationFunctionFit(Model):
     def integrate_mu(self, xi2d, mu=None, isotropic=False):
         if mu is None:
             mu = self.mu
-        xi0 = simps(xi2d, self.mu, axis=1)
+        xi0 = simpson(xi2d, x=self.mu, axis=1)
         if isotropic:
             xi2 = None
             xi4 = None
         else:
-            xi2 = 3.0 * simps(xi2d * mu**2, self.mu, axis=1)
-            xi4 = 35.0 * simps(xi2d * mu**4, self.mu, axis=1)
+            xi2 = 3.0 * simpson(xi2d * mu**2, x=self.mu, axis=1)
+            xi4 = 35.0 * simpson(xi2d * mu**4, x=self.mu, axis=1)
         return xi0, xi2, xi4
 
     def compute_correlation_function(self, dist, p, smooth=False):

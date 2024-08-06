@@ -95,8 +95,8 @@ class PowerNoda2019(PowerSpectrumFit):
         pk_smooth_spline = splrep(ks, pk_smooth_lin)
 
         # Sigma^2_dd,rs, Sigma^2_ss,rs (Noda2019 model)
-        sigma_dd_rs = integrate.simps(pk_smooth_lin * (1.0 - j0 + 2.0 * j2), ks) / (6.0 * np.pi**2)
-        sigma_ss_rs = integrate.simps(pk_smooth_lin * j2, ks) / (2.0 * np.pi**2)
+        sigma_dd_rs = integrate.simpson(pk_smooth_lin * (1.0 - j0 + 2.0 * j2), ks) / (6.0 * np.pi**2)
+        sigma_ss_rs = integrate.simpson(pk_smooth_lin * j2, ks) / (2.0 * np.pi**2)
 
         # I_00/P_sm,lin, I_01/P_sm,lin, I_02/P_sm,lin
         Pdd_spt = np.zeros(ks.shape)
@@ -111,17 +111,17 @@ class PowerNoda2019(PowerSpectrumFit):
             pk_smooth_interp[index] = 0.0
             IP0 = kval**2 * ((-10.0 * rx * xs + 7.0 * xs).T + 3.0 * rvals) / (y**2)
             IP1 = kval**2 * ((-6.0 * rx * xs + 7.0 * xs).T - rvals) / (y**2)
-            Pdd_spt[k] = integrate.simps(pk_smooth_lin * integrate.simps(pk_smooth_interp * IP0 * IP0, xs, axis=0), rvals)
-            Pdt_spt[k] = integrate.simps(pk_smooth_lin * integrate.simps(pk_smooth_interp * IP0 * IP1, xs, axis=0), rvals)
-            Ptt_spt[k] = integrate.simps(pk_smooth_lin * integrate.simps(pk_smooth_interp * IP1 * IP1, xs, axis=0), rvals)
+            Pdd_spt[k] = integrate.simpson(pk_smooth_lin * integrate.simpson(pk_smooth_interp * IP0 * IP0, x=xs, axis=0), x=rvals)
+            Pdt_spt[k] = integrate.simpson(pk_smooth_lin * integrate.simpson(pk_smooth_interp * IP0 * IP1, x=xs, axis=0), x=rvals)
+            Ptt_spt[k] = integrate.simpson(pk_smooth_lin * integrate.simpson(pk_smooth_interp * IP1 * IP1, x=xs, axis=0), x=rvals)
         Pdd_spt *= ks**3 / (392.0 * np.pi**2) / pk_smooth_lin
         Pdt_spt *= ks**3 / (392.0 * np.pi**2) / pk_smooth_lin
         Ptt_spt *= ks**3 / (392.0 * np.pi**2) / pk_smooth_lin
 
         # Add on k^2[J_00, J_01, J_11] to obtain P_sm,spt/P_sm,L - 1
-        Pdd_spt += ks**2 * integrate.simps(pk_smooth_lin * J00, ks, axis=1) / (1008.0 * np.pi**2)
-        Pdt_spt += ks**2 * integrate.simps(pk_smooth_lin * J01, ks, axis=1) / (1008.0 * np.pi**2)
-        Ptt_spt += ks**2 * integrate.simps(pk_smooth_lin * J11, ks, axis=1) / (336.0 * np.pi**2)
+        Pdd_spt += ks**2 * integrate.simpson(pk_smooth_lin * J00, x=ks, axis=1) / (1008.0 * np.pi**2)
+        Pdt_spt += ks**2 * integrate.simpson(pk_smooth_lin * J01, x=ks, axis=1) / (1008.0 * np.pi**2)
+        Ptt_spt += ks**2 * integrate.simpson(pk_smooth_lin * J11, x=ks, axis=1) / (336.0 * np.pi**2)
 
         # Compute the non linear correction to the power spectra using the fitting formulae from Jennings2012
         growth_0, growth_z = self.get_growth_factor_Linder(om, 1.0e-4), self.get_growth_factor_Linder(om, self.camb.redshift)
@@ -159,7 +159,7 @@ class PowerNoda2019(PowerSpectrumFit):
         """
         avals = np.logspace(-4.0, np.log10(1.0 / (1.0 + z)), 10000)
         f = Omega_m_z(omega_m, 1.0 / avals - 1.0) ** gamma
-        integ = integrate.simps((f - 1.0) / avals, avals, axis=0)
+        integ = integrate.simpson((f - 1.0) / avals, x=avals, axis=0)
         return np.exp(integ) / (1.0 + z)
 
     @lru_cache(maxsize=2)
@@ -335,11 +335,11 @@ class PowerNoda2019(PowerSpectrumFit):
 
             # Integrate over mu
             if smooth:
-                pk1d = integrate.simps(pk_smooth * (kaiser_prefac**2 + pk_nonlinear), self.mu, axis=0)
+                pk1d = integrate.simpson(pk_smooth * (kaiser_prefac**2 + pk_nonlinear), x=self.mu, axis=0)
             else:
                 # Compute the BAO damping/propagator
                 propagator = self.get_damping(growth, om, gamma)
-                pk1d = integrate.simps(pk_smooth * ((1.0 + pk_ratio * propagator) * kaiser_prefac**2 + pk_nonlinear), self.mu, axis=0)
+                pk1d = integrate.simpson(pk_smooth * ((1.0 + pk_ratio * propagator) * kaiser_prefac**2 + pk_nonlinear), x=self.mu, axis=0)
 
             pk = [splev(kprime, splrep(ks, pk1d))]
 
