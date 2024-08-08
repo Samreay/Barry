@@ -54,6 +54,7 @@ def plot_errors(sigma_prior_factor, stats, figname):
 
         for sigma_bin, vals in enumerate([["A", "C", "E", "G"], ["B", "D", "F", "H"]]):
             sig = r"$Fiducial\,\Sigma$" if sigma_bin == 0 else r"$Incorrect\,\Sigma$"
+            print(sig, np.shape(np.array(stats[data_bin][sigma_bin])))
             statsmean = np.mean(np.array(stats[data_bin][sigma_bin]), axis=0)
             statsstd = np.std(np.array(stats[data_bin][sigma_bin]), axis=0) / 5.0
             for ind, (label, range) in enumerate(
@@ -64,7 +65,7 @@ def plot_errors(sigma_prior_factor, stats, figname):
                         r"$\sigma_{\alpha_{\mathrm{iso}}}\,(\%)$",
                         r"$\sigma_{\alpha_{\mathrm{ap}}}\,(\%)$",
                     ],
-                    [[-0.35, 0.35], [-0.95, 0.95], [0.285, 0.33], [0.90, 1.15]],
+                    [[-2.0, 2.0], [-4.0, 4.0], [0.0, 2.0], [0.0, 4.0]],
                 )
             ):
                 ax[vals[ind]].plot(sigma_prior_factor, statsmean[:, ind], color=c, zorder=1, alpha=0.75, lw=0.8)
@@ -167,8 +168,8 @@ if __name__ == "__main__":
 
     # Create the data. We'll fit monopole, quadrupole between k=0.02 and 0.3.
     # First load up mock mean and add it to the fitting list.
-    t = "ELG_LOP"
-    zs = tracers[t][1]
+    t = "LRG"
+    zs = tracers[t][2]
     name = f"DESI_SecondGen_sm{reconsmooth[t]}_{t.lower()}_{ffa}_{cap}_{zs[0]}_{zs[1]}_{rp}_pk.pkl"
     dataset_pk = PowerSpectrum_DESI_KP4(
         recon="sym",
@@ -207,9 +208,9 @@ if __name__ == "__main__":
             )
             model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
             model.set_default("beta", 0.4, min=0.1, max=0.7)
-            model.set_default("sigma_nl_par", sigma_nl_par[t][1][0] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
-            model.set_default("sigma_nl_perp", sigma_nl_perp[t][1][0] + sig, min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
-            model.set_default("sigma_s", sigma_s[t][1][0] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
+            model.set_default("sigma_nl_par", sigma_nl_par[t][1][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
+            model.set_default("sigma_nl_perp", sigma_nl_perp[t][1][1] + sig, min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
+            model.set_default("sigma_s", sigma_s[t][1][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
 
             for j in range(len(dataset_pk.mock_data)):
                 dataset_pk.set_realisation(j)
@@ -226,9 +227,9 @@ if __name__ == "__main__":
             )
             model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
             model.set_default("beta", 0.4, min=0.1, max=0.7)
-            model.set_default("sigma_nl_par", sigma_nl_par[t][1][0] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
-            model.set_default("sigma_nl_perp", sigma_nl_perp[t][1][0] + sig, min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
-            model.set_default("sigma_s", sigma_s[t][1][0] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
+            model.set_default("sigma_nl_par", sigma_nl_par[t][1][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
+            model.set_default("sigma_nl_perp", sigma_nl_perp[t][1][1] + sig, min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
+            model.set_default("sigma_s", sigma_s[t][1][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
 
             for j in range(len(dataset_xi.mock_data)):
                 dataset_xi.set_realisation(j)
@@ -258,7 +259,7 @@ if __name__ == "__main__":
         for posterior, weight, chain, evidence, model, data, extra in fitter.load():
 
             # Get the realisation number, data bin sigma bin and prior bin
-            data_bin = 0 if "Xi" in extra["name"] else 1
+            data_bin = 0 if "Corr" in model.name else 1
             realisation = int(extra["name"].split("realisation ")[1].split(" ")[0])
             sigma_bin = int(extra["name"].split("realisation ")[1].split(" ")[1])
             prior_bin = int(extra["name"].split("prior=")[1].split(" ")[0])
