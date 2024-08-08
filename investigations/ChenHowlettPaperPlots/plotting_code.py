@@ -268,7 +268,7 @@ def Figure13():
 
     boxprops_pk = {"lw": 1.3, "color": "#1f77b4"}
     boxprops_xi = {"lw": 1.3, "color": "#ff7f0e"}
-    medianprops = {"lw": 1.5, "color": "r"}
+    medianprops = {"lw": 1.5, "color": "g"}
     whiskerprops = {"lw": 1.3, "color": "k"}
 
     fig, axes = plt.subplots(figsize=(8, 10), nrows=4, ncols=1, sharex=True, squeeze=False)
@@ -330,7 +330,7 @@ def Figure13():
         for axis in ["top", "bottom", "left", "right"]:
             axes[panel, 0].spines[axis].set_linewidth(1.3)
 
-    plt.show()
+    fig.savefig("./Figure13.png", bbox_inches="tight", transparent=True, dpi=300)
 
 
 def contour_rect(data, edgeval):
@@ -661,7 +661,7 @@ def Figure17():
 
     boxprops_pk = {"lw": 1.3, "color": "#1f77b4"}
     boxprops_xi = {"lw": 1.3, "color": "#ff7f0e"}
-    medianprops = {"lw": 1.5, "color": "r"}
+    medianprops = {"lw": 1.5, "color": "g"}
     whiskerprops = {"lw": 1.3, "color": "k"}
 
     bplist = []
@@ -747,7 +747,7 @@ def Figure17():
         for axis in ["top", "bottom", "left", "right"]:
             axes[panel, 0].spines[axis].set_linewidth(1.3)
 
-    plt.show()
+    fig.savefig("./Figure17.png", bbox_inches="tight", transparent=True, dpi=300)
 
 
 def Figure18():
@@ -766,7 +766,7 @@ def Figure18():
 
     boxprops_pk = {"lw": 1.3, "color": "#1f77b4"}
     boxprops_xi = {"lw": 1.3, "color": "#ff7f0e"}
-    medianprops = {"lw": 1.5, "color": "r"}
+    medianprops = {"lw": 1.5, "color": "g"}
     whiskerprops = {"lw": 1.3, "color": "k"}
 
     bplist = []
@@ -827,13 +827,13 @@ def Figure18():
 
 if __name__ == "__main__":
 
-    Figure7()
-    for row in ["top", "middle", "bottom"]:
-        Figure11(row=row)
-    Figure12()
+    # Figure7()
+    # for row in ["top", "middle", "bottom"]:
+    #    Figure11(row=row)
+    # Figure12()
     Figure13()
-    Figure14()
-    Figure15()
-    Figure16()
+    # Figure14()
+    # Figure15()
+    # Figure16()
     Figure17()
     Figure18()

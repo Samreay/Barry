@@ -212,6 +212,10 @@ if __name__ == "__main__":
             model.set_default("sigma_nl_perp", sigma_nl_perp[t][1][1] + sig, min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
             model.set_default("sigma_s", sigma_s[t][1][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
 
+            # Load in a pre-existing BAO template
+            pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+            model.kvals, model.pksmooth, model.pkratio = pktemplate.T
+
             for j in range(len(dataset_pk.mock_data)):
                 dataset_pk.set_realisation(j)
                 name = dataset_pk.name + f" realisation {j} {s} prior=" + str(i)
@@ -230,6 +234,10 @@ if __name__ == "__main__":
             model.set_default("sigma_nl_par", sigma_nl_par[t][1][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
             model.set_default("sigma_nl_perp", sigma_nl_perp[t][1][1] + sig, min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
             model.set_default("sigma_s", sigma_s[t][1][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
+
+            # Load in a pre-existing BAO template
+            pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+            model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
             for j in range(len(dataset_xi.mock_data)):
                 dataset_xi.set_realisation(j)

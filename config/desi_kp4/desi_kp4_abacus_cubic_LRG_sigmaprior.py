@@ -170,6 +170,10 @@ if __name__ == "__main__":
             model.set_default("sigma_nl_perp", sigma[sig][1], min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
             model.set_default("sigma_s", sigma[sig][2], min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
 
+            # Load in a pre-existing BAO template
+            pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+            model.kvals, model.pksmooth, model.pkratio = pktemplate.T
+
             name = dataset_pk.name + f" mock mean {s} prior=" + str(i)
             fitter.add_model_and_dataset(model, dataset_pk, name=name)
             allnames.append(name)
@@ -187,6 +191,10 @@ if __name__ == "__main__":
             model.set_default("sigma_nl_par", sigma[sig][0], min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
             model.set_default("sigma_nl_perp", sigma[sig][1], min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
             model.set_default("sigma_s", sigma[sig][2], min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
+
+            # Load in a pre-existing BAO template
+            pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
+            model.parent.kvals, model.parent.pksmooth, model.parent.pkratio = pktemplate.T
 
             name = dataset_xi.name + f" mock mean {s} prior=" + str(i)
             fitter.add_model_and_dataset(model, dataset_xi, name=name)
