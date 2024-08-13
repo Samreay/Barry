@@ -208,9 +208,9 @@ if __name__ == "__main__":
             )
             model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
             model.set_default("beta", 0.4, min=0.1, max=0.7)
-            model.set_default("sigma_nl_par", sigma_nl_par[t][1][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
-            model.set_default("sigma_nl_perp", sigma_nl_perp[t][1][1] + sig, min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
-            model.set_default("sigma_s", sigma_s[t][1][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
+            model.set_default("sigma_nl_par", sigma_nl_par[t][2][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
+            model.set_default("sigma_nl_perp", sigma_nl_perp[t][2][1] + sig, min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
+            model.set_default("sigma_s", sigma_s[t][2][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
 
             # Load in a pre-existing BAO template
             pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")
@@ -231,9 +231,9 @@ if __name__ == "__main__":
             )
             model.set_default(f"b{{{0}}}_{{{1}}}", 2.0, min=0.5, max=9.0)
             model.set_default("beta", 0.4, min=0.1, max=0.7)
-            model.set_default("sigma_nl_par", sigma_nl_par[t][1][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
-            model.set_default("sigma_nl_perp", sigma_nl_perp[t][1][1] + sig, min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
-            model.set_default("sigma_s", sigma_s[t][1][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
+            model.set_default("sigma_nl_par", sigma_nl_par[t][2][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
+            model.set_default("sigma_nl_perp", sigma_nl_perp[t][2][1] + sig, min=0.0, max=20.0, sigma=1.0 * factor, prior="gaussian")
+            model.set_default("sigma_s", sigma_s[t][2][1] + 2.0 * sig, min=0.0, max=20.0, sigma=2.0 * factor, prior="gaussian")
 
             # Load in a pre-existing BAO template
             pktemplate = np.loadtxt("../../barry/data/desi_kp4/DESI_Pk_template.dat")

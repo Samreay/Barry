@@ -81,7 +81,7 @@ if __name__ == "__main__":
             max_dist=150.0,
             realisation=None,
             num_mocks=1000,
-            reduce_cov_factor=1,
+            reduce_cov_factor=25,
             datafile="desi_kp4_abacus_cubicbox_cv_xi_lrg.pkl",
         )
 
